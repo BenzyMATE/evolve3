@@ -1,0 +1,134 @@
+package org.benski.evolv3.schedules;
+
+import lombok.experimental.ExtensionMethod;
+import org.benski.evolv3.core.abstracts.BaseSchedule;
+import org.benski.evolv3.core.constants.ConfigPaths;
+import org.benski.evolv3.core.helpers.ItemStackExtensions;
+import org.benski.evolv3.datacenters.PickaxeDataCenter;
+import org.benski.evolv3.registry.DataCenterRegistry;
+import org.bukkit.Bukkit;
+import org.bukkit.Material;
+import org.bukkit.entity.Player;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.plugin.java.JavaPlugin;
+
+import java.util.UUID;
+
+/**
+ * Schedule that checks if players are holding registered pickaxes.
+ * Runs every X seconds to validate pickaxe items.
+ * Interval is configurable in default.yml
+ */
+@ExtensionMethod(ItemStackExtensions.class)
+public class PickaxeCheckSchedule extends BaseSchedule
+{
+    private final PickaxeDataCenter pickaxeDataCenter;
+
+    public PickaxeCheckSchedule(JavaPlugin plugin) {
+        super(plugin);
+        this.pickaxeDataCenter = (PickaxeDataCenter) DataCenterRegistry.getInstance().get("pickaxe");
+    }
+
+    /**
+     * {@inheritDoc}
+     * Default: 100 ticks (5 seconds)
+     */
+    @Override
+    public long getIntervalTicks() {
+        return 100; // 5 seconds (default fallback)
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public String getIntervalConfigPath() {
+        return ConfigPaths.Default.Schedules.PICKAXE_CHECK_INTERVAL;
+    }
+
+    /**
+     * {@inheritDoc}
+     * Starts after 1 second delay.
+     */
+    @Override
+    public long getDelayTicks() {
+        return 20; // 1 second
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void run() {
+        // Check all online players
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            checkPlayerPickaxe(player);
+        }
+    }
+
+    /**
+     * Checks if a player is holding a pickaxe and if it's registered.
+     *
+     * @param player the player to check
+     */
+    private void checkPlayerPickaxe(Player player) {
+        ItemStack mainHand = player.getInventory().getItemInMainHand();
+
+        // Check if item is a pickaxe
+        if (!isPickaxe(mainHand)) {
+            return;
+        }
+
+        // Get pickaxe ID from NBT data
+        String pickaxeId = mainHand.getData("id");
+
+        if (pickaxeId == null || pickaxeId.isEmpty()) {
+            String newId = UUID.randomUUID().toString();
+            pickaxeDataCenter.loadOrCreate(player, newId);
+            plugin.getLogger().fine("Player " + player.getName() + " holding new pickaxe, created with ID: " + newId);
+            return;
+        }
+
+        // Pickaxe has an ID - load it into cache (or create if not in DB)
+        // loadOrCreate handles checking if it exists in cache/DB
+        pickaxeDataCenter.loadOrCreate(player, pickaxeId);
+        plugin.getLogger().fine("Player " + player.getName() + " holding pickaxe with ID: " + pickaxeId);
+    }
+
+    /**
+     * Checks if an item is a pickaxe.
+     *
+     * @param item the item to check
+     * @return true if the item is a pickaxe
+     */
+    private boolean isPickaxe(ItemStack item) {
+        if (item == null || item.getType() == Material.AIR) {
+            return false;
+        }
+
+        Material type = item.getType();
+        return type == Material.WOODEN_PICKAXE
+                || type == Material.STONE_PICKAXE
+                || type == Material.IRON_PICKAXE
+                || type == Material.GOLDEN_PICKAXE
+                || type == Material.DIAMOND_PICKAXE
+                || type == Material.NETHERITE_PICKAXE;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void onStart() {
+        plugin.getLogger().info("Pickaxe check schedule started - checking every " +
+                (getActualInterval() / 20) + " seconds");
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void onStop() {
+        plugin.getLogger().info("Pickaxe check schedule stopped");
+    }
+}

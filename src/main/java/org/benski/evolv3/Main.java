@@ -1,8 +1,16 @@
 package org.benski.evolv3;
 
+import org.benski.evolv3.core.constants.ConfigNames;
+import org.benski.evolv3.core.constants.ConfigPaths;
+import org.benski.evolv3.core.managers.MongoManager;
+import org.benski.evolv3.core.managers.TaskManager;
 import org.benski.evolv3.registry.CommandRegistry;
 import org.benski.evolv3.registry.ConfigRegistry;
+import org.benski.evolv3.registry.DataCenterRegistry;
+import org.benski.evolv3.registry.EnchantRegistry;
+import org.benski.evolv3.registry.ListenerRegistry;
 import org.benski.evolv3.registry.MenuRegistry;
+import org.benski.evolv3.registry.ScheduleRegistry;
 import org.bukkit.plugin.java.JavaPlugin;
 
 /**
@@ -10,13 +18,26 @@ import org.bukkit.plugin.java.JavaPlugin;
  */
 public final class Main extends JavaPlugin
 {
+    // ANSI color codes for blue console output
+    private static final String BLUE = "\u001B[34m";
+    private static final String RESET = "\u001B[0m";
+
     /**
      * On enable run these methods.
      */
     @Override
     public void onEnable()
     {
+        getLogger().info(BLUE + "========================================" + RESET);
+        getLogger().info(BLUE + "  Evolv3 is starting up..." + RESET);
+        getLogger().info(BLUE + "========================================" + RESET);
+
         this.useRegistry();
+        this.useMongo();
+
+        getLogger().info(BLUE + "========================================" + RESET);
+        getLogger().info(BLUE + "  Evolv3 has been enabled successfully!" + RESET);
+        getLogger().info(BLUE + "========================================" + RESET);
     }
 
     /**
@@ -25,7 +46,28 @@ public final class Main extends JavaPlugin
     @Override
     public void onDisable()
     {
+        getLogger().info(BLUE + "========================================" + RESET);
+        getLogger().info(BLUE + "  Evolv3 is shutting down..." + RESET);
+        getLogger().info(BLUE + "========================================" + RESET);
 
+        // Cancel all scheduled tasks first
+        TaskManager.getInstance().cancelAllTasks();
+
+        // Cleanup in reverse order of initialization
+        ScheduleRegistry.getInstance().cleanup();
+        DataCenterRegistry.getInstance().cleanup();
+        ListenerRegistry.getInstance().cleanup();
+        MenuRegistry.getInstance().cleanup();
+        CommandRegistry.getInstance().cleanup();
+        EnchantRegistry.getInstance().cleanup();
+        ConfigRegistry.getInstance().cleanup();
+
+        // Close MongoDB connection
+        MongoManager.getInstance().close();
+
+        getLogger().info(BLUE + "========================================" + RESET);
+        getLogger().info(BLUE + "  Evolv3 has been disabled. Goodbye!" + RESET);
+        getLogger().info(BLUE + "========================================" + RESET);
     }
 
     /**
@@ -34,8 +76,21 @@ public final class Main extends JavaPlugin
     private void useRegistry()
     {
         ConfigRegistry.getInstance().initialize();
+        EnchantRegistry.getInstance().initialize();
         CommandRegistry.getInstance().initialize();
         MenuRegistry.getInstance().initialize();
+        ListenerRegistry.getInstance().initialize();
+        DataCenterRegistry.getInstance().initialize();
+        ScheduleRegistry.getInstance().initialize();
+    }
+
+    /**
+     * Initializes the MongoDB for evolve.
+     */
+    private void useMongo()
+    {
+        var defaultConfig = ConfigRegistry.getInstance().get(ConfigNames.DEFAULT);
+        MongoManager.getInstance().initConnection(defaultConfig.getString(ConfigPaths.Default.DATABASE_MONGODB));
     }
 
     /**
@@ -45,6 +100,22 @@ public final class Main extends JavaPlugin
     public static Main getInstance()
     {
         return getPlugin(Main.class);
+    }
+
+    /**
+     * Gets the blue ANSI color code for console logging.
+     * @return The blue color code
+     */
+    public static String getBlue() {
+        return BLUE;
+    }
+
+    /**
+     * Gets the ANSI reset code for console logging.
+     * @return The reset code
+     */
+    public static String getReset() {
+        return RESET;
     }
 }
 

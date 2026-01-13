@@ -1,9 +1,14 @@
 package org.benski.evolv3.commands;
 
+import lombok.experimental.ExtensionMethod;
 import org.benski.evolv3.core.abstracts.BaseCommand;
+import org.benski.evolv3.core.helpers.ItemStackExtensions;
+import org.benski.evolv3.registry.MenuRegistry;
+import org.bukkit.Material;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -15,8 +20,10 @@ import java.util.List;
  * Example command implementation.
  * Create similar classes for each of your commands.
  */
+@ExtensionMethod(ItemStackExtensions.class)
 public class TestCommand extends BaseCommand
 {
+    private final MenuRegistry menuRegistry = MenuRegistry.getInstance();
     public TestCommand(JavaPlugin plugin) {
         super(plugin);
     }
@@ -58,7 +65,7 @@ public class TestCommand extends BaseCommand
      */
     @Override
     public @Nullable List<String> getAliases() {
-        return List.of("ex", "exmp");
+        return List.of("ex", "exp");
     }
 
     /**
@@ -90,11 +97,37 @@ public class TestCommand extends BaseCommand
         String arg = args[0];
 
         switch (arg.toLowerCase()) {
+            case "menu":
+                menuRegistry.get("profile").openMenu(player);
+                sendInfo(player, "Opening profile menu...");
+                break;
             case "test":
                 sendSuccess(player, "Test successful!");
                 break;
+            case "cache":
+                String pickaxeId = player.getInventory().getItemInMainHand().getData("id");
+                if (pickaxeId != null && !pickaxeId.isEmpty()) {
+                    sendInfo(player, "Pickaxe ID: " + pickaxeId);
+                } else {
+                    sendError(player, "No pickaxe ID found on held item!");
+                }
+                break;
             case "info":
                 sendInfo(player, "This is an example command.");
+                break;
+            case "explosive":
+                // Create a diamond pickaxe with Explosive III
+                ItemStack pickaxe = new ItemStack(Material.DIAMOND_PICKAXE);
+
+                // Use extension method to add the custom enchantment
+                if (!pickaxe.addCustomEnchantment("explosive", 3)) {
+                    sendError(player, "Explosive enchantment not found! Make sure the server started correctly.");
+                    break;
+                }
+
+                // Give it to the player
+                player.getInventory().addItem(pickaxe);
+                sendSuccess(player, "Given you a Diamond Pickaxe with Explosive III!");
                 break;
             default:
                 sendError(player, "Unknown argument: " + arg);
@@ -113,6 +146,9 @@ public class TestCommand extends BaseCommand
             List<String> completions = new ArrayList<>();
             completions.add("test");
             completions.add("info");
+            completions.add("menu");
+            completions.add("cache");
+            completions.add("explosive");
 
             // Filter based on current input
             String input = args[0].toLowerCase();

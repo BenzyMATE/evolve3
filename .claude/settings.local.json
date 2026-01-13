@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(nul)",
+      "Bash(dir /s /b \"C:\\Users\\benje\\IdeaProjects\\Evolv3\\src\\main\\java\\org\\benski\\evolv3\")",
+      "Bash(findstr:*)",
+      "Bash(javac:*)",
+      "Bash(mvn compile:*)",
+      "Bash(mvn clean:*)",
+      "Bash(where mvn)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

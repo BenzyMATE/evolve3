@@ -1,0 +1,29 @@
+# =====================================================
+# Evolv3 - Messages Configuration
+# =====================================================
+# All player-facing messages for the plugin.
+# Supports PlaceholderAPI placeholders and color codes.
+# Use & for color codes (e.g., &a for green, &c for red)
+# =====================================================
+
+# Pickaxe Profile Messages
+pickaxe:
+  loading-profile: "&aLoading your pickaxe profile..."
+  profile-created: "&aPickaxe profile created!"
+  profile-saved: "&aPickaxe profile saved!"
+  no-pickaxe: "&cYou must be holding a pickaxe!"
+
+# General Messages
+general:
+  prefix: "&8[&6Evolv3&8]&r "
+  no-permission: "&cYou don't have permission to do that!"
+  player-only: "&cThis command can only be used by players!"
+  unknown-command: "&cUnknown command. Use /help for a list of commands."
+  reload-success: "&aConfiguration reloaded successfully!"
+  reload-failed: "&cFailed to reload configuration. Check console for errors."
+
+# Error Messages
+errors:
+  database-error: "&cA database error occurred. Please contact an administrator."
+  internal-error: "&cAn internal error occurred. Please try again later."
+  invalid-arguments: "&cInvalid arguments. Usage: %usage%"

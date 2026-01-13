@@ -1,5 +1,6 @@
 package org.benski.evolv3.registry;
 
+import lombok.Getter;
 import org.benski.evolv3.Main;
 import org.benski.evolv3.core.interfaces.Registry;
 import org.benski.evolv3.core.managers.StorageRegistryManager;
@@ -12,15 +13,18 @@ import java.util.List;
  */
 public class ConfigRegistry implements Registry<FileConfiguration>
 {
-    private ConfigRegistry() {}
+    @Getter
     private static final ConfigRegistry instance = new ConfigRegistry();
     private final StorageRegistryManager storageManager = new StorageRegistryManager(Main.getInstance());
 
     /**
-     * Register your configs here.
+     * Register configs.
      */
-    private final List<String> configs =
-            List.of("default");
+    private final List<String> configs = List.of(
+            "default",
+            "messages",
+            "menus"
+    );
 
     /**
      * {@inheritDoc}
@@ -47,10 +51,4 @@ public class ConfigRegistry implements Registry<FileConfiguration>
         configs.forEach(storageManager::deleteConfig);
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    public static ConfigRegistry getInstance() {
-        return instance;
-    }
 }

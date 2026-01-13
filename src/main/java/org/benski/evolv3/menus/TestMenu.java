@@ -1,9 +1,12 @@
 package org.benski.evolv3.menus;
 
 import org.benski.evolv3.core.abstracts.BaseMenu;
-import org.benski.evolv3.core.helpers.Utils;
+import org.benski.evolv3.core.builders.ItemBuilder;
+import org.benski.evolv3.core.builders.MessageBuilder;
 import org.benski.evolv3.core.types.MenuType;
+import org.benski.evolv3.registry.ConfigRegistry;
 import org.bukkit.Material;
+import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.inventory.Inventory;
@@ -16,7 +19,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 public class TestMenu extends BaseMenu
 {
     private static final MenuType MENU_TYPE = MenuType.register("profile");
-
+    private final FileConfiguration menusCfg = ConfigRegistry.getInstance().get("menus");
     public TestMenu(JavaPlugin plugin) {
         super(plugin);
     }
@@ -44,33 +47,36 @@ public class TestMenu extends BaseMenu
     protected void populateMenu(Player player, Inventory inventory)
     {
         // Info item
-        ItemStack infoItem = Utils.createItem(
-                Material.BOOK,
-                "§e§lInformation",
-                "§7Click for information",
-                "§7about this menu"
-        );
+        ItemStack infoItem = new ItemBuilder(Material.BOOK)
+                .name(menusCfg.getString(""))
+                .lore(
+                        "&7Click for information",
+                        "&7about this menu"
+                )
+                .build();
         inventory.setItem(11, infoItem);
 
         // Action item
-        ItemStack actionItem = Utils.createItem(
-                Material.DIAMOND,
-                "§a§lAction Button",
-                "§7Click to perform",
-                "§7an action"
-        );
+        ItemStack actionItem = new ItemBuilder(Material.DIAMOND)
+                .name("&a&lAction Button")
+                .lore(
+                        "&7Click to perform",
+                        "&7an action"
+                )
+                .build();
         inventory.setItem(13, actionItem);
 
         // Close item
-        ItemStack closeItem = Utils.createItem(
-                Material.BARRIER,
-                "§c§lClose Menu",
-                "§7Click to close"
-        );
+        ItemStack closeItem = new ItemBuilder(Material.BARRIER)
+                .name("&c&lClose Menu")
+                .lore("&7Click to close")
+                .build();
         inventory.setItem(15, closeItem);
 
         // Fill borders with glass panes
-        ItemStack borderItem = Utils.createItem(Material.GRAY_STAINED_GLASS_PANE, " ");
+        ItemStack borderItem = new ItemBuilder(Material.GRAY_STAINED_GLASS_PANE)
+                .name(" ")
+                .build();
         for (int i = 0; i < 9; i++) {
             inventory.setItem(i, borderItem); // Top row
             inventory.setItem(i + 18, borderItem); // Bottom row
@@ -86,8 +92,10 @@ public class TestMenu extends BaseMenu
     protected boolean handleClick(Player player, int slot, InventoryClickEvent event) {
         switch (slot) {
             case 11: // Info item
-                sendInfo(player, "This is an example menu!");
-                sendInfo(player, "You can create menus like this easily.");
+                new MessageBuilder()
+                        .line("&eThis is an example menu!")
+                        .line("&eYou can create menus like this easily.")
+                        .sendTo(player);
                 return true;
 
             case 13: // Action item

@@ -5,14 +5,16 @@ import com.mongodb.client.MongoClients;
 import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.ReplaceOptions;
+import org.benski.evolv3.Main;
 import org.benski.evolv3.core.interfaces.MongoCollection;
+import org.benski.evolv3.registry.CommandRegistry;
+import org.benski.evolv3.registry.ConfigRegistry;
 import org.bson.Document;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.*;
+import java.util.logging.Logger;
 
 /**
  * Manager class responsible for all MongoDB operations in the Evolve plugin.
@@ -22,7 +24,8 @@ import java.util.concurrent.*;
  */
 public class MongoManager
 {
-    private final Logger LOGGER = LoggerFactory.getLogger(MongoManager.class);
+    private static final MongoManager instance = new MongoManager();
+    private final Logger logger = Main.getInstance().getLogger();
     private MongoClient mongoClient;
     private MongoDatabase database;
 
@@ -32,21 +35,17 @@ public class MongoManager
     );
 
     /**
-     * Constructs a new MongoManager with the specified connection string.
-     * Initializes the MongoDB client and connects to the database.
-     *
-     * @param connectionString MongoDB connection string
+     * Gets the MongoManager instance.
      */
-    public MongoManager(String connectionString)
-    {
-        initConnection(connectionString);
+    public static MongoManager getInstance() {
+        return instance;
     }
 
     /**
      * Initializes the MongoDB connection using the provided connection string.
      * Extracts the database name from the connection string and establishes connection.
      */
-    private void initConnection(String connectionString)
+    public void initConnection(String connectionString)
     {
         try {
             mongoClient = MongoClients.create(connectionString);
@@ -57,9 +56,9 @@ public class MongoManager
 
             // Test connection
             database.runCommand(new Document("ping", 1));
-            LOGGER.info("MongoManager: Successfully connected to MongoDB.");
+            logger.info("MongoManager: Successfully connected to MongoDB.");
         } catch (Exception e) {
-            LOGGER.error("Failed to initialize MongoDB connection: {}", e.getMessage());
+            logger.severe("Failed to initialize MongoDB connection: " + e.getMessage());
         }
     }
 
@@ -86,24 +85,8 @@ public class MongoManager
 
             return "Evolve"; // Default database name
         } catch (Exception e) {
-            LOGGER.warn("Could not extract database name from connection string, using default 'Evolve'");
+            logger.warning("Could not extract database name from connection string, using default 'Evolve'");
             return "Evolve";
-        }
-    }
-
-    /**
-     * Legacy compatibility method for SQL-style calls.
-     * @deprecated Use getAllAsync(String, String, Object, Class) instead
-     */
-    @Deprecated
-    public <T extends MongoCollection> CompletableFuture<List<T>> getAllAsync(Class<T> modelClass, String fieldName, Object value)
-    {
-        try {
-            T instance = modelClass.getDeclaredConstructor().newInstance();
-            return getAllAsync(instance.getCollectionName(), fieldName, value, modelClass);
-        } catch (Exception e) {
-            LOGGER.error("Error creating model instance for legacy getAllAsync: {}", e.getMessage());
-            return CompletableFuture.completedFuture(new ArrayList<>());
         }
     }
 
@@ -131,7 +114,7 @@ public class MongoManager
                     results.add(model);
                 }
             } catch (Exception e) {
-                LOGGER.error("Error in getAllAsync for collection {}: {}", collectionName, e.getMessage());
+                logger.severe("Error in getAllAsync for collection " + collectionName + ": " + e.getMessage());
             }
 
             return results;
@@ -149,7 +132,7 @@ public class MongoManager
             T instance = modelClass.getDeclaredConstructor().newInstance();
             return getByIdAsync(instance.getCollectionName(), idField, idValue, modelClass);
         } catch (Exception e) {
-            LOGGER.error("Error creating model instance for legacy getByIdAsync: {}", e.getMessage());
+            logger.severe("Error creating model instance for legacy getByIdAsync: " + e.getMessage());
             return CompletableFuture.completedFuture(null);
         }
     }
@@ -178,7 +161,7 @@ public class MongoManager
 
                 return null;
             } catch (Exception e) {
-                LOGGER.error("Error in getByIdAsync for collection {}: {}", collectionName, e.getMessage());
+                logger.severe("Error in getByIdAsync for collection " + collectionName + ": " + e.getMessage());
                 return null;
             }
         }, databaseExecutor);
@@ -204,7 +187,7 @@ public class MongoManager
                     new ReplaceOptions().upsert(true)
                 );
             } catch (Exception e) {
-                LOGGER.error("Error upserting into collection {}: {}", model.getCollectionName(), e.getMessage());
+                logger.severe("Error upserting into collection " + model.getCollectionName() + ": " + e.getMessage());
             }
         }, databaseExecutor);
     }
@@ -224,7 +207,7 @@ public class MongoManager
                 com.mongodb.client.MongoCollection<Document> collection = database.getCollection(collectionName);
                 collection.deleteOne(Filters.eq(fieldName, value));
             } catch (Exception e) {
-                LOGGER.error("Error deleting from collection {} where {} = {}: {}", collectionName, fieldName, value, e.getMessage());
+                logger.severe("Error deleting from collection " + collectionName + " where " + fieldName + " = " + value + ": " + e.getMessage());
             }
         }, databaseExecutor);
     }
@@ -249,9 +232,9 @@ public class MongoManager
                 com.mongodb.client.MongoCollection<Document> collection = database.getCollection(collectionName);
                 collection.deleteMany(Filters.in(fieldName, values));
 
-                LOGGER.info("Batch deleted {} documents from {}", values.size(), collectionName);
+                logger.info("Batch deleted " + values.size() + " documents from " + collectionName);
             } catch (Exception e) {
-                LOGGER.error("Error in batch delete from collection {}: {}", collectionName, e.getMessage());
+                logger.severe("Error in batch delete from collection " + collectionName + ": " + e.getMessage());
             }
         }, databaseExecutor);
     }
@@ -287,16 +270,16 @@ public class MongoManager
                                     new ReplaceOptions().upsert(true)
                                 );
                             } catch (Exception e) {
-                                LOGGER.error("Error in batch upsert for model: {}", e.getMessage());
+                                logger.severe("Error in batch upsert for model: " + e.getMessage());
                             }
                         });
 
-                        LOGGER.info("Batch upserted {} documents in collection {}", collectionModels.size(), collectionName);
+                        logger.info("Batch upserted " + collectionModels.size() + " documents in collection " + collectionName);
                     });
 
-                LOGGER.info("Batch upsert operation completed successfully");
+                logger.info("Batch upsert operation completed successfully");
             } catch (Exception e) {
-                LOGGER.error("Error in batch upsert: {}", e.getMessage());
+                logger.severe("Error in batch upsert: " + e.getMessage());
             }
         }, databaseExecutor);
     }
@@ -309,25 +292,34 @@ public class MongoManager
     {
         // Shutdown the database executor first
         try {
-            LOGGER.info("MongoManager: Shutting down database executor...");
+            logger.info("MongoManager: Shutting down database executor...");
             databaseExecutor.shutdown();
 
             // Wait for existing tasks to complete
             if (!databaseExecutor.awaitTermination(10, TimeUnit.SECONDS)) {
-                LOGGER.warn("MongoManager: Database executor did not terminate gracefully, forcing shutdown...");
+                logger.warning("MongoManager: Database executor did not terminate gracefully, forcing shutdown...");
                 databaseExecutor.shutdownNow();
             }
-            LOGGER.info("MongoManager: Database executor shutdown completed.");
+            logger.info("MongoManager: Database executor shutdown completed.");
         } catch (InterruptedException e) {
-            LOGGER.warn("MongoManager: Database executor shutdown interrupted: {}", e.getMessage());
+            logger.warning("MongoManager: Database executor shutdown interrupted: " + e.getMessage());
             databaseExecutor.shutdownNow();
             Thread.currentThread().interrupt();
         }
 
         // Then close the MongoDB client
         if (mongoClient != null) {
-            mongoClient.close();
-            LOGGER.info("MongoManager: MongoDB client closed.");
+            try {
+                mongoClient.close();
+                logger.info("MongoManager: MongoDB client closed.");
+            } catch (NoClassDefFoundError e) {
+                // This can happen during shutdown when Paper's classloader unloads classes
+                // before MongoDB finishes cleanup. It's safe to ignore as the JVM will
+                // clean up resources anyway.
+                logger.fine("MongoManager: MongoDB client close encountered classloading issue (expected during shutdown): " + e.getMessage());
+            } catch (Exception e) {
+                logger.warning("MongoManager: Error while closing MongoDB client: " + e.getMessage());
+            }
         }
     }
 }

@@ -1,1 +1,9 @@
-Test: "test"
+
+# The database connection string.
+Database:
+  MongoDB: "mongodb+srv://<user>:<password>@<cluster>.mongodb.net/"
+
+# Schedule intervals (in ticks, 20 ticks = 1 second)
+Schedules:
+  PickaxeCheck:
+    IntervalTicks: 100  # 5 seconds

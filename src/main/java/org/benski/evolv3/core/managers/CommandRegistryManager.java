@@ -30,7 +30,7 @@ public class CommandRegistryManager implements CommandExecutor, TabCompleter
     }
 
     /**
-     * Registers a command class to beW initialized later.
+     * Registers a command class to be initialized later.
      *
      * @param commandClass the command class to register
      */

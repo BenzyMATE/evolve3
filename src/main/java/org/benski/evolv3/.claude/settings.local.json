@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(mvn clean compile:*)",
+      "WebSearch",
+      "WebFetch(domain:docs.papermc.io)",
+      "WebFetch(domain:jd.papermc.io)",
+      "Bash(ls:*)"
+    ]
+  }
+}

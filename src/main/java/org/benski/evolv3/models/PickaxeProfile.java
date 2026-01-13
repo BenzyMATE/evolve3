@@ -2,6 +2,8 @@ package org.benski.evolv3.models;
 
 import org.benski.evolv3.core.abstracts.MongoDocument;
 import org.bson.Document;
+import org.bukkit.Bukkit;
+import org.bukkit.entity.Player;
 
 import java.util.UUID;
 import java.util.function.Consumer;
@@ -14,11 +16,11 @@ public class PickaxeProfile extends MongoDocument
     /**
      * Defines the key/id of the players pickaxe
      */
-    public UUID key;
+    public String key;
     /**
      * Defines the owner of the pickaxe
      */
-    public UUID owner;
+    public Player owner;
     /**
      * Defines the pickaxes level
      */
@@ -40,9 +42,8 @@ public class PickaxeProfile extends MongoDocument
      * {@inheritDoc}
      */
     @Override
-    public void initialize()
+    public void initialize(Player player)
     {
-        key = UUID.randomUUID();
     }
 
     /**
@@ -61,7 +62,12 @@ public class PickaxeProfile extends MongoDocument
     public Document toDocument()
     {
         Document doc = new Document();
-        doc.put("key", key);
+        doc.put("id", key);
+        doc.put("owner", owner.getUniqueId().toString());
+        doc.put("level", level);
+        doc.put("xp", xp);
+        doc.put("target", target);
+        doc.put("evolution", evolution);
         return doc;
     }
 
@@ -71,7 +77,12 @@ public class PickaxeProfile extends MongoDocument
     @Override
     public void fromDocument(Document document)
     {
-        this.key = UUID.fromString(document.getString("key"));
+        this.key = document.getString("id");
+        this.owner = Bukkit.getPlayer(UUID.fromString(document.getString("owner")));
+        this.level = document.getInteger("level", 1);
+        this.xp = document.getInteger("xp", 0);
+        this.target = document.getInteger("target", 100);
+        this.evolution = document.getInteger("evolution", 1);
     }
 
     /**
@@ -79,7 +90,7 @@ public class PickaxeProfile extends MongoDocument
      */
     @Override
     public String getIdField() {
-        return "key";
+        return "id";
     }
 
     /**
@@ -99,7 +110,7 @@ public class PickaxeProfile extends MongoDocument
         mongoManager.upsertAsync(this)
                 .whenComplete((result, throwable) -> {
                     if (throwable != null) {
-                        super.LOGGER.error("Failed to save pickaxe profile: {}", throwable.getMessage());
+                        super.LOGGER.severe("Failed to save pickaxe profile: " + throwable.getMessage());
                     }
                     if (callback != null) {
                         callback.accept(throwable == null);

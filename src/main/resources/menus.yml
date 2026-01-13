@@ -1,0 +1,136 @@
+# =====================================================
+# Evolv3 - Menus Configuration
+# =====================================================
+# Configure your menus here using ConfigurableMenu.
+# Supports color codes (&) and dynamic placeholders.
+# =====================================================
+
+# Example configuration menu
+example_config_menu:
+  title: "&b&lExample Config Menu"
+  size: 27  # Must be multiple of 9 (9, 18, 27, 36, 45, 54)
+
+  # Define items by slot number
+  items:
+    # Info button (slot 10)
+    10:
+      material: BOOK
+      name: "&e&lInformation"
+      lore:
+        - "&7Click to view info about"
+        - "&7this configurable menu system"
+      glow: true
+      action: "custom:info"
+
+    # Action button (slot 13)
+    13:
+      material: DIAMOND
+      name: "&a&lPerform Action"
+      lore:
+        - "&7Click to execute a"
+        - "&7custom action"
+      action: "custom:action"
+
+    # Give item button (slot 16)
+    16:
+      material: EMERALD
+      name: "&a&lGive Diamond"
+      lore:
+        - "&7Click to receive a diamond"
+      action: "custom:give_diamond"
+
+    # Close button (slot 22)
+    22:
+      material: BARRIER
+      name: "&c&lClose Menu"
+      lore:
+        - "&7Click to close this menu"
+      action: "close"
+
+  # Fill settings for border/background
+  fill:
+    enabled: true
+    material: GRAY_STAINED_GLASS_PANE
+    name: " "
+    slots: "border"  # Options: "border", "all", "0-8", "0,1,2", "0-8,18-26"
+
+# Profile menu example
+profile_menu:
+  title: "&6&lYour Profile"
+  size: 54
+
+  items:
+    # Player head (slot 4)
+    4:
+      material: PLAYER_HEAD
+      name: "&e&l%player_name%"
+      lore:
+        - "&7Rank: &f%player_rank%"
+        - "&7Level: &f%player_level%"
+        - ""
+        - "&7Click to view statistics"
+      action: "custom:view_stats"
+
+    # Stats button (slot 20)
+    20:
+      material: DIAMOND_SWORD
+      name: "&b&lCombat Stats"
+      lore:
+        - "&7Kills: &f%player_kills%"
+        - "&7Deaths: &f%player_deaths%"
+        - "&7K/D Ratio: &f%player_kd%"
+      action: "custom:combat_stats"
+
+    # Settings button (slot 24)
+    24:
+      material: COMPARATOR
+      name: "&e&lSettings"
+      lore:
+        - "&7Click to change your"
+        - "&7personal settings"
+      action: "custom:open_settings"
+
+    # Close button (slot 49)
+    49:
+      material: BARRIER
+      name: "&c&lClose"
+      action: "close"
+
+  fill:
+    enabled: true
+    material: BLACK_STAINED_GLASS_PANE
+    name: " "
+    slots: "0-8,45-53,9,17,18,26,27,35,36,44"
+
+# =====================================================
+# Action Types Reference:
+# =====================================================
+# - close                    - Closes the menu
+# - sound:SOUND_NAME         - Plays a sound
+# - message:&aHello!         - Sends a message
+# - command:help             - Makes player run command
+# - custom:action_name       - Calls handleCustomAction() in your menu class
+# =====================================================
+
+# =====================================================
+# Slot Configurations:
+# =====================================================
+# - "border"       - All edge slots
+# - "all"          - All slots in menu
+# - "0-8"          - Range from slot 0 to 8
+# - "0,4,8"        - Specific slots
+# - "0-8,18-26"    - Multiple ranges/slots (comma separated)
+# =====================================================
+
+# =====================================================
+# Item Properties:
+# =====================================================
+# material: MATERIAL_NAME   (required)
+# name: "&aName"            (optional)
+# lore:                     (optional)
+#   - "&7Line 1"
+#   - "&7Line 2"
+# amount: 1                 (optional, default: 1)
+# glow: true                (optional, default: false)
+# action: "action_type"     (optional)
+# =====================================================

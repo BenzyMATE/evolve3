@@ -1,10 +1,9 @@
 package org.benski.evolv3.core.managers;
 
+import org.benski.evolv3.Main;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.nio.file.Files;
@@ -16,7 +15,7 @@ public class StorageRegistryManager
 {
     private final JavaPlugin plugin;
     private final File dataFolder;
-    private final Logger LOGGER = LoggerFactory.getLogger(StorageRegistryManager.class);
+    private static final StorageRegistryManager instance = new StorageRegistryManager(Main.getInstance());
     private final Map<String, FileConfiguration> configCache = new HashMap<>();
     private final Map<String, File> registeredConfigs = new HashMap<>();
     private final Map<String, File> registeredBins = new HashMap<>();
@@ -33,6 +32,13 @@ public class StorageRegistryManager
     }
 
     /**
+     * Gets the MongoManager instance.
+     */
+    public static StorageRegistryManager getInstance() {
+        return instance;
+    }
+
+    /**
      * Register a config file to be managed by StorageManager.
      * This will automatically create/copy it from resources on initialization.
      *
@@ -42,7 +48,7 @@ public class StorageRegistryManager
     {
         File configFile = new File(dataFolder, name + ".yml");
         registeredConfigs.put(name, configFile);
-        LOGGER.info("[EVOLVE] Config named {} has been registered", name);
+        plugin.getLogger().info("Config named " + name + " has been registered");
     }
 
     /**
@@ -54,7 +60,7 @@ public class StorageRegistryManager
     {
         File binFile = new File(dataFolder, name + ".bin");
         registeredBins.put(name, binFile);
-        LOGGER.info("[EVOLVE] Bin named {} has been registered", name);
+        plugin.getLogger().info("Bin named " + name + " has been registered");
     }
 
     /**
