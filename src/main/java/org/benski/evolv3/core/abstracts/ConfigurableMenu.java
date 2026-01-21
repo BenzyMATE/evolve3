@@ -1,10 +1,11 @@
 package org.benski.evolv3.core.abstracts;
 
-import org.benski.evolv3.Main;
 import org.benski.evolv3.core.builders.ItemBuilder;
-import org.benski.evolv3.core.types.MenuType;
 import org.benski.evolv3.registry.ConfigRegistry;
 import org.bukkit.Material;
+import org.bukkit.NamespacedKey;
+import org.bukkit.Registry;
+import org.bukkit.Sound;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
@@ -13,6 +14,7 @@ import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -234,11 +236,11 @@ public abstract class ConfigurableMenu extends BaseMenu
         }
 
         if (action.startsWith("sound:")) {
-            String soundName = action.substring(6);
-            try {
-                org.bukkit.Sound sound = org.bukkit.Sound.valueOf(soundName.toUpperCase());
+            String soundName = action.substring(6).toLowerCase();
+            Sound sound = Registry.SOUNDS.get(NamespacedKey.minecraft(soundName));
+            if (sound != null) {
                 player.playSound(player.getLocation(), sound, 1.0f, 1.0f);
-            } catch (IllegalArgumentException e) {
+            } else {
                 plugin.getLogger().warning("Invalid sound in menu config: " + soundName);
             }
             return true;
@@ -277,7 +279,7 @@ public abstract class ConfigurableMenu extends BaseMenu
      * - "0-8,18-26" for multiple ranges
      */
     private List<Integer> parseSlots(String config, int menuSize) {
-        List<Integer> slots = new java.util.ArrayList<>();
+        List<Integer> slots = new ArrayList<>();
 
         if (config.equalsIgnoreCase("border")) {
             int rows = menuSize / 9;

@@ -27,3 +27,60 @@ errors:
   database-error: "&cA database error occurred. Please contact an administrator."
   internal-error: "&cAn internal error occurred. Please try again later."
   invalid-arguments: "&cInvalid arguments. Usage: %usage%"
+
+# Animation Messages
+animation:
+  budget-exceeded: "&cAnimation skipped - server is busy!"
+
+# Enchantment Messages
+enchants:
+  explosive:
+    triggered: "&6&l[Explosive] &eLevel %level% explosion! Broke %blocks% blocks!"
+
+# Pickup Animation Messages
+pickup-animation:
+  # Current animation display
+  current-header: "&6&l[Pickup Animation]"
+  current: "&7Current: &a%name% &8- &7%description%"
+  hint: "&7Use &e/pa list &7to see all options, or &e/pa next &7to cycle."
+
+  # Animation list
+  list-header: "&6&l[Available Pickup Animations]"
+  list-item: " &8> &e%name% &8- &7%description%"
+  list-item-selected: " &a> &b%name% &8- &7%description% &a(selected)"
+  list-footer: "&7Use &e/pa set <name> &7to select an animation."
+
+  # Set animation
+  set-success: "&aPickup animation set to: &b%name%"
+  invalid-animation: "&cInvalid animation: %name%. Use /pa list to see available options."
+  usage-set: "&cUsage: /pickupanimation set <animation>"
+
+  # Cycle animation
+  cycled: "&aSwitched to: &b%name% &8- &7%description%"
+
+  # Toggle others' animations
+  others-enabled: "&aYou can now see other players' pickup animations."
+  others-disabled: "&cYou will no longer see other players' pickup animations."
+
+  # Errors
+  unknown-subcommand: "&cUnknown option. Use: list, set <animation>, next, or others"
+
+# Enchant Selection Messages
+enchant-selection:
+  # Starting selection
+  started: "&aLook at an enchant and &e&lLEFT-CLICK &ato select!"
+  already-active: "&cYou already have an enchant selection active!"
+  no-item: "&cYou must be holding an item to enchant!"
+  budget-exceeded: "&cCould not start enchant selection (server is busy)!"
+
+  # Selection made
+  selected: "&a&l[Enchanted!] &eYou selected: &b%enchant%"
+
+  # Hint displayed during selection
+  hint: "&e&lLook at an enchant and &a&lLEFT-CLICK &e&lto select!"
+
+  # Timeout
+  timeout: "&cEnchant selection timed out. Please try again."
+
+  # Cancelled
+  cancelled: "&cEnchant selection cancelled."

@@ -3,7 +3,9 @@ package org.benski.evolv3;
 import org.benski.evolv3.core.constants.ConfigNames;
 import org.benski.evolv3.core.constants.ConfigPaths;
 import org.benski.evolv3.core.managers.MongoManager;
+import org.benski.evolv3.core.managers.PickupAnimationManager;
 import org.benski.evolv3.core.managers.TaskManager;
+import org.benski.evolv3.registry.AnimationRegistry;
 import org.benski.evolv3.registry.CommandRegistry;
 import org.benski.evolv3.registry.ConfigRegistry;
 import org.benski.evolv3.registry.DataCenterRegistry;
@@ -55,6 +57,8 @@ public final class Main extends JavaPlugin
 
         // Cleanup in reverse order of initialization
         ScheduleRegistry.getInstance().cleanup();
+        PickupAnimationManager.getInstance().cleanup();
+        AnimationRegistry.getInstance().cleanup();
         DataCenterRegistry.getInstance().cleanup();
         ListenerRegistry.getInstance().cleanup();
         MenuRegistry.getInstance().cleanup();
@@ -81,6 +85,8 @@ public final class Main extends JavaPlugin
         MenuRegistry.getInstance().initialize();
         ListenerRegistry.getInstance().initialize();
         DataCenterRegistry.getInstance().initialize();
+        AnimationRegistry.getInstance().initialize();
+        PickupAnimationManager.getInstance().initialize();
         ScheduleRegistry.getInstance().initialize();
     }
 

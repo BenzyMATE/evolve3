@@ -46,7 +46,7 @@ public interface DataCenter<T>
      * @param id the unique identifier to check for existence in cache
      * @return true if data exists in cache, false otherwise
      */
-    Boolean exists(String id);
+    boolean exists(String id);
 
     /**
      * Asynchronously checks if data with the specified ID exists in persistent storage.
@@ -104,5 +104,5 @@ public interface DataCenter<T>
      * @param profile the updated data object to store in cache
      * @param save whether to persist the changes to database immediately
      */
-    void updateLocal(T profile, Boolean save);
+    void updateLocal(T profile, boolean save);
 }

@@ -7,7 +7,13 @@
       "Bash(javac:*)",
       "Bash(mvn compile:*)",
       "Bash(mvn clean:*)",
-      "Bash(where mvn)"
+      "Bash(where mvn)",
+      "Bash(mvn.cmd compile:*)",
+      "Bash(cmd.exe /c \"mvn compile\")",
+      "Bash(cmd.exe /c:*)",
+      "Bash(powershell.exe -Command \"cd ''C:\\\\Users\\\\benje\\\\IdeaProjects\\\\Evolv3''; mvn compile 2>&1\")",
+      "Bash(powershell.exe -Command \"Get-ChildItem ''C:\\\\Program Files'' -Directory | Where-Object { $_Name -like ''*maven*'' } | Select-Object FullName\")",
+      "Bash(powershell.exe -Command \"cd ''C:\\\\Users\\\\benje\\\\IdeaProjects\\\\Evolv3''; mvn compile\")"
     ],
     "deny": [],
     "ask": []

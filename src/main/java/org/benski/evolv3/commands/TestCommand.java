@@ -3,7 +3,9 @@ package org.benski.evolv3.commands;
 import lombok.experimental.ExtensionMethod;
 import org.benski.evolv3.core.abstracts.BaseCommand;
 import org.benski.evolv3.core.helpers.ItemStackExtensions;
+import org.benski.evolv3.core.managers.EnchantSelectionManager;
 import org.benski.evolv3.registry.MenuRegistry;
+import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
@@ -129,6 +131,38 @@ public class TestCommand extends BaseCommand
                 player.getInventory().addItem(pickaxe);
                 sendSuccess(player, "Given you a Diamond Pickaxe with Explosive III!");
                 break;
+            case "enchant":
+                // Check if player already has an active selection
+                if (EnchantSelectionManager.getInstance().hasActiveSelection(player)) {
+                    sendError(player, "You already have an enchant selection active!");
+                    break;
+                }
+
+                // Check if player is holding a tool
+                ItemStack heldItem = player.getInventory().getItemInMainHand();
+                if (heldItem.getType() == Material.AIR) {
+                    sendError(player, "You must be holding an item to enchant!");
+                    break;
+                }
+
+                // Start the enchant selection animation
+                List<String> enchantOptions = List.of("⠌", "⠌", "⠌");
+                boolean started = EnchantSelectionManager.getInstance().startSelection(
+                    player,
+                    enchantOptions,
+                    (p, selected) -> {
+                        // This callback is called when the player selects an enchant
+                        p.sendMessage("§a§l[Enchanted!] §eYou selected: §b" + selected);
+                        // TODO: Actually apply the enchant to the item
+                    }
+                );
+
+                if (started) {
+                    sendSuccess(player, "Look at an enchant and LEFT-CLICK to select!");
+                } else {
+                    sendError(player, "Could not start enchant selection (animation budget exceeded)!");
+                }
+                break;
             default:
                 sendError(player, "Unknown argument: " + arg);
                 break;
@@ -149,6 +183,7 @@ public class TestCommand extends BaseCommand
             completions.add("menu");
             completions.add("cache");
             completions.add("explosive");
+            completions.add("enchant");
 
             // Filter based on current input
             String input = args[0].toLowerCase();

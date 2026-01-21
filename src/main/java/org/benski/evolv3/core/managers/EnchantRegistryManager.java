@@ -39,9 +39,17 @@ public class EnchantRegistryManager
     public void initializeListeners() {
         for (Class<? extends Listener> listenerClass : listenerClasses) {
             try {
-                // Create instance using default constructor
-                Constructor<? extends Listener> constructor = listenerClass.getConstructor();
-                Listener listener = constructor.newInstance();
+                Listener listener;
+
+                // Try constructor with JavaPlugin parameter first
+                try {
+                    Constructor<? extends Listener> constructor = listenerClass.getConstructor(JavaPlugin.class);
+                    listener = constructor.newInstance(plugin);
+                } catch (NoSuchMethodException e) {
+                    // Fallback to default constructor
+                    Constructor<? extends Listener> constructor = listenerClass.getConstructor();
+                    listener = constructor.newInstance();
+                }
 
                 // Register the listener
                 plugin.getServer().getPluginManager().registerEvents(listener, plugin);

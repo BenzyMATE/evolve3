@@ -1,32 +1,78 @@
 package org.benski.evolv3.enchants;
 
 import lombok.experimental.ExtensionMethod;
+import org.benski.evolv3.animations.ExplosionAnimation;
+import org.benski.evolv3.core.constants.ConfigNames;
 import org.benski.evolv3.core.helpers.ItemStackExtensions;
+import org.benski.evolv3.core.managers.StorageRegistryManager;
+import org.benski.evolv3.registry.AnimationRegistry;
 import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.block.Block;
+import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.plugin.java.JavaPlugin;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
+
+import static org.benski.evolv3.core.helpers.Utils.formatMessage;
 
 /**
  * Listener for the Explosive custom enchantment.
- * Creates an explosion when breaking blocks with tools that have the Explosive enchantment.
- * Higher levels create larger explosions.
- * <p>
- * The enchantment itself is registered in Bootstrap during server bootstrap.
+ * Breaks blocks in a radius around the mined block and creates
+ * an animated explosion effect with blocks flying outward.
+ *
+ * <p>Higher levels increase the explosion radius:</p>
+ * <ul>
+ *   <li>Level 1: 1 block radius (3x3x3 = up to 27 blocks)</li>
+ *   <li>Level 2: 2 block radius (5x5x5 = up to 125 blocks)</li>
+ *   <li>Level 3: 3 block radius (7x7x7 = up to 343 blocks)</li>
+ * </ul>
+ *
+ * <p>The enchantment itself is registered in Bootstrap during server bootstrap.</p>
  */
 @ExtensionMethod(ItemStackExtensions.class)
 public class ExplosiveEnchant implements Listener
 {
+    private final FileConfiguration messagesConfig;
+    private final JavaPlugin plugin;
+
+    // Materials that should not be broken by explosion
+    private static final Set<Material> PROTECTED_MATERIALS = Set.of(
+        Material.BEDROCK,
+        Material.BARRIER,
+        Material.COMMAND_BLOCK,
+        Material.CHAIN_COMMAND_BLOCK,
+        Material.REPEATING_COMMAND_BLOCK,
+        Material.STRUCTURE_BLOCK,
+        Material.STRUCTURE_VOID,
+        Material.JIGSAW,
+        Material.END_PORTAL_FRAME,
+        Material.END_PORTAL,
+        Material.NETHER_PORTAL,
+        Material.SPAWNER
+    );
+
+    public ExplosiveEnchant(JavaPlugin plugin)
+    {
+        this.plugin = plugin;
+        this.messagesConfig = StorageRegistryManager.getInstance().getConfig(ConfigNames.MESSAGES);
+    }
+
     /**
-     * Handles the block break event to create explosions.
+     * Handles the block break event to create explosion effects.
      *
-     * @param event The block break event
+     * @param event the block break event
      */
     @EventHandler
-    public void onBlockBreak(BlockBreakEvent event) {
+    public void onBlockBreak(BlockBreakEvent event)
+    {
         Player player = event.getPlayer();
         ItemStack item = player.getInventory().getItemInMainHand();
 
@@ -41,22 +87,96 @@ public class ExplosiveEnchant implements Listener
             return;
         }
 
-        // Create an explosion at the broken block location
-        Location location = event.getBlock().getLocation().add(0.5, 0.5, 0.5);
+        Block centerBlock = event.getBlock();
+        Location center = centerBlock.getLocation().add(0.5, 0.5, 0.5);
 
-        // Explosion power increases with enchantment level
-        //  1 = 1.0, Level 2 = 1.5, Level 3 = 2.0
-        float power = 0.5f + (level * 0.5f);
+        // Get blocks to explode (excluding the one already being broken)
+        List<Block> blocksToBreak = getBlocksInRadius(centerBlock, level);
 
-        // Create explosion without fire and without breaking blocks (just visual/knock back)
-        location.getWorld().createExplosion(
-            location,
-            power,
-            false,  // Don't set fire
-            false   // Don't break blocks
-        );
+        // Collect materials for the animation
+        List<Material> materials = new ArrayList<>();
+        materials.add(centerBlock.getType()); // Add the center block material
 
-        // Send a message to the player
-        player.sendMessage("§6§l[Explosive] §eYour tool triggered a level " + level + " explosion!");
+        // Break all blocks and collect materials (no drops - purely cosmetic explosion)
+        for (Block block : blocksToBreak) {
+            if (block.equals(centerBlock)) continue; // Skip center block (handled by event)
+
+            Material material = block.getType();
+            if (!material.isAir()) {
+                materials.add(material);
+                block.setType(Material.AIR);
+            }
+        }
+
+        // Play the explosion animation
+        if (!materials.isEmpty()) {
+            ExplosionAnimation animation = new ExplosionAnimation(plugin, materials, level);
+
+            // Check if we can play within budget
+            if (AnimationRegistry.getInstance().canPlay(animation)) {
+                AnimationRegistry.getInstance().play(animation, center);
+            }
+        }
+
+        // Send message from config
+        String message = messagesConfig.getString("enchants.explosive.triggered",
+            "&6&l[Explosive] &eLevel %level% explosion! Broke %blocks% blocks!");
+        message = message.replace("%level%", String.valueOf(level));
+        message = message.replace("%blocks%", String.valueOf(blocksToBreak.size() + 1));
+        player.sendMessage(formatMessage(player, message));
+    }
+
+    /**
+     * Gets all breakable blocks within a radius of the center block.
+     *
+     * @param center the center block
+     * @param level the explosion level (determines radius)
+     * @return list of blocks to break
+     */
+    private List<Block> getBlocksInRadius(Block center, int level) {
+        List<Block> blocks = new ArrayList<>();
+        int radius = level; // Level 1 = 1 radius, Level 2 = 2 radius, etc.
+
+        for (int x = -radius; x <= radius; x++) {
+            for (int y = -radius; y <= radius; y++) {
+                for (int z = -radius; z <= radius; z++) {
+                    Block block = center.getRelative(x, y, z);
+
+                    // Skip if it's protected, air, or liquid
+                    if (isBreakable(block)) {
+                        blocks.add(block);
+                    }
+                }
+            }
+        }
+
+        return blocks;
+    }
+
+    /**
+     * Checks if a block can be broken by the explosion.
+     *
+     * @param block the block to check
+     * @return true if the block can be broken
+     */
+    private boolean isBreakable(Block block) {
+        Material material = block.getType();
+
+        // Skip air and liquids
+        if (material.isAir() || material == Material.WATER || material == Material.LAVA) {
+            return false;
+        }
+
+        // Skip protected materials
+        if (PROTECTED_MATERIALS.contains(material)) {
+            return false;
+        }
+
+        // Skip blocks with very high hardness (essentially unbreakable)
+        if (material.getHardness() < 0) {
+            return false;
+        }
+
+        return true;
     }
 }

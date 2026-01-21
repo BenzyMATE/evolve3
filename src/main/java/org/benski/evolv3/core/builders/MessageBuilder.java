@@ -203,11 +203,7 @@ public class MessageBuilder
      * @return this builder
      */
     public MessageBuilder divider(char character, String color) {
-        StringBuilder divider = new StringBuilder(color);
-        for (int i = 0; i < 40; i++) {
-            divider.append(character);
-        }
-        lines.add(divider.toString());
+        lines.add(color + String.valueOf(character).repeat(40));
         return this;
     }
 
@@ -346,12 +342,7 @@ public class MessageBuilder
             return text;
         }
 
-        StringBuilder centered = new StringBuilder();
-        for (int i = 0; i < spaces; i++) {
-            centered.append(" ");
-        }
-        centered.append(text);
-        return centered.toString();
+        return " ".repeat(spaces) + text;
     }
 
     /**
@@ -404,12 +395,7 @@ public class MessageBuilder
             return colored;
         }
 
-        StringBuilder centered = new StringBuilder();
-        for (int i = 0; i < spaces; i++) {
-            centered.append(" ");
-        }
-        centered.append(colored);
-        return centered.toString();
+        return " ".repeat(spaces) + colored;
     }
 
     /**
@@ -421,11 +407,7 @@ public class MessageBuilder
      * @return the divider string
      */
     public static String createDivider(char character, String color, int length) {
-        StringBuilder divider = new StringBuilder(colorize(color));
-        for (int i = 0; i < length; i++) {
-            divider.append(character);
-        }
-        return divider.toString();
+        return colorize(color) + String.valueOf(character).repeat(length);
     }
 
     /**

@@ -31,12 +31,12 @@ public abstract class BaseDataCenter<T extends MongoCollection> implements DataC
     }
 
     @Override
-    public Boolean exists(String id) {
+    public boolean exists(String id) {
         return data.containsKey(id);
     }
 
     @Override
-    public void updateLocal(T profile, Boolean save) {
+    public void updateLocal(T profile, boolean save) {
         data.put(getProfileId(profile), profile);
     }
 

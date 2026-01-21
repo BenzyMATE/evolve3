@@ -1,5 +1,7 @@
 package org.benski.evolv3.core.managers;
 
+import com.mongodb.ConnectionString;
+import com.mongodb.MongoClientSettings;
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoClients;
 import com.mongodb.client.MongoDatabase;
@@ -7,8 +9,6 @@ import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.ReplaceOptions;
 import org.benski.evolv3.Main;
 import org.benski.evolv3.core.interfaces.MongoCollection;
-import org.benski.evolv3.registry.CommandRegistry;
-import org.benski.evolv3.registry.ConfigRegistry;
 import org.bson.Document;
 
 import java.util.ArrayList;
@@ -43,12 +43,35 @@ public class MongoManager
 
     /**
      * Initializes the MongoDB connection using the provided connection string.
+     * Configures connection pooling for optimal performance.
      * Extracts the database name from the connection string and establishes connection.
+     *
+     * @param connectionString the MongoDB connection string
      */
-    public void initConnection(String connectionString)
+    public void initConnection(String connectionString) {
+        initConnection(connectionString, 10, 2);
+    }
+
+    /**
+     * Initializes the MongoDB connection with custom connection pool settings.
+     * Use this overload when you need fine-grained control over connection pooling.
+     *
+     * @param connectionString the MongoDB connection string
+     * @param maxPoolSize maximum number of connections in the pool
+     * @param minPoolSize minimum number of connections to maintain
+     */
+    public void initConnection(String connectionString, int maxPoolSize, int minPoolSize)
     {
         try {
-            mongoClient = MongoClients.create(connectionString);
+            // Configure connection settings with connection pooling
+            MongoClientSettings settings = MongoClientSettings.builder()
+                    .applyConnectionString(new ConnectionString(connectionString))
+                    .applyToConnectionPoolSettings(builder -> builder
+                            .maxSize(maxPoolSize)
+                            .minSize(minPoolSize))
+                    .build();
+
+            mongoClient = MongoClients.create(settings);
 
             // Extract database name from connection string
             String databaseName = extractDatabaseName(connectionString);
@@ -56,7 +79,7 @@ public class MongoManager
 
             // Test connection
             database.runCommand(new Document("ping", 1));
-            logger.info("MongoManager: Successfully connected to MongoDB.");
+            logger.info("MongoManager: Successfully connected to MongoDB (pool: " + minPoolSize + "-" + maxPoolSize + " connections).");
         } catch (Exception e) {
             logger.severe("Failed to initialize MongoDB connection: " + e.getMessage());
         }

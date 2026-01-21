@@ -2,6 +2,7 @@ package org.benski.evolv3.registry;
 
 import lombok.Getter;
 import org.benski.evolv3.Main;
+import org.benski.evolv3.commands.PickupAnimationCommand;
 import org.benski.evolv3.commands.TestCommand;
 import org.benski.evolv3.core.abstracts.BaseCommand;
 import org.benski.evolv3.core.interfaces.Registry;
@@ -22,7 +23,8 @@ public class CommandRegistry implements Registry<BaseCommand>
      * Register commands.
      */
     private final List<Class<? extends BaseCommand>> commands = List.of(
-            TestCommand.class
+            TestCommand.class,
+            PickupAnimationCommand.class
     );
 
     /**

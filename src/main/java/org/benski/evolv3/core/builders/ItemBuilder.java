@@ -1,15 +1,17 @@
 package org.benski.evolv3.core.builders;
 
 import org.bukkit.Material;
+import org.bukkit.NamespacedKey;
+import org.bukkit.Registry;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.Damageable;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.function.Consumer;
 
@@ -186,14 +188,29 @@ public class ItemBuilder
     }
 
     /**
-     * Sets the item's durability/damage.
+     * Sets the item's damage value (reduces durability).
+     * Higher values mean more damage/wear on the item.
      *
-     * @param durability the durability value
+     * @param damage the damage value to apply
      * @return this builder
      */
-    @SuppressWarnings("deprecation")
-    public ItemBuilder durability(short durability) {
-        itemStack.setDurability(durability);
+    public ItemBuilder damage(int damage) {
+        if (itemMeta instanceof Damageable damageable) {
+            damageable.setDamage(damage);
+        }
+        return this;
+    }
+
+    /**
+     * Sets the item's damage to maximum, making it appear nearly broken.
+     * Useful for visual effects or special item displays.
+     *
+     * @return this builder
+     */
+    public ItemBuilder maxDamage() {
+        if (itemMeta instanceof Damageable damageable) {
+            damageable.setDamage(itemStack.getType().getMaxDurability() - 1);
+        }
         return this;
     }
 
@@ -244,6 +261,23 @@ public class ItemBuilder
     public ItemBuilder hideAll() {
         if (itemMeta != null) {
             itemMeta.addItemFlags(ItemFlag.values());
+        }
+        return this;
+    }
+
+    /**
+     * Adds an enchantment glow effect to the item without showing enchantment text.
+     * Applies a hidden enchantment to create the glint effect.
+     *
+     * @return this builder
+     */
+    public ItemBuilder glow() {
+        if (itemMeta != null) {
+            Enchantment unbreaking = Registry.ENCHANTMENT.get(NamespacedKey.minecraft("unbreaking"));
+            if (unbreaking != null) {
+                itemMeta.addEnchant(unbreaking, 1, true);
+            }
+            itemMeta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
         }
         return this;
     }

@@ -5,7 +5,13 @@
       "WebSearch",
       "WebFetch(domain:docs.papermc.io)",
       "WebFetch(domain:jd.papermc.io)",
-      "Bash(ls:*)"
+      "Bash(ls:*)",
+      "Bash(mvn compile:*)",
+      "Bash(dir \"C:\\\\Users\\\\benje\\\\IdeaProjects\\\\Evolv3\\\\src\\\\main\\\\resources\")",
+      "Bash(cmd /c \"mvn clean compile\")",
+      "Bash(cmd.exe /c \"cd /d C:\\\\Users\\\\benje\\\\IdeaProjects\\\\Evolv3 && mvn clean compile\")",
+      "Bash(powershell -Command \"cd 'C:\\\\Users\\\\benje\\\\IdeaProjects\\\\Evolv3'; mvn clean compile\":*)",
+      "Bash(powershell -Command:*)"
     ]
   }
 }
