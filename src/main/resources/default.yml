@@ -1,9 +1,368 @@
+# =====================================================
+# Evolv3 - Default Configuration
+# =====================================================
+# Core plugin settings including database, pickaxe system,
+# and block values. All editable values are configurable.
+# =====================================================
 
-# The database connection string.
+# Database connection string
 Database:
   MongoDB: "mongodb+srv://<user>:<password>@<cluster>.mongodb.net/"
+
+# =====================================================
+# WorldGuard Region Settings
+# =====================================================
+# Region keyword to identify mine areas
+# Only regions containing this keyword will allow pickaxe progression
+MineRegion: "mine"
+
+# Message shown when mining outside a mine region
+NotInMineRegionMessage: "&#FFFFFF&lMINE REGION ONLY!"
 
 # Schedule intervals (in ticks, 20 ticks = 1 second)
 Schedules:
   PickaxeCheck:
     IntervalTicks: 100  # 5 seconds
+
+# =====================================================
+# Pickaxe Configuration
+# =====================================================
+Pickaxe:
+  # Default values for new pickaxes
+  Defaults:
+    Level: 1
+    XP: 0
+    Target: 100
+    EssenceTarget: 100         # Starting essence target
+    CurrentEssence: 0
+    EvolutionInterval: 30
+    EnchantRolls: 0
+    EvolutionAtoms: 0
+    XPMultiplier: 1.15
+    EssenceMultiplier: 1.5     # Multiplied per roll (100 → 150 → 225 → ...)
+    EssenceTargetCap: 10000    # Maximum essence target
+
+  # Progress bar visual elements
+  Progressbar Symbol 1: "&a⬛"
+  Progressbar Symbol 2: "&7⬜"
+
+  # Pickaxe display name (supports PlaceholderAPI)
+  Name: '&#00FFFF⛏ &#FFFFFF&l%evolv3_player_name% &#00FFFFPickaxe'
+
+  # Action bar displayed while mining
+  ActionBar: '&#00AFA3⭐ &#FFFFFF&lLevel &#00FFFF%evolv3_pickaxe_level% &#00AFA3📊 &#FFFFFF&lXP &#00FFFF%evolv3_pickaxe_xp%&#888888/&#00FFFF%evolv3_pickaxe_target%'
+
+  # Main lore template - uses PlaceholderAPI placeholders
+  # %evolv3_pickaxe_enchants% is replaced with the formatted enchant list
+  Lore:
+    - ''
+    - ' &#FFFFFF&lEnchantments'
+    - ' &8| &#CCCCCC%evolv3_pickaxe_enchants%'
+    - ''
+    - ' &#FFFFFF&lStatistics'
+    - ' &8| &#00AFA3Level: &#FFFFFF%evolv3_pickaxe_level%'
+    - ' &8| &#00AFA3XP: &#FFFFFF%evolv3_pickaxe_xp%&#888888/&#FFFFFF%evolv3_pickaxe_target%'
+    - ' &8| &#00AFA3Progress: &#00FF88%evolv3_pickaxe_percentage%'
+    - ' &8| %evolv3_pickaxe_progressbar%'
+
+  # Footer lore (usage instructions)
+  LoreFooter:
+    - ''
+    - ' &8| &aRight-Click &#AAAAAAto open menu'
+    - ''
+
+  # XP Hologram settings (displayed when mining blocks)
+  Hologram:
+    Enabled: true
+    Text: '&a+ %xp% &7XP &8(&e%evolv3_player_armor_leggings_multiplier%x&8)'
+
+# =====================================================
+# Player Configuration
+# =====================================================
+Player:
+  Defaults:
+    # Starting pickaxe slot limit (0 = no slots; player must mine wood to earn the first slot)
+    # Can be set to any value between 0 and PickaxeLimitMenu.MAX_SLOTS (currently 7)
+    PickaxeLimit: 0
+    # Starting essence amount for new players
+    Essence: 0
+
+# =====================================================
+# Armor Configuration
+# =====================================================
+# Armor pieces level up through different activities:
+# - Helmet: Selling blocks (increases sell price multiplier)
+# - Chestplate: Collecting essence (increases essence gain multiplier)
+# - Leggings: Mining blocks (increases pickaxe XP multiplier)
+# - Boots: Walking (increases movement speed)
+Armor:
+  Defaults:
+    Level: 1
+    XP: 0
+    Target: 100
+    Multiplier: 1.0
+    XPMultiplier: 1.1
+    MultiplierIncrement: 0.05
+    EvolutionInterval: 30
+
+  # ────────────────── HELMET ──────────────────
+  # Levels up through selling blocks
+  # Provides: Sell multiplier bonus
+  Helmet:
+    Name: '&#00AFA3💰 &#FFFFFF&l%evolv3_player_name% &#00AFA3Helmet'
+    Lore:
+      - ''
+      - ' &#FFFFFF&lDescription'
+      - ' &#CCCCCCLevel up by selling blocks'
+      - ' &#CCCCCCIncreases your sell multiplier'
+      - ''
+      - ' &#FFFFFF&lStatistics'
+      - ' &#00AFA3💰 Sell Multiplier: &#00D4AA%evolv3_player_armor_helmet_multiplier%x'
+      - ' &#00AFA3⭐ Level: &#FFFFFF%evolv3_player_armor_helmet_level%'
+      - ' &#00AFA3📊 XP: &#FFFFFF%evolv3_player_armor_helmet_xp%&#888888/&#FFFFFF%evolv3_player_armor_helmet_target%'
+      - ' &#00AFA3📈 Progress: &#00FF88%evolv3_player_armor_helmet_percentage%'
+      - ' %evolv3_player_armor_helmet_progressbar%'
+      - ''
+      - ' &#AAAAAA→ Left click to manage'
+      - ''
+
+  # ────────────────── CHESTPLATE ──────────────────
+  # Levels up through collecting essence
+  # Provides: Essence multiplier bonus
+  Chestplate:
+    Name: '&#9932CC🔥 &#FFFFFF&l%evolv3_player_name% &#9932CCChestplate'
+    Lore:
+      - ''
+      - ' &#FFFFFF&lDescription'
+      - ' &#CCCCCCLevel up by collecting essence'
+      - ' &#CCCCCCIncreases your essence multiplier'
+      - ''
+      - ' &#FFFFFF&lStatistics'
+      - ' &#9932CC🔥 Essence Multiplier: &#00D4AA%evolv3_player_armor_chestplate_multiplier%x'
+      - ' &#00AFA3⭐ Level: &#FFFFFF%evolv3_player_armor_chestplate_level%'
+      - ' &#00AFA3📊 XP: &#FFFFFF%evolv3_player_armor_chestplate_xp%&#888888/&#FFFFFF%evolv3_player_armor_chestplate_target%'
+      - ' &#00AFA3📈 Progress: &#00FF88%evolv3_player_armor_chestplate_percentage%'
+      - ' %evolv3_player_armor_chestplate_progressbar%'
+      - ''
+      - ' &#AAAAAA→ Left click to manage'
+      - ''
+
+  # ────────────────── LEGGINGS ──────────────────
+  # Levels up through mining blocks
+  # Provides: XP multiplier bonus
+  Leggings:
+    Name: '&#FF6B35📊 &#FFFFFF&l%evolv3_player_name% &#FF6B35Leggings'
+    Lore:
+      - ''
+      - ' &#FFFFFF&lDescription'
+      - ' &#CCCCCCLevel up by mining blocks'
+      - ' &#CCCCCCIncreases your XP multiplier'
+      - ''
+      - ' &#FFFFFF&lStatistics'
+      - ' &#FF6B35📊 XP Multiplier: &#00D4AA%evolv3_player_armor_leggings_multiplier%x'
+      - ' &#00AFA3⭐ Level: &#FFFFFF%evolv3_player_armor_leggings_level%'
+      - ' &#00AFA3📊 XP: &#FFFFFF%evolv3_player_armor_leggings_xp%&#888888/&#FFFFFF%evolv3_player_armor_leggings_target%'
+      - ' &#00AFA3📈 Progress: &#00FF88%evolv3_player_armor_leggings_percentage%'
+      - ' %evolv3_player_armor_leggings_progressbar%'
+      - ''
+      - ' &#AAAAAA→ Left click to manage'
+      - ''
+
+  # ────────────────── BOOTS ──────────────────
+  # Levels up through walking/movement
+  # Provides: Movement speed bonus
+  Boots:
+    Name: '&#00BFFF🏃 &#FFFFFF&l%evolv3_player_name% &#00BFFFBoots'
+    Lore:
+      - ''
+      - ' &#FFFFFF&lDescription'
+      - ' &#CCCCCCLevel up by walking (1 XP per 5 blocks)'
+      - ' &#CCCCCCIncreases your speed'
+      - ''
+      - ' &#FFFFFF&lStatistics'
+      - ' &#00BFFF🏃 Speed Multiplier: &#00D4AA%evolv3_player_armor_boots_multiplier%x'
+      - ' &#00AFA3⭐ Level: &#FFFFFF%evolv3_player_armor_boots_level%'
+      - ' &#00AFA3📊 XP: &#FFFFFF%evolv3_player_armor_boots_xp%&#888888/&#FFFFFF%evolv3_player_armor_boots_target%'
+      - ' &#00AFA3📈 Progress: &#00FF88%evolv3_player_armor_boots_percentage%'
+      - ' %evolv3_player_armor_boots_progressbar%'
+      - ''
+      - ' &#AAAAAA→ Left click to manage'
+      - ''
+
+# =====================================================
+# Pickaxe Storage Configuration
+# =====================================================
+PickaxeStorage:
+  # Base log cost for the first slot
+  BaseCost: 32
+  # Cost multiplier per slot (slot 2 = 32*1.5=48, slot 3 = 32*1.5*1.5=72, etc.)
+  CostMultiplier: 1.5
+
+# =====================================================
+# Backpack Configuration
+# =====================================================
+Backpack:
+  # Maximum number of unique item stacks
+  Size: 100
+  # Backpack display name (supports PlaceholderAPI)
+  Name: '&#8B4513🎒 &#FFFFFF&l%evolv3_player_name% &#8B4513Backpack'
+  # Message when backpack is full
+  FullMessage: '&c&lINVENTORY FULL &7(Sell Items)'
+  # Backpack item lore (supports placeholders)
+  Lore:
+    - ''
+    - ' &#FFFFFF&lInventory'
+    - ' &#00AFA3📦 Items: &#FFFFFF%evolv3_player_backpack_items%'
+    - ' &#00AFA3📊 Size: &#FFFFFF%evolv3_player_backpack_size%'
+    - ''
+    - ' &#AAAAAA→ Left click to manage'
+    - ''
+  # Custom model data for the backpack item (resource pack)
+  CustomModelData: 1
+  # Hologram displayed when items are added to backpack
+  Hologram:
+    Enabled: true
+    Text: '&f+ %amount% &7%block% &8(&a%xp% xp&8)'
+
+# =====================================================
+# Essence Configuration
+# =====================================================
+Essence:
+  # Random essence discovery while mining
+  DiscoveryChance: 10.0
+  DiscoveryMinAmount: 5
+  DiscoveryMaxAmount: 20
+
+  # Level-up essence reward settings
+  LevelUpRewards:
+    # Increment per level (Level 1=1-10, Level 2=11-20, etc.)
+    TierIncrement: 10
+    # Maximum essence that can be awarded per level-up
+    MaxCap: 1000
+
+  # Hologram settings for essence discovery notifications
+  Hologram:
+    Enabled: true
+    Text: '&5🔥 &d+ %amount% &7Essence &8(&e%evolv3_player_armor_chestplate_multiplier%x&8)'
+
+# =====================================================
+# Atom Configuration
+# =====================================================
+# Atoms are rare materials discovered while mining that
+# fuel your pickaxe's evolution to the next stage.
+# They are much rarer than essence and highly rewarding.
+# =====================================================
+Atoms:
+  # Rare random atom discovery while mining (percentage, e.g. 1.0 = 1%)
+  DiscoveryChance: 2.5
+  DiscoveryMinAmount: 1
+  DiscoveryMaxAmount: 3
+
+  # Atoms awarded per pickaxe level-up
+  LevelUpReward: 2
+
+  # Starting atom target (atoms needed for first evolution roll)
+  DefaultTarget: 100
+
+  # Multiplier applied to atom target after each evolution roll (100 → 300 → 900 → ...)
+  TargetMultiplier: 3.0
+
+  # Hologram settings for atom discovery notifications
+  Hologram:
+    Enabled: true
+    Text: '&#00AFA3⚛ &6+%amount% &7Atom'
+
+# =====================================================
+# Block XP and Sell Values
+# =====================================================
+# XP gained and sell price when mining each block type
+BlockDefaults:
+  # Common blocks
+  COBBLESTONE:
+    XP: 5
+    Sell: 2.0
+  STONE:
+    XP: 5
+    Sell: 2.0
+  DEEPSLATE:
+    XP: 6
+    Sell: 2.5
+  COBBLED_DEEPSLATE:
+    XP: 6
+    Sell: 2.5
+  GRANITE:
+    XP: 5
+    Sell: 2.0
+  DIORITE:
+    XP: 5
+    Sell: 2.0
+  ANDESITE:
+    XP: 5
+    Sell: 2.0
+  TUFF:
+    XP: 5
+    Sell: 2.0
+
+  # Ore blocks
+  COAL_ORE:
+    XP: 10
+    Sell: 5.0
+  DEEPSLATE_COAL_ORE:
+    XP: 12
+    Sell: 6.0
+  IRON_ORE:
+    XP: 15
+    Sell: 8.0
+  DEEPSLATE_IRON_ORE:
+    XP: 18
+    Sell: 10.0
+  COPPER_ORE:
+    XP: 12
+    Sell: 6.0
+  DEEPSLATE_COPPER_ORE:
+    XP: 15
+    Sell: 8.0
+  GOLD_ORE:
+    XP: 20
+    Sell: 12.0
+  DEEPSLATE_GOLD_ORE:
+    XP: 24
+    Sell: 15.0
+  REDSTONE_ORE:
+    XP: 15
+    Sell: 8.0
+  DEEPSLATE_REDSTONE_ORE:
+    XP: 18
+    Sell: 10.0
+  LAPIS_ORE:
+    XP: 18
+    Sell: 10.0
+  DEEPSLATE_LAPIS_ORE:
+    XP: 22
+    Sell: 12.0
+  DIAMOND_ORE:
+    XP: 50
+    Sell: 30.0
+  DEEPSLATE_DIAMOND_ORE:
+    XP: 60
+    Sell: 36.0
+  EMERALD_ORE:
+    XP: 75
+    Sell: 45.0
+  DEEPSLATE_EMERALD_ORE:
+    XP: 90
+    Sell: 55.0
+
+  # Nether blocks
+  NETHERRACK:
+    XP: 3
+    Sell: 1.0
+  NETHER_QUARTZ_ORE:
+    XP: 15
+    Sell: 8.0
+  NETHER_GOLD_ORE:
+    XP: 18
+    Sell: 10.0
+  ANCIENT_DEBRIS:
+    XP: 100
+    Sell: 75.0

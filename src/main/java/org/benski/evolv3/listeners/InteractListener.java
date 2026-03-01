@@ -1,52 +1,44 @@
 package org.benski.evolv3.listeners;
 
 import org.benski.evolv3.core.abstracts.BaseListener;
-import org.benski.evolv3.core.managers.PickupAnimationManager;
-import org.bukkit.entity.Player;
+import org.benski.evolv3.registry.MenuRegistry;
 import org.bukkit.event.EventHandler;
-import org.bukkit.event.block.BlockBreakEvent;
-import org.bukkit.inventory.ItemStack;
+import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.plugin.java.JavaPlugin;
 
-import java.util.ArrayList;
-import java.util.Collection;
-
-public class BreakListener extends BaseListener
+public class InteractListener extends BaseListener
 {
-    private final PickupAnimationManager pickupAnimationManager = PickupAnimationManager.getInstance();
+    private final MenuRegistry menuRegistry = MenuRegistry.getInstance();
 
     /**
      * Constructor for BaseListener.
      *
      * @param plugin The plugin instance.
      */
-    public BreakListener(JavaPlugin plugin) {
+    public InteractListener(JavaPlugin plugin) {
         super(plugin);
     }
 
     /**
-     * When a player breaks a block this occurs.
+     * When a player right-clicks while holding a pickaxe.
+     *
      * @param event The event that holds player data.
      */
     @EventHandler
-    public void OnBreak(BlockBreakEvent event)
+    public void openPickaxeMenu(PlayerInteractEvent event)
     {
-        Player player = event.getPlayer();
-        Collection<ItemStack> drops = event.getBlock().getDrops(player.getInventory().getItemInMainHand(), player);
+        if (event.getHand() != EquipmentSlot.HAND) return;
+        if (event.getAction().isLeftClick()) return;
 
+        var player = event.getPlayer();
 
-        pickaxeDataCenter.get(player, pickaxeProfile ->
+        if (player.getInventory().getItemInMainHand().getType().toString().contains("PICKAXE"))
         {
-            pickupAnimationManager.playPickupAnimation(
-                    player,
-                    event.getBlock().getLocation().add(0.5, 0.5, 0.5),
-                    new ArrayList<>(drops),
-                    event.getBlock().getType()
-            );
-
-            pickaxeProfile.xp += 2;
-            pickaxeProfile.save();
-            pickaxeProfile.owner.sendMessage(String.valueOf(pickaxeProfile.xp));
-        });
+            var menu = menuRegistry.get("pickaxe");
+            if (menu != null) {
+                menu.openMenu(player);
+            }
+        }
     }
 }

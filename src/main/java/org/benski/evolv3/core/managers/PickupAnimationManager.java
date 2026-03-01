@@ -2,12 +2,8 @@ package org.benski.evolv3.core.managers;
 
 import lombok.Getter;
 import org.benski.evolv3.Main;
-import org.benski.evolv3.animations.pickup.ArcPickupAnimation;
-import org.benski.evolv3.animations.pickup.BasePickupAnimation;
-import org.benski.evolv3.animations.pickup.HelixPickupAnimation;
-import org.benski.evolv3.animations.pickup.MagneticPickupAnimation;
+import org.benski.evolv3.core.abstracts.BasePickupAnimation;
 import org.benski.evolv3.animations.pickup.TeleportPickupAnimation;
-import org.benski.evolv3.animations.pickup.VortexPickupAnimation;
 import org.benski.evolv3.registry.AnimationRegistry;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -38,7 +34,7 @@ public class PickupAnimationManager
     private final Map<UUID, Boolean> showOthersAnimations = new HashMap<>();
     private final List<String> animationIds = new ArrayList<>();
 
-    private static final String DEFAULT_ANIMATION = "vortex";
+    private static final String DEFAULT_ANIMATION = "teleport";
     private static final double VIEW_OTHERS_RADIUS = 32.0;
 
     private PickupAnimationManager() {
@@ -50,11 +46,6 @@ public class PickupAnimationManager
      * Registers all available pickup animations.
      */
     public void initialize() {
-        // Register all pickup animations
-        registerAnimation("vortex", VortexPickupAnimation::new);
-        registerAnimation("magnetic", MagneticPickupAnimation::new);
-        registerAnimation("arc", ArcPickupAnimation::new);
-        registerAnimation("helix", HelixPickupAnimation::new);
         registerAnimation("teleport", TeleportPickupAnimation::new);
 
         plugin.getLogger().info("Pickup Animation Manager initialized with " + animationIds.size() + " animations");
@@ -207,17 +198,11 @@ public class PickupAnimationManager
     }
 
     /**
-     * Gives items directly to a player (fallback when animation cannot play).
+     * Fallback when animation cannot play.
+     * Items are already handled by the backpack system, so this is a no-op.
      */
     private void giveItemsDirectly(Player player, List<ItemStack> items, Location location) {
-        for (ItemStack item : items) {
-            if (item == null || item.getType().isAir()) continue;
-
-            var leftover = player.getInventory().addItem(item);
-            if (!leftover.isEmpty() && location.getWorld() != null) {
-                leftover.values().forEach(i -> location.getWorld().dropItem(location, i));
-            }
-        }
+        // No-op: items are handled upstream by the backpack system before the animation is played.
     }
 
     /**

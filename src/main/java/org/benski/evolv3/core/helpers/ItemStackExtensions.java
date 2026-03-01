@@ -4,15 +4,25 @@ import io.papermc.paper.registry.RegistryAccess;
 import io.papermc.paper.registry.RegistryKey;
 import io.papermc.paper.registry.TypedKey;
 import net.kyori.adventure.key.Key;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.TextDecoration;
+import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.benski.evolv3.Main;
+import org.benski.evolv3.core.constants.ConfigNames;
+import org.benski.evolv3.core.managers.StorageRegistryManager;
+import org.benski.evolv3.models.pickaxe.PickaxeProfile;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
+import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
 import org.jetbrains.annotations.Nullable;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Extension methods for ItemStack to handle persistent data operations.
@@ -141,5 +151,50 @@ public class ItemStackExtensions
      */
     public static int getCustomEnchantmentLevel(ItemStack item, String key) {
         return getEnchantmentLevel(item, "evolv3", key);
+    }
+
+    private static final LegacyComponentSerializer SERIALIZER = LegacyComponentSerializer.legacySection();
+
+    /**
+     * Updates the display name and lore of an ItemStack using the pickaxe config.
+     * Delegates to {@link org.benski.evolv3.managers.PickaxeManager#updateLore} so that
+     * the enchant list is rendered as separate lore lines (not a single PAPI-joined string).
+     *
+     * @param item    The ItemStack to update
+     * @param profile The pickaxe profile containing the data
+     */
+    public static void updateLore(ItemStack item, PickaxeProfile profile) {
+        if (item == null || item.getType() == Material.AIR || profile == null) return;
+        org.benski.evolv3.managers.PickaxeManager.getInstance().updateLore(profile.getOwner(), item);
+    }
+
+    /**
+     * Updates the lore of an ItemStack using a custom lore template from config.
+     * Supports PlaceholderAPI placeholders and color codes.
+     *
+     * @param item The ItemStack to update
+     * @param profile The pickaxe profile containing the data
+     * @param configPath The config path to the lore list
+     */
+    public static void updateLore(ItemStack item, PickaxeProfile profile, String configPath)
+    {
+        if (item == null || item.getType() == Material.AIR || profile == null) return;
+
+        FileConfiguration config = StorageRegistryManager.getInstance().getConfig(ConfigNames.DEFAULT);
+        List<String> loreTemplate = config.getStringList(configPath);
+
+        if (loreTemplate.isEmpty()) return;
+
+        ItemMeta meta = item.getItemMeta();
+        if (meta == null) return;
+
+        List<Component> formattedLore = new ArrayList<>();
+        for (String line : loreTemplate) {
+            String formatted = Utils.formatMessage(profile.getOwner(), line);
+            formattedLore.add(SERIALIZER.deserialize(formatted).decoration(TextDecoration.ITALIC, false));
+        }
+
+        meta.lore(formattedLore);
+        item.setItemMeta(meta);
     }
 }

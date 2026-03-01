@@ -1,5 +1,6 @@
 package org.benski.evolv3.core.managers;
 
+import lombok.Getter;
 import org.benski.evolv3.Main;
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -38,22 +39,12 @@ import java.util.concurrent.TimeUnit;
  */
 public class TaskManager
 {
+    @Getter
     private static final TaskManager instance = new TaskManager();
     private final JavaPlugin plugin = Main.getInstance();
     private final Set<BukkitTask> activeTasks = new HashSet<>();
 
     private TaskManager() {}
-
-    /**
-     * Gets the TaskManager instance.
-     *
-     * @return the singleton instance
-     */
-    public static TaskManager getInstance() {
-        return instance;
-    }
-
-    // Sync Tasks
 
     /**
      * Runs a task synchronously on the main server thread.

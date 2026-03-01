@@ -4,7 +4,10 @@ import lombok.experimental.ExtensionMethod;
 import org.benski.evolv3.core.abstracts.BaseSchedule;
 import org.benski.evolv3.core.constants.ConfigPaths;
 import org.benski.evolv3.core.helpers.ItemStackExtensions;
+import org.benski.evolv3.core.helpers.PlayerExtensions;
 import org.benski.evolv3.datacenters.PickaxeDataCenter;
+import org.benski.evolv3.managers.PickaxeManager;
+import org.benski.evolv3.models.pickaxe.PickaxeProfile;
 import org.benski.evolv3.registry.DataCenterRegistry;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
@@ -19,7 +22,7 @@ import java.util.UUID;
  * Runs every X seconds to validate pickaxe items.
  * Interval is configurable in default.yml
  */
-@ExtensionMethod(ItemStackExtensions.class)
+@ExtensionMethod({ItemStackExtensions.class, PlayerExtensions.class})
 public class PickaxeCheckSchedule extends BaseSchedule
 {
     private final PickaxeDataCenter pickaxeDataCenter;
@@ -31,11 +34,13 @@ public class PickaxeCheckSchedule extends BaseSchedule
 
     /**
      * {@inheritDoc}
-     * Default: 100 ticks (5 seconds)
+     * Default: 100 ticks (5 seconds). Matches the default.yml configured value.
+     * BaseSchedule reads from plugin.getConfig() which doesn't contain this key,
+     * so the fallback here must match the intended default.
      */
     @Override
     public long getIntervalTicks() {
-        return 100; // 5 seconds (default fallback)
+        return 40;
     }
 
     /**
@@ -63,7 +68,27 @@ public class PickaxeCheckSchedule extends BaseSchedule
         // Check all online players
         for (Player player : Bukkit.getOnlinePlayers()) {
             checkPlayerPickaxe(player);
+            updatePlayerPickaxe(player);
         }
+    }
+
+    /**
+     * Refreshes the lore on a player's held pickaxe.
+     * Skipped if the player broke a block within the last 2 seconds to avoid
+     * sending an equipment update mid-swing and interrupting the mining animation.
+     *
+     * @param player The player to update
+     */
+    public void updatePlayerPickaxe(Player player) {
+        if (PickaxeManager.getInstance().isActiveMining(player.getUniqueId())) return;
+
+        ItemStack item = player.getInventory().getItemInMainHand();
+        if (!pickaxeDataCenter.exists(player.getItemId())) return;
+
+        PickaxeProfile pickaxeProfile = pickaxeDataCenter.getLocal(player);
+        if (pickaxeProfile == null) return;
+
+        item.updateLore(pickaxeProfile);
     }
 
     /**
@@ -85,6 +110,7 @@ public class PickaxeCheckSchedule extends BaseSchedule
         if (pickaxeId == null || pickaxeId.isEmpty()) {
             String newId = UUID.randomUUID().toString();
             pickaxeDataCenter.loadOrCreate(player, newId);
+            updatePlayerPickaxe(player);
             plugin.getLogger().fine("Player " + player.getName() + " holding new pickaxe, created with ID: " + newId);
             return;
         }

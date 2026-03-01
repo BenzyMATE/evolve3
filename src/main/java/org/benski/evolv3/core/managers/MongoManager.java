@@ -7,6 +7,7 @@ import com.mongodb.client.MongoClients;
 import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.ReplaceOptions;
+import lombok.Getter;
 import org.benski.evolv3.Main;
 import org.benski.evolv3.core.interfaces.MongoCollection;
 import org.bson.Document;
@@ -24,6 +25,11 @@ import java.util.logging.Logger;
  */
 public class MongoManager
 {
+    /**
+     * -- GETTER --
+     *  Gets the MongoManager instance.
+     */
+    @Getter
     private static final MongoManager instance = new MongoManager();
     private final Logger logger = Main.getInstance().getLogger();
     private MongoClient mongoClient;
@@ -33,13 +39,6 @@ public class MongoManager
     private final ExecutorService databaseExecutor = Executors.newFixedThreadPool(
         Math.max(4, Runtime.getRuntime().availableProcessors())
     );
-
-    /**
-     * Gets the MongoManager instance.
-     */
-    public static MongoManager getInstance() {
-        return instance;
-    }
 
     /**
      * Initializes the MongoDB connection using the provided connection string.
@@ -259,6 +258,31 @@ public class MongoManager
             } catch (Exception e) {
                 logger.severe("Error in batch delete from collection " + collectionName + ": " + e.getMessage());
             }
+        }, databaseExecutor);
+    }
+
+    /**
+     * Asynchronously retrieves all documents from the specified collection.
+     *
+     * @param collectionName The name of the collection to query
+     * @param modelClass The class type for result mapping
+     * @return A CompletableFuture that resolves to a list of all model objects
+     */
+    public <T extends MongoCollection> CompletableFuture<List<T>> findAllAsync(String collectionName, Class<T> modelClass)
+    {
+        return CompletableFuture.supplyAsync(() -> {
+            List<T> results = new ArrayList<>();
+            try {
+                com.mongodb.client.MongoCollection<Document> collection = database.getCollection(collectionName);
+                for (Document doc : collection.find()) {
+                    T model = modelClass.getDeclaredConstructor().newInstance();
+                    model.fromDocument(doc);
+                    results.add(model);
+                }
+            } catch (Exception e) {
+                logger.severe("Error in findAllAsync for collection " + collectionName + ": " + e.getMessage());
+            }
+            return results;
         }, databaseExecutor);
     }
 

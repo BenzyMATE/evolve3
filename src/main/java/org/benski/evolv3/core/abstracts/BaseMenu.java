@@ -1,14 +1,19 @@
 package org.benski.evolv3.core.abstracts;
 
+import org.benski.evolv3.core.helpers.Messageable;
 import org.benski.evolv3.core.interfaces.Menu;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.scheduler.BukkitTask;
+
+import static org.benski.evolv3.core.helpers.Utils.formatMessage;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -18,15 +23,16 @@ import java.util.UUID;
  * Abstract base class for menu implementations.
  * Provides common functionality for inventory-based menus.
  * Implements InventoryHolder to allow menus to be identified by their inventory.
+ * Supports both static and dynamic titles with configurable refresh intervals.
  */
 public abstract class BaseMenu implements Menu, InventoryHolder, Listener
 {
     protected final JavaPlugin plugin;
     protected final Map<UUID, Inventory> openInventories = new HashMap<>();
+    private final Map<UUID, BukkitTask> titleUpdateTasks = new HashMap<>();
 
     public BaseMenu(JavaPlugin plugin) {
         this.plugin = plugin;
-        // Register as event listener
         plugin.getServer().getPluginManager().registerEvents(this, plugin);
     }
 
@@ -67,51 +73,183 @@ public abstract class BaseMenu implements Menu, InventoryHolder, Listener
      */
     protected abstract boolean handleClick(Player player, int slot, InventoryClickEvent event);
 
-    @Override
-    public void openMenu(Player player) {
-        // Create inventory
-        Inventory inventory = Bukkit.createInventory(this, getMenuSize(), getMenuTitle(player));
-
-        // Populate with items
-        populateMenu(player, inventory);
-
-        // Track the inventory
-        openInventories.put(player.getUniqueId(), inventory);
-
-        // Open for player
-        player.openInventory(inventory);
+    /**
+     * Determines whether this menu uses a dynamic title.
+     * Override and return true to enable dynamic title updates.
+     *
+     * @return true if the title should update dynamically, false for static title
+     */
+    protected boolean isDynamicTitle() {
+        return false;
     }
 
+    /**
+     * Gets the interval in ticks between title updates.
+     * Only used when {@link #isDynamicTitle()} returns true.
+     * Default is 20 ticks (1 second).
+     *
+     * @return the title update interval in ticks
+     */
+    protected int getTitleUpdateInterval() {
+        return 20;
+    }
+
+    /**
+     * Called when the menu is opened for a player.
+     * Override to play sounds or run other on-open logic.
+     *
+     * @param player the player opening the menu
+     */
+    protected void onOpen(Player player) {}
+
+    /**
+     * Called when the menu is closed for a player.
+     * Override to play sounds or run other on-close logic.
+     *
+     * @param player the player closing the menu
+     */
+    protected void onClose(Player player) {}
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void openMenu(Player player) {
+        Inventory inventory = Bukkit.createInventory(this, getMenuSize(), formatMessage(player, getMenuTitle(player)));
+
+        populateMenu(player, inventory);
+
+        openInventories.put(player.getUniqueId(), inventory);
+
+        player.openInventory(inventory);
+
+        onOpen(player);
+
+        if (isDynamicTitle()) {
+            startTitleUpdateTask(player);
+        }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void refresh(Player player) {
         Inventory inventory = openInventories.get(player.getUniqueId());
         if (inventory != null) {
-            // Clear and repopulate
             inventory.clear();
             populateMenu(player, inventory);
 
-            // Update the player's view
             player.updateInventory();
         } else {
-            // Menu not open, just open it
             openMenu(player);
         }
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public boolean isMenuOpen(Player player) {
         return openInventories.containsKey(player.getUniqueId());
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void cleanup(Player player) {
         openInventories.remove(player.getUniqueId());
+        stopTitleUpdateTask(player);
     }
 
+    /**
+     * Starts the dynamic title update task for a player.
+     *
+     * @param player the player to start updates for
+     */
+    private void startTitleUpdateTask(Player player) {
+        stopTitleUpdateTask(player);
+
+        int interval = getTitleUpdateInterval();
+
+        BukkitTask task = Bukkit.getScheduler().runTaskTimer(plugin, () -> {
+            if (!player.isOnline() || !isMenuOpen(player)) {
+                stopTitleUpdateTask(player);
+                return;
+            }
+
+            updateTitle(player);
+        }, interval, interval);
+
+        titleUpdateTasks.put(player.getUniqueId(), task);
+    }
+
+    /**
+     * Stops the dynamic title update task for a player.
+     *
+     * @param player the player to stop updates for
+     */
+    private void stopTitleUpdateTask(Player player) {
+        BukkitTask task = titleUpdateTasks.remove(player.getUniqueId());
+        if (task != null && !task.isCancelled()) {
+            task.cancel();
+        }
+    }
+
+    /**
+     * Updates the title of the menu for a player.
+     * Uses Paper's InventoryView.setTitle() method.
+     *
+     * @param player the player whose menu title should be updated
+     */
+    protected void updateTitle(Player player) {
+        Inventory inventory = openInventories.get(player.getUniqueId());
+        if (inventory == null) {
+            return;
+        }
+
+        if (player.getOpenInventory().getTopInventory() != inventory) {
+            return;
+        }
+
+        String newTitle = formatMessage(player, getMenuTitle(player));
+
+        try {
+            player.getOpenInventory().setTitle(newTitle);
+        } catch (Exception e) {
+            plugin.getLogger().warning("Error setting title: " + e.getMessage());
+        }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public Inventory getInventory() {
-        // Required by InventoryHolder, but not used for player-specific inventories
         return null;
+    }
+
+    /**
+     * Event handler for inventory close.
+     * Cleans up resources when a player closes the menu.
+     */
+    @EventHandler
+    public void onInventoryClose(InventoryCloseEvent event) {
+        if (!(event.getPlayer() instanceof Player player)) {
+            return;
+        }
+
+        if (!(event.getInventory().getHolder() instanceof BaseMenu menu)) {
+            return;
+        }
+
+        if (menu != this) {
+            return;
+        }
+
+        onClose(player);
+        cleanup(player);
     }
 
     /**
@@ -126,7 +264,6 @@ public abstract class BaseMenu implements Menu, InventoryHolder, Listener
 
         Player player = (Player) event.getWhoClicked();
 
-        // Check if this click is in one of our menus
         if (event.getClickedInventory() == null) {
             return;
         }
@@ -137,20 +274,16 @@ public abstract class BaseMenu implements Menu, InventoryHolder, Listener
 
         BaseMenu menu = (BaseMenu) event.getClickedInventory().getHolder();
 
-        // Only handle if it's this menu instance
         if (menu != this) {
             return;
         }
 
-        // Check if player has this menu open
         if (!openInventories.containsKey(player.getUniqueId())) {
             return;
         }
 
-        // Always cancel the event initially
         event.setCancelled(true);
 
-        // Let the implementation handle the click
         try {
             handleClick(player, event.getSlot(), event);
         } catch (Exception e) {
@@ -160,8 +293,6 @@ public abstract class BaseMenu implements Menu, InventoryHolder, Listener
         }
     }
 
-    // Utility methods for menu creation
-
     /**
      * Sends a success message to the player.
      *
@@ -169,7 +300,7 @@ public abstract class BaseMenu implements Menu, InventoryHolder, Listener
      * @param message the message
      */
     protected void sendSuccess(Player player, String message) {
-        player.sendMessage("§a" + message);
+        Messageable.sendSuccess(player, message);
     }
 
     /**
@@ -179,7 +310,7 @@ public abstract class BaseMenu implements Menu, InventoryHolder, Listener
      * @param message the message
      */
     protected void sendError(Player player, String message) {
-        player.sendMessage("§c" + message);
+        Messageable.sendError(player, message);
     }
 
     /**
@@ -189,7 +320,7 @@ public abstract class BaseMenu implements Menu, InventoryHolder, Listener
      * @param message the message
      */
     protected void sendInfo(Player player, String message) {
-        player.sendMessage("§e" + message);
+        Messageable.sendInfo(player, message);
     }
 
     /**

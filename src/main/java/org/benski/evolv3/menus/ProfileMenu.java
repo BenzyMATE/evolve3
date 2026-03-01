@@ -23,14 +23,19 @@ public class ProfileMenu extends ConfigurableMenu
         super(plugin);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     protected String getMenuId() {
         return "profile_menu";
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     protected void populateCustomItems(Player player, Inventory inventory) {
-        // Add dynamic player head
         ItemStack playerHead = new ItemBuilder(Material.PLAYER_HEAD)
                 .name("&e&l" + player.getName())
                 .lore(
@@ -42,7 +47,6 @@ public class ProfileMenu extends ConfigurableMenu
                 .build();
         inventory.setItem(4, playerHead);
 
-        // Add dynamic stats item
         ItemStack statsItem = new ItemBuilder(Material.DIAMOND_SWORD)
                 .name("&b&lYour Statistics")
                 .lore(
@@ -54,12 +58,14 @@ public class ProfileMenu extends ConfigurableMenu
         inventory.setItem(20, statsItem);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     protected void handleCustomAction(Player player, String action, int slot, InventoryClickEvent event) {
         switch (action) {
             case "view_stats":
                 sendInfo(player, "Opening detailed statistics...");
-                // Could open another menu here
                 break;
 
             case "combat_stats":
@@ -78,6 +84,9 @@ public class ProfileMenu extends ConfigurableMenu
         }
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public MenuType getMenuType() {
         return MENU_TYPE;

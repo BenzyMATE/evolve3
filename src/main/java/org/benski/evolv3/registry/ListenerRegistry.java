@@ -5,9 +5,11 @@ import org.benski.evolv3.Main;
 import org.benski.evolv3.core.abstracts.BaseListener;
 import org.benski.evolv3.core.interfaces.Registry;
 import org.benski.evolv3.core.managers.ListenerRegistryManager;
-import org.benski.evolv3.listeners.EnchantSelectionListener;
-import org.benski.evolv3.listeners.OnJoinListener;
-import org.benski.evolv3.listeners.PickupAnimationListener;
+import org.benski.evolv3.listeners.BackpackListener;
+import org.benski.evolv3.listeners.EnchantListener;
+import org.benski.evolv3.listeners.BreakListener;
+import org.benski.evolv3.listeners.InteractListener;
+import org.benski.evolv3.listeners.JoinListener;
 
 import java.util.List;
 
@@ -25,9 +27,11 @@ public class ListenerRegistry implements Registry<BaseListener>
      * Add your listener classes to this list.
      */
     private final List<Class<? extends BaseListener>> listeners = List.of(
-            OnJoinListener.class,
-            PickupAnimationListener.class,
-            EnchantSelectionListener.class
+            JoinListener.class,
+            BreakListener.class,
+            EnchantListener.class,
+            InteractListener.class,
+            BackpackListener.class
     );
 
     /**

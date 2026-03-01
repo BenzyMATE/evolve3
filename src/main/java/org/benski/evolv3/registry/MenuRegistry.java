@@ -6,7 +6,11 @@ import org.benski.evolv3.core.interfaces.Menu;
 import org.benski.evolv3.core.interfaces.Registry;
 import org.benski.evolv3.core.managers.MenuRegistryManager;
 import org.benski.evolv3.core.types.MenuType;
+import org.benski.evolv3.menus.ArmorMenu;
+import org.benski.evolv3.menus.BackpackMenu;
 import org.benski.evolv3.menus.ExampleConfigMenu;
+import org.benski.evolv3.menus.PickaxeLimitMenu;
+import org.benski.evolv3.menus.PickaxeMenu;
 import org.benski.evolv3.menus.TestMenu;
 
 import java.util.List;
@@ -26,7 +30,11 @@ public class MenuRegistry implements Registry<Menu>
      */
     private final List<Class<? extends Menu>> menus = List.of(
             TestMenu.class,
-            ExampleConfigMenu.class
+            ExampleConfigMenu.class,
+            PickaxeMenu.class,
+            ArmorMenu.class,
+            BackpackMenu.class,
+            PickaxeLimitMenu.class
     );
 
     /**

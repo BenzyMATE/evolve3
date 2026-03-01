@@ -19,11 +19,17 @@ public class ExampleConfigMenu extends ConfigurableMenu
         super(plugin);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     protected String getMenuId() {
         return "example_config_menu";
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     protected void handleCustomAction(Player player, String action, int slot, InventoryClickEvent event) {
         switch (action) {
@@ -48,6 +54,9 @@ public class ExampleConfigMenu extends ConfigurableMenu
         }
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public MenuType getMenuType() {
         return MENU_TYPE;

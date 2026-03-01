@@ -19,4 +19,14 @@ public final class ConfigNames
      * Messages configuration file containing all player-facing messages.
      */
     public static final String MESSAGES = "messages";
+
+    /**
+     * Menus configuration file containing menu layouts and item lore.
+     */
+    public static final String MENUS = "menus";
+
+    /**
+     * Enchantments configuration file containing enchant settings and recipes.
+     */
+    public static final String ENCHANTS = "enchants";
 }

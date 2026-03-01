@@ -1,5 +1,9 @@
 package org.benski.evolv3.core.abstracts;
 
+import org.benski.evolv3.core.interfaces.DataCenter;
+import org.benski.evolv3.datacenters.PickaxeDataCenter;
+import org.benski.evolv3.models.pickaxe.PickaxeProfile;
+import org.benski.evolv3.registry.DataCenterRegistry;
 import org.bukkit.event.Listener;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -10,6 +14,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 public abstract class BaseListener implements Listener
 {
     protected final JavaPlugin plugin;
+    protected final PickaxeDataCenter pickaxeDataCenter;
 
     /**
      * Constructor for BaseListener.
@@ -18,6 +23,7 @@ public abstract class BaseListener implements Listener
      */
     public BaseListener(JavaPlugin plugin) {
         this.plugin = plugin;
+        this.pickaxeDataCenter = (PickaxeDataCenter) DataCenterRegistry.getInstance().get("pickaxe");
     }
 
     /**

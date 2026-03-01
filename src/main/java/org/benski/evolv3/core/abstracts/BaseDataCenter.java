@@ -25,21 +25,33 @@ public abstract class BaseDataCenter<T extends MongoCollection> implements DataC
     protected final FileConfiguration messagesConfig = storageManager.getConfig(ConfigNames.MESSAGES);
     private final Logger logger = Main.getInstance().getLogger();
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public Map<String, T> getAll() {
         return data;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public boolean exists(String id) {
         return data.containsKey(id);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void updateLocal(T profile, boolean save) {
         data.put(getProfileId(profile), profile);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void existsInDatabase(String id, Consumer<Boolean> callback) {
         logger.info(getLogPrefix() + "Checking if profile exists in database for ID: " + id);
@@ -56,6 +68,9 @@ public abstract class BaseDataCenter<T extends MongoCollection> implements DataC
                 });
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void loadIntoCache(Player player, String profileId) {
         logger.info(getLogPrefix() + "loadIntoCache starting for ID: " + profileId);
@@ -68,14 +83,11 @@ public abstract class BaseDataCenter<T extends MongoCollection> implements DataC
                         return;
                     }
 
-                    // Initialize the profile with dependencies
                     initializeProfile(profile, player);
 
-                    // Add to cache
                     data.put(profileId, profile);
                     logger.info(getLogPrefix() + "Successfully added profile to cache for ID: " + profileId);
 
-                    // Notify player
                     player.sendMessage(formatMessage(player,
                             messagesConfig.getString(getLoadingMessagePath(),
                                     "Loading your profile...")));
@@ -87,26 +99,26 @@ public abstract class BaseDataCenter<T extends MongoCollection> implements DataC
                 });
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void loadOrCreate(Player player, String id) {
         if (exists(id)) {
-            return; // Profile already loaded in cache
+            return;
         }
 
         existsInDatabase(id, exists -> {
             logger.info(getLogPrefix() + "Database existence callback called for ID " + id + ": exists = " + exists);
             if (exists) {
-                // Profile exists in database but not in cache - load it
                 logger.info(getLogPrefix() + "Profile exists in DB, loading into cache for " + player.getName() + " (ID: " + id + ")");
                 loadIntoCache(player, id);
             } else {
-                // Profile doesn't exist in database - create new one
                 createNewProfile(player, id);
             }
         });
     }
 
-    // Abstract methods that subclasses must implement
     protected abstract String getCollectionName();
     protected abstract Class<T> getProfileClass();
     protected abstract void initializeProfile(T profile, Player player);

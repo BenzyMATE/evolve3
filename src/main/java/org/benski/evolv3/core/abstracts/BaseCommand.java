@@ -1,5 +1,6 @@
 package org.benski.evolv3.core.abstracts;
 
+import org.benski.evolv3.core.helpers.Messageable;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
@@ -80,7 +81,6 @@ public abstract class BaseCommand
      * Override to perform initialization logic.
      */
     public void initialize() {
-        // Override if needed
     }
 
     /**
@@ -104,7 +104,7 @@ public abstract class BaseCommand
      * @return list of tab completions, or null for default behavior
      */
     public @Nullable List<String> getTabCompletion(@NotNull CommandSender sender, @NotNull Command command, @NotNull String alias, @NotNull String[] args) {
-        return null; // Override for custom tab completion
+        return null;
     }
 
     /**
@@ -112,10 +112,7 @@ public abstract class BaseCommand
      * Override to perform cleanup logic.
      */
     public void cleanup() {
-        // Override if needed
     }
-
-    // Utility methods for common command patterns
 
     /**
      * Checks if the sender is a player and sends an error message if not.
@@ -155,7 +152,7 @@ public abstract class BaseCommand
      * @param message the message to send
      */
     protected void sendSuccess(CommandSender sender, String message) {
-        sender.sendMessage("§a" + message);
+        Messageable.sendSuccess(sender, message);
     }
 
     /**
@@ -165,7 +162,7 @@ public abstract class BaseCommand
      * @param message the message to send
      */
     protected void sendError(CommandSender sender, String message) {
-        sender.sendMessage("§c" + message);
+        Messageable.sendError(sender, message);
     }
 
     /**
@@ -175,6 +172,6 @@ public abstract class BaseCommand
      * @param message the message to send
      */
     protected void sendInfo(CommandSender sender, String message) {
-        sender.sendMessage("§e" + message);
+        Messageable.sendInfo(sender, message);
     }
 }

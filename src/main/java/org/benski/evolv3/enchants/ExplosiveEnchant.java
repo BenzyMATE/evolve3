@@ -43,7 +43,6 @@ public class ExplosiveEnchant implements Listener
     private final FileConfiguration messagesConfig;
     private final JavaPlugin plugin;
 
-    // Materials that should not be broken by explosion
     private static final Set<Material> PROTECTED_MATERIALS = Set.of(
         Material.BEDROCK,
         Material.BARRIER,
@@ -76,12 +75,10 @@ public class ExplosiveEnchant implements Listener
         Player player = event.getPlayer();
         ItemStack item = player.getInventory().getItemInMainHand();
 
-        // Check if the item has this enchantment
         if (item.getType() == Material.AIR) {
             return;
         }
 
-        // Use extension method to get the custom enchantment level
         int level = item.getCustomEnchantmentLevel("explosive");
         if (level <= 0) {
             return;
@@ -90,16 +87,13 @@ public class ExplosiveEnchant implements Listener
         Block centerBlock = event.getBlock();
         Location center = centerBlock.getLocation().add(0.5, 0.5, 0.5);
 
-        // Get blocks to explode (excluding the one already being broken)
         List<Block> blocksToBreak = getBlocksInRadius(centerBlock, level);
 
-        // Collect materials for the animation
         List<Material> materials = new ArrayList<>();
-        materials.add(centerBlock.getType()); // Add the center block material
+        materials.add(centerBlock.getType());
 
-        // Break all blocks and collect materials (no drops - purely cosmetic explosion)
         for (Block block : blocksToBreak) {
-            if (block.equals(centerBlock)) continue; // Skip center block (handled by event)
+            if (block.equals(centerBlock)) continue;
 
             Material material = block.getType();
             if (!material.isAir()) {
@@ -108,17 +102,14 @@ public class ExplosiveEnchant implements Listener
             }
         }
 
-        // Play the explosion animation
         if (!materials.isEmpty()) {
             ExplosionAnimation animation = new ExplosionAnimation(plugin, materials, level);
 
-            // Check if we can play within budget
             if (AnimationRegistry.getInstance().canPlay(animation)) {
                 AnimationRegistry.getInstance().play(animation, center);
             }
         }
 
-        // Send message from config
         String message = messagesConfig.getString("enchants.explosive.triggered",
             "&6&l[Explosive] &eLevel %level% explosion! Broke %blocks% blocks!");
         message = message.replace("%level%", String.valueOf(level));
@@ -135,14 +126,13 @@ public class ExplosiveEnchant implements Listener
      */
     private List<Block> getBlocksInRadius(Block center, int level) {
         List<Block> blocks = new ArrayList<>();
-        int radius = level; // Level 1 = 1 radius, Level 2 = 2 radius, etc.
+        int radius = level;
 
         for (int x = -radius; x <= radius; x++) {
             for (int y = -radius; y <= radius; y++) {
                 for (int z = -radius; z <= radius; z++) {
                     Block block = center.getRelative(x, y, z);
 
-                    // Skip if it's protected, air, or liquid
                     if (isBreakable(block)) {
                         blocks.add(block);
                     }
@@ -162,17 +152,14 @@ public class ExplosiveEnchant implements Listener
     private boolean isBreakable(Block block) {
         Material material = block.getType();
 
-        // Skip air and liquids
         if (material.isAir() || material == Material.WATER || material == Material.LAVA) {
             return false;
         }
 
-        // Skip protected materials
         if (PROTECTED_MATERIALS.contains(material)) {
             return false;
         }
 
-        // Skip blocks with very high hardness (essentially unbreakable)
         if (material.getHardness() < 0) {
             return false;
         }

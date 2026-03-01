@@ -20,6 +20,7 @@ public class TestMenu extends BaseMenu
 {
     private static final MenuType MENU_TYPE = MenuType.register("profile");
     private final FileConfiguration menusCfg = ConfigRegistry.getInstance().get("menus");
+
     public TestMenu(JavaPlugin plugin) {
         super(plugin);
     }
@@ -46,7 +47,6 @@ public class TestMenu extends BaseMenu
     @Override
     protected void populateMenu(Player player, Inventory inventory)
     {
-        // Info item
         ItemStack infoItem = new ItemBuilder(Material.BOOK)
                 .name(menusCfg.getString(""))
                 .lore(
@@ -56,7 +56,6 @@ public class TestMenu extends BaseMenu
                 .build();
         inventory.setItem(11, infoItem);
 
-        // Action item
         ItemStack actionItem = new ItemBuilder(Material.DIAMOND)
                 .name("&a&lAction Button")
                 .lore(
@@ -66,23 +65,21 @@ public class TestMenu extends BaseMenu
                 .build();
         inventory.setItem(13, actionItem);
 
-        // Close item
         ItemStack closeItem = new ItemBuilder(Material.BARRIER)
                 .name("&c&lClose Menu")
                 .lore("&7Click to close")
                 .build();
         inventory.setItem(15, closeItem);
 
-        // Fill borders with glass panes
         ItemStack borderItem = new ItemBuilder(Material.GRAY_STAINED_GLASS_PANE)
                 .name(" ")
                 .build();
         for (int i = 0; i < 9; i++) {
-            inventory.setItem(i, borderItem); // Top row
-            inventory.setItem(i + 18, borderItem); // Bottom row
+            inventory.setItem(i, borderItem);
+            inventory.setItem(i + 18, borderItem);
         }
-        inventory.setItem(9, borderItem); // Left side
-        inventory.setItem(17, borderItem); // Right side
+        inventory.setItem(9, borderItem);
+        inventory.setItem(17, borderItem);
     }
 
     /**
@@ -91,28 +88,26 @@ public class TestMenu extends BaseMenu
     @Override
     protected boolean handleClick(Player player, int slot, InventoryClickEvent event) {
         switch (slot) {
-            case 11: // Info item
+            case 11:
                 new MessageBuilder()
                         .line("&eThis is an example menu!")
                         .line("&eYou can create menus like this easily.")
                         .sendTo(player);
                 return true;
 
-            case 13: // Action item
+            case 13:
                 sendSuccess(player, "Action performed successfully!");
                 player.playSound(player.getLocation(), org.bukkit.Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.0f);
 
-                // Refresh the menu after action
                 refresh(player);
                 return true;
 
-            case 15: // Close item
+            case 15:
                 closeMenu(player);
                 sendInfo(player, "Menu closed!");
                 return true;
 
             default:
-                // Clicked on border or empty slot
                 return true;
         }
     }

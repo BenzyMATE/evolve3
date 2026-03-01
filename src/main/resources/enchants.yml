@@ -1,0 +1,227 @@
+# =====================================================
+# Evolv3 - Enchantments Configuration
+# =====================================================
+# All enchantment settings including levels, chances,
+# and conversion recipes. Configure enchant behaviour here.
+# =====================================================
+
+# =====================================================
+# Rarity Tiers
+# =====================================================
+# Defines the five rarity tiers used by the enchant selection animation.
+# Each tier specifies:
+#   Item   - the concrete block colour used in the CS:GO-style strip
+#   Color  - hex text/particle colour displayed during the animation
+#   Chance - relative weight for the weighted-random rarity roll
+Rarities:
+  Common:
+    Item: WHITE_CONCRETE
+    Color: "#F0F0F0"
+    Chance: 40
+  Uncommon:
+    Item: LIME_CONCRETE
+    Color: "#55FF55"
+    Chance: 30
+  Rare:
+    Item: LIGHT_BLUE_CONCRETE
+    Color: "#00FFFF"
+    Chance: 20
+  Epic:
+    Item: PURPLE_CONCRETE
+    Color: "#FF55CC"
+    Chance: 8
+  Legendary:
+    Item: ORANGE_CONCRETE
+    Color: "#FFAA00"
+    Chance: 2
+
+# =====================================================
+# Enchant Selection Pool
+# =====================================================
+# Lists every enchant available in the selection animation.
+# Format: <ConfigKey>: <Rarity>
+# ConfigKey must match a top-level enchant definition section below.
+# To remove an enchant from the pool, simply delete its entry here.
+SelectionPool:
+  Efficiency: Common
+  Furnace: Uncommon
+  Frostbite: Rare
+  Alchemy: Epic
+
+# Display text when pickaxe has no enchants
+NoEnchants: "&cNone"
+
+# Display text when enchant is at max level
+MaxEnchant: "&6&lMAX"
+
+# =====================================================
+# Enchant Definitions
+# =====================================================
+# Each section corresponds to a SelectionPool entry and defines both
+# display data (used in the animation and pickaxe menu) and
+# behaviour configuration specific to that enchant.
+#
+# Display fields:
+#   Name      - plain display name (no colour codes — rarity colour is applied automatically)
+#   Item      - fallback material icon if no Texture is set
+#   MaxLevel  - maximum level this enchant can reach
+#   MaxChance - maximum trigger chance at max level (0 = passive/always active)
+#   Cost      - essence cost per level (actual cost = Cost × currentLevel)
+#   Texture   - skull texture URL (textures.minecraft.net). Leave empty to use Item icon.
+#   Lore      - item lore shown in the pickaxe menu. Supports tokens:
+#                 {rarity}   → coloured rarity name
+#                 {level}    → current level
+#                 {maxLevel} → maximum level
+#                 {cost}     → essence cost for next upgrade
+#                 {chance}   → current trigger chance (%)
+#                 {status}   → Enabled / Disabled
+
+# =====================================================
+# Efficiency Enchantment (Passive)
+# =====================================================
+# Increases mining speed via AttributeModifier.
+# Speed bonus = level × SpeedPerLevel (applied silently, no event trigger).
+Efficiency:
+  Name: "Efficiency"
+  MaxLevel: 100
+  MaxChance: 0
+  Cost: 50
+  Item: IRON_PICKAXE
+  Texture: "http://textures.minecraft.net/texture/9169e85a8a4fca5c595a9d293f5ddf1068dc6db99f0700dd4d5b673865501a67"
+  Lore:
+    - '{rarity}'
+    - ''
+    - ' &#FFFFFF&lDescription'
+    - ' &8| &#CCCCCCPassively increases your mining'
+    - ' &8| &#CCCCCCspeed based on enchant level.'
+    - ''
+    - ' &#FFFFFF&lStatistics'
+    - ' &8| &#00AFA3Level: &#FFFFFF{level}&#888888/&#FFFFFF{maxLevel}'
+    - ' &8| &#00AFA3Cost: &#9932CC{cost} &#9932CCEssence'
+    - ' &8| &#00AFA3Status: {status}'
+    - ''
+    - ' &8| &aLeft-Click &#AAAAAAto upgrade'
+    - ' &8| &aRight-Click &#AAAAAAto toggle'
+    - ''
+  # Speed multiplier per level (0.08 = 8% per level)
+  # Level 1 = 8%, Level 50 = 400%, Level 100 = 800%
+  SpeedPerLevel: 0.08
+
+# =====================================================
+# Furnace Enchantment (Active)
+# =====================================================
+# Chance to auto-smelt blocks based on configured recipes.
+# Works with Alchemy-upgraded blocks via chained metadata.
+Furnace:
+  Name: "Furnace"
+  MaxLevel: 100
+  MaxChance: 40
+  Cost: 100
+  Item: FURNACE
+  Texture: "http://textures.minecraft.net/texture/33033f1b6ff1206503dfbde0e45e7556feffd8dfe7f57c2f9ee1f683644bd53d"
+  Lore:
+    - '{rarity}'
+    - ''
+    - ' &#FFFFFF&lDescription'
+    - ' &8| &#CCCCCCChance to automatically smelt'
+    - ' &8| &#CCCCCCmined blocks into refined goods.'
+    - ''
+    - ' &#FFFFFF&lStatistics'
+    - ' &8| &#00AFA3Level: &#FFFFFF{level}&#888888/&#FFFFFF{maxLevel}'
+    - ' &8| &#00AFA3Cost: &#9932CC{cost} &#9932CCEssence'
+    - ' &8| &#00AFA3Chance: &#00FF88{chance}%'
+    - ' &8| &#00AFA3Status: {status}'
+    - ''
+    - ' &8| &aLeft-Click &#AAAAAAto upgrade'
+    - ' &8| &aRight-Click &#AAAAAAto toggle'
+    - ''
+  Hologram:
+    Enabled: true
+    Message: "&7%original% &a> &a%smelt%"
+  # Smelting recipes: ORIGINAL -> RESULT
+  Recipes:
+    COBBLESTONE: STONE
+    STONE: SMOOTH_STONE
+    RAW_IRON: IRON_INGOT
+    RAW_GOLD: GOLD_INGOT
+    RAW_COPPER: COPPER_INGOT
+    SAND: GLASS
+    CLAY_BALL: BRICK
+    NETHERRACK: NETHER_BRICK
+    ANCIENT_DEBRIS: NETHERITE_SCRAP
+
+# =====================================================
+# Frostbite Enchantment (Active)
+# =====================================================
+# Chance to freeze blocks in a radius around the mined block,
+# converting them to PACKED_ICE with their original material stored in metadata.
+Frostbite:
+  Name: "Frostbite"
+  MaxLevel: 100
+  MaxChance: 15
+  Cost: 200
+  Item: PACKED_ICE
+  Texture: "http://textures.minecraft.net/texture/82da68bbc9bd4ccbc6dac39dfde5db5b0bca8358224b4df3fbf0fb6f37bf7499"
+  Lore:
+    - '{rarity}'
+    - ''
+    - ' &#FFFFFF&lDescription'
+    - ' &8| &#CCCCCCChance to freeze nearby blocks,'
+    - ' &8| &#CCCCCCconverting them to packed ice.'
+    - ''
+    - ' &#FFFFFF&lStatistics'
+    - ' &8| &#00AFA3Level: &#FFFFFF{level}&#888888/&#FFFFFF{maxLevel}'
+    - ' &8| &#00AFA3Cost: &#9932CC{cost} &#9932CCEssence'
+    - ' &8| &#00AFA3Chance: &#00FF88{chance}%'
+    - ' &8| &#00AFA3Status: {status}'
+    - ''
+    - ' &8| &aLeft-Click &#AAAAAAto upgrade'
+    - ' &8| &aRight-Click &#AAAAAAto toggle'
+    - ''
+  # Freeze radius (1 = 3×3×3, 2 = 5×5×5)
+  Radius: 1
+  Hologram:
+    Enabled: true
+    Message: "&b&l[Frostbite] &eFroze %blocks% blocks!"
+
+# =====================================================
+# Alchemy Enchantment (Active)
+# =====================================================
+# Chance to upgrade mined blocks to a higher-tier material.
+# Runs at NORMAL event priority so Furnace (HIGH) can chain off the result.
+Alchemy:
+  Name: "Alchemy"
+  MaxLevel: 100
+  MaxChance: 20
+  Cost: 500
+  Item: BREWING_STAND
+  Texture: "http://textures.minecraft.net/texture/1914e53c7dfa79b3e0ab03aa823b9e763cace240dabb14d9f327a225ce4415e3"
+  Lore:
+    - '{rarity}'
+    - ''
+    - ' &#FFFFFF&lDescription'
+    - ' &8| &#CCCCCCChance to upgrade mined blocks'
+    - ' &8| &#CCCCCCto a higher-tier material.'
+    - ''
+    - ' &#FFFFFF&lStatistics'
+    - ' &8| &#00AFA3Level: &#FFFFFF{level}&#888888/&#FFFFFF{maxLevel}'
+    - ' &8| &#00AFA3Cost: &#9932CC{cost} &#9932CCEssence'
+    - ' &8| &#00AFA3Chance: &#00FF88{chance}%'
+    - ' &8| &#00AFA3Status: {status}'
+    - ''
+    - ' &8| &aLeft-Click &#AAAAAAto upgrade'
+    - ' &8| &aRight-Click &#AAAAAAto toggle'
+    - ''
+  Hologram:
+    Enabled: true
+    Message: "&7%original% &a> &d%upgrade%"
+  # Upgrade recipes: ORIGINAL -> UPGRADED
+  Upgrades:
+    COBBLESTONE: COAL
+    COAL: RAW_IRON
+    RAW_IRON: RAW_GOLD
+    RAW_GOLD: DIAMOND
+    RAW_COPPER: RAW_IRON
+    STONE: IRON_ORE
+    IRON_ORE: GOLD_ORE
+    GOLD_ORE: DIAMOND_ORE

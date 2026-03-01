@@ -1,0 +1,433 @@
+package org.benski.evolv3.menus;
+
+import org.benski.evolv3.core.abstracts.BaseMenu;
+import org.benski.evolv3.core.builders.ItemBuilder;
+import org.benski.evolv3.core.constants.ConfigNames;
+import org.benski.evolv3.core.constants.ConfigPaths;
+import org.benski.evolv3.core.types.MenuType;
+import org.benski.evolv3.datacenters.ArmorDataCenter;
+import org.benski.evolv3.datacenters.PlayerDataCenter;
+import org.benski.evolv3.hooks.VaultHook;
+import org.benski.evolv3.models.armor.ArmorProfile;
+import org.benski.evolv3.models.backpack.Backpack;
+import org.benski.evolv3.models.backpack.BackpackItem;
+import org.benski.evolv3.models.player.PlayerProfile;
+import org.benski.evolv3.registry.ConfigRegistry;
+import org.benski.evolv3.registry.DataCenterRegistry;
+import java.util.List;
+import org.bukkit.Material;
+import org.bukkit.Sound;
+import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.entity.Player;
+import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.inventory.Inventory;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.plugin.java.JavaPlugin;
+
+import java.text.NumberFormat;
+import java.util.*;
+
+import static org.benski.evolv3.core.helpers.Utils.formatMaterialName;
+import static org.benski.evolv3.core.helpers.Utils.formatMessage;
+
+/**
+ * Menu for displaying and managing the player's backpack.
+ * Supports pagination, item selection, and selling.
+ */
+public class BackpackMenu extends BaseMenu
+{
+    private static final MenuType MENU_TYPE = MenuType.register("backpack");
+    private static final int ITEMS_PER_PAGE = 27;
+    private static final int PREV_SLOT = 45;
+    private static final int SELL_SLOT = 49;
+    private static final int NEXT_SLOT = 53;
+
+    private final PlayerDataCenter playerDataCenter;
+    private final ArmorDataCenter armorDataCenter;
+    private final Map<UUID, Integer> currentPage = new HashMap<>();
+    private final Map<UUID, Set<Integer>> selectedItems = new HashMap<>();
+
+    public BackpackMenu(JavaPlugin plugin)
+    {
+        super(plugin);
+        this.playerDataCenter = DataCenterRegistry.getInstance().getPlayerDataCenter();
+        this.armorDataCenter = DataCenterRegistry.getInstance().getArmorDataCenter();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected void onOpen(Player player) {
+        player.playSound(player.getLocation(), Sound.BLOCK_SHULKER_BOX_OPEN, 0.8f, 1.0f);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected void onClose(Player player) {
+        player.playSound(player.getLocation(), Sound.BLOCK_SHULKER_BOX_CLOSE, 0.8f, 1.0f);
+    }
+
+    /**
+     * Opens the backpack menu at a specific page.
+     *
+     * @param player The player to open the menu for
+     * @param page   The page number (0-indexed)
+     */
+    public void openMenu(Player player, int page)
+    {
+        currentPage.put(player.getUniqueId(), page);
+        selectedItems.putIfAbsent(player.getUniqueId(), new HashSet<>());
+        super.openMenu(player);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void openMenu(Player player)
+    {
+        openMenu(player, 0);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected String getMenuTitle(Player player)
+    {
+        PlayerProfile profile = playerDataCenter.getLocal(player);
+        if (profile == null) {
+            return "&8Backpack";
+        }
+
+        int page = currentPage.getOrDefault(player.getUniqueId(), 0);
+        int totalPages = getTotalPages(profile.backpack);
+        return "&8Backpack &7(Page " + (page + 1) + "/" + Math.max(1, totalPages) + ")";
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected int getMenuSize()
+    {
+        return 54;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected void populateMenu(Player player, Inventory inventory)
+    {
+        PlayerProfile profile = playerDataCenter.getLocal(player);
+        if (profile == null) {
+            return;
+        }
+
+        Backpack backpack = profile.backpack;
+        int page = currentPage.getOrDefault(player.getUniqueId(), 0);
+        Set<Integer> selected = selectedItems.getOrDefault(player.getUniqueId(), new HashSet<>());
+
+        ItemStack border = new ItemBuilder(Material.GRAY_STAINED_GLASS_PANE)
+                .name(" ")
+                .build();
+        for (int i = 45; i < 54; i++) {
+            inventory.setItem(i, border);
+        }
+
+        List<BackpackItem> items = backpack.getItems();
+        int startIndex = page * ITEMS_PER_PAGE;
+        int endIndex = Math.min(startIndex + ITEMS_PER_PAGE, items.size());
+
+        for (int i = startIndex; i < endIndex; i++) {
+            BackpackItem item = items.get(i);
+            int slot = i - startIndex;
+            boolean isSelected = selected.contains(i);
+
+            Material displayMaterial = isSelected ? Material.LIME_STAINED_GLASS_PANE : item.getMaterial();
+            String itemName = isSelected
+                    ? fmt(player, "&#00FF88&l✓ &#FFFFFF" + formatMaterialName(item.getMaterial()))
+                    : fmt(player, "&#FFFFFF" + formatMaterialName(item.getMaterial()));
+
+            List<String> lore = new ArrayList<>();
+            lore.add("");
+            lore.add(fmt(player, " &#FFFFFF&lItem"));
+            lore.add(fmt(player, " &8| &#00AFA3Amount: &#FFFFFF" + formatAmount(item.getAmount())));
+            lore.add(fmt(player, " &8| &#00AFA3Value: &#00AFA3⛁ &#FFFFFF" + formatCoins(getItemValue(item))));
+            if (item.isEvolveItem()) {
+                lore.add(fmt(player, " &8| &#9932CC✦ Enchant Drop"));
+            }
+            lore.add("");
+            lore.add(isSelected
+                    ? fmt(player, " &8| &#FF5555Left-Click &#AAAAAAto deselect")
+                    : fmt(player, " &8| &aLeft-Click &#AAAAAAto select"));
+            lore.add("");
+
+            ItemStack displayItem = new ItemBuilder(displayMaterial)
+                    .name(itemName)
+                    .lore(lore.toArray(new String[0]))
+                    .amount(Math.min(item.getAmount(), 64))
+                    .build();
+
+            inventory.setItem(slot, displayItem);
+        }
+
+        int totalPages = getTotalPages(backpack);
+
+        if (page > 0) {
+            List<String> prevLore = List.of(
+                    "",
+                    fmt(player, " &#CCCCCCPage " + page + " of " + Math.max(1, totalPages)),
+                    ""
+            );
+            ItemStack prevItem = new ItemBuilder(Material.ARROW)
+                    .name(fmt(player, "&#FFFFFF&l◄ Previous"))
+                    .lore(prevLore.toArray(new String[0]))
+                    .build();
+            inventory.setItem(PREV_SLOT, prevItem);
+        }
+
+        double totalValue = calculateTotalSelectedValue(player, backpack);
+        double multiplier = getHelmetMultiplier(player);
+        double finalValue = totalValue * multiplier;
+        int selectedCount = selected.size();
+        boolean hasSelection = selectedCount > 0;
+
+        List<String> sellLore = new ArrayList<>();
+        sellLore.add("");
+        sellLore.add(fmt(player, " &#FFFFFF&lSummary"));
+        sellLore.add(fmt(player, " &8| &#00AFA3Selected: &#FFFFFF" + selectedCount + " item" + (selectedCount == 1 ? "" : "s")));
+        sellLore.add(fmt(player, " &8| &#00AFA3Base Value: &#00AFA3⛁ &#FFFFFF" + formatCoins(totalValue)));
+        sellLore.add(fmt(player, " &8| &#00AFA3Helmet Bonus: &#FFFFFF" + String.format("%.2f", multiplier) + "x"));
+        sellLore.add(fmt(player, " &8| &#00FF88Total: &#00AFA3⛁ &#FFFFFF" + formatCoins(finalValue)));
+        sellLore.add("");
+        sellLore.add(hasSelection
+                ? fmt(player, " &8| &aLeft-Click &#AAAAAAto sell")
+                : fmt(player, " &8| &#FF5555Select items first"));
+        sellLore.add("");
+
+        ItemStack sellItem = new ItemBuilder(hasSelection ? Material.EMERALD : Material.GRAY_STAINED_GLASS_PANE)
+                .name(hasSelection
+                        ? fmt(player, "&#00AFA3⛁ &#FFFFFF&lSell Selected")
+                        : fmt(player, "&#888888⛁ &#FFFFFF&lSell Selected"))
+                .lore(sellLore.toArray(new String[0]))
+                .build();
+        inventory.setItem(SELL_SLOT, sellItem);
+
+        if (page < totalPages - 1) {
+            List<String> nextLore = List.of(
+                    "",
+                    fmt(player, " &#CCCCCCPage " + (page + 2) + " of " + Math.max(1, totalPages)),
+                    ""
+            );
+            ItemStack nextItem = new ItemBuilder(Material.ARROW)
+                    .name(fmt(player, "&#FFFFFF&lNext ►"))
+                    .lore(nextLore.toArray(new String[0]))
+                    .build();
+            inventory.setItem(NEXT_SLOT, nextItem);
+        }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected boolean handleClick(Player player, int slot, InventoryClickEvent event)
+    {
+        PlayerProfile profile = playerDataCenter.getLocal(player);
+        if (profile == null) {
+            return true;
+        }
+
+        int page = currentPage.getOrDefault(player.getUniqueId(), 0);
+        Set<Integer> selected = selectedItems.getOrDefault(player.getUniqueId(), new HashSet<>());
+
+        if (slot == PREV_SLOT && page > 0) {
+            openMenu(player, page - 1);
+            player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 1.0f, 1.0f);
+            return true;
+        }
+
+        if (slot == NEXT_SLOT && page < getTotalPages(profile.backpack) - 1) {
+            openMenu(player, page + 1);
+            player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 1.0f, 1.0f);
+            return true;
+        }
+
+        if (slot == SELL_SLOT) {
+            if (selected.isEmpty()) {
+                player.sendMessage(fmt(player, "&c&lNothing Selected &7— Click items to select them first."));
+                player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
+                return true;
+            }
+
+            sellSelectedItems(player, profile);
+            return true;
+        }
+
+        if (slot >= 0 && slot < ITEMS_PER_PAGE) {
+            int itemIndex = page * ITEMS_PER_PAGE + slot;
+            List<BackpackItem> items = profile.backpack.getItems();
+
+            if (itemIndex >= items.size()) {
+                return true;
+            }
+
+            if (selected.contains(itemIndex)) {
+                selected.remove(itemIndex);
+                player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_BASS, 1.0f, 0.5f);
+            } else {
+                selected.add(itemIndex);
+                player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_BIT, 1.0f, 2.0f);
+            }
+
+            refresh(player);
+            return true;
+        }
+
+        return true;
+    }
+
+    private void sellSelectedItems(Player player, PlayerProfile profile)
+    {
+        Set<Integer> selected = selectedItems.get(player.getUniqueId());
+        if (selected == null || selected.isEmpty()) {
+            return;
+        }
+
+        Backpack backpack = profile.backpack;
+        List<BackpackItem> items = backpack.getItems();
+        double totalValue = 0;
+        int itemCount = 0;
+
+        List<Integer> sortedIndices = new ArrayList<>(selected);
+        sortedIndices.sort(Collections.reverseOrder());
+
+        for (int index : sortedIndices) {
+            if (index < items.size()) {
+                BackpackItem item = items.get(index);
+                totalValue += getItemValue(item);
+                itemCount += item.getAmount();
+                item.markForDeletion();
+            }
+        }
+
+        double multiplier = getHelmetMultiplier(player);
+        double finalValue = totalValue * multiplier;
+
+        backpack.removeMarkedItems();
+
+        VaultHook.getInstance().deposit(player, finalValue);
+
+        var messagesConfig = ConfigRegistry.getInstance().get(ConfigNames.MESSAGES);
+        List<String> sellMessages = messagesConfig.getStringList(ConfigPaths.Messages.Backpack.SELL_ITEMS);
+        for (String line : sellMessages) {
+            line = line.replace("%total_items%", String.valueOf(itemCount))
+                    .replace("%total_amount%", String.format("%.2f", finalValue));
+            player.sendMessage(formatMessage(player, line));
+        }
+        player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.0f);
+
+        selected.clear();
+        profile.save(null);
+
+        if (backpack.getItems().isEmpty()) {
+            closeMenu(player);
+        } else {
+            int maxPage = Math.max(0, getTotalPages(backpack) - 1);
+            int currentPlayerPage = currentPage.getOrDefault(player.getUniqueId(), 0);
+            if (currentPlayerPage > maxPage) {
+                currentPage.put(player.getUniqueId(), maxPage);
+            }
+            refresh(player);
+        }
+    }
+
+    private double getItemValue(BackpackItem item)
+    {
+        FileConfiguration config = ConfigRegistry.getInstance().get(ConfigNames.DEFAULT);
+        String path = ConfigPaths.Default.BLOCK_DEFAULTS + "." + item.getMaterial().name() + ".Value";
+        return config.getDouble(path, 1.0) * item.getAmount();
+    }
+
+    private double calculateTotalSelectedValue(Player player, Backpack backpack)
+    {
+        Set<Integer> selected = selectedItems.getOrDefault(player.getUniqueId(), new HashSet<>());
+        List<BackpackItem> items = backpack.getItems();
+        double total = 0;
+
+        for (int index : selected) {
+            if (index < items.size()) {
+                total += getItemValue(items.get(index));
+            }
+        }
+
+        return total;
+    }
+
+    private double getHelmetMultiplier(Player player)
+    {
+        ArmorProfile armorProfile = armorDataCenter.getLocal(player);
+        if (armorProfile != null) {
+            return armorProfile.getSellMultiplier();
+        }
+        return 1.0;
+    }
+
+    private int getTotalPages(Backpack backpack)
+    {
+        int itemCount = backpack.getItems().size();
+        return (int) Math.ceil((double) itemCount / ITEMS_PER_PAGE);
+    }
+
+    /** Shorthand: run a string through formatMessage for hex colors + small-caps. */
+    private static String fmt(Player player, String text)
+    {
+        return formatMessage(player, text);
+    }
+
+    /**
+     * Formats a coin amount with comma separators.
+     * Shows no decimals for whole numbers, otherwise 2 decimal places.
+     */
+    private static String formatCoins(double amount)
+    {
+        if (amount == Math.floor(amount)) {
+            return NumberFormat.getIntegerInstance(Locale.US).format((long) amount);
+        }
+        NumberFormat fmt = NumberFormat.getNumberInstance(Locale.US);
+        fmt.setMinimumFractionDigits(2);
+        fmt.setMaximumFractionDigits(2);
+        return fmt.format(amount);
+    }
+
+    /** Formats an item count with comma separators. */
+    private static String formatAmount(int amount)
+    {
+        return NumberFormat.getIntegerInstance(Locale.US).format(amount);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void cleanup(Player player)
+    {
+        super.cleanup(player);
+        currentPage.remove(player.getUniqueId());
+        selectedItems.remove(player.getUniqueId());
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public MenuType getMenuType()
+    {
+        return MENU_TYPE;
+    }
+}

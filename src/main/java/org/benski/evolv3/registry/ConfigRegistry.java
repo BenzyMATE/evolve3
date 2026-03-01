@@ -23,7 +23,8 @@ public class ConfigRegistry implements Registry<FileConfiguration>
     private final List<String> configs = List.of(
             "default",
             "messages",
-            "menus"
+            "menus",
+            "enchants"
     );
 
     /**

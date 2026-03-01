@@ -17,7 +17,16 @@ import java.util.Map;
 
 /**
  * Core manager that handles animation registration, lifecycle, and performance.
- * Provides tick scheduling and budget enforcement for animations.
+ * Provides tick scheduling, budget enforcement, and factory creation for animations.
+ *
+ * <p>Example usage:</p>
+ * <pre>{@code
+ * // Play animation with parameters
+ * manager.play("essence", location, List.of(player), 5);
+ *
+ * // Play simple animation
+ * manager.play("explosion", location);
+ * }</pre>
  */
 public class AnimationRegistryManager
 {
@@ -25,12 +34,10 @@ public class AnimationRegistryManager
     private final Map<String, Class<? extends BaseAnimation>> animationClasses = new HashMap<>();
     private final List<BaseAnimation> activeAnimations = new ArrayList<>();
 
-    // Performance settings
     private int maxConcurrentAnimations = 50;
     private int maxResourceCost = 200;
     private int currentResourceCost = 0;
 
-    // Tick scheduler
     private BukkitTask tickTask;
 
     public AnimationRegistryManager(JavaPlugin plugin) {
@@ -59,9 +66,6 @@ public class AnimationRegistryManager
                 animationClasses.size() + " animation types.");
     }
 
-    /**
-     * Starts the tick scheduler.
-     */
     private void startTicking() {
         tickTask = new BukkitRunnable() {
             @Override
@@ -71,9 +75,6 @@ public class AnimationRegistryManager
         }.runTaskTimer(plugin, 1L, 1L);
     }
 
-    /**
-     * Called every tick to update all active animations.
-     */
     private void tick() {
         Iterator<BaseAnimation> iterator = activeAnimations.iterator();
 
@@ -81,36 +82,23 @@ public class AnimationRegistryManager
             BaseAnimation animation = iterator.next();
 
             if (animation.isComplete()) {
-                // Remove completed animations and free resources
                 currentResourceCost -= animation.getResourceCost();
                 iterator.remove();
             } else if (animation.isPlaying()) {
-                // Tick active animations
                 animation.tick();
             }
         }
     }
 
     /**
-     * Creates and plays an animation by identifier.
+     * Creates an animation by identifier with optional parameters.
+     * Scans for a matching constructor based on the provided arguments.
      *
-     * @param identifier the animation identifier (e.g., "explosion")
-     * @param location the location to play at
-     * @return the animation instance, or null if failed
+     * @param identifier the animation identifier (e.g., "essence", "hologram")
+     * @param args optional constructor arguments (after the plugin parameter)
+     * @return the created animation, or null if creation failed
      */
-    public BaseAnimation play(String identifier, Location location) {
-        return play(identifier, location, null);
-    }
-
-    /**
-     * Creates and plays an animation by identifier for specific players.
-     *
-     * @param identifier the animation identifier
-     * @param location the location to play at
-     * @param viewers the players who should see the animation (null for all)
-     * @return the animation instance, or null if failed
-     */
-    public BaseAnimation play(String identifier, Location location, Collection<Player> viewers) {
+    public BaseAnimation create(String identifier, Object... args) {
         Class<? extends BaseAnimation> animationClass = animationClasses.get(identifier.toLowerCase());
         if (animationClass == null) {
             plugin.getLogger().warning("Animation not found: " + identifier);
@@ -118,27 +106,75 @@ public class AnimationRegistryManager
         }
 
         try {
-            // Create instance
-            Constructor<? extends BaseAnimation> constructor = animationClass.getConstructor(JavaPlugin.class);
-            BaseAnimation animation = constructor.newInstance(plugin);
-
-            // Check budget
-            if (!canPlay(animation)) {
-                plugin.getLogger().warning("Animation budget exceeded, skipping: " + identifier);
-                return null;
+            Class<?>[] paramTypes = new Class<?>[args.length + 1];
+            paramTypes[0] = JavaPlugin.class;
+            for (int i = 0; i < args.length; i++) {
+                paramTypes[i + 1] = toPrimitiveType(args[i].getClass());
             }
 
-            // Play and track
-            animation.play(location, viewers);
-            activeAnimations.add(animation);
-            currentResourceCost += animation.getResourceCost();
+            Constructor<? extends BaseAnimation> constructor = findConstructor(animationClass, paramTypes);
 
-            return animation;
+            if (constructor == null) {
+                if (args.length == 0) {
+                    constructor = animationClass.getConstructor(JavaPlugin.class);
+                } else {
+                    plugin.getLogger().warning("No matching constructor for " + identifier + " with " + args.length + " args");
+                    return null;
+                }
+            }
+
+            Object[] paramValues = new Object[args.length + 1];
+            paramValues[0] = plugin;
+            System.arraycopy(args, 0, paramValues, 1, args.length);
+
+            return constructor.newInstance(paramValues);
 
         } catch (Exception e) {
             plugin.getLogger().severe("Failed to create animation " + identifier + ": " + e.getMessage());
             return null;
         }
+    }
+
+    /**
+     * Creates and plays an animation by identifier with parameters.
+     *
+     * @param identifier the animation identifier
+     * @param location the location to play at
+     * @param viewers the players who should see the animation
+     * @param args optional constructor arguments
+     * @return the animation instance, or null if failed
+     */
+    public BaseAnimation play(String identifier, Location location, Collection<Player> viewers, Object... args) {
+        BaseAnimation animation = create(identifier, args);
+        if (animation == null) return null;
+
+        if (play(animation, location, viewers)) {
+            return animation;
+        }
+        return null;
+    }
+
+    /**
+     * Creates and plays an animation by identifier.
+     *
+     * @param identifier the animation identifier
+     * @param location the location to play at
+     * @return the animation instance, or null if failed
+     */
+    public BaseAnimation play(String identifier, Location location) {
+        return play(identifier, location, null, new Object[0]);
+    }
+
+    /**
+     * Creates and plays an animation by identifier for specific players.
+     *
+     * @param identifier the animation identifier
+     * @param location the location to play at
+     * @param viewers the players who should see the animation
+     * @return the animation instance, or null if failed
+     */
+    public BaseAnimation play(String identifier, Location location, Collection<Player> viewers) {
+        return play(identifier, location, viewers, new Object[0]);
     }
 
     /**
@@ -182,10 +218,7 @@ public class AnimationRegistryManager
         if (activeAnimations.size() >= maxConcurrentAnimations) {
             return false;
         }
-        if (currentResourceCost + animation.getResourceCost() > maxResourceCost) {
-            return false;
-        }
-        return true;
+        return currentResourceCost + animation.getResourceCost() <= maxResourceCost;
     }
 
     /**
@@ -222,59 +255,75 @@ public class AnimationRegistryManager
         plugin.getLogger().info("AnimationRegistryManager cleaned up.");
     }
 
-    // Getters and setters for performance settings
-
-    /**
-     * Gets the number of active animations.
-     *
-     * @return the count
-     */
     public int getActiveAnimationCount() {
         return activeAnimations.size();
     }
 
-    /**
-     * Gets the current resource cost.
-     *
-     * @return the current cost
-     */
     public int getCurrentResourceCost() {
         return currentResourceCost;
     }
 
-    /**
-     * Gets the maximum concurrent animations allowed.
-     *
-     * @return the max
-     */
     public int getMaxConcurrentAnimations() {
         return maxConcurrentAnimations;
     }
 
-    /**
-     * Sets the maximum concurrent animations allowed.
-     *
-     * @param max the new max
-     */
     public void setMaxConcurrentAnimations(int max) {
         this.maxConcurrentAnimations = max;
     }
 
-    /**
-     * Gets the maximum resource cost allowed.
-     *
-     * @return the max
-     */
     public int getMaxResourceCost() {
         return maxResourceCost;
     }
 
-    /**
-     * Sets the maximum resource cost allowed.
-     *
-     * @param max the new max
-     */
     public void setMaxResourceCost(int max) {
         this.maxResourceCost = max;
+    }
+
+    @SuppressWarnings("unchecked")
+    private Constructor<? extends BaseAnimation> findConstructor(Class<? extends BaseAnimation> clazz, Class<?>[] paramTypes) {
+        for (Constructor<?> constructor : clazz.getConstructors()) {
+            Class<?>[] constructorParams = constructor.getParameterTypes();
+            if (constructorParams.length != paramTypes.length) continue;
+
+            boolean matches = true;
+            for (int i = 0; i < paramTypes.length; i++) {
+                if (!isAssignable(constructorParams[i], paramTypes[i])) {
+                    matches = false;
+                    break;
+                }
+            }
+
+            if (matches) {
+                return (Constructor<? extends BaseAnimation>) constructor;
+            }
+        }
+        return null;
+    }
+
+    private boolean isAssignable(Class<?> paramType, Class<?> valueType) {
+        if (paramType.isAssignableFrom(valueType)) return true;
+
+        if (paramType == int.class && valueType == Integer.class) return true;
+        if (paramType == long.class && valueType == Long.class) return true;
+        if (paramType == double.class && valueType == Double.class) return true;
+        if (paramType == float.class && valueType == Float.class) return true;
+        if (paramType == boolean.class && valueType == Boolean.class) return true;
+        if (paramType == byte.class && valueType == Byte.class) return true;
+        if (paramType == short.class && valueType == Short.class) return true;
+        if (paramType == char.class && valueType == Character.class) return true;
+
+        return false;
+    }
+
+    private Class<?> toPrimitiveType(Class<?> clazz) {
+        if (clazz == Integer.class) return int.class;
+        if (clazz == Long.class) return long.class;
+        if (clazz == Double.class) return double.class;
+        if (clazz == Float.class) return float.class;
+        if (clazz == Boolean.class) return boolean.class;
+        if (clazz == Byte.class) return byte.class;
+        if (clazz == Short.class) return short.class;
+        if (clazz == Character.class) return char.class;
+        return clazz;
     }
 }

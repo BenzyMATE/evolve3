@@ -79,32 +79,36 @@ public abstract class ConfigurableMenu extends BaseMenu
      * @param event the click event
      */
     protected void handleCustomAction(Player player, String action, int slot, InventoryClickEvent event) {
-        // Default implementation does nothing
-        // Override in your menu class to handle custom actions
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     protected String getMenuTitle(Player player) {
         String title = menusConfig.getString(getMenuId() + ".title", "&7Menu");
         return title.replace("&", "§");
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     protected int getMenuSize() {
         return menusConfig.getInt(getMenuId() + ".size", 27);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     protected void populateMenu(Player player, Inventory inventory) {
         slotActions.clear();
 
-        // Load fill items first (so they're in the background)
         loadFillItems(inventory);
 
-        // Load configured items
         loadConfiguredItems(player, inventory);
 
-        // Allow custom population
         populateCustomItems(player, inventory);
     }
 
@@ -116,8 +120,6 @@ public abstract class ConfigurableMenu extends BaseMenu
      * @param inventory the inventory to populate
      */
     protected void populateCustomItems(Player player, Inventory inventory) {
-        // Default implementation does nothing
-        // Override to add dynamic/custom items
     }
 
     /**
@@ -165,7 +167,6 @@ public abstract class ConfigurableMenu extends BaseMenu
                 if (item != null) {
                     inventory.setItem(slot, item);
 
-                    // Store action if defined
                     String action = itemSection.getString("action");
                     if (action != null && !action.isEmpty()) {
                         slotActions.put(slot, action);
@@ -192,13 +193,11 @@ public abstract class ConfigurableMenu extends BaseMenu
 
         ItemBuilder builder = new ItemBuilder(material);
 
-        // Name
         String name = section.getString("name");
         if (name != null) {
             builder.name(name.replace("&", "§"));
         }
 
-        // Lore
         List<String> lore = section.getStringList("lore");
         if (!lore.isEmpty()) {
             String[] loreArray = lore.stream()
@@ -207,13 +206,11 @@ public abstract class ConfigurableMenu extends BaseMenu
             builder.lore(loreArray);
         }
 
-        // Amount
         int amount = section.getInt("amount", 1);
         if (amount > 1) {
             builder.amount(amount);
         }
 
-        // Glow
         boolean glow = section.getBoolean("glow", false);
         if (glow) {
             builder.glow();
@@ -222,14 +219,16 @@ public abstract class ConfigurableMenu extends BaseMenu
         return builder.build();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     protected boolean handleClick(Player player, int slot, InventoryClickEvent event) {
         String action = slotActions.get(slot);
         if (action == null) {
-            return true; // No action, just cancel
+            return true;
         }
 
-        // Handle built-in actions
         if (action.equalsIgnoreCase("close")) {
             closeMenu(player);
             return true;
@@ -264,7 +263,6 @@ public abstract class ConfigurableMenu extends BaseMenu
             return true;
         }
 
-        // Unknown action
         plugin.getLogger().warning("Unknown menu action: " + action);
         return true;
     }
@@ -283,18 +281,15 @@ public abstract class ConfigurableMenu extends BaseMenu
 
         if (config.equalsIgnoreCase("border")) {
             int rows = menuSize / 9;
-            // Top row
             for (int i = 0; i < 9; i++) {
                 slots.add(i);
             }
-            // Bottom row
             for (int i = menuSize - 9; i < menuSize; i++) {
                 slots.add(i);
             }
-            // Sides
             for (int i = 1; i < rows - 1; i++) {
-                slots.add(i * 9); // Left
-                slots.add(i * 9 + 8); // Right
+                slots.add(i * 9);
+                slots.add(i * 9 + 8);
             }
             return slots;
         }
@@ -306,12 +301,10 @@ public abstract class ConfigurableMenu extends BaseMenu
             return slots;
         }
 
-        // Parse ranges and individual slots
         String[] parts = config.split(",");
         for (String part : parts) {
             part = part.trim();
             if (part.contains("-")) {
-                // Range
                 String[] range = part.split("-");
                 try {
                     int start = Integer.parseInt(range[0].trim());
@@ -323,7 +316,6 @@ public abstract class ConfigurableMenu extends BaseMenu
                     plugin.getLogger().warning("Invalid slot range: " + part);
                 }
             } else {
-                // Single slot
                 try {
                     int slot = Integer.parseInt(part);
                     if (slot < menuSize) {

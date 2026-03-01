@@ -1,11 +1,13 @@
 package org.benski.evolv3.core.helpers;
 
-import me.clip.placeholderapi.PlaceholderAPI;
 import net.matrixcreations.libraries.MatrixColorAPI;
-import org.benski.evolv3.core.builders.ItemBuilder;
+import org.benski.evolv3.core.constants.ConfigNames;
+import org.benski.evolv3.core.constants.ConfigPaths;
+import org.benski.evolv3.core.managers.StorageRegistryManager;
+import org.bukkit.Bukkit;
 import org.bukkit.Material;
+import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
-import org.bukkit.inventory.ItemStack;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -13,9 +15,22 @@ import java.util.concurrent.ThreadLocalRandom;
 
 public class Utils
 {
+    private static final boolean PLACEHOLDER_API_ENABLED = Bukkit.getPluginManager().getPlugin("PlaceholderAPI") != null;
+
+    /**
+     * Inner class to isolate PlaceholderAPI dependency.
+     * This class is only loaded when PlaceholderAPI is confirmed to be available,
+     * preventing NoClassDefFoundError when PlaceholderAPI is not installed.
+     */
+    private static final class PlaceholderHook {
+        static String setPlaceholders(Player player, String message) {
+            return me.clip.placeholderapi.PlaceholderAPI.setPlaceholders(player, message);
+        }
+    }
+
     /**
      * Formats a string by applying placeholders and color codes for a specific player.
-     * This method uses PlaceholderAPI to replace placeholders and MatrixColorAPI to process color codes.
+     * This method uses PlaceholderAPI to replace placeholders (if available) and MatrixColorAPI to process color codes.
      *
      * @param player  The player for whom the message is being formatted. This context is used for replacing placeholders.
      * @param message The string message to be formatted.
@@ -23,7 +38,10 @@ public class Utils
      */
     public static String formatMessage(Player player, String message)
     {
-        message = PlaceholderAPI.setPlaceholders(player, message);
+        message = FontUtils.toSmallCaps(message);
+        if (PLACEHOLDER_API_ENABLED) {
+            message = PlaceholderHook.setPlaceholders(player, message);
+        }
         message = MatrixColorAPI.process(message);
         return message;
     }
@@ -73,16 +91,83 @@ public class Utils
     }
 
     /**
-     * Creates an ItemStack with a name and lore.
-     * @deprecated Use {@link ItemBuilder} instead for more flexibility.
-     * Example: new ItemBuilder(Material.DIAMOND).name("&aName").lore("&7Line 1").build()
+     * Generates a progress bar string for visual display using config symbols.
+     *
+     * @param current The current value
+     * @param max     The maximum value
+     * @return A progress bar string (e.g., "████████░░")
      */
-    @Deprecated
-    public static ItemStack createItem(Material material, String name, String... lore) {
-        ItemBuilder builder = new ItemBuilder(material).name(name);
-        if (lore.length > 0) {
-            builder.lore(lore);
+    public static String generateProgressBar(int current, int max)
+    {
+        FileConfiguration config = StorageRegistryManager.getInstance().getConfig(ConfigNames.DEFAULT);
+        String filledChar = config.getString(ConfigPaths.Default.Pickaxe.PROGRESSBAR_SYMBOL_FILLED, "█");
+        String emptyChar = config.getString(ConfigPaths.Default.Pickaxe.PROGRESSBAR_SYMBOL_EMPTY, "░");
+        return generateProgressBar(current, max, 10, filledChar, emptyChar);
+    }
+
+    /**
+     * Generates a customizable progress bar string.
+     *
+     * @param current    The current value
+     * @param max        The maximum value
+     * @param length     The total length of the progress bar
+     * @param filledChar The character for filled portions
+     * @param emptyChar  The character for empty portions
+     * @return A progress bar string
+     */
+    public static String generateProgressBar(int current, int max, int length, String filledChar, String emptyChar)
+    {
+        if (max <= 0) {
+            return emptyChar.repeat(length);
         }
-        return builder.build();
+
+        double progress = Math.min(1.0, (double) current / max);
+        int filledLength = (int) Math.round(progress * length);
+        int emptyLength = length - filledLength;
+
+        return filledChar.repeat(filledLength) + emptyChar.repeat(emptyLength);
+    }
+
+    /**
+     * Safely parses a string into an enum value, returning a default if the string is null or invalid.
+     *
+     * @param value        the string value to parse
+     * @param enumClass    the enum class to parse into
+     * @param defaultValue the default value to return on failure
+     * @param <T>          the enum type
+     * @return the parsed enum value, or defaultValue if parsing fails
+     */
+    public static <T extends Enum<T>> T safeEnumParse(String value, Class<T> enumClass, T defaultValue)
+    {
+        if (value == null) {
+            return defaultValue;
+        }
+        try {
+            return Enum.valueOf(enumClass, value);
+        } catch (IllegalArgumentException e) {
+            return defaultValue;
+        }
+    }
+
+    /**
+     * Formats a material name into a human-readable title case string.
+     * For example, {@code DARK_OAK_PLANKS} becomes {@code "Dark Oak Planks"}.
+     *
+     * @param material the material to format
+     * @return the formatted material name
+     */
+    public static String formatMaterialName(Material material)
+    {
+        String name = material.name().toLowerCase().replace("_", " ");
+        String[] words = name.split(" ");
+        StringBuilder formatted = new StringBuilder();
+        for (String word : words) {
+            if (!word.isEmpty()) {
+                formatted.append(Character.toUpperCase(word.charAt(0)))
+                        .append(word.substring(1))
+                        .append(" ");
+            }
+        }
+        return formatted.toString().trim();
     }
 }

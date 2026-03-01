@@ -4,7 +4,12 @@ import lombok.Getter;
 import org.benski.evolv3.Main;
 import org.benski.evolv3.core.interfaces.Registry;
 import org.benski.evolv3.core.managers.EnchantRegistryManager;
+import org.benski.evolv3.enchants.AlchemyEnchant;
+import org.benski.evolv3.enchants.EfficiencyEnchant;
 import org.benski.evolv3.enchants.ExplosiveEnchant;
+import org.benski.evolv3.enchants.FrostbiteEnchant;
+import org.benski.evolv3.enchants.FurnaceEnchant;
+import org.benski.evolv3.listeners.FrostbiteListener;
 import org.bukkit.event.Listener;
 
 import java.util.List;
@@ -25,7 +30,12 @@ public class EnchantRegistry implements Registry<Listener>
      * Add your custom enchantment listener classes to this list.
      */
     private final List<Class<? extends Listener>> enchantmentListeners = List.of(
-            ExplosiveEnchant.class
+            ExplosiveEnchant.class,
+            EfficiencyEnchant.class,
+            FrostbiteEnchant.class,
+            FurnaceEnchant.class,
+            AlchemyEnchant.class,
+            FrostbiteListener.class
     );
 
     /**

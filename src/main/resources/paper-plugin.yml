@@ -3,3 +3,48 @@ version: '1.0-SNAPSHOT'
 main: org.benski.evolv3.Main
 bootstrapper: org.benski.evolv3.Bootstrap
 api-version: '1.21'
+
+dependencies:
+  server:
+    PlaceholderAPI:
+      load: BEFORE
+      required: false
+    Vault:
+      load: BEFORE
+      required: false
+    WorldGuard:
+      load: BEFORE
+      required: false
+    WorldEdit:
+      load: BEFORE
+      required: false
+
+commands:
+  evolv3:
+    description: Main admin command for Evolv3
+    usage: /<command> <help|reload|info>
+    aliases: [ev3, e3]
+    permission: evolv3.admin
+  pickaxe:
+    description: Opens the pickaxe management menu
+    usage: /<command>
+    aliases: [pick, p]
+  backpack:
+    description: Opens your backpack inventory
+    usage: /<command>
+    aliases: [bp, bag]
+  preferences:
+    description: Manage your personal preferences
+    usage: /<command> [setting] [value]
+    aliases: [prefs, settings]
+  pickupanimation:
+    description: Manage pickup animations
+    usage: /<command> <list|set|next|others>
+    aliases: [pa]
+  bal:
+    description: View your coin balance
+    usage: /<command> [player]
+    aliases: [balance, coins, money]
+  test:
+    description: Test command
+    usage: /<command>
