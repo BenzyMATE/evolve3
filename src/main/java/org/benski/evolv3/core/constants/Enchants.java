@@ -27,6 +27,9 @@ public final class Enchants
     /** Internal key for the Alchemy enchantment. */
     public static final String ALCHEMY    = "alchemy";
 
+    /** Internal key for the Unbreaking enchantment. */
+    public static final String UNBREAKING = "unbreaking";
+
     /** Internal key for the Explosive enchantment (registered via Paper enchantment API). */
     public static final String EXPLOSIVE  = "explosive";
 }
