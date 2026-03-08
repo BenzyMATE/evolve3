@@ -4,7 +4,6 @@ import org.benski.evolv3.core.abstracts.MongoDocument;
 import org.benski.evolv3.core.constants.ConfigNames;
 import org.benski.evolv3.core.constants.ConfigPaths;
 import org.benski.evolv3.core.managers.StorageRegistryManager;
-import org.benski.evolv3.hooks.VaultHook;
 import org.benski.evolv3.models.backpack.Backpack;
 import org.bson.Document;
 import org.bukkit.Bukkit;
@@ -81,18 +80,6 @@ public final class PlayerProfile extends MongoDocument
     public Player getPlayer()
     {
         return Bukkit.getPlayer(playerUuid);
-    }
-
-    /**
-     * Gets the player's current money balance from Vault.
-     *
-     * @return The player's balance, or 0 if offline or Vault unavailable
-     */
-    public double getMoney()
-    {
-        Player player = getPlayer();
-        if (player == null) return 0.0;
-        return VaultHook.getInstance().getBalance(player);
     }
 
     /**

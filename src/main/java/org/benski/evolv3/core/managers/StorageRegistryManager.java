@@ -8,7 +8,9 @@ import org.bukkit.plugin.java.JavaPlugin;
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class StorageRegistryManager
@@ -48,7 +50,6 @@ public class StorageRegistryManager
     {
         File configFile = new File(dataFolder, name + ".yml");
         registeredConfigs.put(name, configFile);
-        plugin.getLogger().info("Config named " + name + " has been registered");
     }
 
     /**
@@ -69,6 +70,8 @@ public class StorageRegistryManager
      */
     public void initializeConfigs()
     {
+        List<String> created = new ArrayList<>();
+
         for (Map.Entry<String, File> entry : registeredConfigs.entrySet())
         {
             String name = entry.getKey();
@@ -76,11 +79,9 @@ public class StorageRegistryManager
 
             if (!configFile.exists()) {
                 try {
-                    // Try to copy from resources
                     plugin.saveResource(name + ".yml", false);
-                    plugin.getLogger().info("Created config file: " + name + ".yml");
+                    created.add(name);
                 } catch (IllegalArgumentException e) {
-                    // Resource doesn't exist, create empty file
                     try {
                         configFile.createNewFile();
                         plugin.getLogger().warning("Config " + name + ".yml not found in resources, created empty file");
@@ -93,6 +94,13 @@ public class StorageRegistryManager
 
             // Load into cache
             configCache.put(name, YamlConfiguration.loadConfiguration(configFile));
+        }
+
+        String names = String.join(", ", registeredConfigs.keySet());
+        if (created.isEmpty()) {
+            plugin.getLogger().info("Configs loaded: " + names);
+        } else {
+            plugin.getLogger().info("Configs loaded: " + names + " (created: " + String.join(", ", created) + ")");
         }
     }
 

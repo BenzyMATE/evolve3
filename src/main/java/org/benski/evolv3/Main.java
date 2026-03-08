@@ -13,7 +13,6 @@ import org.benski.evolv3.core.managers.WorldGuardManager;
 import org.benski.evolv3.datacenters.ArmorDataCenter;
 import org.benski.evolv3.datacenters.PlayerDataCenter;
 import org.benski.evolv3.hooks.PlaceholderAPIExpansion;
-import org.benski.evolv3.hooks.VaultHook;
 import org.bukkit.Bukkit;
 import org.benski.evolv3.registry.AnimationRegistry;
 import org.benski.evolv3.registry.CommandRegistry;
@@ -130,13 +129,10 @@ public final class Main extends JavaPlugin
     }
 
     /**
-     * Initializes plugin hooks (Vault, PlaceholderAPI, etc.).
+     * Initializes plugin hooks (PlaceholderAPI, etc.).
      */
     private void useHooks()
     {
-        // Initialize Vault economy hook
-        VaultHook.getInstance().initialize();
-
         // Initialize PlaceholderAPI if available
         if (Bukkit.getPluginManager().getPlugin("PlaceholderAPI") != null) {
             new PlaceholderAPIExpansion(this).register();
