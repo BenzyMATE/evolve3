@@ -1,6 +1,5 @@
 package org.benski.evolv3.core.managers;
 
-import org.benski.evolv3.Main;
 import org.bukkit.event.Listener;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -37,30 +36,32 @@ public class EnchantRegistryManager
      * Creates instances and registers them with Bukkit's event system.
      */
     public void initializeListeners() {
+        List<String> names = new ArrayList<>();
+
         for (Class<? extends Listener> listenerClass : listenerClasses) {
             try {
                 Listener listener;
 
-                // Try constructor with JavaPlugin parameter first
                 try {
                     Constructor<? extends Listener> constructor = listenerClass.getConstructor(JavaPlugin.class);
                     listener = constructor.newInstance(plugin);
                 } catch (NoSuchMethodException e) {
-                    // Fallback to default constructor
                     Constructor<? extends Listener> constructor = listenerClass.getConstructor();
                     listener = constructor.newInstance();
                 }
 
-                // Register the listener
                 plugin.getServer().getPluginManager().registerEvents(listener, plugin);
                 registeredListeners.add(listener);
-
-                plugin.getLogger().info(Main.getBlue() + "Registered enchantment listener: " + listenerClass.getSimpleName() + Main.getReset());
+                names.add(listenerClass.getSimpleName());
 
             } catch (Exception e) {
-                plugin.getLogger().severe(Main.getBlue() + "Failed to register enchantment listener " + listenerClass.getSimpleName() + ": " + e.getMessage() + Main.getReset());
+                plugin.getLogger().severe("Failed to register enchantment listener " + listenerClass.getSimpleName() + ": " + e.getMessage());
                 e.printStackTrace();
             }
+        }
+
+        if (!names.isEmpty()) {
+            plugin.getLogger().info("Enchant listeners: " + String.join(", ", names));
         }
     }
 

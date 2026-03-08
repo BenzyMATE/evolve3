@@ -44,59 +44,45 @@ public class CommandRegistryManager implements CommandExecutor, TabCompleter
      * Supports both Bukkit/Spigot (plugin.yml) and Paper (direct registration).
      */
     public void initializeCommands() {
+        List<String> names = new ArrayList<>();
+
         for (Class<? extends BaseCommand> commandClass : commandClasses) {
             try {
-                // Create instance using constructor with JavaPlugin parameter
                 Constructor<? extends BaseCommand> constructor = commandClass.getConstructor(JavaPlugin.class);
                 BaseCommand command = constructor.newInstance(plugin);
 
-                // Get command name from the instance
                 String commandName = command.getCommandName();
-
-                // Register in our map
                 commandMap.put(commandName.toLowerCase(), command);
 
-                // Try to get command from plugin.yml (Bukkit/Spigot)
                 org.bukkit.command.PluginCommand pluginCommand = null;
                 try {
                     pluginCommand = plugin.getCommand(commandName);
-                } catch (UnsupportedOperationException e) {
-                    // Paper plugin - need to use direct registration
-                    plugin.getLogger().info("Using Paper command registration for: " + commandName);
+                } catch (UnsupportedOperationException ignored) {
+                    // Paper plugin — use direct registration
                 }
 
                 if (pluginCommand != null) {
-                    // Traditional Bukkit/Spigot registration
                     pluginCommand.setExecutor(this);
                     pluginCommand.setTabCompleter(this);
-
-                    // Set metadata from command
-                    if (command.getDescription() != null) {
-                        pluginCommand.setDescription(command.getDescription());
-                    }
-                    if (command.getUsage() != null) {
-                        pluginCommand.setUsage(command.getUsage());
-                    }
-                    if (command.getPermission() != null) {
-                        pluginCommand.setPermission(command.getPermission());
-                    }
-                    if (command.getAliases() != null) {
-                        pluginCommand.setAliases(command.getAliases());
-                    }
+                    if (command.getDescription() != null) pluginCommand.setDescription(command.getDescription());
+                    if (command.getUsage() != null)       pluginCommand.setUsage(command.getUsage());
+                    if (command.getPermission() != null)  pluginCommand.setPermission(command.getPermission());
+                    if (command.getAliases() != null)     pluginCommand.setAliases(command.getAliases());
                 } else {
-                    // Paper registration - create and register command directly
                     registerPaperCommand(commandName, command);
                 }
 
-                // Call initialize on the command
                 command.initialize();
-
-                plugin.getLogger().info("Registered command: " + commandName);
+                names.add(commandName);
 
             } catch (Exception e) {
                 plugin.getLogger().severe("Failed to register command " + commandClass.getSimpleName() + ": " + e.getMessage());
                 e.printStackTrace();
             }
+        }
+
+        if (!names.isEmpty()) {
+            plugin.getLogger().info("Commands: " + String.join(", ", names));
         }
     }
 
