@@ -61,6 +61,9 @@ public class MongoManager
      */
     public void initConnection(String connectionString, int maxPoolSize, int minPoolSize)
     {
+        // Suppress verbose INFO logs from the MongoDB driver (cluster topology, client settings, etc.)
+        org.apache.logging.log4j.core.config.Configurator.setLevel("org.mongodb.driver", org.apache.logging.log4j.Level.WARN);
+
         try {
             // Configure connection settings with connection pooling
             MongoClientSettings settings = MongoClientSettings.builder()
