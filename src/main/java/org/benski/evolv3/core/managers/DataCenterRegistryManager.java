@@ -53,7 +53,6 @@ public class DataCenterRegistryManager
                 // Register in our map
                 dataCenterMap.put(identifier, dataCenter);
 
-                plugin.getLogger().info("Registered data center: " + identifier);
 
             } catch (Exception e) {
                 plugin.getLogger().severe("Failed to register data center " +

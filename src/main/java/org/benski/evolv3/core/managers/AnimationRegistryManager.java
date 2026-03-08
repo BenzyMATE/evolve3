@@ -57,7 +57,6 @@ public class AnimationRegistryManager
                 .replace("Animation", "")
                 .toLowerCase();
         animationClasses.put(identifier, animationClass);
-        plugin.getLogger().info("Registered animation: " + animationClass.getSimpleName());
     }
 
     /**
@@ -274,7 +273,6 @@ public class AnimationRegistryManager
         }
         stopAll();
         animationClasses.clear();
-        plugin.getLogger().info("AnimationRegistryManager cleaned up.");
     }
 
     public int getActiveAnimationCount() {

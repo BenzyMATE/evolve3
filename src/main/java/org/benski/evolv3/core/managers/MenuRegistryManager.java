@@ -54,7 +54,6 @@ public class MenuRegistryManager implements Listener
                 // Register in our map
                 menuMap.put(menuType, menu);
 
-                plugin.getLogger().info("Registered menu: " + menuType.toString());
 
             } catch (Exception e) {
                 plugin.getLogger().severe("Failed to register menu " + menuClass.getSimpleName() + ": " + e.getMessage());

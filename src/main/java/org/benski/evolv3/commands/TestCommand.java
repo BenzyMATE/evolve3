@@ -74,7 +74,6 @@ public class TestCommand extends BaseCommand
      */
     @Override
     public void initialize() {
-        plugin.getLogger().info("Example command initialized!");
     }
 
     /**
@@ -173,6 +172,5 @@ public class TestCommand extends BaseCommand
      */
     @Override
     public void cleanup() {
-        plugin.getLogger().info("Example command cleaned up!");
     }
 }

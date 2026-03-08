@@ -54,13 +54,8 @@ public abstract class BaseDataCenter<T extends MongoCollection> implements DataC
      */
     @Override
     public void existsInDatabase(String id, Consumer<Boolean> callback) {
-        logger.info(getLogPrefix() + "Checking if profile exists in database for ID: " + id);
         this.mongoManager.getByIdAsync(getCollectionName(), "id", id, getProfileClass())
-                .thenAcceptAsync(profile -> {
-                    boolean exists = profile != null;
-                    logger.info(getLogPrefix() + "Database check result for ID " + id + ": exists = " + exists);
-                    callback.accept(exists);
-                }, TaskManager.getInstance()::runSync)
+                .thenAcceptAsync(profile -> callback.accept(profile != null), TaskManager.getInstance()::runSync)
                 .exceptionally(throwable -> {
                     logger.severe("Failed to check existence for ID " + id + ": " + throwable.getMessage());
                     callback.accept(false);
@@ -73,20 +68,15 @@ public abstract class BaseDataCenter<T extends MongoCollection> implements DataC
      */
     @Override
     public void loadIntoCache(Player player, String profileId) {
-        logger.info(getLogPrefix() + "loadIntoCache starting for ID: " + profileId);
         this.mongoManager.getByIdAsync(getCollectionName(), "id", profileId, getProfileClass())
                 .thenAcceptAsync(profile -> {
-                    logger.info(getLogPrefix() + "Database query completed for ID: " + profileId + ", result: " + (profile != null ? "found" : "null"));
-
                     if (profile == null) {
                         logger.warning(getLogPrefix() + "Profile was null for ID " + profileId + " despite existsInDatabase returning true!");
                         return;
                     }
 
                     initializeProfile(profile, player);
-
                     data.put(profileId, profile);
-                    logger.info(getLogPrefix() + "Successfully added profile to cache for ID: " + profileId);
 
                     player.sendMessage(formatMessage(player,
                             messagesConfig.getString(getLoadingMessagePath(),
@@ -109,9 +99,7 @@ public abstract class BaseDataCenter<T extends MongoCollection> implements DataC
         }
 
         existsInDatabase(id, exists -> {
-            logger.info(getLogPrefix() + "Database existence callback called for ID " + id + ": exists = " + exists);
             if (exists) {
-                logger.info(getLogPrefix() + "Profile exists in DB, loading into cache for " + player.getName() + " (ID: " + id + ")");
                 loadIntoCache(player, id);
             } else {
                 createNewProfile(player, id);

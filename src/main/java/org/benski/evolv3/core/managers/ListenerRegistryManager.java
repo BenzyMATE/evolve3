@@ -58,7 +58,6 @@ public class ListenerRegistryManager
                 // Call initialize method
                 listener.initialize();
 
-                plugin.getLogger().info("Registered listener: " + listenerClass.getSimpleName());
 
             } catch (Exception e) {
                 plugin.getLogger().severe("Failed to register listener " +
@@ -136,7 +135,6 @@ public class ListenerRegistryManager
                 // Unregister from Bukkit's event system
                 HandlerList.unregisterAll(listener);
 
-                plugin.getLogger().info("Cleaned up listener: " + identifier);
             } catch (Exception e) {
                 plugin.getLogger().warning("Error cleaning up listener: " + e.getMessage());
             }

@@ -321,10 +321,7 @@ public class MongoManager
                             }
                         });
 
-                        logger.info("Batch upserted " + collectionModels.size() + " documents in collection " + collectionName);
                     });
-
-                logger.info("Batch upsert operation completed successfully");
             } catch (Exception e) {
                 logger.severe("Error in batch upsert: " + e.getMessage());
             }
@@ -339,7 +336,6 @@ public class MongoManager
     {
         // Shutdown the database executor first
         try {
-            logger.info("MongoManager: Shutting down database executor...");
             databaseExecutor.shutdown();
 
             // Wait for existing tasks to complete
@@ -347,7 +343,6 @@ public class MongoManager
                 logger.warning("MongoManager: Database executor did not terminate gracefully, forcing shutdown...");
                 databaseExecutor.shutdownNow();
             }
-            logger.info("MongoManager: Database executor shutdown completed.");
         } catch (InterruptedException e) {
             logger.warning("MongoManager: Database executor shutdown interrupted: " + e.getMessage());
             databaseExecutor.shutdownNow();
@@ -358,7 +353,6 @@ public class MongoManager
         if (mongoClient != null) {
             try {
                 mongoClient.close();
-                logger.info("MongoManager: MongoDB client closed.");
             } catch (NoClassDefFoundError e) {
                 // This can happen during shutdown when Paper's classloader unloads classes
                 // before MongoDB finishes cleanup. It's safe to ignore as the JVM will
