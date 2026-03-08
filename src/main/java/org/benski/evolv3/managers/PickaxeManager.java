@@ -26,9 +26,11 @@ import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.Damageable;
 import org.bukkit.inventory.meta.ItemMeta;
 
 import java.util.ArrayList;
@@ -194,6 +196,7 @@ public class PickaxeManager
         }
 
         // Level up!
+        int oldLevel = profile.level;
         profile.level++;
         profile.xp -= profile.target;
 
@@ -236,13 +239,28 @@ public class PickaxeManager
         // Play level up effects
         player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.0f);
 
-        // Send level up message
-        String levelUpMsg = getMessagesConfig().getString("pickaxe.level-up",
-                "&a&l[Level Up] &ePickaxe is now level &b%level%&e! &d+%essence% essence");
-        levelUpMsg = levelUpMsg
-                .replace("%level%", String.valueOf(profile.level))
-                .replace("%essence%", String.valueOf(essenceReward));
-        player.sendMessage(Utils.formatMessage(player, levelUpMsg));
+        // Send level up message (multi-line, centered)
+        List<String> levelUpLines = getMessagesConfig().getStringList(ConfigPaths.Messages.Pickaxe.LEVEL_UP);
+        if (levelUpLines.isEmpty()) {
+            levelUpLines = List.of(
+                    "",
+                    "&#FFFFFF&lLEVEL %old_level% &#888888➤ &#00FFFFLEVEL %level%",
+                    "&#CCCCCCYou leveled up your Pickaxe!",
+                    "",
+                    "&#FFFFFF&lRewards",
+                    " &8| &#B366D9🔥 &#FFFFFF+%essence% &#B366D9Essence",
+                    " &8| &#FFEE00⚛ &#FFFFFF+%atoms% &#FFEE00Atoms",
+                    ""
+            );
+        }
+        for (String line : levelUpLines) {
+            String processed = line
+                    .replace("%old_level%", String.valueOf(oldLevel))
+                    .replace("%level%", String.valueOf(profile.level))
+                    .replace("%essence%", String.valueOf(essenceReward))
+                    .replace("%atoms%", String.valueOf(atomReward));
+            player.sendMessage(Utils.formatMessage(player, processed));
+        }
 
         // Refresh lore immediately so the new level/stats are visible
         updateLore(player, null);
@@ -449,6 +467,12 @@ public class PickaxeManager
      */
     public List<Component> buildLoreComponents(Player player, PickaxeProfile profile, List<String> footerLines)
     {
+        return buildLoreComponents(player, profile, footerLines, "");
+    }
+
+    public List<Component> buildLoreComponents(Player player, PickaxeProfile profile,
+                                               List<String> footerLines, String durabilityBar)
+    {
         LegacyComponentSerializer serializer = LegacyComponentSerializer.legacySection();
         List<String> loreTemplate = getDefaultConfig().getStringList(ConfigPaths.Default.Pickaxe.LORE);
         List<String> rawLore = new ArrayList<>();
@@ -457,12 +481,12 @@ public class PickaxeManager
             if (line.contains("%evolv3_pickaxe_enchants%")) {
                 handleEnchantsLore(profile, rawLore, player);
             } else {
-                rawLore.add(Utils.formatMessage(player, substitutePlaceholders(line, profile)));
+                rawLore.add(Utils.formatMessage(player, substitutePlaceholders(line, profile, durabilityBar)));
             }
         }
 
         for (String line : footerLines) {
-            rawLore.add(Utils.formatMessage(player, substitutePlaceholders(line, profile)));
+            rawLore.add(Utils.formatMessage(player, substitutePlaceholders(line, profile, durabilityBar)));
         }
 
         List<Component> components = new ArrayList<>();
@@ -485,7 +509,7 @@ public class PickaxeManager
      * @param profile the profile whose values should be substituted
      * @return the line with all known pickaxe placeholders replaced
      */
-    private String substitutePlaceholders(String line, PickaxeProfile profile)
+    private String substitutePlaceholders(String line, PickaxeProfile profile, String durabilityBar)
     {
         Player owner = profile.getOwner();
         String ownerName = owner != null ? owner.getName() : "";
@@ -496,6 +520,7 @@ public class PickaxeManager
                 .replace("%evolv3_pickaxe_target%", String.valueOf(profile.target))
                 .replace("%evolv3_pickaxe_percentage%", profile.getPercentage())
                 .replace("%evolv3_pickaxe_progressbar%", profile.getProgressBar())
+                .replace("%evolv3_pickaxe_durability_bar%", durabilityBar)
                 .replace("%evolv3_pickaxe_essence%", String.valueOf(profile.currentEssence))
                 .replace("%evolv3_pickaxe_target_essence%", String.valueOf(profile.targetEssence))
                 .replace("%evolv3_pickaxe_enchant_rolls%", String.valueOf(profile.enchantRolls))
@@ -514,62 +539,87 @@ public class PickaxeManager
     {
         PickaxeDataCenter dataCenter = DataCenterRegistry.getInstance().getPickaxeDataCenter();
         dataCenter.get(player, profile -> {
-            if (profile == null) {
-                return;
-            }
-
+            if (profile == null) return;
             ItemStack item = itemStack != null ? itemStack : player.getInventory().getItemInMainHand();
-            if (item.getType() == Material.AIR) {
-                return;
-            }
-
-            ItemMeta meta = item.getItemMeta();
-            if (meta == null) {
-                return;
-            }
-
-            List<String> loreTemplate = getDefaultConfig().getStringList(ConfigPaths.Default.Pickaxe.LORE);
-            List<String> loreFooter = getDefaultConfig().getStringList(ConfigPaths.Default.Pickaxe.LORE_FOOTER);
-            List<String> formattedLore = new ArrayList<>();
-
-            for (String line : loreTemplate) {
-                if (line.contains("%evolv3_pickaxe_enchants%")) {
-                    handleEnchantsLore(profile, formattedLore, player);
-                } else {
-                    formattedLore.add(Utils.formatMessage(player, line));
-                }
-            }
-
-            for (String line : loreFooter) {
-                formattedLore.add(Utils.formatMessage(player, line));
-            }
-
-            List<Component> loreComponents = new ArrayList<>();
-            LegacyComponentSerializer serializer = LegacyComponentSerializer.legacySection();
-            for (String line : formattedLore) {
-                // Blank lines must use Component.empty() to render reliably as a blank lore line
-                if (line.isEmpty()) {
-                    loreComponents.add(Component.empty());
-                } else {
-                    loreComponents.add(serializer.deserialize(line).decoration(TextDecoration.ITALIC, false));
-                }
-            }
-            meta.lore(loreComponents);
-
-            String name = getDefaultConfig().getString(ConfigPaths.Default.Pickaxe.NAME, "&bPickaxe");
-            String formattedName = Utils.formatMessage(player, name);
-            meta.displayName(serializer.deserialize(formattedName).decoration(TextDecoration.ITALIC, false));
-
-            EnchantData efficiency = profile.enchants.getEnchant(Enchants.EFFICIENCY);
-            if (efficiency != null && efficiency.level > 0) {
-                EfficiencyEnchant.applySpeedModifier(meta, efficiency.level);
-            } else {
-                EfficiencyEnchant.removeSpeedModifier(meta);
-            }
-
-            meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES);
-            item.setItemMeta(meta);
+            if (item.getType() == Material.AIR) return;
+            applyLoreAndName(player, profile, item);
         });
+    }
+
+    /**
+     * Directly applies lore, display name, and enchant modifiers to an item using a known profile.
+     * Unlike {@link #updateLore}, this does not require the item to be in the player's main hand.
+     *
+     * @param player  the player (used for placeholder resolution)
+     * @param profile the pickaxe profile to read stats from
+     * @param item    the item to update in place
+     */
+    public void applyLoreAndName(Player player, PickaxeProfile profile, ItemStack item)
+    {
+        if (item == null || item.getType() == Material.AIR) return;
+        ItemMeta meta = item.getItemMeta();
+        if (meta == null) return;
+
+        // Compute durability bar from the actual item's current damage
+        int damage = meta instanceof Damageable dmg ? dmg.getDamage() : 0;
+        String durabilityBar = Utils.buildDurabilityBar(damage, item.getType().getMaxDurability());
+
+        List<String> loreTemplate = getDefaultConfig().getStringList(ConfigPaths.Default.Pickaxe.LORE);
+        List<String> loreFooter = getDefaultConfig().getStringList(ConfigPaths.Default.Pickaxe.LORE_FOOTER);
+        List<String> formattedLore = new ArrayList<>();
+
+        for (String line : loreTemplate) {
+            if (line.contains("%evolv3_pickaxe_enchants%")) {
+                handleEnchantsLore(profile, formattedLore, player);
+            } else {
+                formattedLore.add(Utils.formatMessage(player, substitutePlaceholders(line, profile, durabilityBar)));
+            }
+        }
+
+        // Blank line + durability bar — appended after statistics, before footer
+        formattedLore.add("");
+        formattedLore.add(Utils.formatMessage(player, " &8| &#00FFFFDurability:"));
+        formattedLore.add(Utils.formatMessage(player, " &8| " + durabilityBar));
+
+        for (String line : loreFooter) {
+            formattedLore.add(Utils.formatMessage(player, substitutePlaceholders(line, profile, durabilityBar)));
+        }
+
+        LegacyComponentSerializer serializer = LegacyComponentSerializer.legacySection();
+        List<Component> loreComponents = new ArrayList<>();
+        for (String line : formattedLore) {
+            if (line.isEmpty()) {
+                loreComponents.add(Component.empty());
+            } else {
+                loreComponents.add(serializer.deserialize(line).decoration(TextDecoration.ITALIC, false));
+            }
+        }
+        meta.lore(loreComponents);
+
+        String name = getDefaultConfig().getString(ConfigPaths.Default.Pickaxe.NAME, "&bPickaxe");
+        meta.displayName(serializer.deserialize(Utils.formatMessage(player, name))
+                .decoration(TextDecoration.ITALIC, false));
+
+        EnchantData efficiency = profile.enchants.getEnchant(Enchants.EFFICIENCY);
+        if (efficiency != null && efficiency.level > 0) {
+            EfficiencyEnchant.applySpeedModifier(meta, efficiency.level);
+        } else {
+            EfficiencyEnchant.removeSpeedModifier(meta);
+        }
+
+        // Apply glow effect when the pickaxe has at least one enchant unlocked
+        Enchantment glowEnchant = ItemStackExtensions.getEnchantmentByKey("minecraft", "unbreaking");
+        if (glowEnchant != null) {
+            if (!profile.enchants.isEmpty()) {
+                meta.addEnchant(glowEnchant, 1, true);
+                meta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
+            } else {
+                meta.removeEnchant(glowEnchant);
+            }
+        }
+
+        meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES);
+        item.setItemMeta(meta);
     }
 
     /**
@@ -584,7 +634,7 @@ public class PickaxeManager
     {
         if (profile.enchants == null || profile.enchants.isEmpty()) {
             String noEnchants = getEnchantsConfig().getString(ConfigPaths.Enchants.NO_ENCHANTS, "&cNone");
-            newLore.add(Utils.formatMessage(player, " " + noEnchants));
+            newLore.add(Utils.formatMessage(player, " &8| " + noEnchants));
             return;
         }
 
@@ -604,8 +654,8 @@ public class PickaxeManager
                 levelDisplay = String.valueOf(enchant.level);
             }
 
-            // " [rarity-color][Name] [level]"
-            String enchantLine = " " + rarityColor + displayName + " " + levelDisplay;
+            // " &8| [rarity-color][Name] [level]"
+            String enchantLine = " &8| " + rarityColor + displayName + " " + levelDisplay;
             newLore.add(Utils.formatMessage(player, enchantLine));
         }
     }

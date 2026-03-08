@@ -44,9 +44,11 @@ Rarities:
 # To remove an enchant from the pool, simply delete its entry here.
 SelectionPool:
   Efficiency: Common
+  Unbreaking: Common
+  Alchemy: Common
+  Frostbite: Common
+
   Furnace: Uncommon
-  Frostbite: Rare
-  Alchemy: Epic
 
 # Display text when pickaxe has no enchants
 NoEnchants: "&cNone"
@@ -74,7 +76,35 @@ MaxEnchant: "&6&lMAX"
 #                 {maxLevel} → maximum level
 #                 {cost}     → essence cost for next upgrade
 #                 {chance}   → current trigger chance (%)
-#                 {status}   → Enabled / Disabled
+
+# =====================================================
+# Unbreaking Enchantment (Passive)
+# =====================================================
+# Each level gives a percentage chance to negate durability damage when mining.
+# Chance = (level / MaxLevel) * MaxChance
+Unbreaking:
+  Name: "Unbreaking"
+  Passive: true
+  MaxLevel: 100
+  MaxChance: 75
+  Cost: 15
+  Item: ANVIL
+  Texture: "http://textures.minecraft.net/texture/54a01c2b4cc9e2652e8b990651f0a27f0c8b5b3c72d1026f2b7b19ca2f4e5"
+  Lore:
+    - ' {rarity}'
+    - ''
+    - ' &#FFFFFF&lDescription'
+    - ' &8| &#CCCCCCPassively reduces the chance of'
+    - ' &8| &#CCCCCCyour pickaxe taking durability damage.'
+    - ''
+    - ' &#FFFFFF&lStatistics'
+    - ' &8| &#888888Level: &#FFFFFF{level}&#888888/&#FFFFFF{maxLevel}'
+    - ' &8| &#888888Cost: &#B366D9🔥 &#B366D9{cost}'
+    - ' &8| &#888888Negate Chance: &#00FF88{chance}%'
+    - ''
+    - ' &8| &aLeft-Click &#AAAAAAto upgrade'
+    - ' &8| &aRight-Click &#AAAAAAto toggle'
+    - ''
 
 # =====================================================
 # Efficiency Enchantment (Passive)
@@ -83,22 +113,22 @@ MaxEnchant: "&6&lMAX"
 # Speed bonus = level × SpeedPerLevel (applied silently, no event trigger).
 Efficiency:
   Name: "Efficiency"
+  Passive: true
   MaxLevel: 100
   MaxChance: 0
-  Cost: 50
+  Cost: 15
   Item: IRON_PICKAXE
   Texture: "http://textures.minecraft.net/texture/9169e85a8a4fca5c595a9d293f5ddf1068dc6db99f0700dd4d5b673865501a67"
   Lore:
-    - '{rarity}'
+    - ' {rarity}'
     - ''
     - ' &#FFFFFF&lDescription'
     - ' &8| &#CCCCCCPassively increases your mining'
     - ' &8| &#CCCCCCspeed based on enchant level.'
     - ''
     - ' &#FFFFFF&lStatistics'
-    - ' &8| &#00AFA3Level: &#FFFFFF{level}&#888888/&#FFFFFF{maxLevel}'
-    - ' &8| &#00AFA3Cost: &#9932CC{cost} &#9932CCEssence'
-    - ' &8| &#00AFA3Status: {status}'
+    - ' &8| &#888888Level: &#FFFFFF{level}&#888888/&#FFFFFF{maxLevel}'
+    - ' &8| &#888888Cost: &#B366D9🔥 &#B366D9{cost}'
     - ''
     - ' &8| &aLeft-Click &#AAAAAAto upgrade'
     - ' &8| &aRight-Click &#AAAAAAto toggle'
@@ -116,21 +146,20 @@ Furnace:
   Name: "Furnace"
   MaxLevel: 100
   MaxChance: 40
-  Cost: 100
+  Cost: 25
   Item: FURNACE
   Texture: "http://textures.minecraft.net/texture/33033f1b6ff1206503dfbde0e45e7556feffd8dfe7f57c2f9ee1f683644bd53d"
   Lore:
-    - '{rarity}'
+    - ' {rarity}'
     - ''
     - ' &#FFFFFF&lDescription'
     - ' &8| &#CCCCCCChance to automatically smelt'
     - ' &8| &#CCCCCCmined blocks into refined goods.'
     - ''
     - ' &#FFFFFF&lStatistics'
-    - ' &8| &#00AFA3Level: &#FFFFFF{level}&#888888/&#FFFFFF{maxLevel}'
-    - ' &8| &#00AFA3Cost: &#9932CC{cost} &#9932CCEssence'
-    - ' &8| &#00AFA3Chance: &#00FF88{chance}%'
-    - ' &8| &#00AFA3Status: {status}'
+    - ' &8| &#888888Level: &#FFFFFF{level}&#888888/&#FFFFFF{maxLevel}'
+    - ' &8| &#888888Cost: &#B366D9🔥 &#B366D9{cost}'
+    - ' &8| &#888888Chance: &#00FF88{chance}%'
     - ''
     - ' &8| &aLeft-Click &#AAAAAAto upgrade'
     - ' &8| &aRight-Click &#AAAAAAto toggle'
@@ -159,21 +188,20 @@ Frostbite:
   Name: "Frostbite"
   MaxLevel: 100
   MaxChance: 15
-  Cost: 200
+  Cost: 50
   Item: PACKED_ICE
   Texture: "http://textures.minecraft.net/texture/82da68bbc9bd4ccbc6dac39dfde5db5b0bca8358224b4df3fbf0fb6f37bf7499"
   Lore:
-    - '{rarity}'
+    - ' {rarity}'
     - ''
     - ' &#FFFFFF&lDescription'
     - ' &8| &#CCCCCCChance to freeze nearby blocks,'
     - ' &8| &#CCCCCCconverting them to packed ice.'
     - ''
     - ' &#FFFFFF&lStatistics'
-    - ' &8| &#00AFA3Level: &#FFFFFF{level}&#888888/&#FFFFFF{maxLevel}'
-    - ' &8| &#00AFA3Cost: &#9932CC{cost} &#9932CCEssence'
-    - ' &8| &#00AFA3Chance: &#00FF88{chance}%'
-    - ' &8| &#00AFA3Status: {status}'
+    - ' &8| &#888888Level: &#FFFFFF{level}&#888888/&#FFFFFF{maxLevel}'
+    - ' &8| &#888888Cost: &#B366D9🔥 &#B366D9{cost}'
+    - ' &8| &#888888Chance: &#00FF88{chance}%'
     - ''
     - ' &8| &aLeft-Click &#AAAAAAto upgrade'
     - ' &8| &aRight-Click &#AAAAAAto toggle'
@@ -193,21 +221,20 @@ Alchemy:
   Name: "Alchemy"
   MaxLevel: 100
   MaxChance: 20
-  Cost: 500
+  Cost: 100
   Item: BREWING_STAND
   Texture: "http://textures.minecraft.net/texture/1914e53c7dfa79b3e0ab03aa823b9e763cace240dabb14d9f327a225ce4415e3"
   Lore:
-    - '{rarity}'
+    - ' {rarity}'
     - ''
     - ' &#FFFFFF&lDescription'
     - ' &8| &#CCCCCCChance to upgrade mined blocks'
     - ' &8| &#CCCCCCto a higher-tier material.'
     - ''
     - ' &#FFFFFF&lStatistics'
-    - ' &8| &#00AFA3Level: &#FFFFFF{level}&#888888/&#FFFFFF{maxLevel}'
-    - ' &8| &#00AFA3Cost: &#9932CC{cost} &#9932CCEssence'
-    - ' &8| &#00AFA3Chance: &#00FF88{chance}%'
-    - ' &8| &#00AFA3Status: {status}'
+    - ' &8| &#888888Level: &#FFFFFF{level}&#888888/&#FFFFFF{maxLevel}'
+    - ' &8| &#888888Cost: &#B366D9🔥 &#B366D9{cost}'
+    - ' &8| &#888888Chance: &#00FF88{chance}%'
     - ''
     - ' &8| &aLeft-Click &#AAAAAAto upgrade'
     - ' &8| &aRight-Click &#AAAAAAto toggle'

@@ -42,27 +42,30 @@ Pickaxe:
     EssenceMultiplier: 1.5     # Multiplied per roll (100 → 150 → 225 → ...)
     EssenceTargetCap: 10000    # Maximum essence target
 
+  # Durability warning threshold (percentage of remaining durability, e.g. 10 = warn below 10%)
+  DurabilityWarningThreshold: 10
+
   # Progress bar visual elements
-  Progressbar Symbol 1: "&a⬛"
-  Progressbar Symbol 2: "&7⬜"
+  Progressbar Symbol 1: "&#00FF88⬛"
+  Progressbar Symbol 2: "&#444444⬜"
 
   # Pickaxe display name (supports PlaceholderAPI)
   Name: '&#00FFFF⛏ &#FFFFFF&l%evolv3_player_name% &#00FFFFPickaxe'
 
   # Action bar displayed while mining
-  ActionBar: '&#00AFA3⭐ &#FFFFFF&lLevel &#00FFFF%evolv3_pickaxe_level% &#00AFA3📊 &#FFFFFF&lXP &#00FFFF%evolv3_pickaxe_xp%&#888888/&#00FFFF%evolv3_pickaxe_target%'
+  ActionBar: '&#00FFFF⭐ &#FFFFFF&lLevel &#00FFFF%evolv3_pickaxe_level% &#00FFFF📊 &#FFFFFF&lXP &#00FFFF%evolv3_pickaxe_xp%&#888888/&#00FFFF%evolv3_pickaxe_target%'
 
   # Main lore template - uses PlaceholderAPI placeholders
   # %evolv3_pickaxe_enchants% is replaced with the formatted enchant list
   Lore:
     - ''
     - ' &#FFFFFF&lEnchantments'
-    - ' &8| &#CCCCCC%evolv3_pickaxe_enchants%'
+    - ' %evolv3_pickaxe_enchants%'
     - ''
     - ' &#FFFFFF&lStatistics'
-    - ' &8| &#00AFA3Level: &#FFFFFF%evolv3_pickaxe_level%'
-    - ' &8| &#00AFA3XP: &#FFFFFF%evolv3_pickaxe_xp%&#888888/&#FFFFFF%evolv3_pickaxe_target%'
-    - ' &8| &#00AFA3Progress: &#00FF88%evolv3_pickaxe_percentage%'
+    - ' &8| &#00FFFFLevel: &#FFFFFF%evolv3_pickaxe_level%'
+    - ' &8| &#00FFFFXP: &#FFFFFF%evolv3_pickaxe_xp%&#888888/&#FFFFFF%evolv3_pickaxe_target%'
+    - ' &8| &#00FFFFProgress: &#00FF88%evolv3_pickaxe_percentage%'
     - ' &8| %evolv3_pickaxe_progressbar%'
 
   # Footer lore (usage instructions)
@@ -74,7 +77,7 @@ Pickaxe:
   # XP Hologram settings (displayed when mining blocks)
   Hologram:
     Enabled: true
-    Text: '&a+ %xp% &7XP &8(&e%evolv3_player_armor_leggings_multiplier%x&8)'
+    Text: '&#00FFFF+ %xp% &#FFFFFF&lXP'
 
 # =====================================================
 # Player Configuration
@@ -86,6 +89,8 @@ Player:
     PickaxeLimit: 0
     # Starting essence amount for new players
     Essence: 0
+    # Starting coin balance for new players
+    Coins: 0.0
 
 # =====================================================
 # Armor Configuration
@@ -109,7 +114,7 @@ Armor:
   # Levels up through selling blocks
   # Provides: Sell multiplier bonus
   Helmet:
-    Name: '&#00AFA3💰 &#FFFFFF&l%evolv3_player_name% &#00AFA3Helmet'
+    Name: '&#00FFFF💰 &#FFFFFF&l%evolv3_player_name% &#00FFFFHelmet'
     Lore:
       - ''
       - ' &#FFFFFF&lDescription'
@@ -117,10 +122,10 @@ Armor:
       - ' &#CCCCCCIncreases your sell multiplier'
       - ''
       - ' &#FFFFFF&lStatistics'
-      - ' &#00AFA3💰 Sell Multiplier: &#00D4AA%evolv3_player_armor_helmet_multiplier%x'
-      - ' &#00AFA3⭐ Level: &#FFFFFF%evolv3_player_armor_helmet_level%'
-      - ' &#00AFA3📊 XP: &#FFFFFF%evolv3_player_armor_helmet_xp%&#888888/&#FFFFFF%evolv3_player_armor_helmet_target%'
-      - ' &#00AFA3📈 Progress: &#00FF88%evolv3_player_armor_helmet_percentage%'
+      - ' &#00FFFF💰 Sell Multiplier: &#00FFFF%evolv3_player_armor_helmet_multiplier%x'
+      - ' &#00FFFF⭐ Level: &#FFFFFF%evolv3_player_armor_helmet_level%'
+      - ' &#00FFFF📊 XP: &#FFFFFF%evolv3_player_armor_helmet_xp%&#888888/&#FFFFFF%evolv3_player_armor_helmet_target%'
+      - ' &#00FFFF📈 Progress: &#00FF88%evolv3_player_armor_helmet_percentage%'
       - ' %evolv3_player_armor_helmet_progressbar%'
       - ''
       - ' &#AAAAAA→ Left click to manage'
@@ -138,10 +143,10 @@ Armor:
       - ' &#CCCCCCIncreases your essence multiplier'
       - ''
       - ' &#FFFFFF&lStatistics'
-      - ' &#9932CC🔥 Essence Multiplier: &#00D4AA%evolv3_player_armor_chestplate_multiplier%x'
-      - ' &#00AFA3⭐ Level: &#FFFFFF%evolv3_player_armor_chestplate_level%'
-      - ' &#00AFA3📊 XP: &#FFFFFF%evolv3_player_armor_chestplate_xp%&#888888/&#FFFFFF%evolv3_player_armor_chestplate_target%'
-      - ' &#00AFA3📈 Progress: &#00FF88%evolv3_player_armor_chestplate_percentage%'
+      - ' &#9932CC🔥 Essence Multiplier: &#00FFFF%evolv3_player_armor_chestplate_multiplier%x'
+      - ' &#00FFFF⭐ Level: &#FFFFFF%evolv3_player_armor_chestplate_level%'
+      - ' &#00FFFF📊 XP: &#FFFFFF%evolv3_player_armor_chestplate_xp%&#888888/&#FFFFFF%evolv3_player_armor_chestplate_target%'
+      - ' &#00FFFF📈 Progress: &#00FF88%evolv3_player_armor_chestplate_percentage%'
       - ' %evolv3_player_armor_chestplate_progressbar%'
       - ''
       - ' &#AAAAAA→ Left click to manage'
@@ -159,10 +164,10 @@ Armor:
       - ' &#CCCCCCIncreases your XP multiplier'
       - ''
       - ' &#FFFFFF&lStatistics'
-      - ' &#FF6B35📊 XP Multiplier: &#00D4AA%evolv3_player_armor_leggings_multiplier%x'
-      - ' &#00AFA3⭐ Level: &#FFFFFF%evolv3_player_armor_leggings_level%'
-      - ' &#00AFA3📊 XP: &#FFFFFF%evolv3_player_armor_leggings_xp%&#888888/&#FFFFFF%evolv3_player_armor_leggings_target%'
-      - ' &#00AFA3📈 Progress: &#00FF88%evolv3_player_armor_leggings_percentage%'
+      - ' &#FF6B35📊 XP Multiplier: &#00FFFF%evolv3_player_armor_leggings_multiplier%x'
+      - ' &#00FFFF⭐ Level: &#FFFFFF%evolv3_player_armor_leggings_level%'
+      - ' &#00FFFF📊 XP: &#FFFFFF%evolv3_player_armor_leggings_xp%&#888888/&#FFFFFF%evolv3_player_armor_leggings_target%'
+      - ' &#00FFFF📈 Progress: &#00FF88%evolv3_player_armor_leggings_percentage%'
       - ' %evolv3_player_armor_leggings_progressbar%'
       - ''
       - ' &#AAAAAA→ Left click to manage'
@@ -180,23 +185,50 @@ Armor:
       - ' &#CCCCCCIncreases your speed'
       - ''
       - ' &#FFFFFF&lStatistics'
-      - ' &#00BFFF🏃 Speed Multiplier: &#00D4AA%evolv3_player_armor_boots_multiplier%x'
-      - ' &#00AFA3⭐ Level: &#FFFFFF%evolv3_player_armor_boots_level%'
-      - ' &#00AFA3📊 XP: &#FFFFFF%evolv3_player_armor_boots_xp%&#888888/&#FFFFFF%evolv3_player_armor_boots_target%'
-      - ' &#00AFA3📈 Progress: &#00FF88%evolv3_player_armor_boots_percentage%'
+      - ' &#00BFFF🏃 Speed Multiplier: &#00FFFF%evolv3_player_armor_boots_multiplier%x'
+      - ' &#00FFFF⭐ Level: &#FFFFFF%evolv3_player_armor_boots_level%'
+      - ' &#00FFFF📊 XP: &#FFFFFF%evolv3_player_armor_boots_xp%&#888888/&#FFFFFF%evolv3_player_armor_boots_target%'
+      - ' &#00FFFF📈 Progress: &#00FF88%evolv3_player_armor_boots_percentage%'
       - ' %evolv3_player_armor_boots_progressbar%'
       - ''
       - ' &#AAAAAA→ Left click to manage'
       - ''
 
 # =====================================================
+# Ancient Resin Configuration
+# =====================================================
+AncientResin:
+  # Percentage chance (0-100) that breaking any log drops one Ancient Resin
+  DropChance: 25.0
+  # Number of Ancient Resin required to fully repair a pickaxe
+  RepairCost: 5
+
+# =====================================================
 # Pickaxe Storage Configuration
 # =====================================================
 PickaxeStorage:
+  # Maximum number of unlockable pickaxe slots (cannot exceed 7 — the GUI layout limit)
+  MaxSlots: 7
   # Base log cost for the first slot
   BaseCost: 32
   # Cost multiplier per slot (slot 2 = 32*1.5=48, slot 3 = 32*1.5*1.5=72, etc.)
   CostMultiplier: 1.5
+  # Log type required to unlock each slot (index 0 = first slot, 1 = second, etc.)
+  # Must have at least MaxSlots entries. Accepts any valid Material name.
+  # Log cost (any log type) for a full pickaxe repair
+  RepairCost: 10
+  # Maximum pickaxes a player may claim within the window (anti-exploit)
+  MaxClaimsPerWindow: 5
+  # Duration of the claim rate-limit window in minutes
+  ClaimWindowMinutes: 5
+  Slots:
+    - OAK_LOG
+    - SPRUCE_LOG
+    - BIRCH_LOG
+    - JUNGLE_LOG
+    - ACACIA_LOG
+    - DARK_OAK_LOG
+    - MANGROVE_LOG
 
 # =====================================================
 # Backpack Configuration
@@ -207,18 +239,18 @@ Backpack:
   # Backpack display name (supports PlaceholderAPI)
   Name: '&#8B4513🎒 &#FFFFFF&l%evolv3_player_name% &#8B4513Backpack'
   # Message when backpack is full
-  FullMessage: '&c&lINVENTORY FULL &7(Sell Items)'
+  FullMessage: '&#FF4444&lBACKPACK FULL &#AAAAAA- &#FFFFFF&lSELL ITEMS'
   # Backpack item lore (supports placeholders)
   Lore:
     - ''
     - ' &#FFFFFF&lInventory'
-    - ' &#00AFA3📦 Items: &#FFFFFF%evolv3_player_backpack_items%'
-    - ' &#00AFA3📊 Size: &#FFFFFF%evolv3_player_backpack_size%'
+    - ' &#00FFFF📦 Items: &#FFFFFF%evolv3_player_backpack_items%'
+    - ' &#00FFFF📊 Size: &#FFFFFF%evolv3_player_backpack_size%'
     - ''
     - ' &#AAAAAA→ Left click to manage'
     - ''
   # Custom model data for the backpack item (resource pack)
-  CustomModelData: 1
+  CustomModelData: 2
   # Hologram displayed when items are added to backpack
   Hologram:
     Enabled: true
@@ -243,7 +275,7 @@ Essence:
   # Hologram settings for essence discovery notifications
   Hologram:
     Enabled: true
-    Text: '&5🔥 &d+ %amount% &7Essence &8(&e%evolv3_player_armor_chestplate_multiplier%x&8)'
+    Text: '&#B366D9🔥 &#FFFFFF&l+ %amount% &#B366D9Essence'
 
 # =====================================================
 # Atom Configuration
@@ -270,7 +302,7 @@ Atoms:
   # Hologram settings for atom discovery notifications
   Hologram:
     Enabled: true
-    Text: '&#00AFA3⚛ &6+%amount% &7Atom'
+    Text: '&#FFEE00⚛ &#FFFFFF&l+ %amount% &#FFEE00Atoms'
 
 # =====================================================
 # Block XP and Sell Values

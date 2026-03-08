@@ -6,8 +6,12 @@ import org.benski.evolv3.animations.EnchantAnimation;
 import org.benski.evolv3.core.abstracts.BaseEnchantAnimation;
 import org.benski.evolv3.core.types.EnchantOption;
 import org.benski.evolv3.core.types.PendingEnchantData;
+import org.benski.evolv3.core.types.PreferenceType;
+import org.benski.evolv3.datacenters.PlayerDataCenter;
 import org.benski.evolv3.models.pickaxe.PendingEnchantDocument;
+import org.benski.evolv3.models.player.PlayerProfile;
 import org.benski.evolv3.registry.AnimationRegistry;
+import org.benski.evolv3.registry.DataCenterRegistry;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
@@ -400,8 +404,9 @@ public class EnchantSelectionManager
             }
         };
 
+        int scrollTicks = resolveScrollTicks(player);
         BaseEnchantAnimation animation =
-            new EnchantAnimation(plugin, player, options, wrappedCallback);
+            new EnchantAnimation(plugin, player, options, wrappedCallback, scrollTicks);
 
         if (!AnimationRegistry.getInstance().canPlay(animation)) {
             pendingSelections.remove(player.getUniqueId());
@@ -448,6 +453,24 @@ public class EnchantSelectionManager
     /** Asynchronously deletes the MongoDB document for the given player UUID. */
     private void deletePendingFromDatabase(UUID uuid) {
         MongoManager.getInstance().deleteAsync("PendingEnchants", "playerUuid", uuid.toString());
+    }
+
+    /**
+     * Maps the player's enchant speed preference to a scroll-end tick count.
+     * Lower tick count = faster animation. Defaults to 80 if preference is unavailable.
+     */
+    private int resolveScrollTicks(Player player) {
+        PlayerDataCenter pdc = DataCenterRegistry.getInstance().getPlayerDataCenter();
+        if (pdc == null) return 80;
+        PlayerProfile profile = pdc.getLocal(player);
+        if (profile == null) return 80;
+        return switch (profile.preferences.enchantAnimationSpeed) {
+            case VERY_SLOW -> 140;
+            case SLOW      ->  110;
+            case NORMAL    ->   80;
+            case FAST      ->   50;
+            case VERY_FAST ->   28;
+        };
     }
 
     /**

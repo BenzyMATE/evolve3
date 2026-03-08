@@ -32,31 +32,37 @@ public class PickupAnimationCommand extends BaseCommand
         super(plugin);
     }
 
+    /** {@inheritDoc} */
     @Override
     public String getCommandName() {
         return "pickupanimation";
     }
 
+    /** {@inheritDoc} */
     @Override
     public @Nullable String getDescription() {
         return "Switch between pickup animations";
     }
 
+    /** {@inheritDoc} */
     @Override
     public @Nullable String getUsage() {
         return "/pickupanimation [list|set <animation>|next]";
     }
 
+    /** {@inheritDoc} */
     @Override
     public @Nullable String getPermission() {
         return "evolv3.command.pickupanimation";
     }
 
+    /** {@inheritDoc} */
     @Override
     public @Nullable List<String> getAliases() {
         return List.of("pa", "pickup", "panim");
     }
 
+    /** {@inheritDoc} */
     @Override
     public boolean execute(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
         if (!requirePlayer(sender)) {
@@ -67,7 +73,6 @@ public class PickupAnimationCommand extends BaseCommand
         PickupAnimationManager manager = PickupAnimationManager.getInstance();
         FileConfiguration messages = ConfigRegistry.getInstance().get(ConfigNames.MESSAGES);
 
-        // No arguments - show current animation
         if (args.length == 0) {
             showCurrentAnimation(player, manager, messages);
             return true;
@@ -89,7 +94,6 @@ public class PickupAnimationCommand extends BaseCommand
             case "next", "cycle" -> cycleAnimation(player, manager, messages);
             case "others", "toggle" -> toggleOthersAnimations(player, manager, messages);
             default -> {
-                // Try to interpret as animation name directly
                 if (manager.isValidAnimation(subCommand)) {
                     setAnimation(player, manager, messages, subCommand);
                 } else {
@@ -195,12 +199,12 @@ public class PickupAnimationCommand extends BaseCommand
         player.sendMessage(colorize(msg));
     }
 
+    /** {@inheritDoc} */
     @Override
     public @Nullable List<String> getTabCompletion(@NotNull CommandSender sender, @NotNull Command command, @NotNull String alias, @NotNull String[] args) {
         List<String> completions = new ArrayList<>();
 
         if (args.length == 1) {
-            // First argument - subcommands and animation names
             List<String> options = new ArrayList<>(List.of("list", "set", "next", "others"));
             options.addAll(PickupAnimationManager.getInstance().getAnimationIds());
 
@@ -209,7 +213,6 @@ public class PickupAnimationCommand extends BaseCommand
                 .filter(s -> s.toLowerCase().startsWith(prefix))
                 .collect(Collectors.toList()));
         } else if (args.length == 2 && args[0].equalsIgnoreCase("set")) {
-            // Second argument after "set" - animation names
             String prefix = args[1].toLowerCase();
             completions.addAll(PickupAnimationManager.getInstance().getAnimationIds().stream()
                 .filter(s -> s.startsWith(prefix))

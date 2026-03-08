@@ -3,8 +3,12 @@ package org.benski.evolv3.animations;
 import org.benski.evolv3.core.abstracts.BaseAnimation;
 import org.benski.evolv3.core.constants.ConfigNames;
 import org.benski.evolv3.core.constants.ConfigPaths;
+import org.benski.evolv3.datacenters.PlayerDataCenter;
+import org.benski.evolv3.models.player.PlayerPreferences;
+import org.benski.evolv3.models.player.PlayerProfile;
 import org.benski.evolv3.registry.AnimationRegistry;
 import org.benski.evolv3.registry.ConfigRegistry;
+import org.benski.evolv3.registry.DataCenterRegistry;
 import org.bukkit.Color;
 import org.bukkit.Location;
 import org.bukkit.Particle;
@@ -48,7 +52,7 @@ public class AtomAnimation extends BaseAnimation
 
     /** Pure gold dust — the sole particle color for visual cohesion. */
     private static final Particle.DustOptions GOLD =
-            new Particle.DustOptions(Color.fromRGB(255, 215, 0), 1.3f);
+            new Particle.DustOptions(Color.fromRGB(255, 238, 0), 1.3f);
 
     /** Angular speed (radians/tick) for each of the three orbital rings. */
     private static final double[] RING_SPEEDS = {0.10, 0.15, 0.08};
@@ -59,6 +63,11 @@ public class AtomAnimation extends BaseAnimation
 
     /** Per-ring angle accumulators — advanced every tick for smooth continuous motion. */
     private final double[] ringAngles = new double[3];
+
+    // Resolved from player preferences in onStart
+    private boolean prefSound     = true;
+    private boolean prefParticles = true;
+    private boolean prefGlow      = true;
 
     /**
      * Creates an atom animation with default settings.
@@ -98,13 +107,24 @@ public class AtomAnimation extends BaseAnimation
         }
         if (targetPlayer == null || !targetPlayer.isOnline()) return;
 
-        showHologram();
+        // Load player preferences
+        PlayerDataCenter pdc = DataCenterRegistry.getInstance().getPlayerDataCenter();
+        if (pdc != null) {
+            PlayerProfile profile = pdc.getLocal(targetPlayer);
+            if (profile != null) {
+                PlayerPreferences prefs = profile.preferences;
+                prefSound     = prefs.atomSound;
+                prefParticles = prefs.atomParticles;
+                prefGlow      = prefs.atomGlow;
+            }
+        }
 
         // Stagger ring start angles evenly so they read as three distinct objects
         ringAngles[0] = 0;
         ringAngles[1] = Math.PI * 2.0 / 3.0;
         ringAngles[2] = Math.PI * 4.0 / 3.0;
 
+        if (!prefSound) return;
         // Eerie open: ender ambient layered with a crystalline chime
         targetPlayer.playSound(centerLocation, Sound.ENTITY_ENDER_DRAGON_AMBIENT, 0.4f, 1.6f);
         targetPlayer.playSound(centerLocation, Sound.BLOCK_AMETHYST_CLUSTER_BREAK, 0.6f, 0.8f);
@@ -116,6 +136,8 @@ public class AtomAnimation extends BaseAnimation
             stop();
             return;
         }
+
+        if (!prefParticles) return;
 
         int tick = getCurrentTick();
 
@@ -133,7 +155,14 @@ public class AtomAnimation extends BaseAnimation
     @Override
     protected void onComplete() {
         if (targetPlayer == null || !targetPlayer.isOnline()) return;
-        targetPlayer.playSound(targetPlayer.getLocation(), Sound.BLOCK_AMETHYST_BLOCK_CHIME, 1.0f, 0.8f);
+        if (prefSound) {
+            targetPlayer.playSound(targetPlayer.getLocation(), Sound.BLOCK_AMETHYST_BLOCK_CHIME, 1.0f, 0.8f);
+        }
+        if (prefGlow) {
+            targetPlayer.setGlowing(true);
+            plugin.getServer().getScheduler().runTaskLater(plugin,
+                    () -> { if (targetPlayer.isOnline()) targetPlayer.setGlowing(false); }, 30L);
+        }
     }
 
     // -------------------------------------------------------------------------
@@ -196,7 +225,7 @@ public class AtomAnimation extends BaseAnimation
         }
 
         // Midpoint chime
-        if (localTick == 37) {
+        if (localTick == 37 && prefSound) {
             targetPlayer.playSound(centerLocation, Sound.BLOCK_AMETHYST_BLOCK_CHIME, 0.35f, 1.9f);
         }
     }
@@ -210,17 +239,20 @@ public class AtomAnimation extends BaseAnimation
         Location apex = centerLocation.clone().add(0, 3.0, 0);
 
         if (localTick == 0) {
-            // Tight ring of gold dust radiating outward from the apex
-            for (int i = 0; i < 16; i++) {
-                double a = (2 * Math.PI / 16) * i;
-                Location pos = apex.clone().add(Math.cos(a) * 0.5, 0, Math.sin(a) * 0.5);
-                targetPlayer.spawnParticle(Particle.DUST, pos, 1, 0, 0, 0, 0, GOLD);
+            if (prefParticles) {
+                // Tight ring of gold dust radiating outward from the apex
+                for (int i = 0; i < 16; i++) {
+                    double a = (2 * Math.PI / 16) * i;
+                    Location pos = apex.clone().add(Math.cos(a) * 0.5, 0, Math.sin(a) * 0.5);
+                    targetPlayer.spawnParticle(Particle.DUST, pos, 1, 0, 0, 0, 0, GOLD);
+                }
+                // White burst as the singularity collapses (FLASH requires Color data in 1.21.1)
+                targetPlayer.spawnParticle(Particle.END_ROD, apex, 10, 0.18, 0.18, 0.18, 0.06);
             }
-            // White burst as the singularity collapses (FLASH requires Color data in 1.21.1)
-            targetPlayer.spawnParticle(Particle.END_ROD, apex, 10, 0.18, 0.18, 0.18, 0.06);
-
-            targetPlayer.playSound(centerLocation, Sound.BLOCK_AMETHYST_CLUSTER_BREAK, 0.9f, 2.0f);
-            targetPlayer.playSound(centerLocation, Sound.ENTITY_PLAYER_LEVELUP, 0.4f, 1.8f);
+            if (prefSound) {
+                targetPlayer.playSound(centerLocation, Sound.BLOCK_AMETHYST_CLUSTER_BREAK, 0.9f, 2.0f);
+                targetPlayer.playSound(centerLocation, Sound.ENTITY_PLAYER_LEVELUP, 0.4f, 1.8f);
+            }
         }
 
         // A few END_ROD sparks dissipating upward after the flash
@@ -280,7 +312,7 @@ public class AtomAnimation extends BaseAnimation
         if (!config.getBoolean(ConfigPaths.Default.Atoms.HOLOGRAM_ENABLED, true)) return;
 
         String message = config.getString(ConfigPaths.Default.Atoms.HOLOGRAM_TEXT,
-                "&#00AFA3⚛ &6+%amount% &7Atom");
+                "&#FFD700⚛ &6+%amount% &7Atom");
         message = message.replace("%amount%", String.valueOf(atomAmount));
 
         Location origin = getOrigin();

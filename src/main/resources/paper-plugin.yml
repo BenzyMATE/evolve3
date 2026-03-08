@@ -45,6 +45,11 @@ commands:
     description: View your coin balance
     usage: /<command> [player]
     aliases: [balance, coins, money]
+  enchantpickaxe:
+    description: Admin command to set a custom enchant on your held pickaxe
+    usage: /<command> <enchant> <level>
+    aliases: [epickaxe, ep]
+    permission: evolv3.admin
   test:
     description: Test command
     usage: /<command>

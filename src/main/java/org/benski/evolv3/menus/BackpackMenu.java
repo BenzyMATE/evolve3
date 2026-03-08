@@ -7,7 +7,6 @@ import org.benski.evolv3.core.constants.ConfigPaths;
 import org.benski.evolv3.core.types.MenuType;
 import org.benski.evolv3.datacenters.ArmorDataCenter;
 import org.benski.evolv3.datacenters.PlayerDataCenter;
-import org.benski.evolv3.hooks.VaultHook;
 import org.benski.evolv3.models.armor.ArmorProfile;
 import org.benski.evolv3.models.backpack.Backpack;
 import org.benski.evolv3.models.backpack.BackpackItem;
@@ -156,8 +155,8 @@ public class BackpackMenu extends BaseMenu
             List<String> lore = new ArrayList<>();
             lore.add("");
             lore.add(fmt(player, " &#FFFFFF&lItem"));
-            lore.add(fmt(player, " &8| &#00AFA3Amount: &#FFFFFF" + formatAmount(item.getAmount())));
-            lore.add(fmt(player, " &8| &#00AFA3Value: &#00AFA3⛁ &#FFFFFF" + formatCoins(getItemValue(item))));
+            lore.add(fmt(player, " &8| &#00FFFFAmount: &#FFFFFF" + formatAmount(item.getAmount())));
+            lore.add(fmt(player, " &8| &#00FFFFValue: &#FFD700⛁ &#FFD700" + formatCoins(getItemValue(item))));
             if (item.isEvolveItem()) {
                 lore.add(fmt(player, " &8| &#9932CC✦ Enchant Drop"));
             }
@@ -200,10 +199,9 @@ public class BackpackMenu extends BaseMenu
         List<String> sellLore = new ArrayList<>();
         sellLore.add("");
         sellLore.add(fmt(player, " &#FFFFFF&lSummary"));
-        sellLore.add(fmt(player, " &8| &#00AFA3Selected: &#FFFFFF" + selectedCount + " item" + (selectedCount == 1 ? "" : "s")));
-        sellLore.add(fmt(player, " &8| &#00AFA3Base Value: &#00AFA3⛁ &#FFFFFF" + formatCoins(totalValue)));
-        sellLore.add(fmt(player, " &8| &#00AFA3Helmet Bonus: &#FFFFFF" + String.format("%.2f", multiplier) + "x"));
-        sellLore.add(fmt(player, " &8| &#00FF88Total: &#00AFA3⛁ &#FFFFFF" + formatCoins(finalValue)));
+        sellLore.add(fmt(player, " &8| &#888888Selected: &#FFFFFF" + selectedCount + " item" + (selectedCount == 1 ? "" : "s")));
+        sellLore.add(fmt(player, " &8| &#888888Base Value: &#FFD700⛁ &#FFD700" + formatCoins(totalValue)));
+        sellLore.add(fmt(player, " &8| &#00FF88Total: &#FFD700⛁ &#FFD700" + formatCoins(finalValue)));
         sellLore.add("");
         sellLore.add(hasSelection
                 ? fmt(player, " &8| &aLeft-Click &#AAAAAAto sell")
@@ -212,8 +210,8 @@ public class BackpackMenu extends BaseMenu
 
         ItemStack sellItem = new ItemBuilder(hasSelection ? Material.EMERALD : Material.GRAY_STAINED_GLASS_PANE)
                 .name(hasSelection
-                        ? fmt(player, "&#00AFA3⛁ &#FFFFFF&lSell Selected")
-                        : fmt(player, "&#888888⛁ &#FFFFFF&lSell Selected"))
+                        ? fmt(player, "&#FFD700⛁ &#FFD700&lSell Selected")
+                        : fmt(player, "&#888888⛁ &#888888&lSell Selected"))
                 .lore(sellLore.toArray(new String[0]))
                 .build();
         inventory.setItem(SELL_SLOT, sellItem);
@@ -321,7 +319,7 @@ public class BackpackMenu extends BaseMenu
 
         backpack.removeMarkedItems();
 
-        VaultHook.getInstance().deposit(player, finalValue);
+        profile.addCoins(finalValue);
 
         var messagesConfig = ConfigRegistry.getInstance().get(ConfigNames.MESSAGES);
         List<String> sellMessages = messagesConfig.getStringList(ConfigPaths.Messages.Backpack.SELL_ITEMS);
@@ -350,7 +348,7 @@ public class BackpackMenu extends BaseMenu
     private double getItemValue(BackpackItem item)
     {
         FileConfiguration config = ConfigRegistry.getInstance().get(ConfigNames.DEFAULT);
-        String path = ConfigPaths.Default.BLOCK_DEFAULTS + "." + item.getMaterial().name() + ".Value";
+        String path = ConfigPaths.Default.BLOCK_DEFAULTS + "." + item.getMaterial().name() + ".Sell";
         return config.getDouble(path, 1.0) * item.getAmount();
     }
 

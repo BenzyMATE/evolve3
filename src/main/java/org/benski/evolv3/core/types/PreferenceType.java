@@ -2,10 +2,93 @@ package org.benski.evolv3.core.types;
 
 /**
  * Defines all player preference types and their available options.
- * Simplified preference system with 3 main categories.
  */
 public class PreferenceType
 {
+    /**
+     * Category of a pickup drop — used to drive animation colour and particle effects.
+     */
+    public enum DropCategory
+    {
+        /** Normal mined block — uses the ore-matched colour. */
+        NORMAL,
+        /** Essence bonus triggered — purple aura and particles. */
+        ESSENCE,
+        /** Atom bonus triggered — gold aura and particles. */
+        ATOM
+    }
+
+
+    /**
+     * Pickup animation style — used internally by animation classes to control
+     * visual detail (not directly exposed as a user preference).
+     */
+    public enum PickupAnimation
+    {
+        NORMAL("Normal", "Full animation with particles"),
+        SIMPLE("Simple", "Simplified particle effect"),
+        TEXT_ONLY("Text Only", "Text notification only"),
+        DISABLED("Disabled", "No animation");
+
+        private final String displayName;
+        private final String description;
+
+        PickupAnimation(String displayName, String description)
+        {
+            this.displayName = displayName;
+            this.description = description;
+        }
+
+        public String getDisplayName() { return displayName; }
+        public String getDescription() { return description; }
+    }
+
+    /**
+     * Player-facing pickup effect preference.
+     * Controls which animation (if any) plays when a block is mined.
+     */
+    public enum PickupEffect
+    {
+        DEFAULT("Default", "Block dissolves into your backpack"),
+        SIMPLE("Simple", "Item fades directly to your hand"),
+        DISABLED("Disabled", "Items go straight to backpack");
+
+        private final String displayName;
+        private final String description;
+
+        PickupEffect(String displayName, String description)
+        {
+            this.displayName = displayName;
+            this.description = description;
+        }
+
+        public String getDisplayName() { return displayName; }
+        public String getDescription() { return description; }
+    }
+
+    /**
+     * Speed tiers for the enchant selection animation.
+     */
+    public enum EnchantSpeed
+    {
+        VERY_SLOW("Very Slow"),
+        SLOW("Slow"),
+        NORMAL("Normal"),
+        FAST("Fast"),
+        VERY_FAST("Very Fast");
+
+        public static final EnchantSpeed DEFAULT = NORMAL;
+
+        private final String displayName;
+
+        EnchantSpeed(String displayName)
+        {
+            this.displayName = displayName;
+        }
+
+        public String getDisplayName() { return displayName; }
+    }
+
     /**
      * Animation preference - controls visual and sound effects during gameplay.
      */

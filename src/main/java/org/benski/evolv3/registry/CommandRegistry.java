@@ -4,10 +4,12 @@ import lombok.Getter;
 import org.benski.evolv3.Main;
 import org.benski.evolv3.commands.BackpackCommand;
 import org.benski.evolv3.commands.BalCommand;
+import org.benski.evolv3.commands.EnchantPickaxeCommand;
 import org.benski.evolv3.commands.Evolv3Command;
 import org.benski.evolv3.commands.PickaxeCommand;
 import org.benski.evolv3.commands.PickupAnimationCommand;
 import org.benski.evolv3.commands.PreferencesCommand;
+import org.benski.evolv3.commands.SkinCommand;
 import org.benski.evolv3.commands.TestCommand;
 import org.benski.evolv3.core.abstracts.BaseCommand;
 import org.benski.evolv3.core.interfaces.Registry;
@@ -34,7 +36,9 @@ public class CommandRegistry implements Registry<BaseCommand>
             PickaxeCommand.class,
             BackpackCommand.class,
             PreferencesCommand.class,
-            BalCommand.class
+            BalCommand.class,
+            EnchantPickaxeCommand.class,
+            SkinCommand.class
     );
 
     /**

@@ -55,15 +55,15 @@ public class EnchantAnimation extends BaseEnchantAnimation
     private static final int    STRIP_SIZE     = 30;
 
     // -- Timing ---------------------------------------------------------------
-    private static final int SCROLL_END_TICK   = 80;
-    private static final int SCATTER_DURATION  = 18;   // ticks for blocks to fly away
-    private static final int REVEAL_START_TICK = 102;  // starts after scatter finishes
-    private static final int REVEAL_STAGGER    = 14;   // ticks between each slot's reveal
-    private static final int REVEAL_DURATION   = 22;   // ticks for block→item transform
-    // All 3 reveals complete at: 102 + 2*14 + 22 = 152; add buffer → 168
-    private static final int SELECTION_READY   = REVEAL_START_TICK + 2 * REVEAL_STAGGER
-                                                 + REVEAL_DURATION + 16;
+    // scrollEndTick is instance-based so it can be scaled by player speed preference
+    private static final int SCATTER_DURATION  = 18;
+    private static final int REVEAL_STAGGER    = 14;
+    private static final int REVEAL_DURATION   = 22;
     private static final int MAX_DURATION      = 800;
+
+    private final int scrollEndTick;
+    private final int revealStartTick;
+    private final int selectionReady;
 
     // -- Display scales -------------------------------------------------------
     private static final float BLOCK_SCALE = 0.52f;
@@ -110,11 +110,17 @@ public class EnchantAnimation extends BaseEnchantAnimation
      * @param player         the player receiving the selection
      * @param enchantOptions the three options to present
      * @param onSelect       callback invoked when an option is chosen
+     * @param scrollEndTick  how many ticks the strip scrolls before stopping
+     *                       (controls animation speed — lower = faster)
      */
     public EnchantAnimation(JavaPlugin plugin, org.bukkit.entity.Player player,
                             List<EnchantOption> enchantOptions,
-                            BiConsumer<org.bukkit.entity.Player, EnchantOption> onSelect) {
+                            BiConsumer<org.bukkit.entity.Player, EnchantOption> onSelect,
+                            int scrollEndTick) {
         super(plugin, player, enchantOptions, onSelect, MAX_DURATION);
+        this.scrollEndTick  = scrollEndTick;
+        this.revealStartTick = scrollEndTick + SCATTER_DURATION + 4;
+        this.selectionReady  = revealStartTick + 2 * REVEAL_STAGGER + REVEAL_DURATION + 16;
     }
 
     // -------------------------------------------------------------------------
@@ -123,7 +129,7 @@ public class EnchantAnimation extends BaseEnchantAnimation
 
     @Override
     public int getSelectionReadyTick() {
-        return SELECTION_READY;
+        return selectionReady;
     }
 
     @Override
@@ -249,11 +255,11 @@ public class EnchantAnimation extends BaseEnchantAnimation
     }
 
     // -------------------------------------------------------------------------
-    // Phase 1 — Scroll  (ticks 0 → SCROLL_END_TICK)
+    // Phase 1 — Scroll  (ticks 0 → scrollEndTick)
     // -------------------------------------------------------------------------
 
     private void tickScroll(World world, int tick) {
-        double scrollProgress = Math.min(1.0, (double) tick / SCROLL_END_TICK);
+        double scrollProgress = Math.min(1.0, (double) tick / scrollEndTick);
         double scroll = TOTAL_SCROLL * easeInOutQuart(scrollProgress);
 
         for (int i = 0; i < STRIP_SIZE; i++) {
@@ -267,12 +273,12 @@ public class EnchantAnimation extends BaseEnchantAnimation
             }
         }
 
-        if (tick < SCROLL_END_TICK && tick % 2 == 0) {
+        if (tick < scrollEndTick && tick % 2 == 0) {
             float pitch = (float) (2.0 - 1.5 * scrollProgress);
             world.playSound(stripCenter, Sound.BLOCK_NOTE_BLOCK_HAT, 0.25f, pitch);
         }
 
-        if (tick == SCROLL_END_TICK) {
+        if (tick == scrollEndTick) {
             world.playSound(stripCenter, Sound.BLOCK_BEACON_ACTIVATE, 0.8f, 1.5f);
             world.playSound(stripCenter, Sound.ENTITY_PLAYER_LEVELUP, 0.7f, 1.0f);
 
@@ -290,7 +296,7 @@ public class EnchantAnimation extends BaseEnchantAnimation
     }
 
     // -------------------------------------------------------------------------
-    // Phase 2 — Scatter  (ticks SCROLL_END_TICK+1 → SCROLL_END_TICK+SCATTER_DURATION)
+    // Phase 2 — Scatter  (ticks scrollEndTick+1 → scrollEndTick+SCATTER_DURATION)
     // -------------------------------------------------------------------------
 
     /** Assigns outward velocities to every visible, non-result block and removes hidden ones. */
@@ -322,7 +328,7 @@ public class EnchantAnimation extends BaseEnchantAnimation
     /** Moves scattered blocks outward each tick and removes them at the end. */
     private void tickScatter(World world, int tick) {
         if (!scatterActive) return;
-        int st = tick - SCROLL_END_TICK;
+        int st = tick - scrollEndTick;
         if (st <= 0 || st > SCATTER_DURATION) return;
 
         float shrinkT = (float) st / SCATTER_DURATION;
@@ -348,13 +354,13 @@ public class EnchantAnimation extends BaseEnchantAnimation
     }
 
     // -------------------------------------------------------------------------
-    // Phase 3 — Reveal  (ticks REVEAL_START_TICK → SELECTION_READY)
+    // Phase 3 — Reveal  (ticks revealStartTick → selectionReady)
     // Each slot: concrete block shrinks, enchant item rises, name types out
     // -------------------------------------------------------------------------
 
     private void tickReveal(World world, int tick) {
         // Remove arrows just before the first reveal so they don't overlap the labels
-        if (!arrowsRemoved && tick >= REVEAL_START_TICK - 3) {
+        if (!arrowsRemoved && tick >= revealStartTick - 3) {
             arrowsRemoved = true;
             for (TextDisplay arrow : arrows) {
                 if (arrow != null && !arrow.isDead()) arrow.remove();
@@ -362,7 +368,7 @@ public class EnchantAnimation extends BaseEnchantAnimation
         }
 
         for (int r = 0; r < 3; r++) {
-            int slotStart = REVEAL_START_TICK + r * REVEAL_STAGGER;
+            int slotStart = revealStartTick + r * REVEAL_STAGGER;
             if (tick < slotStart) continue;
 
             int revealTick = tick - slotStart;
@@ -433,7 +439,7 @@ public class EnchantAnimation extends BaseEnchantAnimation
     // -------------------------------------------------------------------------
 
     private void tickIdleParticles(World world, int tick) {
-        if (tick <= SCROLL_END_TICK) return;
+        if (tick <= scrollEndTick) return;
 
         for (int r = 0; r < 3; r++) {
             Location pos = getOptionPosition(r);
@@ -455,7 +461,7 @@ public class EnchantAnimation extends BaseEnchantAnimation
             }
         }
 
-        if (tick == SELECTION_READY) {
+        if (tick == selectionReady) {
             player.sendActionBar(
                 Component.text(FontUtils.toSmallCaps("Look at an enchant and ")).color(NamedTextColor.YELLOW)
                     .append(Component.text(FontUtils.toSmallCaps("LEFT-CLICK"))

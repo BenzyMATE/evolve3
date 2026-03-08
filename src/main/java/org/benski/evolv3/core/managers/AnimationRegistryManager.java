@@ -33,6 +33,9 @@ public class AnimationRegistryManager
     private final JavaPlugin plugin;
     private final Map<String, Class<? extends BaseAnimation>> animationClasses = new HashMap<>();
     private final List<BaseAnimation> activeAnimations = new ArrayList<>();
+    /** Animations added while a tick is in progress, flushed after the iterator finishes. */
+    private final List<BaseAnimation> pendingAdditions = new ArrayList<>();
+    private boolean isTicking = false;
 
     private int maxConcurrentAnimations = 50;
     private int maxResourceCost = 200;
@@ -76,6 +79,7 @@ public class AnimationRegistryManager
     }
 
     private void tick() {
+        isTicking = true;
         Iterator<BaseAnimation> iterator = activeAnimations.iterator();
 
         while (iterator.hasNext()) {
@@ -87,6 +91,14 @@ public class AnimationRegistryManager
             } else if (animation.isPlaying()) {
                 animation.tick();
             }
+        }
+
+        isTicking = false;
+
+        // Flush any animations that were started during this tick
+        if (!pendingAdditions.isEmpty()) {
+            activeAnimations.addAll(pendingAdditions);
+            pendingAdditions.clear();
         }
     }
 
@@ -203,7 +215,13 @@ public class AnimationRegistryManager
         }
 
         animation.play(location, viewers);
-        activeAnimations.add(animation);
+        // If called during a tick (e.g. an animation spawning a child animation),
+        // defer the addition so we don't modify the list mid-iteration.
+        if (isTicking) {
+            pendingAdditions.add(animation);
+        } else {
+            activeAnimations.add(animation);
+        }
         currentResourceCost += animation.getResourceCost();
         return true;
     }
@@ -238,7 +256,11 @@ public class AnimationRegistryManager
         for (BaseAnimation animation : new ArrayList<>(activeAnimations)) {
             animation.stop();
         }
+        for (BaseAnimation animation : pendingAdditions) {
+            animation.stop();
+        }
         activeAnimations.clear();
+        pendingAdditions.clear();
         currentResourceCost = 0;
     }
 

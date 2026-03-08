@@ -14,6 +14,8 @@ import org.benski.evolv3.core.managers.StorageRegistryManager;
 import org.benski.evolv3.core.managers.WorldGuardManager;
 import org.benski.evolv3.datacenters.PickaxeDataCenter;
 import org.benski.evolv3.models.pickaxe.EnchantData;
+import org.benski.evolv3.datacenters.PlayerDataCenter;
+import org.benski.evolv3.models.player.EnchantPreference;
 import org.benski.evolv3.registry.AnimationRegistry;
 import org.benski.evolv3.registry.DataCenterRegistry;
 import org.bukkit.Location;
@@ -115,6 +117,12 @@ public class FurnaceEnchant implements Listener
             return;
         }
 
+        PlayerDataCenter playerDC = DataCenterRegistry.getInstance().getPlayerDataCenter();
+        if (playerDC != null) {
+            org.benski.evolv3.models.player.PlayerProfile pp = playerDC.getLocal(player);
+            if (pp != null && pp.backpack.isFull()) return;
+        }
+
         PickaxeDataCenter dataCenter = DataCenterRegistry.getInstance().getPickaxeDataCenter();
         if (dataCenter == null) return;
         dataCenter.get(player, profile -> {
@@ -187,13 +195,19 @@ public class FurnaceEnchant implements Listener
      */
     private void playSmeltEffects(Block block, Player player, Material original, Material smeltResult)
     {
-        block.getWorld().spawnParticle(Particle.FLAME,
-                block.getLocation().add(0.5, 0.5, 0.5),
-                10, 0.2, 0.2, 0.2, 0.02);
+        EnchantPreference pref = getEnchantPref(player);
 
-        player.playSound(block.getLocation(), Sound.BLOCK_FIRE_EXTINGUISH, 1.0f, 1.0f);
+        if (pref.particles) {
+            block.getWorld().spawnParticle(Particle.FLAME,
+                    block.getLocation().add(0.5, 0.5, 0.5),
+                    10, 0.2, 0.2, 0.2, 0.02);
+        }
 
-        if (enchantsConfig.getBoolean(ConfigPaths.Enchants.Furnace.HOLOGRAM_ENABLED, true)) {
+        if (pref.sound) {
+            player.playSound(block.getLocation(), Sound.BLOCK_FIRE_EXTINGUISH, 1.0f, 1.0f);
+        }
+
+        if (pref.hologram && enchantsConfig.getBoolean(ConfigPaths.Enchants.Furnace.HOLOGRAM_ENABLED, true)) {
             String hologramText = enchantsConfig.getString(
                             ConfigPaths.Enchants.Furnace.HOLOGRAM_MESSAGE,
                             "&7%original% &a> &a%smelt%")
@@ -204,12 +218,34 @@ public class FurnaceEnchant implements Listener
                     new HologramAnimation(plugin, hologramText), hologramLoc, List.of(player));
         }
 
-        String chatMessage = messagesConfig.getString(ConfigPaths.Messages.Enchants.FURNACE_TRIGGERED);
-        if (chatMessage != null && !chatMessage.isEmpty()) {
-            chatMessage = chatMessage.replace("%original%", formatMaterialName(original));
-            chatMessage = chatMessage.replace("%result%", formatMaterialName(smeltResult));
-            player.sendMessage(Utils.formatMessage(player, chatMessage));
+        if (pref.message) {
+            String chatMessage = messagesConfig.getString(ConfigPaths.Messages.Enchants.FURNACE_TRIGGERED);
+            if (chatMessage != null && !chatMessage.isEmpty()) {
+                chatMessage = chatMessage.replace("%original%", formatMaterialName(original));
+                chatMessage = chatMessage.replace("%result%", formatMaterialName(smeltResult));
+                player.sendMessage(Utils.formatMessage(player, chatMessage));
+            }
         }
+
+        if (pref.title) {
+            String title    = messagesConfig.getString(ConfigPaths.Messages.Enchants.FURNACE_TRIGGERED_TITLE, "&#FF6B35&lFurnace");
+            String subtitle = messagesConfig.getString(ConfigPaths.Messages.Enchants.FURNACE_TRIGGERED_SUBTITLE, "&#CCCCCC%original% &#FF6B35> &#CCCCCC%result%");
+            subtitle = subtitle.replace("%original%", formatMaterialName(original))
+                               .replace("%result%", formatMaterialName(smeltResult));
+            player.sendTitle(
+                    Utils.formatMessage(player, title),
+                    Utils.formatMessage(player, subtitle),
+                    5, 30, 10);
+        }
+    }
+
+    private EnchantPreference getEnchantPref(Player player) {
+        PlayerDataCenter pdc = DataCenterRegistry.getInstance().getPlayerDataCenter();
+        if (pdc == null) return new EnchantPreference();
+        org.benski.evolv3.models.player.PlayerProfile profile = pdc.getLocal(player);
+        if (profile == null) return new EnchantPreference();
+        String enchantName = enchantsConfig.getString(ConfigPaths.Enchants.Furnace.NAME, "Furnace");
+        return profile.preferences.getOrCreateEnchantPref(enchantName);
     }
 
     /**

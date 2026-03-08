@@ -10,6 +10,8 @@ import org.benski.evolv3.core.managers.StorageRegistryManager;
 import org.benski.evolv3.datacenters.PickaxeDataCenter;
 import org.benski.evolv3.models.pickaxe.EnchantData;
 import org.benski.evolv3.models.pickaxe.PickaxeProfile;
+import org.benski.evolv3.datacenters.PlayerDataCenter;
+import org.benski.evolv3.models.player.PlayerProfile;
 import org.benski.evolv3.registry.DataCenterRegistry;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
@@ -30,6 +32,8 @@ import org.jetbrains.annotations.Nullable;
  *   <li>%evolv3_player_world%</li>
  *   <li>%evolv3_player_health%</li>
  *   <li>%evolv3_player_level%</li>
+ *   <li>%evolv3_player_essence%</li>
+ *   <li>%evolv3_player_coins%</li>
  * </ul>
  * <p>Pickaxe placeholders:</p>
  * <ul>
@@ -117,17 +121,47 @@ public class PlaceholderAPIExpansion extends PlaceholderExpansion
      */
     private String handlePlayerPlaceholder(Player player, String param) {
         return switch (param) {
-            case "name" -> player.getName();
+            case "name"        -> player.getName();
             case "displayname" -> player.getDisplayName();
-            case "uuid" -> player.getUniqueId().toString();
-            case "world" -> player.getWorld().getName();
-            case "health" -> String.valueOf((int) player.getHealth());
-            case "max_health" -> String.valueOf((int) player.getMaxHealth());
-            case "food" -> String.valueOf(player.getFoodLevel());
-            case "level" -> String.valueOf(player.getLevel());
-            case "exp" -> String.valueOf((int) (player.getExp() * 100));
+            case "uuid"        -> player.getUniqueId().toString();
+            case "world"       -> player.getWorld().getName();
+            case "health"      -> String.valueOf((int) player.getHealth());
+            case "max_health"  -> String.valueOf((int) player.getMaxHealth());
+            case "food"        -> String.valueOf(player.getFoodLevel());
+            case "level"       -> String.valueOf(player.getLevel());
+            case "exp"         -> String.valueOf((int) (player.getExp() * 100));
+            case "essence"     -> {
+                PlayerDataCenter dc = DataCenterRegistry.getInstance().getPlayerDataCenter();
+                if (dc == null) yield "0";
+                PlayerProfile pp = dc.getLocal(player);
+                yield pp != null ? String.valueOf(pp.essence) : "0";
+            }
+            case "backpack_items" -> {
+                PlayerDataCenter dc = DataCenterRegistry.getInstance().getPlayerDataCenter();
+                if (dc == null) yield "0";
+                PlayerProfile pp = dc.getLocal(player);
+                yield pp != null ? String.valueOf(pp.backpack.getTotalItems()) : "0";
+            }
+            case "backpack_size" -> {
+                PlayerDataCenter dc = DataCenterRegistry.getInstance().getPlayerDataCenter();
+                if (dc == null) yield "0";
+                PlayerProfile pp = dc.getLocal(player);
+                yield pp != null ? String.valueOf(pp.backpack.getMaxSize()) : "0";
+            }
+            case "coins"       -> {
+                PlayerDataCenter dc = DataCenterRegistry.getInstance().getPlayerDataCenter();
+                if (dc == null) yield "0";
+                PlayerProfile pp = dc.getLocal(player);
+                yield pp != null ? formatCoins(pp.coins) : "0";
+            }
             default -> null;
         };
+    }
+
+    private String formatCoins(double amount) {
+        if (amount >= 1_000_000) return String.format("%.1fM", amount / 1_000_000);
+        if (amount >= 1_000)    return String.format("%.1fK", amount / 1_000);
+        return String.valueOf((long) amount);
     }
 
     /**

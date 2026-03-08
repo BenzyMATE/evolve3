@@ -15,8 +15,10 @@ import org.benski.evolv3.datacenters.PickaxeDataCenter;
 import org.benski.evolv3.managers.PickaxeManager;
 import org.benski.evolv3.models.pickaxe.EnchantData;
 import org.benski.evolv3.models.pickaxe.PickaxeProfile;
+import org.benski.evolv3.items.AncientResin;
 import org.benski.evolv3.registry.ConfigRegistry;
 import org.benski.evolv3.registry.DataCenterRegistry;
+import org.benski.evolv3.registry.MenuRegistry;
 import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.configuration.file.FileConfiguration;
@@ -24,6 +26,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.Damageable;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -135,21 +138,29 @@ public class PickaxeMenu extends BaseMenu
             inventory.setItem(slot, essenceItem.clone());
         }
 
-        // Slot 40: Clone of the player's held pickaxe (footer stripped)
+        // Slot 40: Clone of the player's held pickaxe (footer stripped, storage action appended)
         ItemStack held = player.getInventory().getItemInMainHand();
         if (held.getType() != Material.AIR) {
             ItemStack display = held.clone();
             FileConfiguration defaultConfig = ConfigRegistry.getInstance().get(ConfigNames.DEFAULT);
+            FileConfiguration menus = ConfigRegistry.getInstance().get(ConfigNames.MENUS);
             int footerSize = defaultConfig.getStringList(ConfigPaths.Default.Pickaxe.LORE_FOOTER).size();
+            String storageAction = menus.getString(ConfigPaths.Menus.PickaxeMenu.STORAGE_ACTION_LINE,
+                    " &8| &aLeft-Click &#AAAAAAto open pickaxe storage");
+            String repairAction = menus.getString(ConfigPaths.Menus.PickaxeMenu.REPAIR_ACTION_LINE,
+                    " &8| &#FFEE00Right-Click &#AAAAAAto repair &#777777(&#E8890A5 &#777777Ancient Resin)");
             ItemMeta displayMeta = display.getItemMeta();
-            if (displayMeta != null && footerSize > 0) {
+            if (displayMeta != null) {
                 List<Component> lore = displayMeta.lore();
-                if (lore != null && lore.size() > footerSize) {
-                    List<Component> trimmed = new ArrayList<>(lore.subList(0, lore.size() - footerSize));
-                    trimmed.add(Component.empty());
-                    displayMeta.lore(trimmed);
-                    display.setItemMeta(displayMeta);
-                }
+                List<Component> trimmed = lore != null && lore.size() > footerSize
+                        ? new ArrayList<>(lore.subList(0, lore.size() - footerSize))
+                        : (lore != null ? new ArrayList<>(lore) : new ArrayList<>());
+                trimmed.add(Component.empty());
+                trimmed.add(deserialize(formatMessage(player, storageAction)));
+                trimmed.add(deserialize(formatMessage(player, repairAction)));
+                trimmed.add(Component.empty());
+                displayMeta.lore(trimmed);
+                display.setItemMeta(displayMeta);
             }
             inventory.setItem(PICKAXE_SLOT, display);
         }
@@ -165,7 +176,12 @@ public class PickaxeMenu extends BaseMenu
                 if (slot == ENCHANT_SLOTS[i]) {
                     if (i < clickProfile.enchants.items.size()) {
                         EnchantData enchant = clickProfile.enchants.items.get(i);
-                        handleEnchantSlotClick(player, EnchantAnimationConfig.getDisplayName(enchant.name));
+                        String displayName = EnchantAnimationConfig.getDisplayName(enchant.name);
+                        if (event.isRightClick()) {
+                            handleEnchantToggle(player, displayName);
+                        } else {
+                            handleEnchantSlotClick(player, displayName);
+                        }
                     }
                     return true;
                 }
@@ -190,6 +206,19 @@ public class PickaxeMenu extends BaseMenu
                 handleEnchantRollClick(player);
                 return true;
             }
+        }
+
+        // Pickaxe display slot — left-click opens storage, right-click repairs
+        if (slot == PICKAXE_SLOT) {
+            if (event.isRightClick()) {
+                handleRepair(player);
+            } else {
+                PickaxeLimitMenu storageMenu = (PickaxeLimitMenu) MenuRegistry.getInstance().get("pickaxe_limit");
+                if (storageMenu != null) {
+                    storageMenu.openMenu(player);
+                }
+            }
+            return true;
         }
 
         return false;
@@ -256,40 +285,45 @@ public class PickaxeMenu extends BaseMenu
         int    maxLevel = enchant.maxLevel;
         double chance   = enchant.getCurrentChance();
         int    cost     = EnchantAnimationConfig.getEnchantCost(displayName) * level;
-        String status   = enchant.enabled ? "&#00FF88Enabled" : "&#FF5555Disabled";
 
         // Read lore template from config and substitute all runtime tokens
         List<String> rawLore = EnchantAnimationConfig.getEnchantLore(displayName);
-        List<Component> lore = new ArrayList<>(rawLore.size() + 3);
+        List<Component> lore = new ArrayList<>(rawLore.size());
+        boolean isMax = enchant.isMaxLevel();
+        String maxDisplay = ConfigRegistry.getInstance().get(ConfigNames.ENCHANTS)
+                .getString(ConfigPaths.Enchants.MAX_ENCHANT, "&6&lMAX");
         for (String line : rawLore) {
+            // Skip cost line when at max level
+            if (isMax && line.contains("{cost}")) {
+                continue;
+            }
             // Blank lines must be Component.empty() to render as a blank lore line reliably.
             if (line.isEmpty()) {
                 lore.add(Component.empty());
                 continue;
             }
-            String processed = line
+            String levelDisplay = isMax ? maxDisplay : String.valueOf(level);
+            // When at max, strip the "/maxLevel" segment from the level line
+            String rawLine = isMax ? line.replace("&#888888/&#FFFFFF{maxLevel}", "") : line;
+            String processed = rawLine
                     .replace("{rarity}",      rarityStr)
                     .replace("{rarityColor}", rarityColor)
-                    .replace("{level}",       String.valueOf(level))
+                    .replace("{level}",       levelDisplay)
                     .replace("{maxLevel}",    String.valueOf(maxLevel))
                     .replace("{cost}",        String.valueOf(cost))
-                    .replace("{chance}",      String.format("%.1f", chance))
-                    .replace("{status}",      status);
+                    .replace("{chance}",      String.format("%.1f", chance));
             lore.add(deserialize(formatMessage(player, processed)));
-        }
-
-        // Append max-level indicator when the enchant is fully levelled
-        if (enchant.isMaxLevel()) {
-            lore.add(Component.empty());
-            lore.add(deserialize(formatMessage(player, " &#00AFA3&lMAX LEVEL")));
-            lore.add(Component.empty());
         }
 
         // Skull icon from config texture URL, or material fallback
         ItemStack item = EnchantAnimationConfig.createEnchantItem(displayName);
         ItemMeta meta = item.getItemMeta();
         if (meta == null) return item;
-        meta.displayName(deserialize(formatMessage(player, rarityColor + "&l" + displayName)));
+        if (enchant.enabled) {
+            meta.displayName(deserialize(formatMessage(player, "&#00FF88✔ " + rarityColor + "&l" + displayName)));
+        } else {
+            meta.displayName(deserialize(formatMessage(player, "&#FF5555✖ &#FF5555&l" + displayName)));
+        }
         meta.lore(lore);
         item.setItemMeta(meta);
         return item;
@@ -352,6 +386,140 @@ public class PickaxeMenu extends BaseMenu
         if (upgraded) {
             // Refresh the enchant grid so the new level is reflected immediately
             refresh(player);
+        }
+    }
+
+    /**
+     * Handles a right-click on an enchant grid slot, toggling the enchant on or off.
+     *
+     * @param player      the player who clicked
+     * @param displayName the enchant's display name for the clicked slot
+     */
+    private void handleEnchantToggle(Player player, String displayName)
+    {
+        PickaxeProfile profile = pickaxeDataCenter.getLocal(player);
+        if (profile == null) return;
+
+        String internalName = displayName.toLowerCase();
+        EnchantData enchant = profile.enchants.getEnchant(internalName);
+        FileConfiguration messages = ConfigRegistry.getInstance().get(ConfigNames.MESSAGES);
+
+        if (enchant == null) {
+            String msg = messages.getString(ConfigPaths.Messages.Pickaxe.ENCHANT_NOT_UNLOCKED,
+                    "%evolv3_prefix% &cThis enchant has not been unlocked yet.");
+            player.sendMessage(formatMessage(player, msg));
+            return;
+        }
+
+        enchant.enabled = !enchant.enabled;
+        profile.save();
+
+        String msgPath = enchant.enabled
+                ? ConfigPaths.Messages.Pickaxe.ENCHANT_TOGGLE_ENABLED
+                : ConfigPaths.Messages.Pickaxe.ENCHANT_TOGGLE_DISABLED;
+        String fallback = enchant.enabled
+                ? "%evolv3_prefix% &#00FF88✔ &#FFFFFF%enchant_name% &#CCCCCCenabled."
+                : "%evolv3_prefix% &#FF5555✗ &#FFFFFF%enchant_name% &#CCCCCCdisabled.";
+        String msg = messages.getString(msgPath, fallback)
+                .replace("%enchant_name%", displayName);
+        player.sendMessage(formatMessage(player, msg));
+
+        refresh(player);
+    }
+
+    /**
+     * Handles a right-click on the pickaxe display slot, repairing the held pickaxe
+     * at the cost of Ancient Resin from the player's inventory.
+     *
+     * @param player the player who right-clicked
+     */
+    private void handleRepair(Player player)
+    {
+        ItemStack held = player.getInventory().getItemInMainHand();
+        if (held.getType() == Material.AIR || !held.getType().name().contains("PICKAXE")) {
+            FileConfiguration messages = ConfigRegistry.getInstance().get(ConfigNames.MESSAGES);
+            String msg = messages.getString(ConfigPaths.Messages.Pickaxe.NO_PICKAXE,
+                    "%evolv3_prefix% &cYou must be holding a pickaxe to repair it.");
+            player.sendMessage(formatMessage(player, msg));
+            return;
+        }
+
+        ItemMeta heldMeta = held.getItemMeta();
+        if (!(heldMeta instanceof Damageable dmg)) return;
+
+        if (dmg.getDamage() == 0) {
+            sendMessageList(player, ConfigPaths.Messages.PickaxeLimit.REPAIR_ALREADY_FULL);
+            player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
+            return;
+        }
+
+        FileConfiguration config = ConfigRegistry.getInstance().get(ConfigNames.DEFAULT);
+        int repairCost = config.getInt(ConfigPaths.Default.AncientResin.REPAIR_COST, 5);
+
+        if (countAncientResinInInventory(player) < repairCost) {
+            sendMessageList(player, ConfigPaths.Messages.PickaxeLimit.REPAIR_INSUFFICIENT_WOOD,
+                    "%required%", String.valueOf(repairCost));
+            player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
+            return;
+        }
+
+        removeAncientResinFromInventory(player, repairCost);
+
+        dmg.setDamage(0);
+        held.setItemMeta(dmg);
+        // Write the modified item back to the actual inventory slot so the
+        // native durability bar updates immediately (getItemInMainHand returns a copy).
+        player.getInventory().setItemInMainHand(held);
+
+        // Sync durability to the pickaxe profile if one is loaded
+        String pickaxeId = ItemStackExtensions.getData(held, "id");
+        if (pickaxeId != null && !pickaxeId.isEmpty()) {
+            PickaxeProfile profile = pickaxeDataCenter.getAll().get(pickaxeId);
+            if (profile != null) {
+                profile.durability = 0;
+                profile.save(null);
+            }
+        }
+
+        player.playSound(player.getLocation(), Sound.BLOCK_ANVIL_USE, 1.0f, 1.2f);
+        sendMessageList(player, ConfigPaths.Messages.PickaxeLimit.REPAIR_SUCCESS);
+        closeMenu(player);
+    }
+
+    private void sendMessageList(Player player, String path, String... replacements)
+    {
+        List<String> lines = ConfigRegistry.getInstance().get(ConfigNames.MESSAGES).getStringList(path);
+        for (String line : lines) {
+            for (int i = 0; i + 1 < replacements.length; i += 2) {
+                line = line.replace(replacements[i], replacements[i + 1]);
+            }
+            player.sendMessage(formatMessage(player, line));
+        }
+    }
+
+    private int countAncientResinInInventory(Player player)
+    {
+        int total = 0;
+        for (ItemStack item : player.getInventory().getContents()) {
+            if (AncientResin.isAncientResin(item)) total += item.getAmount();
+        }
+        return total;
+    }
+
+    private void removeAncientResinFromInventory(Player player, int amount)
+    {
+        int remaining = amount;
+        ItemStack[] contents = player.getInventory().getContents();
+        for (int i = 0; i < contents.length && remaining > 0; i++) {
+            ItemStack item = contents[i];
+            if (!AncientResin.isAncientResin(item)) continue;
+            if (item.getAmount() <= remaining) {
+                remaining -= item.getAmount();
+                player.getInventory().setItem(i, new ItemStack(Material.AIR));
+            } else {
+                item.setAmount(item.getAmount() - remaining);
+                remaining = 0;
+            }
         }
     }
 

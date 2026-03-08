@@ -2,6 +2,7 @@ package org.benski.evolv3.models.backpack;
 
 import lombok.Getter;
 import lombok.Setter;
+import lombok.AccessLevel;
 import org.benski.evolv3.core.abstracts.MongoSubDoc;
 import org.benski.evolv3.core.constants.ConfigNames;
 import org.benski.evolv3.core.constants.ConfigPaths;
@@ -37,7 +38,9 @@ public class Backpack extends MongoSubDoc
 
     /**
      * Whether the backpack is at maximum capacity.
+     * Suppressed in favour of a live-computed {@link #isFull()} to prevent stale state.
      */
+    @Getter(AccessLevel.NONE)
     private boolean full;
 
     /**
@@ -70,9 +73,17 @@ public class Backpack extends MongoSubDoc
      * @param evolveItem Whether from an enchantment effect
      * @return true if the item was added successfully
      */
+    /**
+     * Returns whether the backpack has reached its total-item capacity.
+     * Always computed live from {@code totalItems} to prevent stale cached state.
+     */
+    public boolean isFull() {
+        return totalItems >= maxSize;
+    }
+
     public boolean addItem(Player player, Material material, int amount, boolean evolveItem)
     {
-        if (full && !hasMaterial(material)) {
+        if (totalItems >= maxSize) {
             return false;
         }
 
@@ -83,10 +94,6 @@ public class Backpack extends MongoSubDoc
         if (existingItem.isPresent()) {
             existingItem.get().addAmount(amount);
         } else {
-            if (items.size() >= maxSize) {
-                full = true;
-                return false;
-            }
             items.add(BackpackItem.create(material, amount, evolveItem));
         }
 
@@ -250,6 +257,8 @@ public class Backpack extends MongoSubDoc
                 items.add(item);
             }
         }
+        // Recompute stats after load so cached fields reflect actual item list
+        updateStats();
     }
 
     /**

@@ -53,6 +53,11 @@ public final class PlayerProfile extends MongoDocument
     public int essence;
 
     /**
+     * Player's coin balance (internal currency, independent of Vault).
+     */
+    public double coins;
+
+    /**
      * Player's preferences (embedded sub-document).
      */
     public PlayerPreferences preferences = new PlayerPreferences();
@@ -121,6 +126,7 @@ public final class PlayerProfile extends MongoDocument
         doc.put("isEvolving", isEvolving);
         doc.put("pickaxeLimit", pickaxeLimit);
         doc.put("essence", essence);
+        doc.put("coins", coins);
 
         if (preferences != null) {
             doc.put("preferences", preferences.toDocument());
@@ -147,6 +153,8 @@ public final class PlayerProfile extends MongoDocument
         this.isEvolving = document.getBoolean("isEvolving", false);
         this.pickaxeLimit = document.getInteger("pickaxeLimit", 0);
         this.essence = document.getInteger("essence", 0);
+        Double savedCoins = document.getDouble("coins");
+        this.coins = savedCoins != null ? savedCoins : 0.0;
 
         Document prefsDoc = document.get("preferences", Document.class);
         if (prefsDoc != null) {
@@ -218,8 +226,9 @@ public final class PlayerProfile extends MongoDocument
         profile.initialize(player);
 
         FileConfiguration config = StorageRegistryManager.getInstance().getConfig(ConfigNames.DEFAULT);
-        profile.pickaxeLimit = config.getInt(ConfigPaths.Default.Player.DEFAULT_PICKAXE_LIMIT, 2);
+        profile.pickaxeLimit = config.getInt(ConfigPaths.Default.Player.DEFAULT_PICKAXE_LIMIT, 1);
         profile.essence = config.getInt(ConfigPaths.Default.Player.DEFAULT_ESSENCE, 0);
+        profile.coins = config.getDouble(ConfigPaths.Default.Player.DEFAULT_COINS, 0.0);
         profile.isEnchanting = false;
         profile.isEvolving = false;
         profile.preferences = new PlayerPreferences();
@@ -267,6 +276,29 @@ public final class PlayerProfile extends MongoDocument
     }
 
     /**
+     * Adds coins to the player's balance.
+     *
+     * @param amount The amount to add
+     */
+    public void addCoins(double amount)
+    {
+        this.coins += amount;
+    }
+
+    /**
+     * Removes coins from the player's balance.
+     *
+     * @param amount The amount to remove
+     * @return true if the player had enough coins
+     */
+    public boolean removeCoins(double amount)
+    {
+        if (this.coins < amount) return false;
+        this.coins -= amount;
+        return true;
+    }
+
+    /**
      * Checks if the player can create another pickaxe.
      *
      * @param currentPickaxeCount The player's current number of pickaxes
@@ -277,11 +309,4 @@ public final class PlayerProfile extends MongoDocument
         return currentPickaxeCount < pickaxeLimit;
     }
 
-    /**
-     * Increases the player's pickaxe limit by one.
-     */
-    public void increasePickaxeLimit()
-    {
-        this.pickaxeLimit++;
-    }
 }

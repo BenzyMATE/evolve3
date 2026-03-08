@@ -3,9 +3,10 @@ package org.benski.evolv3.animations.pickup;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
+import org.benski.evolv3.core.abstracts.BasePickupAnimation;
+import org.benski.evolv3.core.types.PreferenceType;
 import org.bukkit.Color;
 import org.bukkit.Location;
-import org.bukkit.Sound;
 import org.bukkit.World;
 import org.bukkit.entity.ItemDisplay;
 import org.bukkit.entity.Player;
@@ -13,6 +14,7 @@ import org.bukkit.entity.TextDisplay;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.util.Transformation;
+import org.jetbrains.annotations.Nullable;
 import org.joml.AxisAngle4f;
 import org.joml.Vector3f;
 
@@ -22,14 +24,22 @@ import java.util.List;
 
 /**
  * Teleport pickup animation.
- * Items and XP text shrink and float upward before disappearing.
- * Clean, minimal animation for quick mining feedback.
+ * Supports three visual styles controlled by {@link PreferenceType.PickupAnimation}:
+ * <ul>
+ *   <li>NORMAL – item display with spin + XP text, full duration.</li>
+ *   <li>SIMPLE – item display without rotation, faster linear fade.</li>
+ *   <li>TEXT_ONLY – XP text hologram only, no item display.</li>
+ * </ul>
  */
 public class TeleportPickupAnimation extends BasePickupAnimation
 {
     private static final int DEFAULT_DURATION = 15;
+    /** Effective speed multiplier for SIMPLE mode — finishes ~1.5× faster. */
+    private static final double SIMPLE_SPEED_MULT = 1.5;
+
     private static final float ITEM_SCALE = 0.45f;
     private static final float TEXT_SCALE = 0.5f;
+    private static final float TEXT_ONLY_SCALE = 0.65f;
     private static final double TEXT_OFFSET_Y = 0.4;
 
     private final List<TeleportItem> teleportItems = new ArrayList<>();
@@ -38,180 +48,173 @@ public class TeleportPickupAnimation extends BasePickupAnimation
         super(plugin, DEFAULT_DURATION);
     }
 
+    /** {@inheritDoc} */
     @Override
     public String getAnimationId() {
         return "teleport";
     }
 
+    /** {@inheritDoc} */
     @Override
     public String getDisplayName() {
         return "Teleport";
     }
 
+    /** {@inheritDoc} */
     @Override
     public String getDescription() {
         return "Items phase out and teleport directly to you";
     }
 
+    /** {@inheritDoc} */
     @Override
     protected void onStart() {
         Location origin = getOrigin();
         if (origin == null || origin.getWorld() == null || targetPlayer == null) return;
 
         World world = origin.getWorld();
+        Collection<Player> viewers = getViewers();
 
         for (ItemStack item : items) {
             if (item == null || item.getType().isAir()) continue;
 
-            // Spawn exactly at block center
             Location spawnLoc = origin.clone();
+            int xpAmount = item.getAmount();
 
-            ItemDisplay display = world.spawn(spawnLoc, ItemDisplay.class, entity -> {
-                entity.setItemStack(item);
-                entity.setTransformation(new Transformation(
-                    new Vector3f(0, 0, 0),
-                    new AxisAngle4f(0, 0, 1, 0),
-                    new Vector3f(ITEM_SCALE, ITEM_SCALE, ITEM_SCALE),
-                    new AxisAngle4f(0, 0, 1, 0)
-                ));
-                entity.setPersistent(false);
-                entity.setBillboard(ItemDisplay.Billboard.CENTER);
-                entity.setGlowing(true);
+            // Item display — not spawned in TEXT_ONLY mode
+            @Nullable ItemDisplay display = null;
+            if (style != PreferenceType.PickupAnimation.TEXT_ONLY) {
+                display = world.spawn(spawnLoc, ItemDisplay.class, entity -> {
+                    entity.setItemStack(item);
+                    entity.setTransformation(new Transformation(
+                        new Vector3f(0, 0, 0),
+                        new AxisAngle4f(0, 0, 1, 0),
+                        new Vector3f(ITEM_SCALE, ITEM_SCALE, ITEM_SCALE),
+                        new AxisAngle4f(0, 0, 1, 0)
+                    ));
+                    entity.setPersistent(false);
+                    entity.setBillboard(ItemDisplay.Billboard.CENTER);
+                    entity.setGlowing(true);
+                    applyViewers(entity, viewers, plugin);
+                });
+            }
 
-                Collection<Player> viewers = getViewers();
-                if (viewers != null) {
-                    entity.setVisibleByDefault(false);
-                    for (Player viewer : viewers) {
-                        viewer.showEntity(plugin, entity);
-                    }
-                }
-            });
-
-            // Create text display showing XP gain
-            int xpAmount = item.getAmount(); // TODO: Calculate actual XP from pickaxe level system
-            String itemText = "+" + xpAmount + " XP";
+            // Text display — always spawned
+            float textScale = style == PreferenceType.PickupAnimation.TEXT_ONLY ? TEXT_ONLY_SCALE : TEXT_SCALE;
             Location textLoc = spawnLoc.clone().add(0, TEXT_OFFSET_Y, 0);
-
             TextDisplay textDisplay = world.spawn(textLoc, TextDisplay.class, entity -> {
-                entity.text(Component.text(itemText)
+                entity.text(Component.text("+" + xpAmount + " XP")
                     .color(NamedTextColor.GREEN)
                     .decorate(TextDecoration.BOLD));
                 entity.setTransformation(new Transformation(
                     new Vector3f(0, 0, 0),
                     new AxisAngle4f(0, 0, 1, 0),
-                    new Vector3f(TEXT_SCALE, TEXT_SCALE, TEXT_SCALE),
+                    new Vector3f(textScale, textScale, textScale),
                     new AxisAngle4f(0, 0, 1, 0)
                 ));
                 entity.setPersistent(false);
                 entity.setBillboard(TextDisplay.Billboard.CENTER);
                 entity.setBackgroundColor(Color.fromARGB(0, 0, 0, 0));
                 entity.setShadowed(true);
-
-                Collection<Player> viewers = getViewers();
-                if (viewers != null) {
-                    entity.setVisibleByDefault(false);
-                    for (Player viewer : viewers) {
-                        viewer.showEntity(plugin, entity);
-                    }
-                }
+                applyViewers(entity, viewers, plugin);
             });
 
-            teleportItems.add(new TeleportItem(
-                display,
-                textDisplay,
-                spawnLoc.clone(),
-                item
-            ));
+            teleportItems.add(new TeleportItem(display, textDisplay, spawnLoc.clone(), item));
         }
     }
 
+    /** {@inheritDoc} */
     @Override
     protected void onTick(double progress) {
         Location origin = getOrigin();
         if (origin == null || origin.getWorld() == null) return;
 
-        // Simple shrink and fade animation
-        double easedProgress = easeInOutCubic(progress);
+        // SIMPLE mode finishes faster by scaling progress up
+        double effectiveProgress = style == PreferenceType.PickupAnimation.SIMPLE
+                ? Math.min(progress * SIMPLE_SPEED_MULT, 1.0) : progress;
+        double easedProgress = easeInOutCubic(effectiveProgress);
 
         for (TeleportItem tItem : teleportItems) {
-            if (tItem.display.isDead()) continue;
-
-            // Shrink both item and text
-            float scale = ITEM_SCALE * (float) (1 - easedProgress);
-            float textScale = TEXT_SCALE * (float) (1 - easedProgress);
-
-            // Slight upward float
-            Location floatPos = tItem.startPosition.clone().add(0, easedProgress * 0.6, 0);
-            tItem.display.teleport(floatPos);
-
-            // Text follows above item
+            // Text display
             if (!tItem.textDisplay.isDead()) {
-                Location textPos = floatPos.clone().add(0, TEXT_OFFSET_Y * (1 - easedProgress * 0.3), 0);
+                float ts = (style == PreferenceType.PickupAnimation.TEXT_ONLY ? TEXT_ONLY_SCALE : TEXT_SCALE)
+                           * (float) (1 - easedProgress);
+                double riseY = style == PreferenceType.PickupAnimation.TEXT_ONLY ? 0.9 : 0.6;
+                Location floatBase = tItem.startPosition.clone().add(0, easedProgress * riseY, 0);
+                Location textPos = floatBase.clone().add(0, TEXT_OFFSET_Y * (1 - easedProgress * 0.3), 0);
                 tItem.textDisplay.teleport(textPos);
                 tItem.textDisplay.setTransformation(new Transformation(
                     new Vector3f(0, 0, 0),
                     new AxisAngle4f(0, 0, 1, 0),
-                    new Vector3f(textScale, textScale, textScale),
+                    new Vector3f(ts, ts, ts),
                     new AxisAngle4f(0, 0, 1, 0)
                 ));
             }
 
-            // Rotate item
-            tItem.rotation += 0.15f;
-            tItem.display.setTransformation(new Transformation(
-                new Vector3f(0, 0, 0),
-                new AxisAngle4f(tItem.rotation, 0, 1, 0),
-                new Vector3f(scale, scale, scale),
-                new AxisAngle4f(0, 0, 1, 0)
-            ));
+            // Item display (NORMAL and SIMPLE only)
+            if (tItem.display != null && !tItem.display.isDead()) {
+                float scale = ITEM_SCALE * (float) (1 - easedProgress);
+                Location floatPos = tItem.startPosition.clone().add(0, easedProgress * 0.6, 0);
+                tItem.display.teleport(floatPos);
+
+                if (style == PreferenceType.PickupAnimation.NORMAL) {
+                    // Full rotation effect
+                    tItem.rotation += 0.15f;
+                    tItem.display.setTransformation(new Transformation(
+                        new Vector3f(0, 0, 0),
+                        new AxisAngle4f(tItem.rotation, 0, 1, 0),
+                        new Vector3f(scale, scale, scale),
+                        new AxisAngle4f(0, 0, 1, 0)
+                    ));
+                } else {
+                    // SIMPLE: no rotation, just scale down
+                    tItem.display.setTransformation(new Transformation(
+                        new Vector3f(0, 0, 0),
+                        new AxisAngle4f(0, 0, 1, 0),
+                        new Vector3f(scale, scale, scale),
+                        new AxisAngle4f(0, 0, 1, 0)
+                    ));
+                }
+            }
         }
     }
 
+    /** {@inheritDoc} */
     @Override
     protected void onComplete() {
-        Location target = getPlayerTargetLocation();
-        if (target != null && target.getWorld() != null) {
-            World world = target.getWorld();
-
-            // Simple pickup sound
-            world.playSound(target, Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 0.5f, 1.2f);
-        }
-
-        // Cleanup and give items
         for (TeleportItem tItem : teleportItems) {
-            if (!tItem.display.isDead()) {
-                tItem.display.remove();
-            }
-            if (!tItem.textDisplay.isDead()) {
-                tItem.textDisplay.remove();
-            }
-
-            if (targetPlayer != null && targetPlayer.isOnline()) {
-                var leftover = targetPlayer.getInventory().addItem(tItem.item);
-                if (!leftover.isEmpty() && target != null) {
-                    leftover.values().forEach(item ->
-                        target.getWorld().dropItem(target, item)
-                    );
-                }
-            }
+            if (tItem.display != null && !tItem.display.isDead()) tItem.display.remove();
+            if (!tItem.textDisplay.isDead()) tItem.textDisplay.remove();
         }
         teleportItems.clear();
     }
 
+    /** {@inheritDoc} */
     @Override
     public int getResourceCost() {
-        // Each item has an ItemDisplay + TextDisplay
         return Math.max(2, items != null ? items.size() * 2 : 2);
     }
 
+    // -------------------------------------------------------------------------
+
+    private static <T extends org.bukkit.entity.Entity> void applyViewers(
+            T entity, Collection<Player> viewers, JavaPlugin plugin) {
+        if (viewers == null) return;
+        entity.setVisibleByDefault(false);
+        for (Player viewer : viewers) {
+            viewer.showEntity(plugin, entity);
+        }
+    }
+
     private static class TeleportItem {
-        final ItemDisplay display;
+        @Nullable final ItemDisplay display;
         final TextDisplay textDisplay;
         final Location startPosition;
         final ItemStack item;
         float rotation = 0;
 
-        TeleportItem(ItemDisplay display, TextDisplay textDisplay, Location startPosition, ItemStack item) {
+        TeleportItem(@Nullable ItemDisplay display, TextDisplay textDisplay,
+                     Location startPosition, ItemStack item) {
             this.display = display;
             this.textDisplay = textDisplay;
             this.startPosition = startPosition;

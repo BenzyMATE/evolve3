@@ -16,6 +16,7 @@ import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
+import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerSwapHandItemsEvent;
 import org.bukkit.inventory.ItemStack;
@@ -59,7 +60,7 @@ public class BackpackListener extends BaseListener
 
         Bukkit.getScheduler().runTaskLater(plugin, () -> {
             if (player.isOnline()) {
-                setBackpackItem(player);
+                refreshBackpackItem(player);
             }
         }, 5L);
     }
@@ -91,18 +92,57 @@ public class BackpackListener extends BaseListener
     }
 
     /**
+     * Cancels any inventory interaction with the backpack item and opens the menu on click.
+     */
+    @EventHandler(priority = EventPriority.HIGHEST)
+    public void onInventoryClick(InventoryClickEvent event)
+    {
+        if (!(event.getWhoClicked() instanceof Player player)) return;
+
+        ItemStack cursor = event.getCursor();
+        ItemStack current = event.getCurrentItem();
+
+        boolean cursorIsBackpack = isBackpackItem(cursor);
+        boolean currentIsBackpack = isBackpackItem(current);
+
+        if (!cursorIsBackpack && !currentIsBackpack) return;
+
+        event.setCancelled(true);
+
+        // Open the menu only when clicking the backpack itself (not dragging something onto it)
+        if (currentIsBackpack) {
+            Menu backpackMenu = MenuRegistry.getInstance().get("backpack");
+            if (backpackMenu != null) {
+                Bukkit.getScheduler().runTask(plugin, () -> backpackMenu.openMenu(player));
+            }
+        }
+    }
+
+    /**
      * Creates and places the backpack item in the player's offhand.
      * The item is a stick with custom model data and a PDC tag for identification.
      *
      * @param player The player to give the backpack item to
      */
-    private void setBackpackItem(Player player)
+    /**
+     * Static convenience — refreshes the backpack item lore for the given player.
+     * Safe to call from any listener; resolves the instance via ListenerRegistry.
+     */
+    public static void refresh(Player player)
+    {
+        BackpackListener listener = (BackpackListener) org.benski.evolv3.registry.ListenerRegistry.getInstance().get("backpack");
+        if (listener != null) {
+            listener.refreshBackpackItem(player);
+        }
+    }
+
+    public void refreshBackpackItem(Player player)
     {
         FileConfiguration config = ConfigRegistry.getInstance().get(ConfigNames.DEFAULT);
 
         String name = config.getString(ConfigPaths.Default.Backpack.NAME, "&8Backpack");
         List<String> lore = config.getStringList(ConfigPaths.Default.Backpack.LORE);
-        int customModelData = config.getInt(ConfigPaths.Default.Backpack.CUSTOM_MODEL_DATA, 1);
+        int customModelData = config.getInt(ConfigPaths.Default.Backpack.CUSTOM_MODEL_DATA, 2);
 
         String[] formattedLore = lore.stream()
                 .map(line -> formatMessage(player, line))

@@ -11,7 +11,9 @@ import org.benski.evolv3.core.helpers.Utils;
 import static org.benski.evolv3.core.helpers.Utils.formatMaterialName;
 import org.benski.evolv3.core.managers.StorageRegistryManager;
 import org.benski.evolv3.core.managers.WorldGuardManager;
+import org.benski.evolv3.datacenters.PlayerDataCenter;
 import org.benski.evolv3.datacenters.PickaxeDataCenter;
+import org.benski.evolv3.models.player.EnchantPreference;
 import org.benski.evolv3.models.pickaxe.EnchantData;
 import org.benski.evolv3.registry.AnimationRegistry;
 import org.benski.evolv3.registry.DataCenterRegistry;
@@ -115,6 +117,12 @@ public class AlchemyEnchant implements Listener
             return;
         }
 
+        PlayerDataCenter playerDC = DataCenterRegistry.getInstance().getPlayerDataCenter();
+        if (playerDC != null) {
+            org.benski.evolv3.models.player.PlayerProfile pp = playerDC.getLocal(player);
+            if (pp != null && pp.backpack.isFull()) return;
+        }
+
         PickaxeDataCenter dataCenter = DataCenterRegistry.getInstance().getPickaxeDataCenter();
         if (dataCenter == null) return;
         dataCenter.get(player, profile -> {
@@ -178,13 +186,19 @@ public class AlchemyEnchant implements Listener
      */
     private void playUpgradeEffects(Block block, Player player, Material original, Material upgradeResult)
     {
-        block.getWorld().spawnParticle(Particle.HAPPY_VILLAGER,
-                block.getLocation().add(0.5, 0.5, 0.5),
-                10, 0.2, 0.2, 0.2, 0.02);
+        EnchantPreference pref = getEnchantPref(player);
 
-        player.playSound(block.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.2f);
+        if (pref.particles) {
+            block.getWorld().spawnParticle(Particle.HAPPY_VILLAGER,
+                    block.getLocation().add(0.5, 0.5, 0.5),
+                    10, 0.2, 0.2, 0.2, 0.02);
+        }
 
-        if (enchantsConfig.getBoolean(ConfigPaths.Enchants.Alchemy.HOLOGRAM_ENABLED, true)) {
+        if (pref.sound) {
+            player.playSound(block.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.2f);
+        }
+
+        if (pref.hologram && enchantsConfig.getBoolean(ConfigPaths.Enchants.Alchemy.HOLOGRAM_ENABLED, true)) {
             String hologramText = enchantsConfig.getString(
                             ConfigPaths.Enchants.Alchemy.HOLOGRAM_MESSAGE,
                             "&7%original% &a> &d%upgrade%")
@@ -195,12 +209,34 @@ public class AlchemyEnchant implements Listener
                     new HologramAnimation(plugin, hologramText), hologramLoc, List.of(player));
         }
 
-        String chatMessage = messagesConfig.getString(ConfigPaths.Messages.Enchants.ALCHEMY_TRIGGERED);
-        if (chatMessage != null && !chatMessage.isEmpty()) {
-            chatMessage = chatMessage.replace("%original%", formatMaterialName(original));
-            chatMessage = chatMessage.replace("%upgrade%", formatMaterialName(upgradeResult));
-            player.sendMessage(Utils.formatMessage(player, chatMessage));
+        if (pref.message) {
+            String chatMessage = messagesConfig.getString(ConfigPaths.Messages.Enchants.ALCHEMY_TRIGGERED);
+            if (chatMessage != null && !chatMessage.isEmpty()) {
+                chatMessage = chatMessage.replace("%original%", formatMaterialName(original));
+                chatMessage = chatMessage.replace("%upgrade%", formatMaterialName(upgradeResult));
+                player.sendMessage(Utils.formatMessage(player, chatMessage));
+            }
         }
+
+        if (pref.title) {
+            String title    = messagesConfig.getString(ConfigPaths.Messages.Enchants.ALCHEMY_TRIGGERED_TITLE, "&#B366D9&lAlchemy");
+            String subtitle = messagesConfig.getString(ConfigPaths.Messages.Enchants.ALCHEMY_TRIGGERED_SUBTITLE, "&#CCCCCC%original% &#B366D9> &#CCCCCC%upgrade%");
+            subtitle = subtitle.replace("%original%", formatMaterialName(original))
+                               .replace("%upgrade%", formatMaterialName(upgradeResult));
+            player.sendTitle(
+                    Utils.formatMessage(player, title),
+                    Utils.formatMessage(player, subtitle),
+                    5, 30, 10);
+        }
+    }
+
+    private EnchantPreference getEnchantPref(Player player) {
+        PlayerDataCenter pdc = DataCenterRegistry.getInstance().getPlayerDataCenter();
+        if (pdc == null) return new EnchantPreference();
+        org.benski.evolv3.models.player.PlayerProfile profile = pdc.getLocal(player);
+        if (profile == null) return new EnchantPreference();
+        String enchantName = enchantsConfig.getString(ConfigPaths.Enchants.Alchemy.NAME, "Alchemy");
+        return profile.preferences.getOrCreateEnchantPref(enchantName);
     }
 
     /**

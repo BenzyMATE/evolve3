@@ -1,5 +1,6 @@
 package org.benski.evolv3.core.abstracts;
 
+import org.benski.evolv3.core.types.PreferenceType;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
@@ -20,6 +21,13 @@ public abstract class BasePickupAnimation extends BaseAnimation
     protected Player targetPlayer;
     protected List<ItemStack> items;
     protected Material blockMaterial;
+    protected PreferenceType.PickupAnimation style       = PreferenceType.PickupAnimation.NORMAL;
+    protected PreferenceType.DropCategory   dropCategory = PreferenceType.DropCategory.NORMAL;
+
+    /** Whether to apply a coloured glow outline to the floating item display. */
+    protected boolean prefGlow      = true;
+    /** Whether to spawn category-specific particles during the float/dissolve phases. */
+    protected boolean prefParticles = true;
 
     /**
      * Constructor for BasePickupAnimation.
@@ -42,6 +50,32 @@ public abstract class BasePickupAnimation extends BaseAnimation
         this.targetPlayer = player;
         this.items = items;
         this.blockMaterial = blockMaterial;
+    }
+
+    /**
+     * Sets the visual style for this pickup animation.
+     * Must be called before {@link #play} is invoked.
+     */
+    public void setStyle(PreferenceType.PickupAnimation style) {
+        this.style = style;
+    }
+
+    /**
+     * Sets the drop category (NORMAL / ESSENCE / ATOM) to drive colour and particle effects.
+     * Must be called before {@link #play} is invoked.
+     */
+    public void setDropCategory(PreferenceType.DropCategory category) {
+        this.dropCategory = category;
+    }
+
+    /** Controls whether a coloured glow outline is applied to the floating item display. */
+    public void setPrefGlow(boolean prefGlow) {
+        this.prefGlow = prefGlow;
+    }
+
+    /** Controls whether category-specific particles spawn during the float/dissolve phases. */
+    public void setPrefParticles(boolean prefParticles) {
+        this.prefParticles = prefParticles;
     }
 
     /**

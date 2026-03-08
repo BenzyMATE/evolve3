@@ -46,6 +46,7 @@ public final class EnchantAnimationConfig
     private static final Map<String, String>       ENCHANT_DISPLAY_NAMES = new HashMap<>();
     private static final Map<String, Double>       ENCHANT_MAX_CHANCES   = new HashMap<>();
     private static final Map<String, List<String>> ENCHANT_LORES         = new HashMap<>();
+    private static final java.util.Set<String>     PASSIVE_ENCHANTS      = new java.util.HashSet<>();
     private static int totalWeight = 0;
 
     private EnchantAnimationConfig() {}
@@ -73,6 +74,7 @@ public final class EnchantAnimationConfig
         ENCHANT_DISPLAY_NAMES.clear();
         ENCHANT_MAX_CHANCES.clear();
         ENCHANT_LORES.clear();
+        PASSIVE_ENCHANTS.clear();
         totalWeight = 0;
 
         loadRarities(config);
@@ -127,6 +129,7 @@ public final class EnchantAnimationConfig
             int          cost      = es.getInt(ConfigPaths.Enchants.ENCHANT_COST, 100);
             String       texture   = es.getString(ConfigPaths.Enchants.ENCHANT_TEXTURE, "");
             double       maxChance = es.getDouble(ConfigPaths.Enchants.ENCHANT_MAX_CHANCE, 0.0);
+            boolean      passive   = es.getBoolean(ConfigPaths.Enchants.ENCHANT_PASSIVE, false);
             List<String> lore      = es.getStringList(ConfigPaths.Enchants.ENCHANT_LORE);
 
             Material mat = Material.matchMaterial(itemStr);
@@ -135,6 +138,7 @@ public final class EnchantAnimationConfig
             ENCHANT_ITEMS.put(name, mat);
             ENCHANT_ORDER.add(name);
             ENCHANT_DISPLAY_NAMES.put(name.toLowerCase(), name);
+            if (passive) PASSIVE_ENCHANTS.add(name);
             ENCHANT_MAX_LEVELS.put(name, maxLevel);
             ENCHANT_COSTS.put(name, cost);
             ENCHANT_MAX_CHANCES.put(name, maxChance);
@@ -255,6 +259,16 @@ public final class EnchantAnimationConfig
      */
     public static List<String> getEnchantOrder() {
         return Collections.unmodifiableList(ENCHANT_ORDER);
+    }
+
+    /**
+     * Returns {@code true} if the named enchant is passive (no triggered notifications or effects).
+     *
+     * @param enchantName the enchant display name
+     * @return true if passive
+     */
+    public static boolean isPassive(String enchantName) {
+        return PASSIVE_ENCHANTS.contains(enchantName);
     }
 
     /**

@@ -1,0 +1,252 @@
+# =====================================================
+# Evolv3 Messages Configuration
+# =====================================================
+# Color guide:
+#   &#00FFFF  — cyan theme (accent, labels)
+#   &#CCCCCC  — body text
+#   &#FFFFFF  — values / highlights
+#   &#FFD700  — coins / economy
+#   &#B366D9  — essence / purple
+#   &#FFEE00  — atoms / evolution (gold)
+#   &a        — success green
+#   &c        — error red
+#   &8        — dark gray (prefix brackets, pipes)
+#
+# Prefix placeholder: %evolv3_prefix%
+# =====================================================
+prefix: "&3&lE &8➧ "
+
+# =====================================================
+# Join Message
+# =====================================================
+# Displays when a player joins. The player's 8×8 skin face
+# is shown on the left; the 8 lines below appear to the right.
+# Supports color codes (&/&#RRGGBB) and PlaceholderAPI.
+# skin-padding: spaces prepended to the left of the skin (indentation).
+# Exactly 8 lines — use "" for an empty row.
+# =====================================================
+join-message:
+  enabled: true
+  skin-padding: "  "
+  lines:
+    - ""
+    - "&#00FFFF&lWelcome back, &#FFFFFF&l%evolv3_player_name%"
+    - "&#888888Good to see you again."
+    - ""
+    - "&#B366D9Essence 🔥 %evolv3_player_essence%"
+    - "&#FFEE00Atoms ⚛ %evolv3_pickaxe_evolution_atoms%"
+    - "&#FFD700Coins ⛁ %evolv3_player_coins%"
+    - ""
+
+general:
+  no-permission: "%evolv3_prefix% &#CCCCCCYou don't have permission to do that."
+  player-only: "%evolv3_prefix% &#CCCCCCThis command can only be used in-game."
+  unknown-command: "%evolv3_prefix% &#CCCCCCUnknown command."
+  reload-success: "%evolv3_prefix% &#00FFFFReload complete."
+  reload-failed: "%evolv3_prefix% &cReload failed. Check the console for details."
+
+errors:
+  database-error: "%evolv3_prefix% &cA database error occurred. Please try again."
+  internal-error: "%evolv3_prefix% &cSomething went wrong. Please try again."
+  invalid-arguments: "%evolv3_prefix% &cInvalid usage: &#CCCCCC%usage%"
+
+# =====================================================
+# Pickaxe Messages
+# =====================================================
+pickaxe:
+  loading-profile: "Loading pickaxe profile..."
+  profile-created: "%evolv3_prefix% &#00FFFFPickaxe profile created."
+  no-pickaxe: "%evolv3_prefix% &#CCCCCCYou don't have a pickaxe in storage."
+  enchant-roll-gained: "%evolv3_prefix% &#B366D9&l[Enchant Roll] &#CCCCCCYou earned an Enchant Roll!"
+  pickaxe-broken: "&#FF4444Your pickaxe has broken and been removed from storage."
+  drop-confirmation:
+    - ""
+    - "  &#FF4444⚠ &lConfirm Drop"
+    - "  &#CCCCCCDropping this pickaxe will release your ownership."
+    - "  &#FFFFFFPress Q again &#CCCCCCto confirm."
+    - ""
+  pickup-new-owner: "&#00FFFFYou picked up a pickaxe!"
+  durability-warning:
+    - ""
+    - "  &#FF4444⚠ &lPickaxe Durability Critical"
+    - "  &#CCCCCCYour pickaxe is close to breaking."
+    - "  &#CCCCCCMine &#FFFFFF&lLogs &#CCCCCCto collect &#E8890A&lAncient Resin&#CCCCCC, "
+    - "  &#CCCCCCthen repair using &#FFFFFF/pick&#CCCCCC."
+    - ""
+
+  level-up:
+    - ""
+    - "  &#00FFFF⛏ &lPickaxe Level %level%"
+    - "  &#888888Your pickaxe grows stronger."
+    - ""
+    - "  &#FFFFFF&lRewards"
+    - "  &#B366D9🔥 &#FFFFFF+%essence% &#B366D9Essence"
+    - "  &#FFEE00⚛ &#FFFFFF+%atoms% &#FFEE00Atoms"
+    - ""
+
+  level-up-title:
+    title: "&#00FFFF&l⬆ Level Up"
+    subtitle: "&#CCCCCCPickaxe is now level &#FFFFFF%level%"
+
+  enchant:
+    insufficient-essence: "%evolv3_prefix% &#CCCCCCYou need &#B366D9🔥 &#FFFFFF%required_essence% &#B366D9Essence &#CCCCCCto upgrade &#FFFFFF%enchant_name%&#CCCCCC."
+    upgrade-success: "%evolv3_prefix% &#00FFFF&l[Upgraded] &#FFFFFF%enchant_name% &#CCCCCCis now level &#FFFFFF%new_level%&#CCCCCC."
+    max-level: "%evolv3_prefix% &#FFFFFF%enchant_name% &#CCCCCCis already at max level."
+    all-maxed: "%evolv3_prefix% &#CCCCCCAll enchants are at maximum level."
+    not-available: "%evolv3_prefix% &#CCCCCCThat enchant is not available."
+    unlocked: "%evolv3_prefix% &#B366D9&l[Enchant Unlocked] &#FFFFFF%enchant_name%&#CCCCCC."
+    not-unlocked: "%evolv3_prefix% &#FFFFFF%enchant_name% &#CCCCCChasn't been unlocked yet."
+    no-spins: "%evolv3_prefix% &#CCCCCCNo Enchant Rolls available. Keep mining to earn one."
+    area-secured: "%evolv3_prefix% &#00FFFFArea secured."
+    access-denied: "%evolv3_prefix% &#CCCCCCYou can't use that here."
+    confirm-selection: "%evolv3_prefix% &#00FFFFEnchant selected!"
+    toggle-enabled: "%evolv3_prefix% &#00FF88✔ &#FFFFFF%enchant_name% &#CCCCCCenabled."
+    toggle-disabled: "%evolv3_prefix% &#FF5555✗ &#FFFFFF%enchant_name% &#CCCCCCdisabled."
+
+  menu:
+    evolution-coming-soon: "%evolv3_prefix% &#CCCCCC&oEvolution coming soon..."
+
+  evolve:
+    not-available: "%evolv3_prefix% &#CCCCCCEvolution is not yet available."
+    insufficient-spins: "%evolv3_prefix% &#CCCCCCNot enough Evolution Rolls."
+    success: "%evolv3_prefix% &#FFD700&l[Evolution Roll] &#CCCCCCYou earned an Evolution Roll!"
+
+# =====================================================
+# Player Messages
+# =====================================================
+player:
+  loading-profile: "Loading player profile..."
+  profile-created: "%evolv3_prefix% &#00FFFFPlayer profile created."
+  profile-loaded: ""
+
+# =====================================================
+# Armor Messages
+# =====================================================
+armor:
+  loading-profile: "Loading armor profile..."
+  profile-created: "%evolv3_prefix% &#00FFFFArmor profile created."
+  evolution: "%evolv3_prefix% &#FFD700&l[Evolution] &#CCCCCCYour armor has evolved!"
+
+  level-up:
+    helmet:
+      - "%evolv3_prefix% &#00FFFF&l[Level Up] &#CCCCCCHelmet reached level &#FFFFFF%level%&#CCCCCC!"
+    chestplate:
+      - "%evolv3_prefix% &#00FFFF&l[Level Up] &#CCCCCCChestplate reached level &#FFFFFF%level%&#CCCCCC!"
+    leggings:
+      - "%evolv3_prefix% &#00FFFF&l[Level Up] &#CCCCCCLeggings reached level &#FFFFFF%level%&#CCCCCC!"
+    boots:
+      - "%evolv3_prefix% &#00FFFF&l[Level Up] &#CCCCCCBoots reached level &#FFFFFF%level%&#CCCCCC!"
+
+  level-up-title:
+    helmet:
+      title: "&#00FFFF&l⬆ Level Up"
+      subtitle: "&#CCCCCCHelmet is now level &#FFFFFF%level%"
+    chestplate:
+      title: "&#00FFFF&l⬆ Level Up"
+      subtitle: "&#CCCCCCChestplate is now level &#FFFFFF%level%"
+    leggings:
+      title: "&#00FFFF&l⬆ Level Up"
+      subtitle: "&#CCCCCCLeggings is now level &#FFFFFF%level%"
+    boots:
+      title: "&#00FFFF&l⬆ Level Up"
+      subtitle: "&#CCCCCCBoots is now level &#FFFFFF%level%"
+
+  toggle:
+    enabled: "%evolv3_prefix% &#00FFFFArmor tracking enabled."
+    disabled: "%evolv3_prefix% &#888888Armor tracking disabled."
+
+  remove:
+    blocked: "%evolv3_prefix% &cThis armor piece cannot be removed."
+
+  drop:
+    confirmation: "%evolv3_prefix% &#CCCCCCArmor dropped."
+    new-owner: "%evolv3_prefix% &#00FFFFYou picked up &#FFFFFF%player%&#00FFFF's armor."
+    no-slots: "%evolv3_prefix% &cYour inventory is full."
+
+# =====================================================
+# Backpack Messages
+# =====================================================
+backpack:
+  full: "%evolv3_prefix% &#CCCCCCYour backpack is full."
+  item-added: ""
+  sell-items:
+    - ""
+    - "  &#FFD700⛁ &#FFFFFF&lItems Sold &#CCCCCC(Sell Summary)"
+    - "  &#888888Items  &#FFFFFF%total_items%"
+    - "  &#888888Earned &#FFD700⛁ %total_amount%"
+    - ""
+
+# =====================================================
+# Enchant Trigger Messages
+# =====================================================
+enchants:
+  efficiency:
+    applied: "&#00FFFF&l[Efficiency] &#CCCCCCSpeed boost applied!"
+  frostbite:
+    triggered: "&#00BFFF&l[Frostbite] &#CCCCCCFroze %blocks% blocks!"
+    triggered-title: "&#00BFFF&lFrostbite"
+    triggered-subtitle: "&#CCCCCCFroze %blocks% blocks!"
+  furnace:
+    triggered: "&#FF6B35&l[Furnace] &#CCCCCC%original% &#FF6B35> &#CCCCCC%result%"
+    triggered-title: "&#FF6B35&lFurnace"
+    triggered-subtitle: "&#CCCCCC%original% &#FF6B35> &#CCCCCC%result%"
+  alchemy:
+    triggered: "&#B366D9&l[Alchemy] &#CCCCCC%original% &#B366D9> &#CCCCCC%upgrade%"
+    triggered-title: "&#B366D9&lAlchemy"
+    triggered-subtitle: "&#CCCCCC%original% &#B366D9> &#CCCCCC%upgrade%"
+
+# =====================================================
+# Pickaxe Limit Messages
+# =====================================================
+pickaxe-limit:
+  profile-load-error: "%evolv3_prefix% &cFailed to load your profile."
+  already-has-pickaxe: "%evolv3_prefix% &#CCCCCCA pickaxe is already stored in this slot."
+  cooldown-active: "%evolv3_prefix% &#CCCCCCSlow down — wait a moment before clicking again."
+  cooldown-click: "%evolv3_prefix% &#CCCCCCClick again to confirm."
+  blocked-click: "%evolv3_prefix% &#CCCCCCThis slot is locked. Purchase it to unlock."
+  all-slots-unlocked: "%evolv3_prefix% &#00FF88All pickaxe storage slots are already unlocked."
+  slot-purchased: "%evolv3_prefix% &#00FFFF&l[Unlocked] &#CCCCCCSlot &#FFFFFF%slot% &#CCCCCCis now available."
+  insufficient-essence: "%evolv3_prefix% &#CCCCCCNot enough resources to unlock this slot."
+  insufficient-wood: "%evolv3_prefix% &#CCCCCCYou need &#FFFFFF%required_amount% %required_wood% &#CCCCCCto unlock the next slot."
+  purchase-error: "%evolv3_prefix% &cSomething went wrong. Please try again."
+  pickaxe-deposited:
+    - ""
+    - "  &#00FFFF⛏ &lPickaxe Deposited"
+    - "  &#CCCCCCYour pickaxe has been stored safely."
+    - ""
+  pickaxe-not-found: "%evolv3_prefix% &#CCCCCCPickaxe not found in your inventory."
+  must-deposit-before-withdraw: "%evolv3_prefix% &#CCCCCCDeposit your active pickaxe before withdrawing another."
+  inventory-full: "%evolv3_prefix% &cYour inventory is full."
+  pickaxe-withdrawn:
+    - ""
+    - "  &#00FFFF⛏ &lPickaxe Withdrawn"
+    - "  &#CCCCCCYour pickaxe is ready to mine."
+    - ""
+  must-deposit-before-claim: "%evolv3_prefix% &#CCCCCCDeposit your active pickaxe before claiming a new one."
+  pickaxe-claimed:
+    - ""
+    - "  &#00FFFF⛏ &lPickaxe Claimed"
+    - "  &#CCCCCCYour journey as a miner begins now."
+    - ""
+  must-deposit-before-craft: "%evolv3_prefix% &#CCCCCCDeposit your active pickaxe before crafting."
+  wood-consumption-error: "%evolv3_prefix% &cFailed to consume materials. Please try again."
+  pickaxe-crafted: "%evolv3_prefix% &#00FFFFPickaxe crafted."
+  craft-save-error: "%evolv3_prefix% &cFailed to save the new pickaxe."
+  claim-rate-limited: "&#FF4444Too many claims in a short time. Please wait a moment."
+  pickup-no-slots: "&#CCCCCCYou need a free pickaxe storage slot to pick this up."
+  repair-success:
+    - ""
+    - "  &#00FFFF⛏ &lPickaxe Repaired"
+    - "  &#CCCCCCYour pickaxe is back to full durability."
+    - ""
+  repair-insufficient-wood:
+    - ""
+    - "  &#FF4444⚠ &lNot Enough Ancient Resin"
+    - "  &#CCCCCCYou need &#FFFFFF%required% &#E8890AAncient Resin &#CCCCCCto repair."
+    - "  &#CCCCCCMine &#FFFFFF&lLogs &#CCCCCCto collect more."
+    - ""
+  repair-already-full:
+    - ""
+    - "  &#00FF88⛏ &lAlready Repaired"
+    - "  &#CCCCCCYour pickaxe is already at full durability."
+    - ""

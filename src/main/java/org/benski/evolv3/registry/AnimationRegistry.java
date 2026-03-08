@@ -7,7 +7,9 @@ import org.benski.evolv3.animations.EnchantAnimation;
 import org.benski.evolv3.animations.EssenceAnimation;
 import org.benski.evolv3.animations.ExplosionAnimation;
 import org.benski.evolv3.animations.HologramAnimation;
+import org.benski.evolv3.animations.ResinAnimation;
 import org.benski.evolv3.core.managers.EnchantAnimationConfig;
+import org.benski.evolv3.animations.pickup.DissolvePickupAnimation;
 import org.benski.evolv3.animations.pickup.TeleportPickupAnimation;
 import org.benski.evolv3.core.abstracts.BaseAnimation;
 import org.benski.evolv3.core.interfaces.Registry;
@@ -44,9 +46,11 @@ public class AnimationRegistry implements Registry<BaseAnimation>
             ExplosionAnimation.class,
             EnchantAnimation.class,
             TeleportPickupAnimation.class,
+            DissolvePickupAnimation.class,
             EssenceAnimation.class,
             AtomAnimation.class,
-            HologramAnimation.class
+            HologramAnimation.class,
+            ResinAnimation.class
     );
 
     @Override

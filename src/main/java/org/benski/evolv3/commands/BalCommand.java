@@ -1,7 +1,9 @@
 package org.benski.evolv3.commands;
 
 import org.benski.evolv3.core.abstracts.BaseCommand;
-import org.benski.evolv3.hooks.VaultHook;
+import org.benski.evolv3.datacenters.PlayerDataCenter;
+import org.benski.evolv3.models.player.PlayerProfile;
+import org.benski.evolv3.registry.DataCenterRegistry;
 import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
@@ -60,26 +62,26 @@ public class BalCommand extends BaseCommand
     @Override
     public boolean execute(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args)
     {
-        VaultHook vault = VaultHook.getInstance();
+        PlayerDataCenter dc = DataCenterRegistry.getInstance().getPlayerDataCenter();
 
         if (args.length >= 1) {
-            // Viewing another player's balance
             Player target = Bukkit.getPlayer(args[0]);
             if (target == null) {
                 sender.sendMessage(formatSender(sender, "&c&lPlayer Not Found &7— &f" + args[0] + " &7is not online."));
                 return true;
             }
 
-            double balance = vault.getBalance(target);
-            sender.sendMessage(formatSender(sender, "&#00AFA3⛁ &#FFFFFF&l" + target.getName()
-                    + " &#888888has &#00AFA3⛁ &#FFFFFF&l" + formatCoins(balance) + " &#888888Coins"));
+            PlayerProfile targetProfile = dc != null ? dc.getLocal(target) : null;
+            double balance = targetProfile != null ? targetProfile.coins : 0.0;
+            sender.sendMessage(formatSender(sender, "&#FFD700⛁ &#FFD700&l" + target.getName()
+                    + " &#888888has &#FFD700⛁ &#FFD700&l" + formatCoins(balance) + " &#888888Coins"));
         } else {
-            // Viewing own balance
             if (!requirePlayer(sender)) return true;
             Player player = (Player) sender;
 
-            double balance = vault.getBalance(player);
-            player.sendMessage(formatMessage(player, "&#00AFA3⛁ &#FFFFFF&lYour Balance: &#00AFA3⛁ &#FFFFFF&l"
+            PlayerProfile profile = dc != null ? dc.getLocal(player) : null;
+            double balance = profile != null ? profile.coins : 0.0;
+            player.sendMessage(formatMessage(player, "&#FFD700⛁ &#FFD700&lYour Balance: &#FFD700⛁ &#FFD700&l"
                     + formatCoins(balance) + " &#888888Coins"));
         }
 

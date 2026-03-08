@@ -2,6 +2,7 @@ package org.benski.evolv3.enchants;
 
 import lombok.experimental.ExtensionMethod;
 import org.benski.evolv3.Main;
+import org.benski.evolv3.animations.HologramAnimation;
 import org.benski.evolv3.core.constants.ConfigNames;
 import org.benski.evolv3.core.constants.ConfigPaths;
 import org.benski.evolv3.core.constants.Enchants;
@@ -9,8 +10,11 @@ import org.benski.evolv3.core.helpers.ItemStackExtensions;
 import org.benski.evolv3.core.helpers.Utils;
 import org.benski.evolv3.core.managers.StorageRegistryManager;
 import org.benski.evolv3.core.managers.WorldGuardManager;
+import org.benski.evolv3.datacenters.PlayerDataCenter;
 import org.benski.evolv3.datacenters.PickaxeDataCenter;
+import org.benski.evolv3.models.player.EnchantPreference;
 import org.benski.evolv3.models.pickaxe.EnchantData;
+import org.benski.evolv3.registry.AnimationRegistry;
 import org.benski.evolv3.registry.DataCenterRegistry;
 import org.bukkit.*;
 import org.bukkit.block.Block;
@@ -78,6 +82,12 @@ public class FrostbiteEnchant implements Listener
             return;
         }
 
+        PlayerDataCenter playerDC = DataCenterRegistry.getInstance().getPlayerDataCenter();
+        if (playerDC != null) {
+            org.benski.evolv3.models.player.PlayerProfile pp = playerDC.getLocal(player);
+            if (pp != null && pp.backpack.isFull()) return;
+        }
+
         PickaxeDataCenter dataCenter = DataCenterRegistry.getInstance().getPickaxeDataCenter();
         if (dataCenter == null) return;
         dataCenter.get(player, profile -> {
@@ -112,6 +122,7 @@ public class FrostbiteEnchant implements Listener
      */
     private void applyFreezingEffect(Block centerBlock, Player player)
     {
+        EnchantPreference pref = getEnchantPref(player);
         World world = centerBlock.getWorld();
         int radius = enchantsConfig.getInt(ConfigPaths.Enchants.Frostbite.RADIUS, 1);
 
@@ -135,7 +146,9 @@ public class FrostbiteEnchant implements Listener
         Location center = centerBlock.getLocation();
         blocksToFreeze.sort(Comparator.comparingDouble(b -> b.getLocation().distanceSquared(center)));
 
-        world.playSound(player.getLocation(), Sound.BLOCK_GLASS_BREAK, 1.0f, 1.5f);
+        if (pref.sound) {
+            world.playSound(player.getLocation(), Sound.BLOCK_GLASS_BREAK, 1.0f, 1.5f);
+        }
 
         final int totalBlocks = blocksToFreeze.size();
         new BukkitRunnable()
@@ -148,10 +161,31 @@ public class FrostbiteEnchant implements Listener
                 if (index >= blocksToFreeze.size()) {
                     this.cancel();
 
-                    String message = messagesConfig.getString(ConfigPaths.Messages.Enchants.FROSTBITE_TRIGGERED);
-                    if (message != null && !message.isEmpty()) {
-                        message = message.replace("%blocks%", String.valueOf(totalBlocks));
-                        player.sendMessage(Utils.formatMessage(player, message));
+                    if (pref.hologram && enchantsConfig.getBoolean(ConfigPaths.Enchants.Frostbite.HOLOGRAM_ENABLED, true)) {
+                        String hologramText = enchantsConfig.getString(
+                                        ConfigPaths.Enchants.Frostbite.HOLOGRAM_MESSAGE,
+                                        "&#00BFFF&l[Frostbite] &#CCCCCCFroze %blocks% blocks!")
+                                .replace("%blocks%", String.valueOf(totalBlocks));
+                        Location hologramLoc = centerBlock.getLocation().add(0.5, 1.0, 0.5);
+                        AnimationRegistry.getInstance().play(
+                                new HologramAnimation(plugin, hologramText), hologramLoc, List.of(player));
+                    }
+
+                    if (pref.message) {
+                        String message = messagesConfig.getString(ConfigPaths.Messages.Enchants.FROSTBITE_TRIGGERED);
+                        if (message != null && !message.isEmpty()) {
+                            message = message.replace("%blocks%", String.valueOf(totalBlocks));
+                            player.sendMessage(Utils.formatMessage(player, message));
+                        }
+                    }
+
+                    if (pref.title) {
+                        String title    = messagesConfig.getString(ConfigPaths.Messages.Enchants.FROSTBITE_TRIGGERED_TITLE, "&#00BFFF&lFrostbite");
+                        String subtitle = messagesConfig.getString(ConfigPaths.Messages.Enchants.FROSTBITE_TRIGGERED_SUBTITLE, "&#CCCCCCArea frozen!");
+                        player.sendTitle(
+                                Utils.formatMessage(player, title),
+                                Utils.formatMessage(player, subtitle),
+                                5, 30, 10);
                     }
                     return;
                 }
@@ -164,12 +198,23 @@ public class FrostbiteEnchant implements Listener
 
                 block.setType(Material.PACKED_ICE);
 
-                Location loc = block.getLocation().add(0.5, 0.5, 0.5);
-                world.spawnParticle(Particle.SNOWFLAKE, loc, 5, 0.2, 0.2, 0.2, 0.02);
+                if (pref.particles) {
+                    Location loc = block.getLocation().add(0.5, 0.5, 0.5);
+                    world.spawnParticle(Particle.SNOWFLAKE, loc, 5, 0.2, 0.2, 0.2, 0.02);
+                }
 
                 index++;
             }
         }.runTaskTimer(plugin, 0L, 1L);
+    }
+
+    private EnchantPreference getEnchantPref(Player player) {
+        PlayerDataCenter pdc = DataCenterRegistry.getInstance().getPlayerDataCenter();
+        if (pdc == null) return new EnchantPreference();
+        org.benski.evolv3.models.player.PlayerProfile profile = pdc.getLocal(player);
+        if (profile == null) return new EnchantPreference();
+        String enchantName = enchantsConfig.getString(ConfigPaths.Enchants.Frostbite.NAME, "Frostbite");
+        return profile.preferences.getOrCreateEnchantPref(enchantName);
     }
 
     /**

@@ -3,8 +3,12 @@ package org.benski.evolv3.animations;
 import org.benski.evolv3.core.abstracts.BaseAnimation;
 import org.benski.evolv3.core.constants.ConfigNames;
 import org.benski.evolv3.core.constants.ConfigPaths;
+import org.benski.evolv3.datacenters.PlayerDataCenter;
+import org.benski.evolv3.models.player.PlayerPreferences;
+import org.benski.evolv3.models.player.PlayerProfile;
 import org.benski.evolv3.registry.AnimationRegistry;
 import org.benski.evolv3.registry.ConfigRegistry;
+import org.benski.evolv3.registry.DataCenterRegistry;
 import org.bukkit.Location;
 import org.bukkit.Particle;
 import org.bukkit.Sound;
@@ -39,6 +43,11 @@ public class EssenceAnimation extends BaseAnimation
     private final int essenceAmount;
     private Player targetPlayer;
     private Location centerLocation;
+
+    // Resolved from player preferences in onStart
+    private boolean prefSound     = true;
+    private boolean prefParticles = true;
+    private boolean prefGlow      = true;
 
     /**
      * Creates an essence animation with default settings.
@@ -79,6 +88,19 @@ public class EssenceAnimation extends BaseAnimation
 
         if (targetPlayer == null || !targetPlayer.isOnline()) return;
 
+        // Load player preferences
+        PlayerDataCenter pdc = DataCenterRegistry.getInstance().getPlayerDataCenter();
+        if (pdc != null) {
+            PlayerProfile profile = pdc.getLocal(targetPlayer);
+            if (profile != null) {
+                PlayerPreferences prefs = profile.preferences;
+                prefSound     = prefs.essenceSound;
+                prefParticles = prefs.essenceParticles;
+                prefGlow      = prefs.essenceGlow;
+            }
+        }
+
+        if (!prefSound) return;
         // Play discovery sounds
         targetPlayer.playSound(centerLocation, Sound.ENTITY_VEX_AMBIENT, 0.8f, 1.5f);
         targetPlayer.playSound(centerLocation, Sound.ENTITY_PHANTOM_FLAP, 0.6f, 2.0f);
@@ -97,6 +119,7 @@ public class EssenceAnimation extends BaseAnimation
         int currentTick = getCurrentTick();
         Location particleLocation = calculateParticleLocation(currentTick);
 
+        if (!prefParticles) return;
         // Spawn main particles (client-side only)
         spawnParticle(particleLocation, Particle.END_ROD, 1, 0.02, 0.02, 0.02, 0.01);
         spawnParticle(particleLocation, Particle.WITCH, 2, 0.1, 0.1, 0.1, 0.02);
@@ -120,7 +143,6 @@ public class EssenceAnimation extends BaseAnimation
         if (targetPlayer == null || !targetPlayer.isOnline()) return;
 
         playArrivalEffects();
-        showHologram();
     }
 
     /**
@@ -173,10 +195,20 @@ public class EssenceAnimation extends BaseAnimation
         Location playerLocation = targetPlayer.getEyeLocation()
                 .add(targetPlayer.getLocation().getDirection().multiply(-0.5).setY(-0.3));
 
-        spawnParticle(playerLocation, Particle.END_ROD, 3, 0.1, 0.1, 0.1, 0.02);
-        spawnParticle(playerLocation, Particle.WITCH, 10, 0.1, 0.1, 0.1, 0.02);
+        if (prefParticles) {
+            spawnParticle(playerLocation, Particle.END_ROD, 3, 0.1, 0.1, 0.1, 0.02);
+            spawnParticle(playerLocation, Particle.WITCH, 10, 0.1, 0.1, 0.1, 0.02);
+        }
 
-        targetPlayer.playSound(targetPlayer.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.2f);
+        if (prefSound) {
+            targetPlayer.playSound(targetPlayer.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.2f);
+        }
+
+        if (prefGlow) {
+            targetPlayer.setGlowing(true);
+            plugin.getServer().getScheduler().runTaskLater(plugin,
+                    () -> { if (targetPlayer.isOnline()) targetPlayer.setGlowing(false); }, 30L);
+        }
     }
 
     /**

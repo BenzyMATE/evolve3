@@ -1,16 +1,28 @@
 package org.benski.evolv3.listeners;
 
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.TextDecoration;
+import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.benski.evolv3.core.abstracts.BaseListener;
+import org.benski.evolv3.core.constants.ConfigNames;
+import org.benski.evolv3.core.constants.ConfigPaths;
+import org.benski.evolv3.core.helpers.SkinRenderer;
+import org.benski.evolv3.core.helpers.Utils;
 import org.benski.evolv3.core.managers.EnchantSelectionManager;
 import org.benski.evolv3.datacenters.ArmorDataCenter;
 import org.benski.evolv3.datacenters.PlayerDataCenter;
+import org.benski.evolv3.registry.ConfigRegistry;
 import org.benski.evolv3.registry.DataCenterRegistry;
+import org.bukkit.Bukkit;
+import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.plugin.java.JavaPlugin;
+
+import java.util.List;
 
 /**
  * Handles player join and quit events.
@@ -53,6 +65,47 @@ public class JoinListener extends BaseListener
 
         // Restore any in-progress enchant selection (same options, pickaxe returned)
         EnchantSelectionManager.getInstance().handlePlayerJoin(player);
+
+        // Send skin join message — slight delay so the player's client is fully loaded
+        Bukkit.getScheduler().runTaskLater(plugin, () -> sendJoinMessage(player), 20L);
+    }
+
+    private void sendJoinMessage(Player player)
+    {
+        if (!player.isOnline()) return;
+
+        FileConfiguration messages = ConfigRegistry.getInstance().get(ConfigNames.MESSAGES);
+        if (!messages.getBoolean(ConfigPaths.Messages.JoinMessage.ENABLED, true)) return;
+
+        String padding = messages.getString(ConfigPaths.Messages.JoinMessage.SKIN_PADDING, "  ");
+        List<String> textLines = messages.getStringList(ConfigPaths.Messages.JoinMessage.LINES);
+
+        SkinRenderer.renderAsync(player, plugin, skinRows -> {
+            if (!player.isOnline()) return;
+
+            player.sendMessage(Component.empty());
+
+            for (int i = 0; i < skinRows.size(); i++) {
+                // Left-indent the skin, then fixed gap to text
+                Component line = Component.text(padding)
+                        .append(skinRows.get(i));
+
+                if (i < textLines.size() && !textLines.get(i).isEmpty()) {
+                    // MatrixColorAPI outputs §-codes, so use legacySection to deserialize
+                    String formatted = Utils.formatMessage(player, textLines.get(i));
+                    Component text = LegacyComponentSerializer.legacySection()
+                            .deserialize(formatted)
+                            .decoration(TextDecoration.ITALIC, false);
+                    line = line
+                            .append(Component.text(padding))
+                            .append(text);
+                }
+
+                player.sendMessage(line);
+            }
+
+            player.sendMessage(Component.empty());
+        });
     }
 
     /**

@@ -80,18 +80,20 @@ Pickaxe Menu:
       - ' &#FFFFFF&lDescription'
       - ' &8| &#CCCCCCMine blocks to build up &#B366D9Essence&#CCCCCC.'
       - ' &8| &#CCCCCCOnce your threshold is reached'
-      - ' &8| &#CCCCCCyou earn an &#00D4AAEnchant Roll&#CCCCCC,'
+      - ' &8| &#CCCCCCyou earn an &#00FFFFEnchant Roll&#CCCCCC,'
       - ' &8| &#CCCCCCwhich can be spent to unlock or'
       - ' &8| &#CCCCCCupgrade enchantments.'
       - ''
       - ' &#FFFFFF&lStatistics'
       - ' &8| &#B366D9Essence: 🔥 &#FFFFFF%evolv3_pickaxe_essence%&#888888/&#FFFFFF%evolv3_pickaxe_target_essence%'
-      - ' &8| &#B366D9Enchant Rolls: &#00D4AA%evolv3_pickaxe_enchant_rolls%'
+      - ' &8| &#B366D9Enchant Rolls: &#00FFFF%evolv3_pickaxe_enchant_rolls%'
       - ' &8| &#B366D9Progress: &#00FF88%evolv3_pickaxe_essence_percentage%'
       - ' &8| %evolv3_pickaxe_essence_progressbar%'
       - ''
       - ' &8| &aLeft-Click &#AAAAAAto roll for enchantments '
       - ''
+  StorageAction: " &8| &aLeft-Click &#AAAAAAto open pickaxe storage"
+  RepairAction: " &8| &#FFEE00Right-Click &#AAAAAAto repair &#777777(&#E8890A5 &#777777Ancient Resin)"
   LockedEnchant:
     Name: "&8&l⬡ &#666666Locked Enchant"
     Lore:
@@ -105,23 +107,358 @@ Pickaxe Menu:
       - ' &8| &#555555Use the &#B366D9Enchant Panel &#555555to roll.'
       - ''
   Evolve:
-    Name: "&#00AFA3⚛ &#FFFFFF&l%evolv3_player_name% &#00AFA3Evolution"
+    Name: "&#FFEE00⚛ &#FFFFFF&l%evolv3_player_name% &#FFEE00Evolution"
     Lore:
       - ''
       - ' &#FFFFFF&lDescription'
-      - ' &8| &#CCCCCCRare &#00AFA3Atoms&#CCCCCC surface as you break'
+      - ' &8| &#CCCCCCRare &#FFEE00Atoms&#CCCCCC surface as you break'
       - ' &8| &#CCCCCCblocks. Fill the meter to earn'
-      - ' &8| &#CCCCCCan &#00D4AAEvolution Roll&#CCCCCC, then spend'
+      - ' &8| &#CCCCCCan &#00FFFFEvolution Roll&#CCCCCC, then spend'
       - ' &8| &#CCCCCCit to push your pickaxe to the'
       - ' &8| &#CCCCCCnext stage.'
       - ''
       - ' &#FFFFFF&lStatistics'
-      - ' &8| &#00AFA3Atoms: ⚛ &#FFFFFF%evolv3_pickaxe_evolution_atoms%&#888888/&#FFFFFF%evolv3_pickaxe_atom_target%'
-      - ' &8| &#00AFA3Evolution Rolls: &#00D4AA%evolv3_pickaxe_evolution_rolls%'
-      - ' &8| &#00AFA3Progress: &#00FF88%evolv3_pickaxe_atom_percentage%'
+      - ' &8| &#FFEE00Atoms: ⚛ &#FFFFFF%evolv3_pickaxe_evolution_atoms%&#888888/&#FFFFFF%evolv3_pickaxe_atom_target%'
+      - ' &8| &#FFEE00Evolution Rolls: &#00FFFF%evolv3_pickaxe_evolution_rolls%'
+      - ' &8| &#FFEE00Progress: &#00FF88%evolv3_pickaxe_atom_percentage%'
       - ' &8| %evolv3_pickaxe_atom_progressbar%'
       - ''
       - ' &8| &aLeft-Click &#AAAAAAto evolve your pickaxe '
+      - ''
+
+# Pickaxe Limit Menu slot items
+# Tokens: {cost}, {wood}, {slot}, {amount_colored}
+Pickaxe Limit Menu:
+  Title: "&8Pickaxe Storage"
+  ClaimSlot:
+    Name: "&#00FFFF⛏ &#FFFFFF&lClaim Pickaxe"
+    Lore:
+      - ''
+      - ' &#FFFFFF&lBegin Your Journey'
+      - ' &8| &#CCCCCCEvery great miner starts here.'
+      - ' &8| &#CCCCCCClaim your pickaxe and descend'
+      - ' &8| &#CCCCCCinto the depths. Mine, evolve,'
+      - ' &8| &#CCCCCCand forge a legacy in stone.'
+      - ''
+      - ' &8| &aLeft-Click &#AAAAAAto claim'
+      - ''
+  BlockedSlot:
+    Name: "&#FF4444⬡ &#FFFFFF&lSlot Blocked"
+    Lore:
+      - ''
+      - ' &#FFFFFF&lBlocked'
+      - ' &8| &#CCCCCCYou already have an active pickaxe.'
+      - ' &8| &#CCCCCCDeposit it first to claim this slot.'
+      - ''
+  LockedSlot:
+    Name: "&#666666⬡ &#666666Locked Slot"
+    Lore:
+      - ' &#444444Locked'
+      - ''
+      - ' &#FFFFFF&lDescription'
+      - ' &8| &#CCCCCCPurchase to unlock this storage slot.'
+      - ''
+      - ' &#FFFFFF&lRequirements'
+      - ' &8| &#888888Cost: &#FFFFFF{cost} {wood}'
+      - ''
+  ActiveSlot:
+    Name: "&#00FFFF⛏ &#FFFFFF&lPickaxe &#00FF88(Active)"
+  PurchaseButton:
+    NameAffordable: "&#00FFFF⬡ &#FFFFFF&lUnlock Slot {slot}"
+    NameTooExpensive: "&#FF5555⬡ &#FFFFFF&lInsufficient Resources"
+    Lore:
+      - ''
+      - ' &#FFFFFF&lRequirements'
+      - ' &8| &#888888Next Slot: &#FFFFFF{slot}'
+      - ' &8| &#888888Cost: &#FFFFFF{cost} {wood}'
+      - ' &8| &#888888You Have: {amount_colored}'
+      - ''
+    ActionAffordable: " &8| &aLeft-Click &#AAAAAAto unlock"
+    ActionTooExpensive: " &8| &#FF5555Not enough {wood}"
+  MaxedButton:
+    Name: "&#00FFFF★ &#FFFFFF&lAll Slots Unlocked"
+    Lore:
+      - ''
+      - ' &#FFFFFF&lStatus'
+      - ' &8| &#00FF88All pickaxe storage slots are unlocked!'
+      - ''
+
+# Preferences Menu
+Preferences Menu:
+  Animations:
+    Material: FIREWORK_ROCKET
+    Name: "&#00FFFFAnimations"
+    Lore:
+      - ''
+      - ' &#FFFFFF&lDescription'
+      - ' &8| &#777777Configure pickup effects,'
+      - ' &8| &#777777atom visuals, and enchant speed.'
+      - ''
+      - ' &8| &aLeft-Click &#AAAAAAto open'
+      - ''
+  Enchants:
+    Material: ENCHANTING_TABLE
+    Name: "&#00FFFFEnchants"
+    Lore:
+      - ''
+      - ' &#FFFFFF&lDescription'
+      - ' &8| &#777777Configure per-enchant notifications,'
+      - ' &8| &#777777sounds, and visual effects.'
+      - ''
+      - ' &8| &aLeft-Click &#AAAAAAto open'
+      - ''
+  Messages:
+    Material: PAPER
+    Name: "&#888888✉ Messages"
+    Lore:
+      - ' &#777777&oComing soon...'
+  Close:
+    Material: BARRIER
+    Name: "&cClose"
+    Lore:
+      - ' &8| &aLeft-Click &7to close'
+
+# Animations Menu
+Animations Menu:
+  Back:
+    Material: RED_STAINED_GLASS_PANE
+    Name: "&#AAAAAA← Back"
+    Lore:
+      - ' &8| &aLeft-Click &7to go back'
+  PickupAnimation:
+    Label:
+      Material: COMPARATOR
+      Name: "&#00FFFF⬡ Pickup Animation"
+      Lore:
+        - ''
+        - ' &#FFFFFF&lDescription'
+        - ' &8| &#777777Controls which animation'
+        - ' &8| &#777777plays when you mine a block.'
+        - ''
+    # Material shown when option is not selected; SelectedMaterial when it is
+    Material: ENDER_PEARL
+    SelectedMaterial: ENDER_EYE
+    # {status} is replaced with the selected/unselected indicator at render time
+    Default:
+      Name: "Default"
+      Lore:
+        - ' &8| &#777777Block floats up and dissolves into your backpack.'
+        - ''
+        - '{status}'
+        - ''
+    Simple:
+      Name: "Simple"
+      Lore:
+        - ' &8| &#777777Items fade out and teleport to your hand.'
+        - ''
+        - '{status}'
+        - ''
+    Disabled:
+      Name: "Disabled"
+      Lore:
+        - ' &8| &#777777Items are added straight to your backpack.'
+        - ''
+        - '{status}'
+        - ''
+  EnchantSpeed:
+    Label:
+      Material: CLOCK
+      Name: "&#FFEE00⏱ Enchant Speed"
+      Lore:
+        - ''
+        - ' &#FFFFFF&lDescription'
+        - ' &8| &#777777How fast the enchant roll'
+        - ' &8| &#777777animation plays.'
+        - ''
+    # Material shown when option is not selected; SelectedMaterial when it is
+    # {status} is replaced with the selected/unselected indicator at render time
+    Material: ENDER_PEARL
+    SelectedMaterial: ENDER_EYE
+    OptionLore:
+      - '{status}'
+      - ''
+  AtomFX:
+    Label:
+      Material: GOLD_NUGGET
+      Name: "&#FFEE00⚛ Atom FX"
+      Lore:
+        - ''
+        - ' &#FFFFFF&lDescription'
+        - ' &8| &#777777Toggle parts of the'
+        - ' &8| &#777777Atom discovery effect.'
+        - ''
+    # EnabledMaterial / DisabledMaterial apply to all toggles in this section
+    # {status} is replaced with the enabled/disabled indicator at render time
+    EnabledMaterial: LIME_DYE
+    DisabledMaterial: RED_DYE
+    Sound:
+      Name: "Sound"
+      Lore:
+        - ' &8| &#777777Arrival and discovery sounds.'
+        - ''
+        - ' {status}'
+        - ''
+        - ' &8| &aLeft-Click &#AAAAAAto toggle'
+        - ''
+    Particles:
+      Name: "Particles"
+      Lore:
+        - ' &8| &#777777The flying orb particles.'
+        - ''
+        - ' {status}'
+        - ''
+        - ' &8| &aLeft-Click &#AAAAAAto toggle'
+        - ''
+    Hologram:
+      Name: "Hologram"
+      Lore:
+        - ' &8| &#777777Floating +Atoms text.'
+        - ''
+        - ' {status}'
+        - ' &8| &aLeft-Click &#AAAAAAto toggle'
+        - ''
+    Glow:
+      Name: "Glow"
+      Lore:
+        - ' &8| &#777777Brief glow when received.'
+        - ''
+        - '{status}'
+        - ''
+        - ' &8| &aLeft-Click &#AAAAAAto toggle'
+        - ''
+  EssenceFX:
+    Label:
+      Material: BLAZE_POWDER
+      Name: "&#B366D9🔥 Essence FX"
+      Lore:
+        - ''
+        - ' &#FFFFFF&lDescription'
+        - ' &8| &#777777Toggle parts of the'
+        - ' &8| &#777777Essence discovery effect.'
+        - ''
+    # EnabledMaterial / DisabledMaterial apply to all toggles in this section
+    # {status} is replaced with the enabled/disabled indicator at render time
+    EnabledMaterial: LIME_DYE
+    DisabledMaterial: RED_DYE
+    Sound:
+      Name: "Sound"
+      Lore:
+        - ' &8| &#777777Arrival and discovery sounds.'
+        - ''
+        - ' {status}'
+        - ''
+        - ' &8| &aLeft-Click &#AAAAAAto toggle'
+        - ''
+    Particles:
+      Name: "Particles"
+      Lore:
+        - ' &8| &#777777The flying orb particles.'
+        - ''
+        - ' {status}'
+        - ''
+        - ' &8| &aLeft-Click &#AAAAAAto toggle'
+        - ''
+    Hologram:
+      Name: "Hologram"
+      Lore:
+        - ' &8| &#777777Floating +Essence text.'
+        - ''
+        - ' {status}'
+        - ''
+        - ' &8| &aLeft-Click &#AAAAAAto toggle'
+        - ''
+    Glow:
+      Name: "Glow"
+      Lore:
+        - ' &8| &#777777Brief glow when received.'
+        - ''
+        - ' {status}'
+        - ''
+        - ' &8| &aLeft-Click &#AAAAAAto toggle'
+        - ''
+
+# Enchants Preferences Menu
+Enchants Menu:
+  Back:
+    Material: RED_STAINED_GLASS_PANE
+    Name: "&#AAAAAA← Back"
+    Lore:
+      - ' &8| &aLeft-Click &7to go back'
+  Prev:
+    Material: ARROW
+    Name: "&#AAAAAA← Previous"
+    Lore:
+      - ' &8| &aLeft-Click &#AAAAAAto previous page'
+  Next:
+    Material: ARROW
+    Name: "&#AAAAAA→ Next"
+    Lore:
+      - ' &8| &aLeft-Click &#AAAAAAto next page'
+  PageInfo:
+    Material: PAPER
+    Name: "&#888888Page {page} of {total}"
+  EnchantItem:
+    Lore:
+      - ''
+      - ' &#FFFFFF&lRarity'
+      - ' &8| {rarity}'
+      - ''
+      - ' &8| &aLeft-Click &#AAAAAAto configure'
+      - ''
+
+# Enchant Option Sub-Menu
+Enchant Option Menu:
+  Back:
+    Material: RED_STAINED_GLASS_PANE
+    Name: "&#AAAAAA← Back"
+    Lore:
+      - ' &8| &aLeft-Click &7to go back'
+  EnabledMaterial: LIME_DYE
+  DisabledMaterial: RED_DYE
+  Message:
+    Name: "Message"
+    Lore:
+      - ' &8| &#777777Chat message when triggered.'
+      - ''
+      - ' {status}'
+      - ''
+      - ' &8| &aLeft-Click &#AAAAAAto toggle'
+      - ''
+  Title:
+    Name: "Title"
+    Lore:
+      - ' &8| &#777777Title popup when triggered.'
+      - ''
+      - ' {status}'
+      - ''
+      - ' &8| &aLeft-Click &#AAAAAAto toggle'
+      - ''
+  Sound:
+    Name: "Sound"
+    Lore:
+      - ' &8| &#777777Sound when triggered.'
+      - ''
+      - ' {status}'
+      - ''
+      - ' &8| &aLeft-Click &#AAAAAAto toggle'
+      - ''
+  Hologram:
+    Name: "Hologram"
+    Lore:
+      - ' &8| &#777777Floating text hologram.'
+      - ''
+      - ' {status}'
+      - ''
+      - ' &8| &aLeft-Click &#AAAAAAto toggle'
+      - ''
+  Particles:
+    Name: "Particles"
+    Lore:
+      - ' &8| &#777777Particle effects.'
+      - ''
+      - ' {status}'
+      - ''
+      - ' &8| &aLeft-Click &#AAAAAAto toggle'
       - ''
 
 # =====================================================

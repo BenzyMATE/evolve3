@@ -97,6 +97,12 @@ public class PickaxeProfile extends MongoDocument
     public PickaxeEnchants enchants = new PickaxeEnchants();
 
     /**
+     * Saved durability damage value (0 = full, higher = more damaged).
+     * Persisted so durability survives deposit/withdraw cycles.
+     */
+    public int durability = 0;
+
+    /**
      * {@inheritDoc}
      */
     @Override
@@ -201,6 +207,7 @@ public class PickaxeProfile extends MongoDocument
         doc.put("currentEssence", currentEssence);
         doc.put("targetEssence", targetEssence);
         doc.put("enchants", enchants.toDocument());
+        doc.put("durability", durability);
         return doc;
     }
 
@@ -224,6 +231,8 @@ public class PickaxeProfile extends MongoDocument
         this.enchantRolls = document.getInteger("enchantRolls", 0);
         this.currentEssence = document.getInteger("currentEssence", 0);
         this.targetEssence = document.getInteger("targetEssence", 0);
+
+        this.durability = document.getInteger("durability", 0);
 
         Document enchantsDoc = document.get("enchants", Document.class);
         if (enchantsDoc != null) {

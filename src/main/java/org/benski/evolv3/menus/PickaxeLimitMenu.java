@@ -15,6 +15,7 @@ import org.benski.evolv3.datacenters.PlayerDataCenter;
 import org.benski.evolv3.managers.PickaxeManager;
 import org.benski.evolv3.models.pickaxe.PickaxeProfile;
 import org.benski.evolv3.models.player.PlayerProfile;
+import org.benski.evolv3.items.AncientResin;
 import org.benski.evolv3.registry.ConfigRegistry;
 import org.benski.evolv3.registry.DataCenterRegistry;
 import org.bukkit.Material;
@@ -25,24 +26,27 @@ import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.Damageable;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
-import static org.benski.evolv3.core.helpers.Utils.formatMaterialName;
+import static org.benski.evolv3.core.helpers.Utils.buildDurabilityBar;
 import static org.benski.evolv3.core.helpers.Utils.formatMessage;
 
 /**
  * Menu for managing pickaxe storage slots.
- * Players unlock slots by spending wood via the purchase button,
- * then claim a pickaxe for each unlocked slot.
+ * Slots are unlocked automatically as the player's highest evolution level increases.
+ * Evolution 1 = 1 slot, Evolution 2 = 2 slots, and so on up to the configured maximum.
  *
  * <p>Each slot can be in one of five states:</p>
  * <ul>
- *   <li><b>LOCKED</b>   – slot not yet purchased (index &ge; pickaxeLimit)</li>
+ *   <li><b>LOCKED</b>   – player's max evolution is below the required level for this slot</li>
  *   <li><b>CLAIM</b>    – slot unlocked, no pickaxe claimed yet, no active pickaxe</li>
  *   <li><b>BLOCKED</b>  – slot unlocked, empty, but player already has an active pickaxe</li>
  *   <li><b>ACTIVE</b>   – pickaxe for this slot is currently in the player's inventory (LEAD)</li>
@@ -55,6 +59,10 @@ import static org.benski.evolv3.core.helpers.Utils.formatMessage;
  *   Row 1 ( 9-17): border [sl0][sl1][sl2][sl3][sl4][sl5][sl6] border
  *   Row 2 (18-26): border, purchase button at slot 22, border
  * </pre>
+ *
+ * <p>Configurable via {@code default.yml} (PickaxeStorage section),
+ * {@code menus.yml} (Pickaxe Limit Menu section), and
+ * {@code messages.yml} (pickaxe-limit section).</p>
  */
 @ExtensionMethod(ItemStackExtensions.class)
 public class PickaxeLimitMenu extends BaseMenu
@@ -62,38 +70,23 @@ public class PickaxeLimitMenu extends BaseMenu
     private static final MenuType MENU_TYPE = MenuType.register("pickaxe_limit");
 
     /**
-     * Maximum pickaxe storage slots.
-     * Configurable between 1 and 9 (PlayerProfile.storedPickaxes holds exactly 9 entries).
-     * WOOD_TYPES must have at least MAX_SLOTS entries.
-     * To change the cap: update this constant and add/remove WOOD_TYPES entries to match.
+     * Fixed GUI slot positions for each storage entry.
+     * The array length is the absolute layout maximum (7 for a 27-slot, 3-row GUI).
+     * The effective max is read from config via {@link #getMaxSlots()}.
      */
-    static final int MAX_SLOTS = 7;
+    private static final int[] SLOT_POSITIONS = {10, 11, 12, 13, 14, 15, 16};
 
     /** Inventory slot index for the purchase / unlock button. */
     private static final int PURCHASE_SLOT = 22;
 
-    /**
-     * GUI slot for each storage position.
-     * Index maps directly to PlayerProfile.storedPickaxes index.
-     */
-    private static final int[] SLOT_POSITIONS = {10, 11, 12, 13, 14, 15, 16};
-
-    /**
-     * Log type required to unlock each slot.
-     * WOOD_TYPES[i] is consumed when purchasing slot i.
-     * Must contain at least MAX_SLOTS entries.
-     */
-    private static final Material[] WOOD_TYPES = {
-            Material.OAK_LOG,
-            Material.SPRUCE_LOG,
-            Material.BIRCH_LOG,
-            Material.JUNGLE_LOG,
-            Material.ACACIA_LOG,
-            Material.DARK_OAK_LOG,
-            Material.MANGROVE_LOG
-    };
-
     private static final LegacyComponentSerializer SERIALIZER = LegacyComponentSerializer.legacySection();
+
+    /**
+     * Per-player claim timestamps used for rate-limiting.
+     * Each entry is a list of epoch-ms values for recent claims.
+     * Static so the window survives menu re-opens.
+     */
+    private static final Map<UUID, List<Long>> claimTimestamps = new ConcurrentHashMap<>();
 
     private final PlayerDataCenter playerDataCenter;
     private final PickaxeDataCenter pickaxeDataCenter;
@@ -108,7 +101,8 @@ public class PickaxeLimitMenu extends BaseMenu
     @Override
     protected String getMenuTitle(Player player)
     {
-        return "&8Pickaxe Storage";
+        FileConfiguration menus = ConfigRegistry.getInstance().get(ConfigNames.MENUS);
+        return menus.getString(ConfigPaths.Menus.PickaxeLimitMenu.TITLE, "&8Pickaxe Storage");
     }
 
     @Override
@@ -129,9 +123,10 @@ public class PickaxeLimitMenu extends BaseMenu
         }
 
         boolean hasActive = playerHasRegisteredPickaxe(player);
-        int unlockedSlots = profile.pickaxeLimit;
+        int unlockedSlots = getUnlockedSlots(player);
+        int maxSlots = getMaxSlots();
 
-        for (int i = 0; i < MAX_SLOTS; i++) {
+        for (int i = 0; i < maxSlots; i++) {
             int guiSlot = SLOT_POSITIONS[i];
 
             if (i >= unlockedSlots) {
@@ -141,10 +136,8 @@ public class PickaxeLimitMenu extends BaseMenu
 
             String entry = getStoredEntry(profile, i);
             if (entry.isEmpty()) {
-                // Unlocked slot with no pickaxe claimed
                 inventory.setItem(guiSlot, hasActive ? buildBlockedSlot(player) : buildClaimSlot(player));
             } else {
-                // Slot has a pickaxe — show lead if it's in inventory, pickaxe item if stored
                 String pickaxeId = entry.split(":", 2)[0];
                 if (pickaxeIsActive(player, pickaxeId)) {
                     inventory.setItem(guiSlot, buildActiveSlot(player, entry));
@@ -154,8 +147,8 @@ public class PickaxeLimitMenu extends BaseMenu
             }
         }
 
-        if (unlockedSlots < MAX_SLOTS) {
-            inventory.setItem(PURCHASE_SLOT, buildPurchaseButton(player, profile, unlockedSlots));
+        if (unlockedSlots < maxSlots) {
+            inventory.setItem(PURCHASE_SLOT, buildEvolutionInfoButton(player, unlockedSlots, maxSlots));
         } else {
             inventory.setItem(PURCHASE_SLOT, buildMaxedButton(player));
         }
@@ -169,12 +162,11 @@ public class PickaxeLimitMenu extends BaseMenu
 
         int slotIndex = getSlotIndex(slot);
         if (slotIndex >= 0) {
-            handleStorageSlotClick(player, profile, slotIndex);
-            return true;
-        }
-
-        if (slot == PURCHASE_SLOT) {
-            handlePurchaseClick(player, profile);
+            if (event.isRightClick()) {
+                handleRepairClick(player, profile, slotIndex);
+            } else {
+                handleStorageSlotClick(player, profile, slotIndex);
+            }
             return true;
         }
 
@@ -187,8 +179,9 @@ public class PickaxeLimitMenu extends BaseMenu
 
     private void handleStorageSlotClick(Player player, PlayerProfile profile, int slotIndex)
     {
-        if (slotIndex >= profile.pickaxeLimit) {
-            player.sendMessage(fmt(player, "&c&lSlot Locked &7— Purchase it first."));
+        if (slotIndex >= getUnlockedSlots(player)) {
+            sendMessage(player, ConfigPaths.Messages.PickaxeLimit.BLOCKED_CLICK,
+                    "%evolv3_prefix% &#CCCCCCThis slot is locked. Purchase it to unlock.");
             return;
         }
 
@@ -196,7 +189,8 @@ public class PickaxeLimitMenu extends BaseMenu
 
         if (entry.isEmpty()) {
             if (playerHasRegisteredPickaxe(player)) {
-                player.sendMessage(fmt(player, "&c&lPickaxe Active &7— Deposit your current pickaxe before claiming another."));
+                sendMessage(player, ConfigPaths.Messages.PickaxeLimit.MUST_DEPOSIT_BEFORE_CLAIM,
+                        "%evolv3_prefix% &#CCCCCCDeposit your active pickaxe before claiming another slot.");
             } else {
                 handleClaim(player, profile, slotIndex);
             }
@@ -213,8 +207,6 @@ public class PickaxeLimitMenu extends BaseMenu
 
     /**
      * Deposits a specific pickaxe back into storage.
-     * Finds it in the player's inventory by ID and removes it.
-     * The slot entry is not modified — active/stored state is inventory-derived.
      */
     private void handleDeposit(Player player, String pickaxeId)
     {
@@ -225,28 +217,40 @@ public class PickaxeLimitMenu extends BaseMenu
             String id = item.getData("id");
             if (!pickaxeId.equals(id)) continue;
 
+            // Persist durability before the item is removed from the inventory
+            ItemMeta depositMeta = item.getItemMeta();
+            if (depositMeta instanceof Damageable dmg) {
+                PickaxeProfile depositProfile = pickaxeDataCenter.getAll().get(pickaxeId);
+                if (depositProfile != null) {
+                    depositProfile.durability = dmg.getDamage();
+                    depositProfile.save(null);
+                }
+            }
+
             player.getInventory().setItem(i, new ItemStack(Material.AIR));
             player.playSound(player.getLocation(), Sound.BLOCK_SHULKER_BOX_CLOSE, 1.0f, 1.2f);
-            player.sendMessage(fmt(player, "&a&l[Deposited] &ePickaxe stored."));
+            sendMessageList(player, ConfigPaths.Messages.PickaxeLimit.PICKAXE_DEPOSITED);
             refresh(player);
             return;
         }
-        player.sendMessage(fmt(player, "&c&lNot Found &7— Could not find that pickaxe in your inventory."));
+        sendMessage(player, ConfigPaths.Messages.PickaxeLimit.PICKAXE_NOT_FOUND,
+                "%evolv3_prefix% &#CCCCCCPickaxe not found in your inventory.");
     }
 
     /**
      * Withdraws a stored pickaxe into the player's inventory.
-     * The slot entry is not modified — active/stored state is inventory-derived.
      */
     private void handleWithdraw(Player player, String entry)
     {
         if (playerHasRegisteredPickaxe(player)) {
-            player.sendMessage(fmt(player, "&c&lPickaxe Active &7— Deposit your current pickaxe before withdrawing another."));
+            sendMessage(player, ConfigPaths.Messages.PickaxeLimit.MUST_DEPOSIT_BEFORE_WITHDRAW,
+                    "%evolv3_prefix% &#CCCCCCDeposit your active pickaxe before withdrawing another.");
             return;
         }
 
         if (player.getInventory().firstEmpty() == -1) {
-            player.sendMessage(fmt(player, "&c&lInventory Full &7— Clear space before withdrawing."));
+            sendMessage(player, ConfigPaths.Messages.PickaxeLimit.INVENTORY_FULL,
+                    "%evolv3_prefix% &cYour inventory is full.");
             return;
         }
 
@@ -257,133 +261,167 @@ public class PickaxeLimitMenu extends BaseMenu
         ItemStack pickaxeItem = new ItemStack(material);
         pickaxeItem.setData("id", pickaxeId);
 
+        // Restore saved durability
+        PickaxeProfile withdrawProfile = pickaxeDataCenter.getAll().get(pickaxeId);
+        if (withdrawProfile != null && withdrawProfile.durability > 0) {
+            ItemMeta withdrawMeta = pickaxeItem.getItemMeta();
+            if (withdrawMeta instanceof Damageable dmg) {
+                dmg.setDamage(withdrawProfile.durability);
+                pickaxeItem.setItemMeta(withdrawMeta);
+            }
+        }
+
+        if (withdrawProfile != null) {
+            PickaxeManager.getInstance().applyLoreAndName(player, withdrawProfile, pickaxeItem);
+        }
         player.getInventory().addItem(pickaxeItem);
         player.playSound(player.getLocation(), Sound.BLOCK_SHULKER_BOX_OPEN, 1.0f, 1.2f);
-        player.sendMessage(formatMessage(player, "&a&l[Withdrawn] &ePickaxe retrieved."));
+        sendMessageList(player, ConfigPaths.Messages.PickaxeLimit.PICKAXE_WITHDRAWN);
         refresh(player);
     }
 
     /**
      * Claims a new pickaxe for the given slot.
-     * Force-registers the pickaxe so stats are available immediately.
      */
     private void handleClaim(Player player, PlayerProfile profile, int slotIndex)
     {
+        if (!canClaimPickaxe(player)) {
+            sendMessage(player, ConfigPaths.Messages.PickaxeLimit.CLAIM_RATE_LIMITED,
+                    "&#FF4444You've claimed too many pickaxes recently. Try again in a few minutes.");
+            player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
+            return;
+        }
+
         if (player.getInventory().firstEmpty() == -1) {
-            player.sendMessage(fmt(player, "&c&lInventory Full &7— Clear space before claiming."));
+            sendMessage(player, ConfigPaths.Messages.PickaxeLimit.INVENTORY_FULL,
+                    "%evolv3_prefix% &cYour inventory is full.");
             return;
         }
 
         String pickaxeId = UUID.randomUUID().toString();
         Material material = Material.WOODEN_PICKAXE;
 
-        // Create the item with the registered ID embedded
         ItemStack pickaxeItem = new ItemStack(material);
         pickaxeItem.setData("id", pickaxeId);
 
-        // Create the pickaxe profile with default values and put it in cache
         PickaxeProfile pickProfile = PickaxeProfile.createDefault(player, pickaxeId);
         pickaxeDataCenter.getAll().put(pickaxeId, pickProfile);
         pickProfile.save(null);
 
-        // Record the slot ownership (permanent — not cleared on withdraw/deposit)
         setStoredEntry(profile, slotIndex, pickaxeId + ":" + material.name());
         profile.save(null);
 
+        PickaxeManager.getInstance().applyLoreAndName(player, pickProfile, pickaxeItem);
         player.getInventory().addItem(pickaxeItem);
+        recordClaim(player);
         player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.0f);
-        player.sendMessage(formatMessage(player, "&a&l[Claimed] &eYour new pickaxe is ready."));
+        sendMessageList(player, ConfigPaths.Messages.PickaxeLimit.PICKAXE_CLAIMED);
         refresh(player);
     }
 
-    private void handlePurchaseClick(Player player, PlayerProfile profile)
+    /**
+     * Returns true if this player is allowed to claim another pickaxe given the configured
+     * rate-limit (max claims per rolling time window).
+     */
+    private boolean canClaimPickaxe(Player player)
     {
-        int nextSlotIndex = profile.pickaxeLimit;
-        if (nextSlotIndex >= MAX_SLOTS) {
-            player.sendMessage(fmt(player, "&aAll slots are already unlocked!"));
-            return;
-        }
+        FileConfiguration config = ConfigRegistry.getInstance().get(ConfigNames.DEFAULT);
+        int maxClaims = config.getInt(ConfigPaths.Default.PickaxeStorage.MAX_CLAIMS_PER_WINDOW, 5);
+        long windowMs = config.getLong(ConfigPaths.Default.PickaxeStorage.CLAIM_WINDOW_MINUTES, 5) * 60_000L;
 
-        Material requiredWood = WOOD_TYPES[nextSlotIndex];
-        int requiredAmount = getWoodCostForSlot(nextSlotIndex);
-
-        if (countMaterialInInventory(player, requiredWood) < requiredAmount) {
-            player.sendMessage(fmt(player, "&c&lInsufficient Resources &7— Need &f" + requiredAmount
-                    + " &7" + formatMaterialName(requiredWood) + "&7."));
-            player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
-            return;
-        }
-
-        removeMaterialFromInventory(player, requiredWood, requiredAmount);
-        profile.increasePickaxeLimit();
-        profile.save(null);
-
-        player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.0f);
-        player.sendMessage(fmt(player, "&a&l[Unlocked] &eSlot " + profile.pickaxeLimit + " is now available."));
-        refresh(player);
+        List<Long> timestamps = claimTimestamps.computeIfAbsent(
+                player.getUniqueId(), k -> new ArrayList<>());
+        long cutoff = System.currentTimeMillis() - windowMs;
+        timestamps.removeIf(t -> t < cutoff);
+        return timestamps.size() < maxClaims;
     }
+
+    /**
+     * Records a pickaxe claim for rate-limiting purposes.
+     */
+    private void recordClaim(Player player)
+    {
+        claimTimestamps.computeIfAbsent(player.getUniqueId(), k -> new ArrayList<>())
+                .add(System.currentTimeMillis());
+    }
+
 
     // ─────────────────────────────────────────────────────────────────────────
     // Item builders
     // ─────────────────────────────────────────────────────────────────────────
 
-    /**
-     * Yellow pane — slot is unlocked and available to claim a new pickaxe.
-     */
     private ItemStack buildClaimSlot(Player player)
     {
-        List<String> lore = new ArrayList<>();
-        lore.add("");
-        lore.add(fmt(player, " &#FFFFFF&lDescription"));
-        lore.add(fmt(player, " &8| &#CCCCCCThis slot is ready for a pickaxe."));
-        lore.add(fmt(player, " &8| &#CCCCCCClick to claim your new pickaxe."));
-        lore.add("");
-        lore.add(fmt(player, " &8| &aLeft-Click &#AAAAAAto claim"));
-        lore.add("");
+        FileConfiguration menus = ConfigRegistry.getInstance().get(ConfigNames.MENUS);
+        String name = menus.getString(ConfigPaths.Menus.PickaxeLimitMenu.CLAIM_NAME,
+                "&#00FFFF⛏ &#FFFFFF&lClaim Pickaxe");
+        List<String> lore = getLoreFromConfig(player, ConfigPaths.Menus.PickaxeLimitMenu.CLAIM_LORE,
+                List.of("", " &#FFFFFF&lDescription",
+                        " &8| &#CCCCCCThis slot is ready for a pickaxe.",
+                        " &8| &#CCCCCCClick to claim your new pickaxe.", "",
+                        " &8| &aLeft-Click &#AAAAAAto claim", ""));
 
         return new ItemBuilder(Material.YELLOW_STAINED_GLASS_PANE)
-                .name(fmt(player, "&#00AFA3⛏ &#FFFFFF&lClaim Pickaxe"))
+                .name(fmt(player, name))
                 .lore(lore)
                 .build();
     }
 
-    /**
-     * Red pane — slot is unlocked but blocked because the player already has a pickaxe active.
-     */
     private ItemStack buildBlockedSlot(Player player)
     {
-        List<String> lore = new ArrayList<>();
-        lore.add("");
-        lore.add(fmt(player, " &#FFFFFF&lBlocked"));
-        lore.add(fmt(player, " &8| &#CCCCCCYou already have an active pickaxe."));
-        lore.add(fmt(player, " &8| &#CCCCCCDeposit it first to claim this slot."));
-        lore.add("");
+        FileConfiguration menus = ConfigRegistry.getInstance().get(ConfigNames.MENUS);
+        String name = menus.getString(ConfigPaths.Menus.PickaxeLimitMenu.BLOCKED_NAME,
+                "&#FF4444⬡ &#FFFFFF&lSlot Blocked");
+        List<String> lore = getLoreFromConfig(player, ConfigPaths.Menus.PickaxeLimitMenu.BLOCKED_LORE,
+                List.of("", " &#FFFFFF&lBlocked",
+                        " &8| &#CCCCCCYou already have an active pickaxe.",
+                        " &8| &#CCCCCCDeposit it first to claim this slot.", ""));
 
         return new ItemBuilder(Material.RED_STAINED_GLASS_PANE)
-                .name(fmt(player, "&#FF4444⬡ &#FFFFFF&lSlot Blocked"))
+                .name(fmt(player, name))
                 .lore(lore)
                 .build();
     }
 
     /**
      * LEAD — the pickaxe for this slot is currently in the player's inventory (active).
-     * Clicking deposits it back into storage.
      */
     private ItemStack buildActiveSlot(Player player, String entry)
     {
+        FileConfiguration menus = ConfigRegistry.getInstance().get(ConfigNames.MENUS);
+        String rawName = menus.getString(ConfigPaths.Menus.PickaxeLimitMenu.ACTIVE_NAME,
+                "&#00FFFF⛏ &#FFFFFF&lPickaxe &#00FF88(Active)");
+
         String[] parts = entry.split(":", 2);
         String pickaxeId = parts[0];
+        Material material = parts.length > 1 ? parseMaterial(parts[1]) : Material.WOODEN_PICKAXE;
         PickaxeProfile pickProfile = pickaxeDataCenter.getAll().get(pickaxeId);
+
+        // Read live durability from the actual item in the player's inventory
+        int damage = 0;
+        ItemStack heldPickaxe = findPickaxeInInventory(player, pickaxeId);
+        if (heldPickaxe != null) {
+            ItemMeta heldMeta = heldPickaxe.getItemMeta();
+            if (heldMeta instanceof Damageable dmg) damage = dmg.getDamage();
+        }
 
         ItemStack item = new ItemStack(Material.LEAD);
         ItemMeta meta = item.getItemMeta();
         if (meta == null) return item;
 
-        meta.displayName(SERIALIZER.deserialize(fmt(player, "&#00AFA3⛏ &#FFFFFF&lPickaxe &#00FF88(Active)"))
+        meta.displayName(SERIALIZER.deserialize(fmt(player, rawName))
                 .decoration(TextDecoration.ITALIC, false));
 
         if (pickProfile != null) {
-            List<String> footer = List.of("", " &8| &aLeft-Click &#AAAAAAto deposit", "");
+            String durabilityBar = buildDurabilityBar(damage, material.getMaxDurability());
+            List<String> footer = new ArrayList<>();
+            footer.add("");
+            footer.add(" &8| &#00FFFFDurability:");
+            footer.add(" &8| " + durabilityBar);
+            footer.add("");
+            footer.add(" &8| &aLeft-Click &#AAAAAAto deposit");
+            footer.add(" &8| &#FFEE00Right-Click &#AAAAAAto repair &#777777(&#E8890A5 &#777777Ancient Resin)");
+            footer.add("");
             meta.lore(PickaxeManager.getInstance().buildLoreComponents(player, pickProfile, footer));
         } else {
             meta.lore(List.of(
@@ -404,7 +442,6 @@ public class PickaxeLimitMenu extends BaseMenu
 
     /**
      * Pickaxe item — the pickaxe for this slot is stored away.
-     * Clicking withdraws it into the player's inventory.
      */
     private ItemStack buildStoredSlot(Player player, String entry)
     {
@@ -418,13 +455,26 @@ public class PickaxeLimitMenu extends BaseMenu
         if (meta == null) return item;
 
         if (pickProfile != null) {
+            // Set actual damage so the native Minecraft durability bar shows on the item icon
+            if (meta instanceof Damageable dmg && pickProfile.durability > 0) {
+                dmg.setDamage(pickProfile.durability);
+            }
+
             FileConfiguration config = ConfigRegistry.getInstance().get(ConfigNames.DEFAULT);
             String nameTemplate = config.getString(ConfigPaths.Default.Pickaxe.NAME, "&#00FFFF⛏ Pickaxe");
             String resolvedName = nameTemplate.replace("%evolv3_player_name%", player.getName());
             meta.displayName(SERIALIZER.deserialize(fmt(player, resolvedName))
                     .decoration(TextDecoration.ITALIC, false));
 
-            List<String> footer = List.of("", " &8| &aLeft-Click &#AAAAAAto withdraw", "");
+            String durabilityBar = buildDurabilityBar(pickProfile.durability, material.getMaxDurability());
+            List<String> footer = new ArrayList<>();
+            footer.add("");
+            footer.add(" &8| &#00FFFFDurability:");
+            footer.add(" &8| " + durabilityBar);
+            footer.add("");
+            footer.add(" &8| &aLeft-Click &#AAAAAAto withdraw");
+            footer.add(" &8| &#FFEE00Right-Click &#AAAAAAto repair &#777777(&#E8890A5 &#777777Ancient Resin)");
+            footer.add("");
             meta.lore(PickaxeManager.getInstance().buildLoreComponents(player, pickProfile, footer));
         } else {
             meta.displayName(SERIALIZER.deserialize(fmt(player, "&#00FFFF⛏ &#FFFFFF&lStored Pickaxe"))
@@ -442,98 +492,241 @@ public class PickaxeLimitMenu extends BaseMenu
         return item;
     }
 
-    /** Red pane — slot index is beyond the player's current pickaxeLimit. */
     private ItemStack buildLockedSlot(Player player, int slotIndex)
     {
-        Material requiredWood = WOOD_TYPES[slotIndex];
-        int cost = getWoodCostForSlot(slotIndex);
+        FileConfiguration menus = ConfigRegistry.getInstance().get(ConfigNames.MENUS);
+        int requiredEvolution = slotIndex + 1;
 
-        List<String> lore = new ArrayList<>();
-        lore.add(fmt(player, " &#444444Locked"));
-        lore.add("");
-        lore.add(fmt(player, " &#FFFFFF&lDescription"));
-        lore.add(fmt(player, " &8| &#777777Purchase to unlock this storage slot."));
-        lore.add("");
-        lore.add(fmt(player, " &#FFFFFF&lRequirements"));
-        lore.add(fmt(player, " &8| &#00AFA3Cost: &#FFFFFF" + cost + " " + formatMaterialName(requiredWood)));
-        lore.add("");
+        String name = menus.getString(ConfigPaths.Menus.PickaxeLimitMenu.LOCKED_NAME,
+                "&#666666⬡ &#666666Locked Slot");
+        List<String> lore = List.of(
+                fmt(player, " &#444444Locked"),
+                "",
+                fmt(player, " &#FFFFFF&lRequirements"),
+                fmt(player, " &8| &#CCCCCCReach &#FFFFFF&lEvolution " + requiredEvolution + " &#CCCCCCto unlock."),
+                "");
 
         return new ItemBuilder(Material.RED_STAINED_GLASS_PANE)
-                .name(fmt(player, "&#666666⬡ &#666666Locked Slot"))
+                .name(fmt(player, name))
                 .lore(lore)
                 .build();
     }
 
-    /** Purchase button — unlocks the next slot in exchange for wood. */
-    private ItemStack buildPurchaseButton(Player player, PlayerProfile profile, int nextSlotIndex)
+    private ItemStack buildEvolutionInfoButton(Player player, int unlockedSlots, int maxSlots)
     {
-        Material requiredWood = WOOD_TYPES[nextSlotIndex];
-        int requiredAmount = getWoodCostForSlot(nextSlotIndex);
-        int playerAmount = countMaterialInInventory(player, requiredWood);
-        boolean canAfford = playerAmount >= requiredAmount;
-
-        String amountColor = canAfford ? "&#00FF88" : "&#FF5555";
+        int currentMaxEvolution = pickaxeDataCenter.getAll().values().stream()
+                .filter(p -> player.getUniqueId().equals(p.ownerUuid))
+                .mapToInt(p -> p.evolution)
+                .max()
+                .orElse(1);
+        int nextEvolution = unlockedSlots + 1;
 
         List<String> lore = new ArrayList<>();
         lore.add("");
-        lore.add(fmt(player, " &#FFFFFF&lRequirements"));
-        lore.add(fmt(player, " &8| &#00AFA3Next Slot: &#FFFFFF" + (nextSlotIndex + 1)));
-        lore.add(fmt(player, " &8| &#00AFA3Cost: &#FFFFFF" + requiredAmount + " " + formatMaterialName(requiredWood)));
-        lore.add(fmt(player, " &8| &#00AFA3You Have: " + amountColor + playerAmount));
+        lore.add(fmt(player, " &#FFFFFF&lSlot Unlocks"));
+        lore.add(fmt(player, " &8| &#00FFFFUnlocked: &#FFFFFF" + unlockedSlots + " / " + maxSlots));
+        lore.add(fmt(player, " &8| &#00FFFFYour Evolution: &#FFFFFF" + currentMaxEvolution));
         lore.add("");
-        lore.add(canAfford
-                ? fmt(player, " &8| &aLeft-Click &#AAAAAAto unlock")
-                : fmt(player, " &8| &#FF5555Not enough " + formatMaterialName(requiredWood)));
+        lore.add(fmt(player, " &#FFFFFF&lNext Slot"));
+        lore.add(fmt(player, " &8| &#CCCCCCReach &#FFFFFF&lEvolution " + nextEvolution + " &#CCCCCCto unlock."));
         lore.add("");
 
-        String buttonName = canAfford
-                ? fmt(player, "&#00AFA3⬡ &#FFFFFF&lUnlock Slot " + (nextSlotIndex + 1))
-                : fmt(player, "&#FF5555⬡ &#FFFFFF&lInsufficient Resources");
+        return new ItemBuilder(Material.EXPERIENCE_BOTTLE)
+                .name(fmt(player, "&#00FFFF⬡ &#FFFFFF&lSlot Progress"))
+                .lore(lore)
+                .build();
+    }
 
-        return new ItemBuilder(canAfford ? Material.EMERALD_BLOCK : Material.REDSTONE_BLOCK)
-                .name(buttonName)
+    private ItemStack buildMaxedButton(Player player)
+    {
+        FileConfiguration menus = ConfigRegistry.getInstance().get(ConfigNames.MENUS);
+        String name = menus.getString(ConfigPaths.Menus.PickaxeLimitMenu.MAXED_NAME,
+                "&#00FFFF★ &#FFFFFF&lAll Slots Unlocked");
+        List<String> lore = getLoreFromConfig(player, ConfigPaths.Menus.PickaxeLimitMenu.MAXED_LORE,
+                List.of("", " &#FFFFFF&lStatus",
+                        " &8| &#00FF88All pickaxe storage slots are unlocked!", ""));
+
+        return new ItemBuilder(Material.NETHER_STAR)
+                .name(fmt(player, name))
                 .lore(lore)
                 .build();
     }
 
     // ─────────────────────────────────────────────────────────────────────────
-    // Material helpers (checks both Minecraft inventory and plugin backpack)
+    // Config helpers
     // ─────────────────────────────────────────────────────────────────────────
 
     /**
-     * Returns the combined amount of a material across the player's Minecraft
-     * inventory and their plugin backpack.
+     * Returns the effective maximum slots, read from config and capped at the layout limit.
      */
-    private int countMaterialInInventory(Player player, Material material)
+    private int getMaxSlots()
+    {
+        int configured = ConfigRegistry.getInstance().get(ConfigNames.DEFAULT)
+                .getInt(ConfigPaths.Default.PickaxeStorage.MAX_SLOTS, SLOT_POSITIONS.length);
+        return Math.min(configured, SLOT_POSITIONS.length);
+    }
+
+    /**
+     * Returns the number of unlocked slots for the player, derived from the highest
+     * evolution level across all of their pickaxes. Defaults to 1 if no pickaxes exist yet.
+     */
+    private int getUnlockedSlots(Player player)
+    {
+        int maxEvolution = pickaxeDataCenter.getAll().values().stream()
+                .filter(p -> player.getUniqueId().equals(p.ownerUuid))
+                .mapToInt(p -> p.evolution)
+                .max()
+                .orElse(1);
+        return Math.min(maxEvolution, getMaxSlots());
+    }
+
+    /**
+     * Reads a lore list from menus config, formats each line through {@link #fmt}, and returns it.
+     * Falls back to {@code fallback} if the config list is empty.
+     * Accepts optional token pairs (token, value, token, value, ...) applied before formatting.
+     */
+    private List<String> getLoreFromConfig(Player player, String path, List<String> fallback,
+                                            String... tokens)
+    {
+        FileConfiguration menus = ConfigRegistry.getInstance().get(ConfigNames.MENUS);
+        List<String> raw = menus.getStringList(path);
+        if (raw.isEmpty()) raw = fallback;
+
+        List<String> result = new ArrayList<>(raw.size());
+        for (String line : raw) {
+            for (int i = 0; i + 1 < tokens.length; i += 2) {
+                line = line.replace(tokens[i], tokens[i + 1]);
+            }
+            result.add(fmt(player, line));
+        }
+        return result;
+    }
+
+    /** Reads a message from messages.yml, falling back to the given default. */
+    private String getMessage(String path, String fallback)
+    {
+        return ConfigRegistry.getInstance().get(ConfigNames.MESSAGES).getString(path, fallback);
+    }
+
+    /** Sends a message from messages.yml (with fallback) to the player, with color processing. */
+    private void sendMessage(Player player, String path, String fallback)
+    {
+        player.sendMessage(fmt(player, getMessage(path, fallback)));
+    }
+
+    /** Sends a multi-line message list from messages.yml to the player, with color processing. */
+    private void sendMessageList(Player player, String path)
+    {
+        List<String> lines = ConfigRegistry.getInstance().get(ConfigNames.MESSAGES).getStringList(path);
+        for (String line : lines) {
+            player.sendMessage(fmt(player, line));
+        }
+    }
+
+    /** Sends a message list with token replacements applied (token, value, token, value, ...). */
+    private void sendMessageList(Player player, String path, String... replacements)
+    {
+        List<String> lines = ConfigRegistry.getInstance().get(ConfigNames.MESSAGES).getStringList(path);
+        for (String line : lines) {
+            for (int i = 0; i + 1 < replacements.length; i += 2) {
+                line = line.replace(replacements[i], replacements[i + 1]);
+            }
+            player.sendMessage(fmt(player, line));
+        }
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Repair handlers
+    // ─────────────────────────────────────────────────────────────────────────
+
+    private void handleRepairClick(Player player, PlayerProfile profile, int slotIndex)
+    {
+        if (slotIndex >= getUnlockedSlots(player)) return;
+
+        String entry = getStoredEntry(profile, slotIndex);
+        if (entry.isEmpty()) return;
+
+        String[] parts = entry.split(":", 2);
+        String pickaxeId = parts[0];
+        Material material = parts.length > 1 ? parseMaterial(parts[1]) : Material.WOODEN_PICKAXE;
+        boolean isActive = pickaxeIsActive(player, pickaxeId);
+
+        handleRepair(player, pickaxeId, material, isActive);
+    }
+
+    private void handleRepair(Player player, String pickaxeId, Material material, boolean isActive)
+    {
+        FileConfiguration config = ConfigRegistry.getInstance().get(ConfigNames.DEFAULT);
+        int repairCost = config.getInt(ConfigPaths.Default.AncientResin.REPAIR_COST, 5);
+
+        // Check current damage
+        int currentDamage;
+        if (isActive) {
+            ItemStack heldPickaxe = findPickaxeInInventory(player, pickaxeId);
+            if (heldPickaxe == null) return;
+            ItemMeta m = heldPickaxe.getItemMeta();
+            currentDamage = (m instanceof Damageable dmg) ? dmg.getDamage() : 0;
+        } else {
+            PickaxeProfile pickProfile = pickaxeDataCenter.getAll().get(pickaxeId);
+            if (pickProfile == null) return;
+            currentDamage = pickProfile.durability;
+        }
+
+        if (currentDamage == 0) {
+            sendMessageList(player, ConfigPaths.Messages.PickaxeLimit.REPAIR_ALREADY_FULL);
+            player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
+            return;
+        }
+
+        if (countAncientResinInInventory(player) < repairCost) {
+            sendMessageList(player, ConfigPaths.Messages.PickaxeLimit.REPAIR_INSUFFICIENT_WOOD,
+                    "%required%", String.valueOf(repairCost));
+            player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
+            return;
+        }
+
+        removeAncientResinFromInventory(player, repairCost);
+
+        if (isActive) {
+            ItemStack heldPickaxe = findPickaxeInInventory(player, pickaxeId);
+            if (heldPickaxe == null) return;
+            ItemMeta m = heldPickaxe.getItemMeta();
+            if (m instanceof Damageable dmg) {
+                dmg.setDamage(0);
+                heldPickaxe.setItemMeta(m);
+            }
+        } else {
+            PickaxeProfile pickProfile = pickaxeDataCenter.getAll().get(pickaxeId);
+            if (pickProfile == null) return;
+            pickProfile.durability = 0;
+            pickProfile.save(null);
+        }
+
+        player.playSound(player.getLocation(), Sound.BLOCK_ANVIL_USE, 1.0f, 1.2f);
+        sendMessageList(player, ConfigPaths.Messages.PickaxeLimit.REPAIR_SUCCESS);
+        refresh(player);
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Ancient Resin helpers (repair material)
+    // ─────────────────────────────────────────────────────────────────────────
+
+    private int countAncientResinInInventory(Player player)
     {
         int total = 0;
         for (ItemStack item : player.getInventory().getContents()) {
-            if (item != null && item.getType() == material) {
-                total += item.getAmount();
-            }
+            if (AncientResin.isAncientResin(item)) total += item.getAmount();
         }
-
-        PlayerProfile profile = playerDataCenter.getLocal(player);
-        if (profile != null && profile.backpack != null) {
-            total += profile.backpack.getMaterialAmount(material);
-        }
-
         return total;
     }
 
-    /**
-     * Removes the given amount of a material from the player, drawing from
-     * their Minecraft inventory first, then their plugin backpack for any remainder.
-     */
-    private void removeMaterialFromInventory(Player player, Material material, int amount)
+    private void removeAncientResinFromInventory(Player player, int amount)
     {
         int remaining = amount;
-
-        // Consume from Minecraft inventory first
         ItemStack[] contents = player.getInventory().getContents();
         for (int i = 0; i < contents.length && remaining > 0; i++) {
             ItemStack item = contents[i];
-            if (item == null || item.getType() != material) continue;
+            if (!AncientResin.isAncientResin(item)) continue;
             if (item.getAmount() <= remaining) {
                 remaining -= item.getAmount();
                 player.getInventory().setItem(i, new ItemStack(Material.AIR));
@@ -542,45 +735,26 @@ public class PickaxeLimitMenu extends BaseMenu
                 remaining = 0;
             }
         }
-
-        // Consume any remainder from the backpack
-        if (remaining > 0) {
-            PlayerProfile profile = playerDataCenter.getLocal(player);
-            if (profile != null && profile.backpack != null) {
-                profile.backpack.consumeMaterial(material, remaining);
-            }
-        }
     }
 
-    /** Shown at PURCHASE_SLOT when all slots are already unlocked. */
-    private ItemStack buildMaxedButton(Player player)
+    private ItemStack findPickaxeInInventory(Player player, String pickaxeId)
     {
-        List<String> lore = new ArrayList<>();
-        lore.add("");
-        lore.add(fmt(player, " &#FFFFFF&lStatus"));
-        lore.add(fmt(player, " &8| &#00FF88All pickaxe storage slots are unlocked!"));
-        lore.add("");
-
-        return new ItemBuilder(Material.NETHER_STAR)
-                .name(fmt(player, "&#00AFA3★ &#FFFFFF&lAll Slots Unlocked"))
-                .lore(lore)
-                .build();
+        for (ItemStack item : player.getInventory().getContents()) {
+            if (item == null || !item.getType().name().contains("PICKAXE")) continue;
+            if (pickaxeId.equals(item.getData("id"))) return item;
+        }
+        return null;
     }
 
     // ─────────────────────────────────────────────────────────────────────────
     // Utilities
     // ─────────────────────────────────────────────────────────────────────────
 
-    /** Shorthand: run a string through formatMessage for hex colors + small-caps. */
     private static String fmt(Player player, String text)
     {
         return formatMessage(player, text);
     }
 
-    /**
-     * Returns true if the player has any registered pickaxe (with a valid ID tag)
-     * anywhere in their inventory.
-     */
     private boolean playerHasRegisteredPickaxe(Player player)
     {
         for (ItemStack item : player.getInventory().getContents()) {
@@ -591,9 +765,6 @@ public class PickaxeLimitMenu extends BaseMenu
         return false;
     }
 
-    /**
-     * Returns true if a pickaxe with the given ID is currently in the player's inventory.
-     */
     private boolean pickaxeIsActive(Player player, String pickaxeId)
     {
         for (ItemStack item : player.getInventory().getContents()) {
@@ -633,14 +804,6 @@ public class PickaxeLimitMenu extends BaseMenu
         } catch (IllegalArgumentException e) {
             return Material.WOODEN_PICKAXE;
         }
-    }
-
-    private int getWoodCostForSlot(int slotIndex)
-    {
-        FileConfiguration config = ConfigRegistry.getInstance().get(ConfigNames.DEFAULT);
-        int baseCost = config.getInt(ConfigPaths.Default.PickaxeStorage.BASE_COST, 64);
-        double multiplier = config.getDouble(ConfigPaths.Default.PickaxeStorage.COST_MULTIPLIER, 1.5);
-        return (int) (baseCost * Math.pow(multiplier, slotIndex));
     }
 
     @Override

@@ -69,6 +69,9 @@ public final class ConfigPaths
             public static final String PROGRESSBAR_SYMBOL_FILLED = "Pickaxe.Progressbar Symbol 1";
             public static final String PROGRESSBAR_SYMBOL_EMPTY = "Pickaxe.Progressbar Symbol 2";
 
+            // Durability warning threshold (% remaining durability, e.g. 10 = warn below 10%)
+            public static final String DURABILITY_WARNING_THRESHOLD = "Pickaxe.DurabilityWarningThreshold";
+
             // Hologram settings
             public static final String HOLOGRAM_ENABLED = "Pickaxe.Hologram.Enabled";
             public static final String HOLOGRAM_TEXT = "Pickaxe.Hologram.Text";
@@ -138,6 +141,7 @@ public final class ConfigPaths
 
             public static final String DEFAULT_PICKAXE_LIMIT = "Player.Defaults.PickaxeLimit";
             public static final String DEFAULT_ESSENCE = "Player.Defaults.Essence";
+            public static final String DEFAULT_COINS = "Player.Defaults.Coins";
         }
 
         /**
@@ -186,14 +190,40 @@ public final class ConfigPaths
         }
 
         /**
+         * Ancient Resin configuration paths.
+         */
+        public static final class AncientResin
+        {
+            private AncientResin() {}
+
+            /** Percent chance (0–100) that breaking any log drops one Ancient Resin. */
+            public static final String DROP_CHANCE  = "AncientResin.DropChance";
+
+            /** Number of Ancient Resin required to fully repair a pickaxe. */
+            public static final String REPAIR_COST  = "AncientResin.RepairCost";
+        }
+
+        /**
          * Pickaxe storage (limit) configuration paths.
          */
         public static final class PickaxeStorage
         {
             private PickaxeStorage() {}
 
-            public static final String BASE_COST = "PickaxeStorage.BaseCost";
+            public static final String MAX_SLOTS      = "PickaxeStorage.MaxSlots";
+            public static final String BASE_COST      = "PickaxeStorage.BaseCost";
             public static final String COST_MULTIPLIER = "PickaxeStorage.CostMultiplier";
+            /** String list of Material names, one per slot index. */
+            public static final String SLOT_MATERIALS = "PickaxeStorage.Slots";
+
+            /** Log cost for a full pickaxe repair. */
+            public static final String REPAIR_COST = "PickaxeStorage.RepairCost";
+
+            /** Maximum number of pickaxes a player may claim within the rate-limit window. */
+            public static final String MAX_CLAIMS_PER_WINDOW = "PickaxeStorage.MaxClaimsPerWindow";
+
+            /** Duration of the rate-limit window in minutes. */
+            public static final String CLAIM_WINDOW_MINUTES = "PickaxeStorage.ClaimWindowMinutes";
         }
     }
 
@@ -208,7 +238,7 @@ public final class ConfigPaths
         /**
          * Top-level prefix path.
          */
-        public static final String PREFIX = "Prefix";
+        public static final String PREFIX = "prefix";
 
         /**
          * Pickaxe-related messages.
@@ -229,6 +259,12 @@ public final class ConfigPaths
             public static final String LEVEL_UP_TITLE = "pickaxe.level-up-title.title";
             public static final String LEVEL_UP_SUBTITLE = "pickaxe.level-up-title.subtitle";
 
+            // Ownership / durability messages
+            public static final String PICKAXE_BROKEN          = "pickaxe.pickaxe-broken";
+            public static final String DROP_CONFIRMATION        = "pickaxe.drop-confirmation";
+            public static final String PICKUP_NEW_OWNER         = "pickaxe.pickup-new-owner";
+            public static final String DURABILITY_WARNING       = "pickaxe.durability-warning";
+
             // Enchant messages
             public static final String ENCHANT_INSUFFICIENT_ESSENCE = "pickaxe.enchant.insufficient-essence";
             public static final String ENCHANT_UPGRADE_SUCCESS = "pickaxe.enchant.upgrade-success";
@@ -241,6 +277,8 @@ public final class ConfigPaths
             public static final String ENCHANT_AREA_SECURED = "pickaxe.enchant.area-secured";
             public static final String ENCHANT_ACCESS_DENIED = "pickaxe.enchant.access-denied";
             public static final String ENCHANT_CONFIRM_SELECTION = "pickaxe.enchant.confirm-selection";
+            public static final String ENCHANT_TOGGLE_ENABLED = "pickaxe.enchant.toggle-enabled";
+            public static final String ENCHANT_TOGGLE_DISABLED = "pickaxe.enchant.toggle-disabled";
 
             // Menu messages
             public static final String MENU_EVOLUTION_COMING_SOON = "pickaxe.menu.evolution-coming-soon";
@@ -286,9 +324,18 @@ public final class ConfigPaths
             private Enchants() {}
 
             public static final String EFFICIENCY_APPLIED = "enchants.efficiency.applied";
-            public static final String FROSTBITE_TRIGGERED = "enchants.frostbite.triggered";
-            public static final String FURNACE_TRIGGERED = "enchants.furnace.triggered";
-            public static final String ALCHEMY_TRIGGERED = "enchants.alchemy.triggered";
+
+            public static final String FROSTBITE_TRIGGERED          = "enchants.frostbite.triggered";
+            public static final String FROSTBITE_TRIGGERED_TITLE    = "enchants.frostbite.triggered-title";
+            public static final String FROSTBITE_TRIGGERED_SUBTITLE = "enchants.frostbite.triggered-subtitle";
+
+            public static final String FURNACE_TRIGGERED          = "enchants.furnace.triggered";
+            public static final String FURNACE_TRIGGERED_TITLE    = "enchants.furnace.triggered-title";
+            public static final String FURNACE_TRIGGERED_SUBTITLE = "enchants.furnace.triggered-subtitle";
+
+            public static final String ALCHEMY_TRIGGERED          = "enchants.alchemy.triggered";
+            public static final String ALCHEMY_TRIGGERED_TITLE    = "enchants.alchemy.triggered-title";
+            public static final String ALCHEMY_TRIGGERED_SUBTITLE = "enchants.alchemy.triggered-subtitle";
         }
 
         /**
@@ -301,6 +348,18 @@ public final class ConfigPaths
             public static final String LOADING_PROFILE = "player.loading-profile";
             public static final String PROFILE_CREATED = "player.profile-created";
             public static final String PROFILE_LOADED = "player.profile-loaded";
+        }
+
+        /**
+         * Join message configuration.
+         */
+        public static final class JoinMessage
+        {
+            private JoinMessage() {}
+
+            public static final String ENABLED      = "join-message.enabled";
+            public static final String SKIN_PADDING = "join-message.skin-padding";
+            public static final String LINES        = "join-message.lines";
         }
 
         /**
@@ -367,6 +426,7 @@ public final class ConfigPaths
             public static final String COOLDOWN_ACTIVE = "pickaxe-limit.cooldown-active";
             public static final String COOLDOWN_CLICK = "pickaxe-limit.cooldown-click";
             public static final String BLOCKED_CLICK = "pickaxe-limit.blocked-click";
+            public static final String ALL_SLOTS_UNLOCKED = "pickaxe-limit.all-slots-unlocked";
             public static final String SLOT_PURCHASED = "pickaxe-limit.slot-purchased";
             public static final String INSUFFICIENT_ESSENCE = "pickaxe-limit.insufficient-essence";
             public static final String PURCHASE_ERROR = "pickaxe-limit.purchase-error";
@@ -382,6 +442,11 @@ public final class ConfigPaths
             public static final String WOOD_CONSUMPTION_ERROR = "pickaxe-limit.wood-consumption-error";
             public static final String PICKAXE_CRAFTED = "pickaxe-limit.pickaxe-crafted";
             public static final String CRAFT_SAVE_ERROR = "pickaxe-limit.craft-save-error";
+            public static final String REPAIR_SUCCESS = "pickaxe-limit.repair-success";
+            public static final String REPAIR_INSUFFICIENT_WOOD = "pickaxe-limit.repair-insufficient-wood";
+            public static final String REPAIR_ALREADY_FULL = "pickaxe-limit.repair-already-full";
+            public static final String CLAIM_RATE_LIMITED = "pickaxe-limit.claim-rate-limited";
+            public static final String PICKUP_NO_SLOTS = "pickaxe-limit.pickup-no-slots";
         }
     }
 
@@ -391,6 +456,31 @@ public final class ConfigPaths
     public static final class Menus
     {
         private Menus() {}
+
+        /**
+         * Pickaxe limit menu slot item paths.
+         * Tokens supported in lore: {cost}, {wood}, {slot}, {amount_colored}
+         */
+        public static final class PickaxeLimitMenu
+        {
+            private PickaxeLimitMenu() {}
+
+            public static final String TITLE                    = "Pickaxe Limit Menu.Title";
+            public static final String CLAIM_NAME               = "Pickaxe Limit Menu.ClaimSlot.Name";
+            public static final String CLAIM_LORE               = "Pickaxe Limit Menu.ClaimSlot.Lore";
+            public static final String BLOCKED_NAME             = "Pickaxe Limit Menu.BlockedSlot.Name";
+            public static final String BLOCKED_LORE             = "Pickaxe Limit Menu.BlockedSlot.Lore";
+            public static final String LOCKED_NAME              = "Pickaxe Limit Menu.LockedSlot.Name";
+            public static final String LOCKED_LORE              = "Pickaxe Limit Menu.LockedSlot.Lore";
+            public static final String ACTIVE_NAME              = "Pickaxe Limit Menu.ActiveSlot.Name";
+            public static final String PURCHASE_NAME_AFFORDABLE    = "Pickaxe Limit Menu.PurchaseButton.NameAffordable";
+            public static final String PURCHASE_NAME_TOO_EXPENSIVE = "Pickaxe Limit Menu.PurchaseButton.NameTooExpensive";
+            public static final String PURCHASE_LORE            = "Pickaxe Limit Menu.PurchaseButton.Lore";
+            public static final String PURCHASE_ACTION_AFFORDABLE    = "Pickaxe Limit Menu.PurchaseButton.ActionAffordable";
+            public static final String PURCHASE_ACTION_TOO_EXPENSIVE = "Pickaxe Limit Menu.PurchaseButton.ActionTooExpensive";
+            public static final String MAXED_NAME               = "Pickaxe Limit Menu.MaxedButton.Name";
+            public static final String MAXED_LORE               = "Pickaxe Limit Menu.MaxedButton.Lore";
+        }
 
         /**
          * Pickaxe menu panel item paths.
@@ -407,6 +497,133 @@ public final class ConfigPaths
             // Locked enchant slot config
             public static final String ENCHANT_LOCKED_NAME = "Pickaxe Menu.LockedEnchant.Name";
             public static final String ENCHANT_LOCKED_LORE = "Pickaxe Menu.LockedEnchant.Lore";
+            public static final String STORAGE_ACTION_LINE = "Pickaxe Menu.StorageAction";
+            public static final String REPAIR_ACTION_LINE  = "Pickaxe Menu.RepairAction";
+        }
+
+        /**
+         * Preferences menu item paths.
+         */
+        public static final class PreferencesMenu
+        {
+            private PreferencesMenu() {}
+
+            public static final String ANIMATIONS_MATERIAL = "Preferences Menu.Animations.Material";
+            public static final String ANIMATIONS_NAME     = "Preferences Menu.Animations.Name";
+            public static final String ANIMATIONS_LORE     = "Preferences Menu.Animations.Lore";
+            public static final String ENCHANTS_MATERIAL   = "Preferences Menu.Enchants.Material";
+            public static final String ENCHANTS_NAME       = "Preferences Menu.Enchants.Name";
+            public static final String ENCHANTS_LORE       = "Preferences Menu.Enchants.Lore";
+            public static final String MESSAGES_MATERIAL   = "Preferences Menu.Messages.Material";
+            public static final String MESSAGES_NAME       = "Preferences Menu.Messages.Name";
+            public static final String MESSAGES_LORE       = "Preferences Menu.Messages.Lore";
+            public static final String CLOSE_MATERIAL      = "Preferences Menu.Close.Material";
+            public static final String CLOSE_NAME          = "Preferences Menu.Close.Name";
+            public static final String CLOSE_LORE          = "Preferences Menu.Close.Lore";
+        }
+
+        /**
+         * Enchants preferences menu item paths.
+         */
+        public static final class EnchantsMenu
+        {
+            private EnchantsMenu() {}
+
+            public static final String BACK_MATERIAL      = "Enchants Menu.Back.Material";
+            public static final String BACK_NAME          = "Enchants Menu.Back.Name";
+            public static final String BACK_LORE          = "Enchants Menu.Back.Lore";
+            public static final String PREV_MATERIAL      = "Enchants Menu.Prev.Material";
+            public static final String PREV_NAME          = "Enchants Menu.Prev.Name";
+            public static final String PREV_LORE          = "Enchants Menu.Prev.Lore";
+            public static final String NEXT_MATERIAL      = "Enchants Menu.Next.Material";
+            public static final String NEXT_NAME          = "Enchants Menu.Next.Name";
+            public static final String NEXT_LORE          = "Enchants Menu.Next.Lore";
+            public static final String PAGE_INFO_MATERIAL = "Enchants Menu.PageInfo.Material";
+            public static final String PAGE_INFO_NAME     = "Enchants Menu.PageInfo.Name";
+            public static final String ENCHANT_ITEM_LORE  = "Enchants Menu.EnchantItem.Lore";
+        }
+
+        /**
+         * Enchant option sub-menu item paths.
+         */
+        public static final class EnchantOptionMenu
+        {
+            private EnchantOptionMenu() {}
+
+            public static final String BACK_MATERIAL     = "Enchant Option Menu.Back.Material";
+            public static final String BACK_NAME         = "Enchant Option Menu.Back.Name";
+            public static final String BACK_LORE         = "Enchant Option Menu.Back.Lore";
+            public static final String ENABLED_MATERIAL  = "Enchant Option Menu.EnabledMaterial";
+            public static final String DISABLED_MATERIAL = "Enchant Option Menu.DisabledMaterial";
+            public static final String MESSAGE_NAME      = "Enchant Option Menu.Message.Name";
+            public static final String MESSAGE_LORE      = "Enchant Option Menu.Message.Lore";
+            public static final String TITLE_NAME        = "Enchant Option Menu.Title.Name";
+            public static final String TITLE_LORE        = "Enchant Option Menu.Title.Lore";
+            public static final String SOUND_NAME        = "Enchant Option Menu.Sound.Name";
+            public static final String SOUND_LORE        = "Enchant Option Menu.Sound.Lore";
+            public static final String HOLOGRAM_NAME     = "Enchant Option Menu.Hologram.Name";
+            public static final String HOLOGRAM_LORE     = "Enchant Option Menu.Hologram.Lore";
+            public static final String PARTICLES_NAME    = "Enchant Option Menu.Particles.Name";
+            public static final String PARTICLES_LORE    = "Enchant Option Menu.Particles.Lore";
+        }
+
+        /**
+         * Animations preferences sub-menu item paths.
+         */
+        public static final class AnimationsMenu
+        {
+            private AnimationsMenu() {}
+
+            public static final String BACK_MATERIAL = "Animations Menu.Back.Material";
+            public static final String BACK_NAME     = "Animations Menu.Back.Name";
+            public static final String BACK_LORE     = "Animations Menu.Back.Lore";
+
+            public static final String PICKUP_LABEL_MATERIAL = "Animations Menu.PickupAnimation.Label.Material";
+            public static final String PICKUP_LABEL_NAME     = "Animations Menu.PickupAnimation.Label.Name";
+            public static final String PICKUP_LABEL_LORE     = "Animations Menu.PickupAnimation.Label.Lore";
+            public static final String PICKUP_MATERIAL          = "Animations Menu.PickupAnimation.Material";
+            public static final String PICKUP_SELECTED_MATERIAL = "Animations Menu.PickupAnimation.SelectedMaterial";
+            public static final String PICKUP_DEFAULT_NAME   = "Animations Menu.PickupAnimation.Default.Name";
+            public static final String PICKUP_DEFAULT_LORE   = "Animations Menu.PickupAnimation.Default.Lore";
+            public static final String PICKUP_SIMPLE_NAME    = "Animations Menu.PickupAnimation.Simple.Name";
+            public static final String PICKUP_SIMPLE_LORE    = "Animations Menu.PickupAnimation.Simple.Lore";
+            public static final String PICKUP_DISABLED_NAME  = "Animations Menu.PickupAnimation.Disabled.Name";
+            public static final String PICKUP_DISABLED_LORE  = "Animations Menu.PickupAnimation.Disabled.Lore";
+
+            public static final String SPEED_LABEL_MATERIAL = "Animations Menu.EnchantSpeed.Label.Material";
+            public static final String SPEED_LABEL_NAME     = "Animations Menu.EnchantSpeed.Label.Name";
+            public static final String SPEED_LABEL_LORE     = "Animations Menu.EnchantSpeed.Label.Lore";
+            public static final String SPEED_MATERIAL          = "Animations Menu.EnchantSpeed.Material";
+            public static final String SPEED_SELECTED_MATERIAL = "Animations Menu.EnchantSpeed.SelectedMaterial";
+            public static final String SPEED_OPTION_LORE    = "Animations Menu.EnchantSpeed.OptionLore";
+
+            public static final String ATOM_LABEL_MATERIAL   = "Animations Menu.AtomFX.Label.Material";
+            public static final String ATOM_LABEL_NAME       = "Animations Menu.AtomFX.Label.Name";
+            public static final String ATOM_LABEL_LORE       = "Animations Menu.AtomFX.Label.Lore";
+            public static final String ATOM_ENABLED_MATERIAL  = "Animations Menu.AtomFX.EnabledMaterial";
+            public static final String ATOM_DISABLED_MATERIAL = "Animations Menu.AtomFX.DisabledMaterial";
+            public static final String ATOM_SOUND_NAME       = "Animations Menu.AtomFX.Sound.Name";
+            public static final String ATOM_SOUND_LORE       = "Animations Menu.AtomFX.Sound.Lore";
+            public static final String ATOM_PARTICLES_NAME   = "Animations Menu.AtomFX.Particles.Name";
+            public static final String ATOM_PARTICLES_LORE   = "Animations Menu.AtomFX.Particles.Lore";
+            public static final String ATOM_HOLOGRAM_NAME    = "Animations Menu.AtomFX.Hologram.Name";
+            public static final String ATOM_HOLOGRAM_LORE    = "Animations Menu.AtomFX.Hologram.Lore";
+            public static final String ATOM_GLOW_NAME        = "Animations Menu.AtomFX.Glow.Name";
+            public static final String ATOM_GLOW_LORE        = "Animations Menu.AtomFX.Glow.Lore";
+
+            public static final String ESSENCE_LABEL_MATERIAL   = "Animations Menu.EssenceFX.Label.Material";
+            public static final String ESSENCE_LABEL_NAME       = "Animations Menu.EssenceFX.Label.Name";
+            public static final String ESSENCE_LABEL_LORE       = "Animations Menu.EssenceFX.Label.Lore";
+            public static final String ESSENCE_ENABLED_MATERIAL  = "Animations Menu.EssenceFX.EnabledMaterial";
+            public static final String ESSENCE_DISABLED_MATERIAL = "Animations Menu.EssenceFX.DisabledMaterial";
+            public static final String ESSENCE_SOUND_NAME       = "Animations Menu.EssenceFX.Sound.Name";
+            public static final String ESSENCE_SOUND_LORE       = "Animations Menu.EssenceFX.Sound.Lore";
+            public static final String ESSENCE_PARTICLES_NAME   = "Animations Menu.EssenceFX.Particles.Name";
+            public static final String ESSENCE_PARTICLES_LORE   = "Animations Menu.EssenceFX.Particles.Lore";
+            public static final String ESSENCE_HOLOGRAM_NAME    = "Animations Menu.EssenceFX.Hologram.Name";
+            public static final String ESSENCE_HOLOGRAM_LORE    = "Animations Menu.EssenceFX.Hologram.Lore";
+            public static final String ESSENCE_GLOW_NAME        = "Animations Menu.EssenceFX.Glow.Name";
+            public static final String ESSENCE_GLOW_LORE        = "Animations Menu.EssenceFX.Glow.Lore";
         }
     }
 
@@ -466,6 +683,9 @@ public final class ConfigPaths
 
         /** Maximum trigger chance at max level (0 = passive). */
         public static final String ENCHANT_MAX_CHANCE = "MaxChance";
+
+        /** Whether this enchant is passive (no triggered notification/effects). */
+        public static final String ENCHANT_PASSIVE = "Passive";
 
         /** Lore lines for the enchant menu item. Supports {level}, {maxLevel}, {cost}, {chance}, {rarity}, {status} tokens. */
         public static final String ENCHANT_LORE = "Lore";

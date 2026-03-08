@@ -5,7 +5,6 @@ import org.benski.evolv3.core.abstracts.BaseCommand;
 import org.benski.evolv3.core.helpers.ItemStackExtensions;
 import org.benski.evolv3.core.managers.EnchantSelectionManager;
 import org.benski.evolv3.registry.MenuRegistry;
-import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
@@ -35,7 +34,7 @@ public class TestCommand extends BaseCommand
      */
     @Override
     public String getCommandName() {
-        return "example"; // Must match plugin.yml
+        return "example";
     }
 
     /**
@@ -75,7 +74,6 @@ public class TestCommand extends BaseCommand
      */
     @Override
     public void initialize() {
-        // Perform any initialization logic here
         plugin.getLogger().info("Example command initialized!");
     }
 
@@ -84,14 +82,12 @@ public class TestCommand extends BaseCommand
      */
     @Override
     public boolean execute(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
-        // Example: require player
         if (!requirePlayer(sender)) {
             return true;
         }
 
         Player player = (Player) sender;
 
-        // Example: check arguments
         if (!requireArgs(sender, args, 1, getUsage())) {
             return true;
         }
@@ -100,7 +96,7 @@ public class TestCommand extends BaseCommand
 
         switch (arg.toLowerCase()) {
             case "menu":
-                menuRegistry.get("profile").openMenu(player);
+                menuRegistry.get("example_config").openMenu(player);
                 sendInfo(player, "Opening profile menu...");
                 break;
             case "test":
@@ -118,48 +114,27 @@ public class TestCommand extends BaseCommand
                 sendInfo(player, "This is an example command.");
                 break;
             case "explosive":
-                // Create a diamond pickaxe with Explosive III
                 ItemStack pickaxe = new ItemStack(Material.DIAMOND_PICKAXE);
 
-                // Use extension method to add the custom enchantment
                 if (!pickaxe.addCustomEnchantment("explosive", 3)) {
                     sendError(player, "Explosive enchantment not found! Make sure the server started correctly.");
                     break;
                 }
 
-                // Give it to the player
                 player.getInventory().addItem(pickaxe);
                 sendSuccess(player, "Given you a Diamond Pickaxe with Explosive III!");
                 break;
             case "enchant":
-                // Check if player already has an active selection
                 if (EnchantSelectionManager.getInstance().hasActiveSelection(player)) {
                     sendError(player, "You already have an enchant selection active!");
                     break;
                 }
-
-                // Check if player is holding a tool
-                ItemStack heldItem = player.getInventory().getItemInMainHand();
-                if (heldItem.getType() == Material.AIR) {
-                    sendError(player, "You must be holding an item to enchant!");
-                    break;
-                }
-
-                // Start the enchant selection animation
-                List<String> enchantOptions = List.of("⠌", "⠌", "⠌");
                 boolean started = EnchantSelectionManager.getInstance().startSelection(
                     player,
-                    enchantOptions,
-                    (p, selected) -> {
-                        // This callback is called when the player selects an enchant
-                        p.sendMessage("§a§l[Enchanted!] §eYou selected: §b" + selected);
-                        // TODO: Actually apply the enchant to the item
-                    }
+                    (p, option) -> p.sendMessage("\u00A7a\u00A7l[Enchanted!] \u00A7eYou selected: \u00A7b"
+                        + option.name() + " \u00A77(" + option.rarity().displayName() + ")")
                 );
-
-                if (started) {
-                    sendSuccess(player, "Look at an enchant and LEFT-CLICK to select!");
-                } else {
+                if (!started) {
                     sendError(player, "Could not start enchant selection (animation budget exceeded)!");
                 }
                 break;
@@ -185,7 +160,6 @@ public class TestCommand extends BaseCommand
             completions.add("explosive");
             completions.add("enchant");
 
-            // Filter based on current input
             String input = args[0].toLowerCase();
             completions.removeIf(s -> !s.toLowerCase().startsWith(input));
 
@@ -199,7 +173,6 @@ public class TestCommand extends BaseCommand
      */
     @Override
     public void cleanup() {
-        // Perform any cleanup logic here
         plugin.getLogger().info("Example command cleaned up!");
     }
 }

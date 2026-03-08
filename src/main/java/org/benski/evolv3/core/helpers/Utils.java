@@ -91,6 +91,24 @@ public class Utils
     }
 
     /**
+     * Builds a colour-coded 8-segment durability bar.
+     * Green above 60%, orange 30–60%, red below 30%.
+     *
+     * @param damage        the current item damage value
+     * @param maxDurability the maximum durability of the item
+     * @return formatted durability bar string with percentage
+     */
+    public static String buildDurabilityBar(int damage, int maxDurability)
+    {
+        if (maxDurability <= 0) return "&#00FF88Full";
+        double ratio = 1.0 - (double) damage / maxDurability;
+        int filled = (int) Math.round(ratio * 8);
+        String barColor = ratio > 0.6 ? "&#00FF88" : ratio > 0.3 ? "&#FFAA00" : "&#FF4444";
+        return barColor + "█".repeat(filled) + "&#444444" + "░".repeat(8 - filled)
+                + " " + barColor + Math.round(ratio * 100) + "%";
+    }
+
+    /**
      * Generates a progress bar string for visual display using config symbols.
      *
      * @param current The current value

@@ -2,9 +2,14 @@ package org.benski.evolv3.core.managers;
 
 import lombok.Getter;
 import org.benski.evolv3.Main;
-import org.benski.evolv3.core.abstracts.BasePickupAnimation;
+import org.benski.evolv3.animations.pickup.DissolvePickupAnimation;
 import org.benski.evolv3.animations.pickup.TeleportPickupAnimation;
+import org.benski.evolv3.core.abstracts.BasePickupAnimation;
+import org.benski.evolv3.core.types.PreferenceType;
+import org.benski.evolv3.datacenters.PlayerDataCenter;
+import org.benski.evolv3.models.player.PlayerProfile;
 import org.benski.evolv3.registry.AnimationRegistry;
+import org.benski.evolv3.registry.DataCenterRegistry;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
@@ -34,7 +39,7 @@ public class PickupAnimationManager
     private final Map<UUID, Boolean> showOthersAnimations = new HashMap<>();
     private final List<String> animationIds = new ArrayList<>();
 
-    private static final String DEFAULT_ANIMATION = "teleport";
+    private static final String DEFAULT_ANIMATION = "dissolve";
     private static final double VIEW_OTHERS_RADIUS = 32.0;
 
     private PickupAnimationManager() {
@@ -47,6 +52,7 @@ public class PickupAnimationManager
      */
     public void initialize() {
         registerAnimation("teleport", TeleportPickupAnimation::new);
+        registerAnimation("dissolve", DissolvePickupAnimation::new);
 
         plugin.getLogger().info("Pickup Animation Manager initialized with " + animationIds.size() + " animations");
     }
@@ -144,35 +150,67 @@ public class PickupAnimationManager
     }
 
     /**
-     * Plays a pickup animation for a player.
+     * Plays a pickup animation for a player, applying their saved style and type preferences.
      *
-     * @param player the player receiving the items
-     * @param location the location where the block was broken
-     * @param items the items to animate
+     * @param player        the player receiving the items
+     * @param location      the location where the block was broken
+     * @param items         the items to animate
      * @param blockMaterial the material of the broken block
+     * @param dropCategory  whether this is a normal, essence, or atom drop
      * @return true if the animation was played
      */
-    public boolean playPickupAnimation(Player player, Location location, List<ItemStack> items, Material blockMaterial) {
+    public boolean playPickupAnimation(Player player, Location location, List<ItemStack> items,
+                                       Material blockMaterial, PreferenceType.DropCategory dropCategory) {
         if (items == null || items.isEmpty() || player == null || location == null) {
             return false;
         }
 
-        String animationId = getPlayerAnimation(player);
-        BasePickupAnimation animation = createAnimation(animationId);
-
-        if (animation == null) {
-            // Fallback to default
-            animation = createAnimation(DEFAULT_ANIMATION);
-            if (animation == null) {
-                return false;
+        // Resolve animation type and style from the player's PickupEffect preference
+        PreferenceType.PickupEffect effect = PreferenceType.PickupEffect.DEFAULT;
+        PlayerDataCenter pdc = DataCenterRegistry.getInstance().getPlayerDataCenter();
+        if (pdc != null) {
+            PlayerProfile profile = pdc.getLocal(player);
+            if (profile != null) {
+                effect = profile.preferences.pickupEffect;
             }
+        }
+
+        if (effect == PreferenceType.PickupEffect.DISABLED) {
+            return false;
+        }
+
+        String animationId = effect == PreferenceType.PickupEffect.SIMPLE ? "teleport" : DEFAULT_ANIMATION;
+        PreferenceType.PickupAnimation style = effect == PreferenceType.PickupEffect.SIMPLE
+                ? PreferenceType.PickupAnimation.SIMPLE
+                : PreferenceType.PickupAnimation.NORMAL;
+
+        BasePickupAnimation animation = createAnimation(animationId);
+        if (animation == null) {
+            animation = createAnimation(DEFAULT_ANIMATION);
+            if (animation == null) return false;
         }
 
         // Check if we can play within budget
         if (!AnimationRegistry.getInstance().canPlay(animation)) {
-            // Give items directly if animation budget exceeded
             giveItemsDirectly(player, items, location);
             return false;
+        }
+
+        animation.setStyle(style);
+        animation.setDropCategory(dropCategory);
+
+        // Apply per-category glow/particle preferences
+        if (pdc != null) {
+            PlayerProfile profileForPrefs = pdc.getLocal(player);
+            if (profileForPrefs != null) {
+                if (dropCategory == PreferenceType.DropCategory.ESSENCE) {
+                    animation.setPrefGlow(profileForPrefs.preferences.essenceGlow);
+                    animation.setPrefParticles(profileForPrefs.preferences.essenceParticles);
+                } else if (dropCategory == PreferenceType.DropCategory.ATOM) {
+                    animation.setPrefGlow(profileForPrefs.preferences.atomGlow);
+                    animation.setPrefParticles(profileForPrefs.preferences.atomParticles);
+                }
+            }
         }
 
         // Initialize the pickup animation with context

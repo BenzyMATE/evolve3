@@ -28,14 +28,11 @@ import java.util.concurrent.ThreadLocalRandom;
  */
 public class ExplosionAnimation extends BaseAnimation
 {
-    // Default duration in ticks (1.5 seconds)
     private static final int DEFAULT_DURATION = 30;
 
-    // Physics constants
     private static final double GRAVITY = 0.06;
     private static final float BLOCK_SCALE = 0.35f;
 
-    // Animation data
     private final List<Material> materials;
     private final int level;
     private final List<FlyingBlock> flyingBlocks = new ArrayList<>();
@@ -62,6 +59,9 @@ public class ExplosionAnimation extends BaseAnimation
         this.level = Math.max(1, level);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     protected void onStart() {
         Location origin = getOrigin();
@@ -69,21 +69,17 @@ public class ExplosionAnimation extends BaseAnimation
 
         World world = origin.getWorld();
 
-        // Calculate block count based on level
         int blockCount = 6 + (level * 3);
 
-        // Spawn BlockDisplay entities flying outward
         for (int i = 0; i < blockCount; i++) {
             Material material = materials.get(ThreadLocalRandom.current().nextInt(materials.size()));
 
-            // Skip air - use final variable for lambda
             final Material blockMaterial = (!material.isBlock() || material.isAir())
                 ? Material.STONE
                 : material;
 
-            // Create random direction for this block
             double angle = ThreadLocalRandom.current().nextDouble() * Math.PI * 2;
-            double pitch = ThreadLocalRandom.current().nextDouble() * Math.PI * 0.5; // Upward bias
+            double pitch = ThreadLocalRandom.current().nextDouble() * Math.PI * 0.5;
             double speed = 0.15 + ThreadLocalRandom.current().nextDouble() * 0.2 * level;
 
             Vector velocity = new Vector(
@@ -92,7 +88,6 @@ public class ExplosionAnimation extends BaseAnimation
                 Math.sin(angle) * Math.cos(pitch) * speed
             );
 
-            // Spawn the BlockDisplay
             BlockDisplay display = world.spawn(origin, BlockDisplay.class, entity -> {
                 entity.setBlock(blockMaterial.createBlockData());
                 entity.setTransformation(new Transformation(
@@ -103,7 +98,6 @@ public class ExplosionAnimation extends BaseAnimation
                 ));
                 entity.setPersistent(false);
 
-                // Only show to specific viewers if set
                 Collection<Player> viewers = getViewers();
                 if (viewers != null) {
                     entity.setVisibleByDefault(false);
@@ -113,7 +107,6 @@ public class ExplosionAnimation extends BaseAnimation
                 }
             });
 
-            // Random rotation speed
             Vector3f rotationAxis = new Vector3f(
                 ThreadLocalRandom.current().nextFloat() - 0.5f,
                 ThreadLocalRandom.current().nextFloat() - 0.5f,
@@ -124,13 +117,14 @@ public class ExplosionAnimation extends BaseAnimation
             flyingBlocks.add(new FlyingBlock(display, origin.clone(), velocity, rotationAxis, rotationSpeed));
         }
 
-        // Play explosion sound
         world.playSound(origin, Sound.ENTITY_GENERIC_EXPLODE, 0.6f + (level * 0.15f), 0.9f + ThreadLocalRandom.current().nextFloat() * 0.2f);
 
-        // Initial explosion particle burst
         world.spawnParticle(Particle.EXPLOSION, origin, 1);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     protected void onTick(double progress) {
         Location origin = getOrigin();
@@ -138,20 +132,15 @@ public class ExplosionAnimation extends BaseAnimation
 
         World world = origin.getWorld();
 
-        // Update each flying block
         for (FlyingBlock block : flyingBlocks) {
             if (block.display.isDead()) continue;
 
-            // Apply gravity
             block.velocity.setY(block.velocity.getY() - GRAVITY);
 
-            // Update position
             block.position.add(block.velocity);
 
-            // Teleport the display entity
             block.display.teleport(block.position);
 
-            // Update rotation
             block.rotation += block.rotationSpeed;
             block.display.setTransformation(new Transformation(
                 new Vector3f(-BLOCK_SCALE / 2, -BLOCK_SCALE / 2, -BLOCK_SCALE / 2),
@@ -160,13 +149,11 @@ public class ExplosionAnimation extends BaseAnimation
                 new AxisAngle4f(0, 0, 0, 1)
             ));
 
-            // Spawn smoke trail particles occasionally
             if (ThreadLocalRandom.current().nextFloat() < 0.3) {
                 world.spawnParticle(Particle.SMOKE, block.position, 1, 0.05, 0.05, 0.05, 0.01);
             }
         }
 
-        // Fade out near the end by shrinking blocks
         if (progress > 0.7) {
             float fadeProgress = (float) ((progress - 0.7) / 0.3);
             float scale = BLOCK_SCALE * (1 - fadeProgress);
@@ -184,9 +171,11 @@ public class ExplosionAnimation extends BaseAnimation
         }
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     protected void onComplete() {
-        // Remove all BlockDisplay entities
         for (FlyingBlock block : flyingBlocks) {
             if (!block.display.isDead()) {
                 block.display.remove();
@@ -195,9 +184,11 @@ public class ExplosionAnimation extends BaseAnimation
         flyingBlocks.clear();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public int getResourceCost() {
-        // Cost based on number of block displays
         return 6 + (level * 3);
     }
 
