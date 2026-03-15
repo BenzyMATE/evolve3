@@ -134,35 +134,30 @@ public class PlaceholderAPIExpansion extends PlaceholderExpansion
                 PlayerDataCenter dc = DataCenterRegistry.getInstance().getPlayerDataCenter();
                 if (dc == null) yield "0";
                 PlayerProfile pp = dc.getLocal(player);
-                yield pp != null ? String.valueOf(pp.essence) : "0";
+                yield pp != null ? Utils.formatNumber(pp.essence) : "0";
             }
             case "backpack_items" -> {
                 PlayerDataCenter dc = DataCenterRegistry.getInstance().getPlayerDataCenter();
                 if (dc == null) yield "0";
                 PlayerProfile pp = dc.getLocal(player);
-                yield pp != null ? String.valueOf(pp.backpack.getTotalItems()) : "0";
+                yield pp != null ? Utils.formatInt(pp.backpack.getTotalItems()) : "0";
             }
             case "backpack_size" -> {
                 PlayerDataCenter dc = DataCenterRegistry.getInstance().getPlayerDataCenter();
                 if (dc == null) yield "0";
                 PlayerProfile pp = dc.getLocal(player);
-                yield pp != null ? String.valueOf(pp.backpack.getMaxSize()) : "0";
+                yield pp != null ? Utils.formatInt(pp.backpack.getMaxSize()) : "0";
             }
             case "coins"       -> {
                 PlayerDataCenter dc = DataCenterRegistry.getInstance().getPlayerDataCenter();
                 if (dc == null) yield "0";
                 PlayerProfile pp = dc.getLocal(player);
-                yield pp != null ? formatCoins(pp.coins) : "0";
+                yield pp != null ? Utils.formatNumber(pp.coins) : "0";
             }
             default -> null;
         };
     }
 
-    private String formatCoins(double amount) {
-        if (amount >= 1_000_000) return String.format("%.1fM", amount / 1_000_000);
-        if (amount >= 1_000)    return String.format("%.1fK", amount / 1_000);
-        return String.valueOf((long) amount);
-    }
 
     /**
      * Handles pickaxe-related placeholders.
@@ -172,6 +167,9 @@ public class PlaceholderAPIExpansion extends PlaceholderExpansion
      * @return The placeholder value, or null if not found
      */
     private String handlePickaxePlaceholder(Player player, String param) {
+        // 'blank' is a spacer that needs no profile — resolve it immediately
+        if (param.equals("blank")) return "";
+
         PickaxeDataCenter dataCenter = (PickaxeDataCenter) DataCenterRegistry.getInstance().get("pickaxe");
         if (dataCenter == null) return null;
 
@@ -180,14 +178,14 @@ public class PlaceholderAPIExpansion extends PlaceholderExpansion
 
         return switch (param) {
             case "level" -> String.valueOf(profile.level);
-            case "xp" -> String.valueOf(profile.xp);
-            case "target" -> String.valueOf(profile.target);
+            case "xp" -> Utils.formatNumber(profile.xp);
+            case "target" -> Utils.formatNumber(profile.target);
             case "evolution" -> String.valueOf(profile.evolution);
-            case "essence" -> String.valueOf(profile.currentEssence);
-            case "target_essence" -> String.valueOf(profile.targetEssence);
+            case "essence" -> Utils.formatNumber(profile.currentEssence);
+            case "target_essence" -> Utils.formatNumber(profile.targetEssence);
             case "enchant_rolls" -> String.valueOf(profile.enchantRolls);
             case "evolution_rolls" -> String.valueOf(profile.evolutionRolls);
-            case "evolution_atoms" -> String.valueOf(profile.evolutionAtoms);
+            case "evolution_atoms" -> Utils.formatNumber(profile.evolutionAtoms);
             case "enchants" -> formatEnchantsList(profile);
             case "percentage" -> calculatePercentage(profile.xp, profile.target);
             case "progressbar" -> Utils.generateProgressBar(profile.xp, profile.target);
@@ -196,6 +194,7 @@ public class PlaceholderAPIExpansion extends PlaceholderExpansion
             case "atom_target" -> String.valueOf(profile.atomTarget);
             case "atom_percentage" -> calculatePercentage(profile.evolutionAtoms, profile.atomTarget);
             case "atom_progressbar" -> Utils.generateProgressBar(profile.evolutionAtoms, profile.atomTarget);
+            case "blank" -> "";
             default -> null;
         };
     }

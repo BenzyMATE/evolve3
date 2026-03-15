@@ -62,6 +62,22 @@ public class PlayerPreferences extends MongoSubDoc
     }
 
     /**
+     * Returns the preference for the named enchant, creating defaults if absent.
+     * Uses {@code defaultHologram} when creating a new entry for the first time.
+     *
+     * @param enchantDisplayName the enchant display name (e.g. "Frostbite")
+     * @param defaultHologram    the default hologram toggle for first-time creation
+     * @return the preference, never null
+     */
+    public EnchantPreference getOrCreateEnchantPref(String enchantDisplayName, boolean defaultHologram) {
+        return enchantPrefs.computeIfAbsent(enchantDisplayName, k -> {
+            EnchantPreference pref = new EnchantPreference();
+            pref.hologram = defaultHologram;
+            return pref;
+        });
+    }
+
+    /**
      * {@inheritDoc}
      */
     @Override

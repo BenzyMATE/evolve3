@@ -4,7 +4,11 @@ import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
 import org.benski.evolv3.core.abstracts.BasePickupAnimation;
+import org.benski.evolv3.core.helpers.Utils;
+import org.benski.evolv3.core.constants.ConfigNames;
+import org.benski.evolv3.core.constants.ConfigPaths;
 import org.benski.evolv3.core.types.PreferenceType;
+import org.benski.evolv3.registry.ConfigRegistry;
 import org.bukkit.Bukkit;
 import org.bukkit.Color;
 import org.bukkit.Location;
@@ -193,21 +197,26 @@ public class DissolvePickupAnimation extends BasePickupAnimation
 
         // Coloured outline glow for ESSENCE / ATOM
         if (prefGlow && dropCategory != PreferenceType.DropCategory.NORMAL && itemDisplay != null) {
-            Scoreboard board = Bukkit.getScoreboardManager().getMainScoreboard();
+            // Use the player's current scoreboard — if they have a custom sidebar board, glow
+            // colours must be registered there; teams on the main scoreboard are ignored.
+            Scoreboard board = targetPlayer != null
+                    ? targetPlayer.getScoreboard()
+                    : Bukkit.getScoreboardManager().getMainScoreboard();
+            NamedTextColor glowColor = dropCategory == PreferenceType.DropCategory.ESSENCE
+                    ? NamedTextColor.LIGHT_PURPLE : NamedTextColor.YELLOW;
             String teamName = dropCategory == PreferenceType.DropCategory.ESSENCE ? ESSENCE_TEAM : ATOM_TEAM;
             glowTeam = board.getTeam(teamName);
             if (glowTeam == null) {
                 glowTeam = board.registerNewTeam(teamName);
-                glowTeam.color(dropCategory == PreferenceType.DropCategory.ESSENCE
-                        ? NamedTextColor.LIGHT_PURPLE : NamedTextColor.YELLOW);
             }
+            glowTeam.color(glowColor);
             glowTeam.addEntry(itemDisplay.getUniqueId().toString());
             itemDisplay.setGlowing(true);
         }
 
         int xp = totalXp();
         textDisplay = world.spawn(floatOrigin.clone().add(0, 0.65, 0), TextDisplay.class, e -> {
-            e.text(Component.text("+" + xp + " XP")
+            e.text(Component.text("+" + Utils.formatNumber(xp) + " XP")
                     .color(NamedTextColor.GREEN)
                     .decorate(TextDecoration.BOLD));
             e.setTransformation(new Transformation(
@@ -384,7 +393,7 @@ public class DissolvePickupAnimation extends BasePickupAnimation
             int xp = totalXp();
             Collection<Player> viewers = getViewers();
             textDisplay = world.spawn(origin, TextDisplay.class, e -> {
-                e.text(Component.text("+" + xp + " XP").color(NamedTextColor.GREEN).decorate(TextDecoration.BOLD));
+                e.text(Component.text("+" + Utils.formatNumber(xp) + " XP").color(NamedTextColor.GREEN).decorate(TextDecoration.BOLD));
                 e.setTransformation(new Transformation(new Vector3f(0, 0, 0), new AxisAngle4f(0, 0, 1, 0),
                         new Vector3f(TEXT_SCALE, TEXT_SCALE, TEXT_SCALE), new AxisAngle4f(0, 0, 1, 0)));
                 e.setPersistent(false);
@@ -440,11 +449,11 @@ public class DissolvePickupAnimation extends BasePickupAnimation
     }
 
     private int totalXp() {
-        if (items == null) return 0;
-        int sum = 0;
-        for (ItemStack it : items) if (it != null && !it.getType().isAir()) sum += it.getAmount();
-        return sum;
+        if (blockMaterial == null) return 0;
+        String xpPath = ConfigPaths.Default.BLOCK_DEFAULTS + "." + blockMaterial.name() + ".XP";
+        return ConfigRegistry.getInstance().get(ConfigNames.DEFAULT).getInt(xpPath, 0);
     }
+
 
     private <E extends Entity> void applyViewers(E entity, @Nullable Collection<Player> viewers) {
         if (viewers == null) return;

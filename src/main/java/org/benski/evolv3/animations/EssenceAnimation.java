@@ -1,6 +1,7 @@
 package org.benski.evolv3.animations;
 
 import org.benski.evolv3.core.abstracts.BaseAnimation;
+import org.benski.evolv3.core.helpers.Utils;
 import org.benski.evolv3.core.constants.ConfigNames;
 import org.benski.evolv3.core.constants.ConfigPaths;
 import org.benski.evolv3.datacenters.PlayerDataCenter;
@@ -47,7 +48,6 @@ public class EssenceAnimation extends BaseAnimation
     // Resolved from player preferences in onStart
     private boolean prefSound     = true;
     private boolean prefParticles = true;
-    private boolean prefGlow      = true;
 
     /**
      * Creates an essence animation with default settings.
@@ -96,7 +96,6 @@ public class EssenceAnimation extends BaseAnimation
                 PlayerPreferences prefs = profile.preferences;
                 prefSound     = prefs.essenceSound;
                 prefParticles = prefs.essenceParticles;
-                prefGlow      = prefs.essenceGlow;
             }
         }
 
@@ -204,11 +203,6 @@ public class EssenceAnimation extends BaseAnimation
             targetPlayer.playSound(targetPlayer.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.2f);
         }
 
-        if (prefGlow) {
-            targetPlayer.setGlowing(true);
-            plugin.getServer().getScheduler().runTaskLater(plugin,
-                    () -> { if (targetPlayer.isOnline()) targetPlayer.setGlowing(false); }, 30L);
-        }
     }
 
     /**
@@ -222,7 +216,7 @@ public class EssenceAnimation extends BaseAnimation
 
         String message = config.getString(ConfigPaths.Default.Essence.HOLOGRAM_TEXT,
                 "&5\uD83D\uDD25 &d+%amount% Essence");
-        message = message.replace("%amount%", String.valueOf(essenceAmount));
+        message = message.replace("%amount%", Utils.formatNumber(essenceAmount));
 
         Location origin = getOrigin();
         if (origin != null) {

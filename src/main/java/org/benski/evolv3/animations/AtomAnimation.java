@@ -1,6 +1,7 @@
 package org.benski.evolv3.animations;
 
 import org.benski.evolv3.core.abstracts.BaseAnimation;
+import org.benski.evolv3.core.helpers.Utils;
 import org.benski.evolv3.core.constants.ConfigNames;
 import org.benski.evolv3.core.constants.ConfigPaths;
 import org.benski.evolv3.datacenters.PlayerDataCenter;
@@ -67,7 +68,6 @@ public class AtomAnimation extends BaseAnimation
     // Resolved from player preferences in onStart
     private boolean prefSound     = true;
     private boolean prefParticles = true;
-    private boolean prefGlow      = true;
 
     /**
      * Creates an atom animation with default settings.
@@ -115,7 +115,6 @@ public class AtomAnimation extends BaseAnimation
                 PlayerPreferences prefs = profile.preferences;
                 prefSound     = prefs.atomSound;
                 prefParticles = prefs.atomParticles;
-                prefGlow      = prefs.atomGlow;
             }
         }
 
@@ -157,11 +156,6 @@ public class AtomAnimation extends BaseAnimation
         if (targetPlayer == null || !targetPlayer.isOnline()) return;
         if (prefSound) {
             targetPlayer.playSound(targetPlayer.getLocation(), Sound.BLOCK_AMETHYST_BLOCK_CHIME, 1.0f, 0.8f);
-        }
-        if (prefGlow) {
-            targetPlayer.setGlowing(true);
-            plugin.getServer().getScheduler().runTaskLater(plugin,
-                    () -> { if (targetPlayer.isOnline()) targetPlayer.setGlowing(false); }, 30L);
         }
     }
 
@@ -313,7 +307,7 @@ public class AtomAnimation extends BaseAnimation
 
         String message = config.getString(ConfigPaths.Default.Atoms.HOLOGRAM_TEXT,
                 "&#FFD700⚛ &6+%amount% &7Atom");
-        message = message.replace("%amount%", String.valueOf(atomAmount));
+        message = message.replace("%amount%", Utils.formatNumber(atomAmount));
 
         Location origin = getOrigin();
         if (origin != null) {

@@ -4,7 +4,11 @@ import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
 import org.benski.evolv3.core.abstracts.BasePickupAnimation;
+import org.benski.evolv3.core.constants.ConfigNames;
+import org.benski.evolv3.core.constants.ConfigPaths;
 import org.benski.evolv3.core.types.PreferenceType;
+import org.benski.evolv3.registry.ConfigRegistry;
+import org.bukkit.Bukkit;
 import org.bukkit.Color;
 import org.bukkit.Location;
 import org.bukkit.World;
@@ -13,6 +17,8 @@ import org.bukkit.entity.Player;
 import org.bukkit.entity.TextDisplay;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.scoreboard.Scoreboard;
+import org.bukkit.scoreboard.Team;
 import org.bukkit.util.Transformation;
 import org.jetbrains.annotations.Nullable;
 import org.joml.AxisAngle4f;
@@ -37,12 +43,16 @@ public class TeleportPickupAnimation extends BasePickupAnimation
     /** Effective speed multiplier for SIMPLE mode — finishes ~1.5× faster. */
     private static final double SIMPLE_SPEED_MULT = 1.5;
 
-    private static final float ITEM_SCALE = 0.45f;
-    private static final float TEXT_SCALE = 0.5f;
-    private static final float TEXT_ONLY_SCALE = 0.65f;
+    private static final float  ITEM_SCALE    = 0.45f;
+    private static final float  TEXT_SCALE    = 0.5f;
+    private static final float  TEXT_ONLY_SCALE = 0.65f;
     private static final double TEXT_OFFSET_Y = 0.4;
 
+    private static final String ESSENCE_TEAM = "evo_essence";
+    private static final String ATOM_TEAM    = "evo_atom";
+
     private final List<TeleportItem> teleportItems = new ArrayList<>();
+    @Nullable private Team glowTeam;
 
     public TeleportPickupAnimation(JavaPlugin plugin) {
         super(plugin, DEFAULT_DURATION);
@@ -79,7 +89,13 @@ public class TeleportPickupAnimation extends BasePickupAnimation
             if (item == null || item.getType().isAir()) continue;
 
             Location spawnLoc = origin.clone();
-            int xpAmount = item.getAmount();
+            final int xpAmount;
+            if (blockMaterial != null) {
+                String xpPath = ConfigPaths.Default.BLOCK_DEFAULTS + "." + blockMaterial.name() + ".XP";
+                xpAmount = ConfigRegistry.getInstance().get(ConfigNames.DEFAULT).getInt(xpPath, 0);
+            } else {
+                xpAmount = 0;
+            }
 
             // Item display — not spawned in TEXT_ONLY mode
             @Nullable ItemDisplay display = null;
@@ -94,9 +110,25 @@ public class TeleportPickupAnimation extends BasePickupAnimation
                     ));
                     entity.setPersistent(false);
                     entity.setBillboard(ItemDisplay.Billboard.CENTER);
-                    entity.setGlowing(true);
                     applyViewers(entity, viewers, plugin);
                 });
+
+                // Coloured glow for ESSENCE / ATOM drops
+                if (prefGlow && dropCategory != PreferenceType.DropCategory.NORMAL && display != null) {
+                    Scoreboard board = targetPlayer != null
+                            ? targetPlayer.getScoreboard()
+                            : Bukkit.getScoreboardManager().getMainScoreboard();
+                    NamedTextColor glowColor = dropCategory == PreferenceType.DropCategory.ESSENCE
+                            ? NamedTextColor.LIGHT_PURPLE : NamedTextColor.YELLOW;
+                    String teamName = dropCategory == PreferenceType.DropCategory.ESSENCE ? ESSENCE_TEAM : ATOM_TEAM;
+                    glowTeam = board.getTeam(teamName);
+                    if (glowTeam == null) {
+                        glowTeam = board.registerNewTeam(teamName);
+                    }
+                    glowTeam.color(glowColor);
+                    glowTeam.addEntry(display.getUniqueId().toString());
+                    display.setGlowing(true);
+                }
             }
 
             // Text display — always spawned
@@ -183,10 +215,14 @@ public class TeleportPickupAnimation extends BasePickupAnimation
     @Override
     protected void onComplete() {
         for (TeleportItem tItem : teleportItems) {
-            if (tItem.display != null && !tItem.display.isDead()) tItem.display.remove();
+            if (tItem.display != null) {
+                if (glowTeam != null) glowTeam.removeEntry(tItem.display.getUniqueId().toString());
+                if (!tItem.display.isDead()) tItem.display.remove();
+            }
             if (!tItem.textDisplay.isDead()) tItem.textDisplay.remove();
         }
         teleportItems.clear();
+        glowTeam = null;
     }
 
     /** {@inheritDoc} */

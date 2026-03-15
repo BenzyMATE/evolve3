@@ -8,7 +8,7 @@ import org.bson.Document;
  */
 public class EnchantPreference
 {
-    public boolean message   = true;
+    public boolean message   = false;
     public boolean title     = false;
     public boolean sound     = true;
     public boolean hologram  = true;
@@ -26,7 +26,7 @@ public class EnchantPreference
 
     public static EnchantPreference fromDocument(Document doc) {
         EnchantPreference pref = new EnchantPreference();
-        pref.message   = getBool(doc, "message",   true);
+        pref.message   = getBool(doc, "message",   false);
         pref.title     = getBool(doc, "title",     false);
         pref.sound     = getBool(doc, "sound",     true);
         pref.hologram  = getBool(doc, "hologram",  true);

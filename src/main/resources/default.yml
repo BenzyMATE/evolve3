@@ -5,6 +5,46 @@
 # and block values. All editable values are configurable.
 # =====================================================
 
+# =====================================================
+# Scoreboard Configuration
+# =====================================================
+# The sidebar scoreboard shown to all online players.
+# Supports color codes (&/&#RRGGBB) in Title and Lines.
+#
+# Lines support any PlaceholderAPI placeholder (%identifier_placeholder%)
+# as well as color codes (&/&#RRGGBB).
+# Evolv3 placeholders: %evolv3_player_name%, %evolv3_player_essence%,
+#   %evolv3_player_coins%, %evolv3_pickaxe_level%, %evolv3_pickaxe_xp%,
+#   %evolv3_pickaxe_target%, %evolv3_pickaxe_evolution_atoms%,
+#   %evolv3_pickaxe_essence%, %evolv3_pickaxe_target_essence%
+# Any other installed PAPI expansion works too (e.g. %player_name%).
+#
+# UpdateIntervalTicks: how often lines refresh (20 = 1 second)
+# Maximum 15 lines (Minecraft sidebar limit).
+# =====================================================
+Scoreboard:
+  Enabled: true
+  Title: "&#00AFA3&lEvolve &7(0/20)"
+  UpdateIntervalTicks: 5
+  # Seconds to display each phase (Evo and Atoms) before animating to the other
+  EvoAtomToggleSeconds: 5
+  # Text shown on the evo line during the atoms phase. Supports PlaceholderAPI.
+  EvoAtomToggleText: "&#FFEE00⚛ &#FFEE00%evolv3_pickaxe_evolution_atoms%"
+  Lines:
+    - ""
+    - " &#FFFFFF&l%evolv3_player_name%"
+    - " &8| &#888888Rank: &cNull"
+    - " &8| &#888888BP: &#FFFFFF%evolv3_player_backpack_items%&#888888/&#FFFFFF%evolv3_player_backpack_size%"
+    - "%evolv3_pickaxe_blank%"
+    - " &#CCCCCCPickaxe &8(&#00FFFF&lEvo %evolv3_pickaxe_evolution%&8)"
+    - " &8| &#888888Level: &#FFFFFF%evolv3_pickaxe_level%      &#00FF88%evolv3_pickaxe_percentage%"
+    - " &8| %evolv3_pickaxe_progressbar% &7&7 "
+    - ""
+    - " &#CCCCCCWallet"
+    - " &8| &#FFD700⛁ %evolv3_player_coins% &#B366D9  🔥 %evolv3_player_essence%"
+    - ""
+    - " &7play.evolvemc.net"
+
 # Database connection string
 Database:
   MongoDB: "mongodb+srv://<user>:<password>@<cluster>.mongodb.net/"
@@ -46,8 +86,8 @@ Pickaxe:
   DurabilityWarningThreshold: 10
 
   # Progress bar visual elements
-  Progressbar Symbol 1: "&#00FF88⬛"
-  Progressbar Symbol 2: "&#444444⬜"
+  Progressbar Symbol 1: "&#00FF88▄"
+  Progressbar Symbol 2: "&#444444▄"
 
   # Pickaxe display name (supports PlaceholderAPI)
   Name: '&#00FFFF⛏ &#FFFFFF&l%evolv3_player_name% &#00FFFFPickaxe'

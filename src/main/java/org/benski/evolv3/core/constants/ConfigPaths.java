@@ -204,6 +204,23 @@ public final class ConfigPaths
         }
 
         /**
+         * Scoreboard configuration paths.
+         */
+        public static final class Scoreboard
+        {
+            private Scoreboard() {}
+
+            public static final String ENABLED                  = "Scoreboard.Enabled";
+            public static final String TITLE                    = "Scoreboard.Title";
+            public static final String UPDATE_INTERVAL_TICKS   = "Scoreboard.UpdateIntervalTicks";
+            public static final String LINES                    = "Scoreboard.Lines";
+            /** Template shown on the evo line during the atoms phase. Supports PAPI. */
+            public static final String EVO_ATOM_TOGGLE_TEXT    = "Scoreboard.EvoAtomToggleText";
+            /** Seconds each phase is displayed before animating to the other. */
+            public static final String EVO_ATOM_TOGGLE_SECONDS = "Scoreboard.EvoAtomToggleSeconds";
+        }
+
+        /**
          * Pickaxe storage (limit) configuration paths.
          */
         public static final class PickaxeStorage
@@ -336,6 +353,14 @@ public final class ConfigPaths
             public static final String ALCHEMY_TRIGGERED          = "enchants.alchemy.triggered";
             public static final String ALCHEMY_TRIGGERED_TITLE    = "enchants.alchemy.triggered-title";
             public static final String ALCHEMY_TRIGGERED_SUBTITLE = "enchants.alchemy.triggered-subtitle";
+
+            public static final String SCAVENGER_TRIGGERED          = "enchants.scavenger.triggered";
+            public static final String SCAVENGER_TRIGGERED_TITLE    = "enchants.scavenger.triggered-title";
+            public static final String SCAVENGER_TRIGGERED_SUBTITLE = "enchants.scavenger.triggered-subtitle";
+
+            public static final String MERCHANT_TRIGGERED          = "enchants.merchant.triggered";
+            public static final String MERCHANT_TRIGGERED_TITLE    = "enchants.merchant.triggered-title";
+            public static final String MERCHANT_TRIGGERED_SUBTITLE = "enchants.merchant.triggered-subtitle";
         }
 
         /**
@@ -687,6 +712,9 @@ public final class ConfigPaths
         /** Whether this enchant is passive (no triggered notification/effects). */
         public static final String ENCHANT_PASSIVE = "Passive";
 
+        /** Brief one-line description shown on hover during enchant selection. */
+        public static final String ENCHANT_DESCRIPTION = "Description";
+
         /** Lore lines for the enchant menu item. Supports {level}, {maxLevel}, {cost}, {chance}, {rarity}, {status} tokens. */
         public static final String ENCHANT_LORE = "Lore";
 
@@ -717,8 +745,9 @@ public final class ConfigPaths
             public static final String MAX_LEVEL = "Frostbite.MaxLevel";
             public static final String MAX_CHANCE = "Frostbite.MaxChance";
             public static final String RADIUS = "Frostbite.Radius";
-            public static final String HOLOGRAM_ENABLED = "Frostbite.Hologram.Enabled";
-            public static final String HOLOGRAM_MESSAGE = "Frostbite.Hologram.Message";
+            public static final String HOLOGRAM_ENABLED         = "Frostbite.Hologram.Enabled";
+            public static final String HOLOGRAM_MESSAGE         = "Frostbite.Hologram.Message";
+            public static final String HOLOGRAM_DEFAULT_ENABLED = "Frostbite.Hologram.DefaultEnabled";
         }
 
         /**
@@ -753,6 +782,41 @@ public final class ConfigPaths
             public static final String HOLOGRAM_ENABLED = "Alchemy.Hologram.Enabled";
             public static final String HOLOGRAM_MESSAGE = "Alchemy.Hologram.Message";
             public static final String UPGRADES = "Alchemy.Upgrades";
+        }
+
+        /**
+         * Scavenger enchantment configuration.
+         */
+        public static final class Scavenger
+        {
+            private Scavenger() {}
+
+            public static final String NAME             = "Scavenger.Name";
+            public static final String RARITY           = "Scavenger.Rarity";
+            public static final String ITEM             = "Scavenger.Item";
+            public static final String MAX_LEVEL        = "Scavenger.MaxLevel";
+            public static final String MAX_CHANCE       = "Scavenger.MaxChance";
+            public static final String SLOTS_MIN        = "Scavenger.SlotsMin";
+            public static final String SLOTS_MAX        = "Scavenger.SlotsMax";
+            public static final String MAX_TOTAL_SLOTS  = "Scavenger.MaxTotalSlots";
+            public static final String HOLOGRAM_ENABLED = "Scavenger.Hologram.Enabled";
+            public static final String HOLOGRAM_MESSAGE = "Scavenger.Hologram.Message";
+        }
+
+        /**
+         * Merchant enchantment configuration.
+         */
+        public static final class Merchant
+        {
+            private Merchant() {}
+
+            public static final String NAME             = "Merchant.Name";
+            public static final String MAX_LEVEL        = "Merchant.MaxLevel";
+            public static final String MAX_CHANCE       = "Merchant.MaxChance";
+            public static final String COINS_MIN        = "Merchant.CoinsMin";
+            public static final String COINS_MAX        = "Merchant.CoinsMax";
+            public static final String HOLOGRAM_ENABLED = "Merchant.Hologram.Enabled";
+            public static final String HOLOGRAM_MESSAGE = "Merchant.Hologram.Message";
         }
     }
 }

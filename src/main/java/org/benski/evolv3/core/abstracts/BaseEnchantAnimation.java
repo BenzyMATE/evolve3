@@ -1,6 +1,7 @@
 package org.benski.evolv3.core.abstracts;
 
 import org.benski.evolv3.core.types.EnchantOption;
+import org.benski.evolv3.core.types.RarityConfig;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
@@ -208,6 +209,24 @@ public abstract class BaseEnchantAnimation extends BaseAnimation
     public abstract int getSelectionReadyTick();
 
     /**
+     * Returns the normalized scroll progress of the strip (0.0 = start, 1.0 = fully stopped).
+     * Used by the scoreboard to sync the spinning bar deceleration with the 3D animation.
+     * Default returns 1.0 (already stopped); {@code EnchantAnimation} overrides.
+     *
+     * @return linear scroll progress in [0, 1]
+     */
+    public double getLinearScrollProgress() { return 1.0; }
+
+    /**
+     * Returns the per-slot rarity for the animation's concrete strip, or {@code null} if
+     * this animation does not have a strip (e.g. non-CS:GO style).
+     * Used by the scoreboard to mirror the exact same colours shown in the 3D display.
+     *
+     * @return rarity array indexed by strip slot, or {@code null}
+     */
+    public RarityConfig[] getStripRarities() { return null; }
+
+    /**
      * Returns the world-space position of the given option display.
      * Used by the click detector to resolve where the player is looking.
      *
@@ -298,6 +317,18 @@ public abstract class BaseEnchantAnimation extends BaseAnimation
     public Player getPlayer() {
         return player;
     }
+
+    /** @return the three enchant options presented by this animation */
+    public List<EnchantOption> getEnchantOptions() { return enchantOptions; }
+
+    /** @return the index of the currently highlighted option, or -1 if none */
+    public int getHighlightedIndex() { return highlightedIndex; }
+
+    /** @return the index of the selected option, or -1 if not yet selected */
+    public int getSelectedIndex() { return selectedIndex; }
+
+    /** @return {@code true} once the animation reaches the selection-ready phase */
+    public boolean isSelectionPhase() { return getCurrentTick() >= getSelectionReadyTick(); }
 
     // -- Easing functions ------------------------------------------------------
 

@@ -8,6 +8,7 @@ import org.benski.evolv3.core.constants.ConfigPaths;
 import org.benski.evolv3.core.constants.Enchants;
 import org.benski.evolv3.core.helpers.ItemStackExtensions;
 import org.benski.evolv3.core.helpers.Utils;
+import org.benski.evolv3.core.managers.FrostbiteBlockManager;
 import org.benski.evolv3.core.managers.StorageRegistryManager;
 import org.benski.evolv3.core.managers.WorldGuardManager;
 import org.benski.evolv3.datacenters.PlayerDataCenter;
@@ -82,6 +83,11 @@ public class FrostbiteEnchant implements Listener
             return;
         }
 
+        String blockName = event.getBlock().getType().name();
+        if (blockName.endsWith("_LOG") || blockName.endsWith("_STEM")) {
+            return;
+        }
+
         PlayerDataCenter playerDC = DataCenterRegistry.getInstance().getPlayerDataCenter();
         if (playerDC != null) {
             org.benski.evolv3.models.player.PlayerProfile pp = playerDC.getLocal(player);
@@ -132,7 +138,8 @@ public class FrostbiteEnchant implements Listener
                 for (int z = -radius; z <= radius; z++) {
                     Block block = centerBlock.getRelative(x, y, z);
 
-                    if (isFreezeable(block)) {
+                    if (isFreezeable(block)
+                            && WorldGuardManager.getInstance().isWithinMineRegion(block.getLocation())) {
                         blocksToFreeze.add(block);
                     }
                 }
@@ -181,7 +188,8 @@ public class FrostbiteEnchant implements Listener
 
                     if (pref.title) {
                         String title    = messagesConfig.getString(ConfigPaths.Messages.Enchants.FROSTBITE_TRIGGERED_TITLE, "&#00BFFF&lFrostbite");
-                        String subtitle = messagesConfig.getString(ConfigPaths.Messages.Enchants.FROSTBITE_TRIGGERED_SUBTITLE, "&#CCCCCCArea frozen!");
+                        String subtitle = messagesConfig.getString(ConfigPaths.Messages.Enchants.FROSTBITE_TRIGGERED_SUBTITLE, "&#CCCCCCArea frozen!")
+                                .replace("%blocks%", String.valueOf(totalBlocks));
                         player.sendTitle(
                                 Utils.formatMessage(player, title),
                                 Utils.formatMessage(player, subtitle),
@@ -192,11 +200,15 @@ public class FrostbiteEnchant implements Listener
 
                 Block block = blocksToFreeze.get(index);
 
-                Material originalMaterial = getDropMaterial(block);
+                // Capture block type (e.g. COAL_ORE) for persistence/restoration,
+                // and the drop material (e.g. COAL) for BreakListener metadata.
+                Material originalBlockType = block.getType();
+                Material dropMaterial      = getDropMaterial(block);
                 block.setMetadata(FROSTBITE_METADATA_KEY,
-                        new FixedMetadataValue(Main.getInstance(), originalMaterial.name()));
+                        new FixedMetadataValue(Main.getInstance(), dropMaterial.name()));
 
                 block.setType(Material.PACKED_ICE);
+                FrostbiteBlockManager.getInstance().addFrozenBlock(block.getLocation(), originalBlockType);
 
                 if (pref.particles) {
                     Location loc = block.getLocation().add(0.5, 0.5, 0.5);
@@ -213,8 +225,9 @@ public class FrostbiteEnchant implements Listener
         if (pdc == null) return new EnchantPreference();
         org.benski.evolv3.models.player.PlayerProfile profile = pdc.getLocal(player);
         if (profile == null) return new EnchantPreference();
-        String enchantName = enchantsConfig.getString(ConfigPaths.Enchants.Frostbite.NAME, "Frostbite");
-        return profile.preferences.getOrCreateEnchantPref(enchantName);
+        String enchantName      = enchantsConfig.getString(ConfigPaths.Enchants.Frostbite.NAME, "Frostbite");
+        boolean defaultHologram = enchantsConfig.getBoolean(ConfigPaths.Enchants.Frostbite.HOLOGRAM_DEFAULT_ENABLED, false);
+        return profile.preferences.getOrCreateEnchantPref(enchantName, defaultHologram);
     }
 
     /**
@@ -252,6 +265,7 @@ public class FrostbiteEnchant implements Listener
     private Material getDropMaterial(Block block)
     {
         return block.getDrops().stream()
+                .filter(i -> i != null && !i.getType().isAir())
                 .findFirst()
                 .map(ItemStack::getType)
                 .orElse(block.getType());

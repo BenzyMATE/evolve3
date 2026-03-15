@@ -96,6 +96,20 @@ public class EnchantAnimation extends BaseEnchantAnimation
     private final Vector[]       scatterVels     = new Vector[STRIP_SIZE];
     private final boolean[]      nonSelRemoved   = new boolean[3];
     private final Material[]     fillerMaterials = new Material[STRIP_SIZE];
+    /** Full per-slot rarity for all 30 strip positions — exposed to the scoreboard. */
+    private final RarityConfig[] stripRarities   = new RarityConfig[STRIP_SIZE];
+
+    // -- Hover description displays ------------------------------------------
+    /** TextDisplay entities showing the brief enchant description + ▼ arrow on hover. */
+    private final TextDisplay[]  descDisplays    = new TextDisplay[3];
+    /** Animation progress per slot: 0 = hidden, 1 = fully visible. */
+    private final float[]        descProgress    = new float[3];
+    /** Whether each slot's description should be animating toward visible. */
+    private final boolean[]      descTargetIn    = new boolean[3];
+
+    private static final float DESC_SCALE    = 0.42f;
+    private static final float DESC_IN_STEP  = 0.14f;   // ~7 ticks to open
+    private static final float DESC_OUT_STEP = 0.20f;   // ~5 ticks to close
 
     private boolean labelsSpawned = false;
     private boolean scatterActive = false;
@@ -133,6 +147,23 @@ public class EnchantAnimation extends BaseEnchantAnimation
     }
 
     @Override
+    public double getLinearScrollProgress() {
+        return Math.min(1.0, (double) getCurrentTick() / scrollEndTick);
+    }
+
+    /**
+     * Returns the per-slot {@link RarityConfig} for all {@value STRIP_SIZE} strip positions.
+     * Filler slots hold their rolled rarity; result slots hold the actual option rarity.
+     * May contain {@code null} entries if called before {@link #doStart()} has run.
+     *
+     * @return the strip rarity array (length 30)
+     */
+    @Override
+    public RarityConfig[] getStripRarities() {
+        return stripRarities;
+    }
+
+    @Override
     public Location getOptionPosition(int i) {
         if (i < 0 || i >= RESULT_INDICES.length) return null;
         if (enchantItems[i] != null && !enchantItems[i].isDead()) {
@@ -164,12 +195,20 @@ public class EnchantAnimation extends BaseEnchantAnimation
         }
         player.getInventory().setItemInMainHand(new ItemStack(Material.AIR));
 
-        // Pre-generate filler colours using rarity weights so the strip reflects real odds
+        // Pre-generate filler rarities using rarity weights so the strip reflects real odds
         for (int i = 0; i < STRIP_SIZE; i++) {
             if (!isResultIndex(i)) {
                 RarityConfig rarity = EnchantAnimationConfig.rollRarity();
+                if (rarity == null && !EnchantAnimationConfig.getRarities().isEmpty()) {
+                    rarity = EnchantAnimationConfig.getRarities().get(0);
+                }
                 fillerMaterials[i] = rarity != null ? rarity.concreteMaterial() : Material.WHITE_CONCRETE;
+                stripRarities[i]   = rarity;
             }
+        }
+        // Store result rarities so the scoreboard strip is complete
+        for (int r = 0; r < RESULT_INDICES.length; r++) {
+            stripRarities[RESULT_INDICES[r]] = enchantOptions.get(r).rarity();
         }
 
         // Spawn 30 concrete BlockDisplays at pre-scroll positions
@@ -230,8 +269,19 @@ public class EnchantAnimation extends BaseEnchantAnimation
             tickScatter(world, tick);
             tickReveal(world, tick);
             tickIdleParticles(world, tick);
+            tickDescriptions();
         } else {
             tickSelectionAnim(world, playerLoc, tick);
+        }
+    }
+
+    @Override
+    protected void onHighlightChanged(int index, boolean highlighted) {
+        if (index >= 0 && index < 3) {
+            descTargetIn[index] = highlighted;
+        }
+        if (highlighted && resultPos[index] != null) {
+            player.playSound(resultPos[index], Sound.UI_BUTTON_CLICK, 0.4f, 1.0f);
         }
     }
 
@@ -245,10 +295,11 @@ public class EnchantAnimation extends BaseEnchantAnimation
 
     @Override
     protected void doComplete() {
-        for (BlockDisplay b : stripBlocks) { if (b != null && !b.isDead()) b.remove(); }
-        for (TextDisplay  a : arrows)      { if (a != null && !a.isDead()) a.remove(); }
-        for (TextDisplay  l : labels)      { if (l != null && !l.isDead()) l.remove(); }
-        for (ItemDisplay  i : enchantItems){ if (i != null && !i.isDead()) i.remove(); }
+        for (BlockDisplay b : stripBlocks)  { if (b != null && !b.isDead()) b.remove(); }
+        for (TextDisplay  a : arrows)       { if (a != null && !a.isDead()) a.remove(); }
+        for (TextDisplay  l : labels)       { if (l != null && !l.isDead()) l.remove(); }
+        for (ItemDisplay  i : enchantItems) { if (i != null && !i.isDead()) i.remove(); }
+        for (TextDisplay  d : descDisplays) { if (d != null && !d.isDead()) d.remove(); }
         if (!itemReturned && player.isOnline() && originalItem != null) {
             player.getInventory().setItemInMainHand(originalItem);
         }
@@ -508,6 +559,7 @@ public class EnchantAnimation extends BaseEnchantAnimation
             if (fp == 8) {
                 if (item != null && !item.isDead()) { item.remove(); enchantItems[r] = null; }
                 if (labels[r] != null && !labels[r].isDead()) { labels[r].remove(); labels[r] = null; }
+                if (descDisplays[r] != null && !descDisplays[r].isDead()) { descDisplays[r].remove(); descDisplays[r] = null; }
                 nonSelRemoved[r] = true;
 
                 if (resultPos[r] != null) {
@@ -519,10 +571,14 @@ public class EnchantAnimation extends BaseEnchantAnimation
         // --- Selected item: fly toward player (sp 0–25) ---
         ItemDisplay selItem = enchantItems[selectedIndex];
         if (sp == 0) {
-            // Remove the rarity label immediately so it doesn't linger as the item flies away
+            // Remove the rarity label and description immediately so they don't linger
             if (labels[selectedIndex] != null && !labels[selectedIndex].isDead()) {
                 labels[selectedIndex].remove();
                 labels[selectedIndex] = null;
+            }
+            if (descDisplays[selectedIndex] != null && !descDisplays[selectedIndex].isDead()) {
+                descDisplays[selectedIndex].remove();
+                descDisplays[selectedIndex] = null;
             }
             world.playSound(stripCenter, Sound.BLOCK_ENCHANTMENT_TABLE_USE, 1.0f, 1.8f);
             world.playSound(stripCenter, Sound.ENTITY_ENDER_DRAGON_FLAP, 0.4f, 2.0f);
@@ -648,7 +704,8 @@ public class EnchantAnimation extends BaseEnchantAnimation
         });
     }
 
-    /** Spawns rarity-only TextDisplay labels above the three result blocks. */
+    /** Spawns rarity-only TextDisplay labels above the three result blocks,
+     *  and pre-spawns the (initially hidden) hover-description displays above them. */
     private void spawnRarityLabels(World world) {
         if (labelsSpawned) return;
         labelsSpawned = true;
@@ -674,6 +731,69 @@ public class EnchantAnimation extends BaseEnchantAnimation
                     new AxisAngle4f(0, 0, 1, 0)
                 ));
             });
+
+            // Description display: spawned at scale 0 and animated in on hover
+            String desc = EnchantAnimationConfig.getEnchantDescription(opt.name());
+            Location descLoc = resultPos[r].clone().add(0, 1.15, 0);
+            Component descText = Component.text(desc)
+                    .color(net.kyori.adventure.text.format.NamedTextColor.GRAY)
+                    .decoration(TextDecoration.ITALIC, false)
+                    .decoration(TextDecoration.BOLD, false)
+                    .append(Component.newline())
+                    .append(Component.text("\u25BC")       // ▼
+                            .color(net.kyori.adventure.text.format.NamedTextColor.GOLD)
+                            .decorate(TextDecoration.BOLD)
+                            .decoration(TextDecoration.ITALIC, false));
+
+            descDisplays[cr] = world.spawn(descLoc, TextDisplay.class, e -> {
+                e.setBillboard(Display.Billboard.CENTER);
+                e.setBrightness(new Display.Brightness(15, 15));
+                e.setPersistent(false);
+                e.setBackgroundColor(Color.fromARGB(180, 10, 10, 20));
+                e.text(descText);
+                e.setAlignment(TextDisplay.TextAlignment.CENTER);
+                // Start at scale 0 — animated in when the player hovers
+                e.setTransformation(new Transformation(
+                    new Vector3f(0, 0, 0),
+                    new AxisAngle4f(0, 0, 1, 0),
+                    new Vector3f(0.001f, 0.001f, 0.001f),
+                    new AxisAngle4f(0, 0, 1, 0)
+                ));
+            });
+        }
+    }
+
+    /** Smoothly scales each description display in/out based on hover state. */
+    private void tickDescriptions() {
+        if (!labelsSpawned || selectionMade) return;
+
+        for (int r = 0; r < 3; r++) {
+            TextDisplay dd = descDisplays[r];
+            if (dd == null || dd.isDead()) continue;
+
+            if (descTargetIn[r]) {
+                descProgress[r] = Math.min(descProgress[r] + DESC_IN_STEP, 1.0f);
+            } else {
+                descProgress[r] = Math.max(descProgress[r] - DESC_OUT_STEP, 0.0f);
+            }
+
+            float p = descProgress[r];
+            float s;
+            if (p <= 0f) {
+                s = 0.001f;
+            } else if (descTargetIn[r]) {
+                // Ease-out-back for the pop-in feel (may briefly overshoot 1.0 — clamp)
+                s = Math.max((float) easeOutBack(p) * DESC_SCALE, 0.001f);
+            } else {
+                s = Math.max(p * DESC_SCALE, 0.001f);
+            }
+
+            dd.setTransformation(new Transformation(
+                new Vector3f(0, 0, 0),
+                new AxisAngle4f(0, 0, 1, 0),
+                new Vector3f(s, s, s),
+                new AxisAngle4f(0, 0, 1, 0)
+            ));
         }
     }
 

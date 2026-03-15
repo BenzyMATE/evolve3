@@ -47,8 +47,9 @@ SelectionPool:
   Unbreaking: Common
   Alchemy: Common
   Frostbite: Common
-
   Furnace: Uncommon
+  Scavenger: Uncommon
+  Merchant: Uncommon
 
 # Display text when pickaxe has no enchants
 NoEnchants: "&cNone"
@@ -84,6 +85,7 @@ MaxEnchant: "&6&lMAX"
 # Chance = (level / MaxLevel) * MaxChance
 Unbreaking:
   Name: "Unbreaking"
+  Description: "Reduces pickaxe durability damage."
   Passive: true
   MaxLevel: 100
   MaxChance: 75
@@ -113,6 +115,7 @@ Unbreaking:
 # Speed bonus = level × SpeedPerLevel (applied silently, no event trigger).
 Efficiency:
   Name: "Efficiency"
+  Description: "Passively boosts your mining speed."
   Passive: true
   MaxLevel: 100
   MaxChance: 0
@@ -129,6 +132,7 @@ Efficiency:
     - ' &#FFFFFF&lStatistics'
     - ' &8| &#888888Level: &#FFFFFF{level}&#888888/&#FFFFFF{maxLevel}'
     - ' &8| &#888888Cost: &#B366D9🔥 &#B366D9{cost}'
+    - ' &8| &#888888Break Speed: &#00FF88{speed}'
     - ''
     - ' &8| &aLeft-Click &#AAAAAAto upgrade'
     - ' &8| &aRight-Click &#AAAAAAto toggle'
@@ -144,6 +148,7 @@ Efficiency:
 # Works with Alchemy-upgraded blocks via chained metadata.
 Furnace:
   Name: "Furnace"
+  Description: "Auto-smelts mined blocks into ingots."
   MaxLevel: 100
   MaxChance: 40
   Cost: 25
@@ -166,7 +171,7 @@ Furnace:
     - ''
   Hologram:
     Enabled: true
-    Message: "&7%original% &a> &a%smelt%"
+    Message: "&#F0F0F0%original% &a> &#00FFFF%smelt%"
   # Smelting recipes: ORIGINAL -> RESULT
   Recipes:
     COBBLESTONE: STONE
@@ -186,6 +191,7 @@ Furnace:
 # converting them to PACKED_ICE with their original material stored in metadata.
 Frostbite:
   Name: "Frostbite"
+  Description: "Freezes nearby blocks into packed ice."
   MaxLevel: 100
   MaxChance: 15
   Cost: 50
@@ -210,7 +216,8 @@ Frostbite:
   Radius: 1
   Hologram:
     Enabled: true
-    Message: "&b&l[Frostbite] &eFroze %blocks% blocks!"
+    DefaultEnabled: false
+    Message: "&#F0F0F0Froze &#00FFFF%blocks% &#F0F0F0blocks!"
 
 # =====================================================
 # Alchemy Enchantment (Active)
@@ -219,6 +226,7 @@ Frostbite:
 # Runs at NORMAL event priority so Furnace (HIGH) can chain off the result.
 Alchemy:
   Name: "Alchemy"
+  Description: "Upgrades mined ores to higher-tier materials."
   MaxLevel: 100
   MaxChance: 20
   Cost: 100
@@ -241,7 +249,7 @@ Alchemy:
     - ''
   Hologram:
     Enabled: true
-    Message: "&7%original% &a> &d%upgrade%"
+    Message: "&#F0F0F0%original% &a> &#00FFFF%upgrade%"
   # Upgrade recipes: ORIGINAL -> UPGRADED
   Upgrades:
     COBBLESTONE: COAL
@@ -252,3 +260,77 @@ Alchemy:
     STONE: IRON_ORE
     IRON_ORE: GOLD_ORE
     GOLD_ORE: DIAMOND_ORE
+
+# =====================================================
+# Scavenger Enchantment (Active)
+# =====================================================
+# Chance to discover extra backpack slots while mining.
+# SlotsMin/SlotsMax control the range found per trigger.
+# MaxTotalSlots caps the backpack size so it can't grow indefinitely.
+Scavenger:
+  Name: "Scavenger"
+  Description: "Discovers extra backpack slots while mining."
+  MaxLevel: 100
+  MaxChance: 15
+  Cost: 20
+  Item: CHEST
+  Texture: "http://textures.minecraft.net/texture/9a17f3e16f2e0b3ce3a54b334cfd1f6f8c68c4ca1f1b6d8b2e4b16c8b0a2a4f"
+  Lore:
+    - ' {rarity}'
+    - ''
+    - ' &#FFFFFF&lDescription'
+    - ' &8| &#CCCCCCChance to discover extra backpack'
+    - ' &8| &#CCCCCCslots while mining.'
+    - ''
+    - ' &#FFFFFF&lStatistics'
+    - ' &8| &#888888Level: &#FFFFFF{level}&#888888/&#FFFFFF{maxLevel}'
+    - ' &8| &#888888Cost: &#B366D9🔥 &#B366D9{cost}'
+    - ' &8| &#888888Chance: &#00FF88{chance}%'
+    - ''
+    - ' &8| &aLeft-Click &#AAAAAAto upgrade'
+    - ' &8| &aRight-Click &#AAAAAAto toggle'
+    - ''
+  Hologram:
+    Enabled: true
+    Message: "&#00FFFF+%slots% &#F0F0F0Backpack Slots!"
+  # Slots found per trigger (random between min and max)
+  SlotsMin: 1
+  SlotsMax: 3
+  # Hard cap on total backpack size gained through Scavenger
+  MaxTotalSlots: 100000
+
+# =====================================================
+# Merchant Enchantment (Active)
+# =====================================================
+# Chance to find coins while mining.
+# Coin amount is random between CoinsMin and CoinsMax per trigger.
+# Chance = (level / MaxLevel) * MaxChance
+Merchant:
+  Name: "Merchant"
+  Description: "Find coins while mining."
+  MaxLevel: 100
+  MaxChance: 10
+  Cost: 30
+  Item: GOLD_NUGGET
+  Texture: "http://textures.minecraft.net/texture/5768b8d5b3c6e16bc31de9b85f83d9bfb22fc01d52ddcda48d0d0fd5f7f5c4a3"
+  Lore:
+    - ' {rarity}'
+    - ''
+    - ' &#FFFFFF&lDescription'
+    - ' &8| &#CCCCCCChance to discover coins'
+    - ' &8| &#CCCCCCwhile mining.'
+    - ''
+    - ' &#FFFFFF&lStatistics'
+    - ' &8| &#888888Level: &#FFFFFF{level}&#888888/&#FFFFFF{maxLevel}'
+    - ' &8| &#888888Cost: &#B366D9🔥 &#B366D9{cost}'
+    - ' &8| &#888888Chance: &#00FF88{chance}%'
+    - ''
+    - ' &8| &aLeft-Click &#AAAAAAto upgrade'
+    - ' &8| &aRight-Click &#AAAAAAto toggle'
+    - ''
+  Hologram:
+    Enabled: true
+    Message: "&#FFD700+%coins% ⛁ Coins!"
+  # Coins found per trigger (random between min and max)
+  CoinsMin: 1
+  CoinsMax: 50
