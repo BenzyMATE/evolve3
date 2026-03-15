@@ -5,6 +5,7 @@ import org.benski.evolv3.animations.HologramAnimation;
 import org.benski.evolv3.core.constants.ConfigNames;
 import org.benski.evolv3.core.constants.ConfigPaths;
 import org.benski.evolv3.core.managers.EnchantSelectionManager;
+import org.benski.evolv3.core.managers.FrostbiteBlockManager;
 import org.benski.evolv3.core.managers.MongoManager;
 import org.benski.evolv3.managers.PickaxeManager;
 import org.benski.evolv3.core.managers.PickupAnimationManager;
@@ -36,6 +37,7 @@ public final class Main extends JavaPlugin
     public void onEnable()
     {
         this.sendConsoleMessage("Evolv3 is starting up...");
+        FrostbiteBlockManager.getInstance().initialize(this);
         this.useRegistry();
         this.useMongo();
         this.useHooks();

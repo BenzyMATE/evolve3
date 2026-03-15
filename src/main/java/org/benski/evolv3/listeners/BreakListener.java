@@ -12,6 +12,7 @@ import org.benski.evolv3.items.AncientResin;
 import org.benski.evolv3.core.types.PreferenceType;
 import org.benski.evolv3.core.helpers.Utils;
 import org.benski.evolv3.core.managers.EnchantDropManager;
+import org.benski.evolv3.core.managers.FrostbiteBlockManager;
 import org.benski.evolv3.core.managers.PickupAnimationManager;
 import org.benski.evolv3.core.managers.WorldGuardManager;
 import org.benski.evolv3.datacenters.PlayerDataCenter;
@@ -70,6 +71,7 @@ public class BreakListener extends BaseListener
 
     private record BreakContext(
         Material blockType,
+        Material xpMaterial,
         ItemStack baseDrop,
         int dropAmount,
         boolean isEnchantDrop,
@@ -107,6 +109,15 @@ public class BreakListener extends BaseListener
             return;
         }
 
+        Block block = event.getBlock();
+        Material blockType = block.getType();
+
+        // Stale PACKED_ICE (frozen before server restart — metadata doesn't survive restarts).
+        // Not a valid mine block; let it break normally with vanilla drops.
+        if (blockType == Material.PACKED_ICE && !block.hasMetadata(FrostbiteEnchant.FROSTBITE_METADATA_KEY)) {
+            return;
+        }
+
         event.setDropItems(false);
 
         PlayerDataCenter playerDataCenter = DataCenterRegistry.getInstance().getPlayerDataCenter();
@@ -116,24 +127,27 @@ public class BreakListener extends BaseListener
         if (playerProfile == null) return;
 
         Backpack backpack = playerProfile.backpack;
-        Block block = event.getBlock();
-        Material blockType = block.getType();
 
         // Compute drops while the block is definitely still intact.
         Collection<ItemStack> drops = block.getDrops(heldItem, player);
 
         // Resolve the actual drop material. For Frostbite-frozen blocks the real drop is stored
-        // in metadata and must be read now — metadata does not survive block removal.
-        // For normal blocks, derive it from the drops themselves (e.g. STONE → COBBLESTONE).
+        // in metadata and must be read now, but NOT removed — Alchemy (NORMAL) and Furnace (HIGH)
+        // still need to read it. Bukkit clears block metadata automatically when the block breaks.
+        // For normal blocks, derive from drops (filtering air which some blocks return instead of empty).
         final Material dropMaterial;
         if (block.hasMetadata(FrostbiteEnchant.FROSTBITE_METADATA_KEY)) {
             String stored = block.getMetadata(FrostbiteEnchant.FROSTBITE_METADATA_KEY).getFirst().asString();
-            block.removeMetadata(FrostbiteEnchant.FROSTBITE_METADATA_KEY, plugin);
             Material parsed = blockType;
             try { parsed = Material.valueOf(stored); } catch (IllegalArgumentException ignored) {}
             dropMaterial = parsed;
+            FrostbiteBlockManager.getInstance().removeFrozenBlock(block.getLocation());
         } else {
-            dropMaterial = drops.stream().findFirst().map(ItemStack::getType).orElse(blockType);
+            dropMaterial = drops.stream()
+                    .filter(i -> i != null && !i.getType().isAir())
+                    .findFirst()
+                    .map(ItemStack::getType)
+                    .orElse(blockType);
         }
 
         if (backpack.isFull()) {
@@ -145,12 +159,19 @@ public class BreakListener extends BaseListener
             return;
         }
 
+        // For Frostbite-frozen blocks, XP/stats should use the original material (e.g. STONE),
+        // not PACKED_ICE which has no BlockDefaults entry. For all other blocks, use blockType.
+        Material xpMaterial = block.hasMetadata(FrostbiteEnchant.FROSTBITE_METADATA_KEY)
+                ? dropMaterial
+                : blockType;
+
         ItemStack baseDrop = new ItemStack(dropMaterial);
         int dropAmount = drops.isEmpty() ? 1 : drops.stream().mapToInt(ItemStack::getAmount).sum();
         boolean isEnchantDrop = playerProfile.isEnchanting;
 
         pendingBreaks.put(player.getUniqueId(), new BreakContext(
                 blockType,
+                xpMaterial,
                 baseDrop,
                 dropAmount,
                 isEnchantDrop,
@@ -181,6 +202,8 @@ public class BreakListener extends BaseListener
 
         ItemStack finalDrop = handleEnchantDrops(player.getUniqueId(), ctx.baseDrop());
 
+        if (finalDrop.getType().isAir()) return;
+
         // Log blocks mined with a pickaxe go through the log-mine path (resin roll, no essence/atoms)
         if (isLog(ctx.blockType())) {
             handlePickaxeLogBreak(player, ctx, finalDrop);
@@ -200,7 +223,7 @@ public class BreakListener extends BaseListener
                 player,
                 ctx.animationLocation(),
                 List.of(finalDrop),
-                ctx.blockType(),
+                ctx.xpMaterial(),
                 dropCategory
         );
 
@@ -213,7 +236,7 @@ public class BreakListener extends BaseListener
         if (pickaxeDataCenter == null) return;
         pickaxeDataCenter.get(player, pickaxeProfile -> {
             if (pickaxeProfile != null) {
-                pickaxeManager.addStatistics(player, ctx.blockType(), ctx.playerProfile());
+                pickaxeManager.addStatistics(player, ctx.xpMaterial(), ctx.playerProfile());
             }
         });
 
@@ -480,7 +503,7 @@ public class BreakListener extends BaseListener
 
         if (atomHologramOn && config.getBoolean(ConfigPaths.Default.Atoms.HOLOGRAM_ENABLED, true)) {
             String text = config.getString(ConfigPaths.Default.Atoms.HOLOGRAM_TEXT, "&#FFEE00⚛ &#FFFFFF&l+ %amount% &#FFEE00Atoms");
-            text = text.replace("%amount%", String.valueOf(amount));
+            text = text.replace("%amount%", Utils.formatNumber(amount));
             animationRegistry.play("hologram", hologramLoc, List.of(player), text);
         }
     }
@@ -516,7 +539,7 @@ public class BreakListener extends BaseListener
         if (playerProfile.preferences.essenceHologram
                 && config.getBoolean(ConfigPaths.Default.Essence.HOLOGRAM_ENABLED, true)) {
             String text = config.getString(ConfigPaths.Default.Essence.HOLOGRAM_TEXT, "&#B366D9🔥 &#FFFFFF&l+ %amount% &#B366D9Essence");
-            text = text.replace("%amount%", String.valueOf(amount));
+            text = text.replace("%amount%", Utils.formatNumber(amount));
             animationRegistry.play("hologram", hologramLoc, List.of(player), text);
         }
     }

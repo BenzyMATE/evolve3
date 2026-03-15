@@ -117,6 +117,11 @@ public class FurnaceEnchant implements Listener
             return;
         }
 
+        String blockName = event.getBlock().getType().name();
+        if (blockName.endsWith("_LOG") || blockName.endsWith("_STEM")) {
+            return;
+        }
+
         PlayerDataCenter playerDC = DataCenterRegistry.getInstance().getPlayerDataCenter();
         if (playerDC != null) {
             org.benski.evolv3.models.player.PlayerProfile pp = playerDC.getLocal(player);
@@ -180,6 +185,7 @@ public class FurnaceEnchant implements Listener
         }
 
         return block.getDrops().stream()
+                .filter(i -> i != null && !i.getType().isAir())
                 .findFirst()
                 .map(ItemStack::getType)
                 .orElse(block.getType());

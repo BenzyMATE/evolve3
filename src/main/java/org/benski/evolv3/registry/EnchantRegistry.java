@@ -9,7 +9,8 @@ import org.benski.evolv3.enchants.EfficiencyEnchant;
 import org.benski.evolv3.enchants.ExplosiveEnchant;
 import org.benski.evolv3.enchants.FrostbiteEnchant;
 import org.benski.evolv3.enchants.FurnaceEnchant;
-import org.benski.evolv3.listeners.FrostbiteListener;
+import org.benski.evolv3.enchants.MerchantEnchant;
+import org.benski.evolv3.enchants.ScavengerEnchant;
 import org.bukkit.event.Listener;
 
 import java.util.List;
@@ -35,7 +36,8 @@ public class EnchantRegistry implements Registry<Listener>
             FrostbiteEnchant.class,
             FurnaceEnchant.class,
             AlchemyEnchant.class,
-            FrostbiteListener.class
+            ScavengerEnchant.class,
+            MerchantEnchant.class
     );
 
     /**

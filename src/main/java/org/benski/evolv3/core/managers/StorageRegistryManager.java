@@ -6,6 +6,7 @@ import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
@@ -92,8 +93,16 @@ public class StorageRegistryManager
                 }
             }
 
-            // Load into cache
-            configCache.put(name, YamlConfiguration.loadConfiguration(configFile));
+            // Load from disk, then apply JAR resource as defaults so new keys added
+            // to the resource are available even if the server's file predates them.
+            FileConfiguration config = YamlConfiguration.loadConfiguration(configFile);
+            InputStream resourceStream = plugin.getResource(name + ".yml");
+            if (resourceStream != null) {
+                FileConfiguration resourceDefaults = YamlConfiguration.loadConfiguration(
+                        new InputStreamReader(resourceStream, StandardCharsets.UTF_8));
+                config.setDefaults(resourceDefaults);
+            }
+            configCache.put(name, config);
         }
 
         String names = String.join(", ", registeredConfigs.keySet());

@@ -32,4 +32,10 @@ public final class Enchants
 
     /** Internal key for the Explosive enchantment (registered via Paper enchantment API). */
     public static final String EXPLOSIVE  = "explosive";
+
+    /** Internal key for the Scavenger enchantment. */
+    public static final String SCAVENGER  = "scavenger";
+
+    /** Internal key for the Merchant enchantment. */
+    public static final String MERCHANT   = "merchant";
 }

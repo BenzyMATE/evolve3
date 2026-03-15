@@ -5,7 +5,9 @@ import org.benski.evolv3.animations.ExplosionAnimation;
 import org.benski.evolv3.core.constants.ConfigNames;
 import org.benski.evolv3.core.helpers.ItemStackExtensions;
 import org.benski.evolv3.core.managers.StorageRegistryManager;
+import org.benski.evolv3.datacenters.PlayerDataCenter;
 import org.benski.evolv3.registry.AnimationRegistry;
+import org.benski.evolv3.registry.DataCenterRegistry;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
@@ -82,6 +84,12 @@ public class ExplosiveEnchant implements Listener
         int level = item.getCustomEnchantmentLevel("explosive");
         if (level <= 0) {
             return;
+        }
+
+        PlayerDataCenter playerDC = DataCenterRegistry.getInstance().getPlayerDataCenter();
+        if (playerDC != null) {
+            org.benski.evolv3.models.player.PlayerProfile pp = playerDC.getLocal(player);
+            if (pp != null && pp.backpack.isFull()) return;
         }
 
         Block centerBlock = event.getBlock();

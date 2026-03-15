@@ -68,7 +68,9 @@ public class HologramAnimation extends BaseAnimation
         currentY = origin.getY();
         String formattedText = Utils.formatMessage(targetPlayer, text);
 
-        // Spawn the text display entity
+        // Spawn the text display entity — setVisibleByDefault must be set inside the consumer
+        // so it takes effect before the spawn packet is sent. showEntity is called AFTER
+        // spawn so the client receives the entity correctly.
         textDisplay = origin.getWorld().spawn(origin, TextDisplay.class, display -> {
             display.text(net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer
                     .legacySection().deserialize(formattedText));
@@ -78,11 +80,13 @@ public class HologramAnimation extends BaseAnimation
             display.setSeeThrough(false);
             display.setDefaultBackground(false);
             display.setBackgroundColor(Color.fromARGB(0, 0, 0, 0));
-
-            // Make it only visible to the target player
             display.setVisibleByDefault(false);
-            targetPlayer.showEntity(plugin, display);
         });
+
+        // Show to target player after the entity is fully registered in the world
+        if (textDisplay != null) {
+            targetPlayer.showEntity(plugin, textDisplay);
+        }
     }
 
     /**

@@ -285,6 +285,9 @@ public class PickaxeMenu extends BaseMenu
         int    maxLevel = enchant.maxLevel;
         double chance   = enchant.getCurrentChance();
         int    cost     = EnchantAnimationConfig.getEnchantCost(displayName) * level;
+        double speedPerLevel = ConfigRegistry.getInstance().get(ConfigNames.ENCHANTS)
+                .getDouble(ConfigPaths.Enchants.Efficiency.SPEED_PER_LEVEL, 0.08);
+        double speedBonus = level * speedPerLevel * 100;
 
         // Read lore template from config and substitute all runtime tokens
         List<String> rawLore = EnchantAnimationConfig.getEnchantLore(displayName);
@@ -311,7 +314,8 @@ public class PickaxeMenu extends BaseMenu
                     .replace("{level}",       levelDisplay)
                     .replace("{maxLevel}",    String.valueOf(maxLevel))
                     .replace("{cost}",        String.valueOf(cost))
-                    .replace("{chance}",      String.format("%.1f", chance));
+                    .replace("{chance}",      String.format("%.1f", chance))
+                    .replace("{speed}",       String.format("%.0f%%", speedBonus));
             lore.add(deserialize(formatMessage(player, processed)));
         }
 

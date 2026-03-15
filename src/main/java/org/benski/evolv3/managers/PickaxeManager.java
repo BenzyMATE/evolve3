@@ -236,8 +236,15 @@ public class PickaxeManager
         // Check atom threshold for evolution
         checkAtoms(profile, player);
 
-        // Play level up effects
-        player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.0f);
+        // Play level up effects (client-side sound via Adventure key — not in server Sound registry)
+        player.playSound(net.kyori.adventure.sound.Sound.sound(
+                net.kyori.adventure.key.Key.key("minecraft", "ui.toast.goal_complete"),
+                net.kyori.adventure.sound.Sound.Source.MASTER,
+                1.0f, 1.0f));
+
+        // Trigger scoreboard level-up flash animation
+        org.benski.evolv3.core.managers.EvolveScoreboardManager.getInstance()
+                .triggerLevelUpAnimation(player, profile.level);
 
         // Send level up message (multi-line, centered)
         List<String> levelUpLines = getMessagesConfig().getStringList(ConfigPaths.Messages.Pickaxe.LEVEL_UP);

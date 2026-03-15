@@ -11,6 +11,7 @@ import org.benski.evolv3.listeners.BreakListener;
 import org.benski.evolv3.listeners.InteractListener;
 import org.benski.evolv3.listeners.JoinListener;
 import org.benski.evolv3.listeners.PickaxeOwnershipListener;
+import org.benski.evolv3.listeners.ScoreboardListener;
 
 import java.util.List;
 
@@ -33,7 +34,8 @@ public class ListenerRegistry implements Registry<BaseListener>
             EnchantListener.class,
             InteractListener.class,
             BackpackListener.class,
-            PickaxeOwnershipListener.class
+            PickaxeOwnershipListener.class,
+            ScoreboardListener.class
     );
 
     /**

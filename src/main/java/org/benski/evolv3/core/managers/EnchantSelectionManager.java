@@ -204,13 +204,22 @@ public class EnchantSelectionManager
 
     /**
      * Returns the active animation for a player, or {@code null} if none.
+     * If the stored animation is no longer playing (e.g. it ended via timeout before
+     * its wrapped callback could fire), the stale entry is removed and {@code null}
+     * is returned so callers such as the scoreboard manager can reset their state.
      *
      * @param player the player
-     * @return the animation, or {@code null}
+     * @return the animation if it is still playing, or {@code null}
      */
     public BaseEnchantAnimation getActiveAnimation(Player player) {
         if (player == null) return null;
-        return activeAnimations.get(player.getUniqueId());
+        UUID uuid = player.getUniqueId();
+        BaseEnchantAnimation animation = activeAnimations.get(uuid);
+        if (animation != null && !animation.isPlaying()) {
+            activeAnimations.remove(uuid); // clean up stale entry
+            return null;
+        }
+        return animation;
     }
 
     // -------------------------------------------------------------------------

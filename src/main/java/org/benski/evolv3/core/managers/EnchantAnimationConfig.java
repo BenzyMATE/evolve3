@@ -46,6 +46,7 @@ public final class EnchantAnimationConfig
     private static final Map<String, String>       ENCHANT_DISPLAY_NAMES = new HashMap<>();
     private static final Map<String, Double>       ENCHANT_MAX_CHANCES   = new HashMap<>();
     private static final Map<String, List<String>> ENCHANT_LORES         = new HashMap<>();
+    private static final Map<String, String>       ENCHANT_DESCRIPTIONS  = new HashMap<>();
     private static final java.util.Set<String>     PASSIVE_ENCHANTS      = new java.util.HashSet<>();
     private static int totalWeight = 0;
 
@@ -74,6 +75,7 @@ public final class EnchantAnimationConfig
         ENCHANT_DISPLAY_NAMES.clear();
         ENCHANT_MAX_CHANCES.clear();
         ENCHANT_LORES.clear();
+        ENCHANT_DESCRIPTIONS.clear();
         PASSIVE_ENCHANTS.clear();
         totalWeight = 0;
 
@@ -129,8 +131,9 @@ public final class EnchantAnimationConfig
             int          cost      = es.getInt(ConfigPaths.Enchants.ENCHANT_COST, 100);
             String       texture   = es.getString(ConfigPaths.Enchants.ENCHANT_TEXTURE, "");
             double       maxChance = es.getDouble(ConfigPaths.Enchants.ENCHANT_MAX_CHANCE, 0.0);
-            boolean      passive   = es.getBoolean(ConfigPaths.Enchants.ENCHANT_PASSIVE, false);
-            List<String> lore      = es.getStringList(ConfigPaths.Enchants.ENCHANT_LORE);
+            boolean      passive     = es.getBoolean(ConfigPaths.Enchants.ENCHANT_PASSIVE, false);
+            List<String> lore        = es.getStringList(ConfigPaths.Enchants.ENCHANT_LORE);
+            String       description = es.getString(ConfigPaths.Enchants.ENCHANT_DESCRIPTION, "");
 
             Material mat = Material.matchMaterial(itemStr);
             if (mat == null) mat = Material.BOOK;
@@ -144,6 +147,9 @@ public final class EnchantAnimationConfig
             ENCHANT_MAX_CHANCES.put(name, maxChance);
             if (!lore.isEmpty()) {
                 ENCHANT_LORES.put(name, lore);
+            }
+            if (!description.isEmpty()) {
+                ENCHANT_DESCRIPTIONS.put(name, description);
             }
             if (texture != null && !texture.isEmpty()) {
                 ENCHANT_TEXTURES.put(name, texture);
@@ -324,6 +330,17 @@ public final class EnchantAnimationConfig
      */
     public static List<String> getEnchantLore(String enchantName) {
         return ENCHANT_LORES.getOrDefault(enchantName, Collections.emptyList());
+    }
+
+    /**
+     * Returns the brief hover description for the given enchant, shown during
+     * the selection animation when the player looks at an option.
+     *
+     * @param enchantName the display name of the enchant (e.g. "Furnace")
+     * @return the description string, or an empty string if none configured
+     */
+    public static String getEnchantDescription(String enchantName) {
+        return ENCHANT_DESCRIPTIONS.getOrDefault(enchantName, "");
     }
 
     /**

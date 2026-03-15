@@ -76,7 +76,7 @@ pickaxe:
 
   level-up:
     - ""
-    - "  &#00FFFF⛏ &lPickaxe Level %level%"
+    - "  &#00FFFF⛏ &lPickaxe &F&lLevel %level%"
     - "  &#888888Your pickaxe grows stronger."
     - ""
     - "  &#FFFFFF&lRewards"
@@ -139,7 +139,7 @@ armor:
 
   level-up-title:
     helmet:
-      title: "&#00FFFF&l⬆ Level Up"
+      title: "&#00FFFF&lc Level Up"
       subtitle: "&#CCCCCCHelmet is now level &#FFFFFF%level%"
     chestplate:
       title: "&#00FFFF&l⬆ Level Up"
@@ -183,17 +183,25 @@ enchants:
   efficiency:
     applied: "&#00FFFF&l[Efficiency] &#CCCCCCSpeed boost applied!"
   frostbite:
-    triggered: "&#00BFFF&l[Frostbite] &#CCCCCCFroze %blocks% blocks!"
-    triggered-title: "&#00BFFF&lFrostbite"
+    triggered: " &#F0F0F0FROSTBITE &#CCCCCCFroze %blocks% blocks!"
+    triggered-title: "&#F0F0F0&lFrostbite"
     triggered-subtitle: "&#CCCCCCFroze %blocks% blocks!"
   furnace:
-    triggered: "&#FF6B35&l[Furnace] &#CCCCCC%original% &#FF6B35> &#CCCCCC%result%"
+    triggered: " &#55FF55&lFURNACE &#CCCCCC%original% &#FF6B35> &#CCCCCC%result%"
     triggered-title: "&#FF6B35&lFurnace"
     triggered-subtitle: "&#CCCCCC%original% &#FF6B35> &#CCCCCC%result%"
   alchemy:
-    triggered: "&#B366D9&l[Alchemy] &#CCCCCC%original% &#B366D9> &#CCCCCC%upgrade%"
+    triggered: " &#F0F0F0&lALCHEMY &#CCCCCC%original% &#B366D9> &#CCCCCC%upgrade%"
     triggered-title: "&#B366D9&lAlchemy"
     triggered-subtitle: "&#CCCCCC%original% &#B366D9> &#CCCCCC%upgrade%"
+  scavenger:
+    triggered: " &#55FF55&lSCAVENGER &#CCCCCCFound +%slots% backpack slots!"
+    triggered-title: "&#FFD700&lScavenger"
+    triggered-subtitle: "&#CCCCCC+%slots% Backpack Slots!"
+  merchant:
+    triggered: " &#55FF55&lMERCHANT &#CCCCCCFound +%coins% ⛁ Coins!"
+    triggered-title: "&#FFD700&lMerchant"
+    triggered-subtitle: "&#CCCCCC+%coins% ⛁ Coins!"
 
 # =====================================================
 # Pickaxe Limit Messages
