@@ -35,7 +35,6 @@ import org.bukkit.scheduler.BukkitRunnable;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -55,21 +54,6 @@ public class DrillEnchant implements Listener
     /** Ticks between breaking each successive depth level. */
     private static final int LEVEL_DELAY_TICKS = 8;
 
-    private static final Set<Material> PROTECTED_MATERIALS = Set.of(
-        Material.BEDROCK,
-        Material.BARRIER,
-        Material.COMMAND_BLOCK,
-        Material.CHAIN_COMMAND_BLOCK,
-        Material.REPEATING_COMMAND_BLOCK,
-        Material.STRUCTURE_BLOCK,
-        Material.STRUCTURE_VOID,
-        Material.JIGSAW,
-        Material.END_PORTAL_FRAME,
-        Material.END_PORTAL,
-        Material.NETHER_PORTAL,
-        Material.SPAWNER
-    );
-
     public DrillEnchant(JavaPlugin plugin)
     {
         this.plugin = plugin;
@@ -81,7 +65,7 @@ public class DrillEnchant implements Listener
         Player player = event.getPlayer();
         ItemStack item = player.getInventory().getItemInMainHand();
 
-        if (!item.getType().name().contains("PICKAXE")) return;
+        if (!Utils.isPickaxe(item.getType())) return;
         if (!WorldGuardManager.getInstance().isWithinMineRegion(event.getBlock().getLocation())) return;
 
         String blockName = event.getBlock().getType().name();
@@ -166,7 +150,7 @@ public class DrillEnchant implements Listener
         for (Block block : levelBlocks) {
             int remaining = backpack.getMaxSize() - backpack.getTotalItems();
             if (remaining <= 0) break;
-            if (!isBreakable(block)) continue;
+            if (!AoEDropResolver.isBreakable(block)) continue;
             if (!WorldGuardManager.getInstance().isWithinMineRegion(block.getLocation())) continue;
 
             Material mat = AoEDropResolver.resolve(
@@ -293,18 +277,6 @@ public class DrillEnchant implements Listener
                 profile.preferences.getOrCreateEnchantPref(enchantName, defaultHolo);
 
         return new EnchantPreferenceResult(pref.hologram, pref.message, pref.title);
-    }
-
-    private boolean isBreakable(Block block)
-    {
-        Material m = block.getType();
-        if (m.isAir() || m == Material.WATER || m == Material.LAVA) return false;
-        // Stale Frostbite block (frozen before server restart — metadata doesn't survive).
-        // The original material can't be recovered, so skip it.
-        if (m == Material.PACKED_ICE && !block.hasMetadata(FrostbiteEnchant.FROSTBITE_METADATA_KEY)) return false;
-        if (PROTECTED_MATERIALS.contains(m)) return false;
-        if (m.getHardness() < 0) return false;
-        return true;
     }
 
     private record EnchantPreferenceResult(boolean hologram, boolean message, boolean title) {}

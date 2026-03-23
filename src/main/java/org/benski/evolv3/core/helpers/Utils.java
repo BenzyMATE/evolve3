@@ -117,6 +117,25 @@ public class Utils
     }
 
     /**
+     * Returns {@code true} if the given {@link Material} is any type of pickaxe.
+     *
+     * <p>Uses an exhaustive enum check rather than a string contains so it is safe against
+     * future Material additions whose names may contain "PICKAXE" for unrelated reasons.</p>
+     *
+     * @param material the material to test
+     * @return true if the material is a pickaxe
+     */
+    public static boolean isPickaxe(Material material)
+    {
+        return material == Material.WOODEN_PICKAXE
+                || material == Material.STONE_PICKAXE
+                || material == Material.IRON_PICKAXE
+                || material == Material.GOLDEN_PICKAXE
+                || material == Material.DIAMOND_PICKAXE
+                || material == Material.NETHERITE_PICKAXE;
+    }
+
+    /**
      * Returns true if the given percentage chance succeeds.
      * @param chancePercent The chance in percentage (e.g., 10 for 10%, 0.01 for 0.01%)
      * @return true if successful, false otherwise

@@ -111,7 +111,7 @@ public class AlchemyEnchant implements Listener
         Player player = event.getPlayer();
         ItemStack item = player.getInventory().getItemInMainHand();
 
-        if (!item.getType().name().contains("PICKAXE")) {
+        if (!Utils.isPickaxe(item.getType())) {
             return;
         }
 

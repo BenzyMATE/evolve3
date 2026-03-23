@@ -35,7 +35,6 @@ import org.bukkit.util.Vector;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
 
 /**
@@ -54,21 +53,6 @@ import java.util.concurrent.ThreadLocalRandom;
 public class LazerEnchant implements Listener
 {
     private final JavaPlugin plugin;
-
-    private static final Set<Material> PROTECTED_MATERIALS = Set.of(
-        Material.BEDROCK,
-        Material.BARRIER,
-        Material.COMMAND_BLOCK,
-        Material.CHAIN_COMMAND_BLOCK,
-        Material.REPEATING_COMMAND_BLOCK,
-        Material.STRUCTURE_BLOCK,
-        Material.STRUCTURE_VOID,
-        Material.JIGSAW,
-        Material.END_PORTAL_FRAME,
-        Material.END_PORTAL,
-        Material.NETHER_PORTAL,
-        Material.SPAWNER
-    );
 
     /** The four cardinal directions the laser can fire in. */
     private static final Vector[] CARDINAL_DIRECTIONS = {
@@ -89,7 +73,7 @@ public class LazerEnchant implements Listener
         Player player = event.getPlayer();
         ItemStack item = player.getInventory().getItemInMainHand();
 
-        if (!item.getType().name().contains("PICKAXE")) return;
+        if (!Utils.isPickaxe(item.getType())) return;
         if (!WorldGuardManager.getInstance().isWithinMineRegion(event.getBlock().getLocation())) return;
 
         String blockName = event.getBlock().getType().name();
@@ -149,7 +133,7 @@ public class LazerEnchant implements Listener
                     origin.getZ() + (int)(direction.getZ() * dist)
             );
 
-            if (!isBreakable(block)) {
+            if (!AoEDropResolver.isBreakable(block)) {
                 // Stop the beam if it hits a protected or unbreakable block (but not air).
                 if (!block.getType().isAir()) break;
                 continue;
@@ -248,18 +232,6 @@ public class LazerEnchant implements Listener
         EnchantPreference pref = profile.preferences.getOrCreateEnchantPref(enchantName, defaultHolo);
 
         return new EnchantPreferenceResult(pref.hologram, pref.message, pref.sound, pref.particles, pref.title);
-    }
-
-    private boolean isBreakable(Block block)
-    {
-        Material m = block.getType();
-        if (m.isAir() || m == Material.WATER || m == Material.LAVA) return false;
-        // Stale Frostbite block (frozen before server restart — metadata doesn't survive).
-        // The original material can't be recovered, so skip it.
-        if (m == Material.PACKED_ICE && !block.hasMetadata(FrostbiteEnchant.FROSTBITE_METADATA_KEY)) return false;
-        if (PROTECTED_MATERIALS.contains(m)) return false;
-        if (m.getHardness() < 0) return false;
-        return true;
     }
 
     private record EnchantPreferenceResult(boolean hologram, boolean message,

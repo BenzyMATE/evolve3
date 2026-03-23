@@ -1,5 +1,6 @@
 package org.benski.evolv3.datacenters;
 
+import org.benski.evolv3.Main;
 import org.benski.evolv3.core.abstracts.BaseDataCenter;
 import org.benski.evolv3.core.constants.ConfigNames;
 import org.benski.evolv3.core.constants.ConfigPaths;
@@ -7,6 +8,10 @@ import org.benski.evolv3.models.player.PlayerProfile;
 import org.benski.evolv3.registry.ConfigRegistry;
 import org.bukkit.entity.Player;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
 import static org.benski.evolv3.core.helpers.Utils.formatMessage;
@@ -109,31 +114,38 @@ public class PlayerDataCenter extends BaseDataCenter<PlayerProfile>
     }
 
     /**
-     * Removes a player's profile from cache.
-     * Should be called when a player leaves the server.
+     * Removes a player's profile from cache immediately, then saves asynchronously.
+     * Removing first prevents a reconnecting player from seeing a stale eviction
+     * delete their freshly-loaded profile if the async callback fires late.
      *
      * @param player The player whose profile to unload
      */
     public void unloadProfile(Player player)
     {
         String playerId = player.getUniqueId().toString();
-        PlayerProfile profile = data.get(playerId);
-
+        PlayerProfile profile = data.remove(playerId);
         if (profile != null) {
-            profile.save(result -> {
-                data.remove(playerId);
-            });
+            profile.save();
         }
     }
 
     /**
-     * Saves all cached profiles to the database.
-     * Should be called during plugin disable.
+     * Saves all cached profiles and blocks until every save completes (or times out).
+     * Should be called during plugin disable to prevent data loss on shutdown.
+     * Waits up to 10 seconds for all saves to finish before returning.
      */
     public void saveAll()
     {
+        List<CompletableFuture<Void>> futures = new ArrayList<>();
         for (PlayerProfile profile : data.values()) {
-            profile.save();
+            futures.add(mongoManager.upsertAsync(profile));
+        }
+        if (futures.isEmpty()) return;
+        try {
+            CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]))
+                    .get(10, TimeUnit.SECONDS);
+        } catch (Exception e) {
+            Main.getInstance().getLogger().severe("Timed out waiting for player profile saves on shutdown: " + e.getMessage());
         }
     }
 }

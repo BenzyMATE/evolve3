@@ -442,7 +442,7 @@ public class BreakListener extends BaseListener
      */
     private boolean isPickaxe(Material material)
     {
-        return material.name().contains("PICKAXE");
+        return Utils.isPickaxe(material);
     }
 
     /**

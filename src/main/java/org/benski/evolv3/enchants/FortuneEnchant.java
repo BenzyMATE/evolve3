@@ -3,6 +3,7 @@ package org.benski.evolv3.enchants;
 import lombok.experimental.ExtensionMethod;
 import org.benski.evolv3.core.constants.Enchants;
 import org.benski.evolv3.core.helpers.ItemStackExtensions;
+import org.benski.evolv3.core.helpers.Utils;
 import org.benski.evolv3.core.managers.WorldGuardManager;
 import org.benski.evolv3.datacenters.PickaxeDataCenter;
 import org.benski.evolv3.models.pickaxe.EnchantData;
@@ -72,7 +73,7 @@ public class FortuneEnchant implements Listener
         Player player = event.getPlayer();
         ItemStack item = player.getInventory().getItemInMainHand();
 
-        if (!item.getType().name().contains("PICKAXE")) {
+        if (!Utils.isPickaxe(item.getType())) {
             return;
         }
 

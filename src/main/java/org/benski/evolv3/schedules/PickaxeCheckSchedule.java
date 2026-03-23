@@ -109,16 +109,15 @@ public class PickaxeCheckSchedule extends BaseSchedule
 
         if (pickaxeId == null || pickaxeId.isEmpty()) {
             String newId = UUID.randomUUID().toString();
+            mainHand.setData("id", newId);
             pickaxeDataCenter.loadOrCreate(player, newId);
             updatePlayerPickaxe(player);
-            plugin.getLogger().fine(() -> "Player " + player.getName() + " holding new pickaxe, created with ID: " + newId);
             return;
         }
 
-        // Pickaxe has an ID - load it into cache (or create if not in DB)
-        // loadOrCreate handles checking if it exists in cache/DB
+        // Pickaxe has an ID — load it into cache (or create if not in DB).
+        // loadOrCreate is a no-op when the profile is already cached.
         pickaxeDataCenter.loadOrCreate(player, pickaxeId);
-        plugin.getLogger().fine(() -> "Player " + player.getName() + " holding pickaxe with ID: " + pickaxeId);
     }
 
     /**

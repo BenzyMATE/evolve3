@@ -8,8 +8,12 @@ import org.benski.evolv3.core.constants.ConfigNames;
 import org.benski.evolv3.core.constants.ConfigPaths;
 import org.benski.evolv3.core.helpers.SkinRenderer;
 import org.benski.evolv3.core.helpers.Utils;
+import org.benski.evolv3.core.managers.EnchantDropManager;
 import org.benski.evolv3.core.managers.EnchantSelectionManager;
 import org.benski.evolv3.core.managers.RankManager;
+import org.benski.evolv3.enchants.ExtractionEnchant;
+import org.benski.evolv3.enchants.FortuneEnchant;
+import org.benski.evolv3.enchants.RadioactiveEnchant;
 import org.benski.evolv3.datacenters.ArmorDataCenter;
 import org.benski.evolv3.datacenters.PlayerDataCenter;
 import org.benski.evolv3.models.player.PlayerProfile;
@@ -148,5 +152,14 @@ public class JoinListener extends BaseListener
         if (playerDataCenter != null) {
             playerDataCenter.unloadProfile(player);
         }
+
+        // Clean up any stale per-player entries in static enchant maps.
+        // These are normally consumed during block breaks but may linger if the player
+        // disconnects mid-event or if a break was cancelled after NORMAL priority wrote them.
+        java.util.UUID uuid = player.getUniqueId();
+        EnchantDropManager.pop(uuid);
+        ExtractionEnchant.popBonus(uuid);
+        RadioactiveEnchant.popBonus(uuid);
+        FortuneEnchant.popDropAmount(uuid);
     }
 }
