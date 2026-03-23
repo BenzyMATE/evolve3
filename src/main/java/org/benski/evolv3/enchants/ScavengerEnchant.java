@@ -16,8 +16,10 @@ import org.benski.evolv3.models.player.EnchantPreference;
 import org.benski.evolv3.models.pickaxe.EnchantData;
 import org.benski.evolv3.models.player.PlayerProfile;
 import org.benski.evolv3.registry.AnimationRegistry;
+import org.benski.evolv3.registry.ConfigRegistry;
 import org.benski.evolv3.registry.DataCenterRegistry;
 import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.Particle;
 import org.bukkit.Sound;
 import org.bukkit.block.Block;
@@ -28,6 +30,7 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.List;
@@ -47,15 +50,17 @@ import java.util.List;
 @ExtensionMethod(ItemStackExtensions.class)
 public class ScavengerEnchant implements Listener
 {
+    @lombok.Getter
+    private static ScavengerEnchant instance;
+
     private final FileConfiguration enchantsConfig;
-    private final FileConfiguration messagesConfig;
     private final JavaPlugin plugin;
 
     public ScavengerEnchant(JavaPlugin plugin)
     {
+        instance = this;
         this.plugin = plugin;
         this.enchantsConfig = StorageRegistryManager.getInstance().getConfig(ConfigNames.ENCHANTS);
-        this.messagesConfig = StorageRegistryManager.getInstance().getConfig(ConfigNames.MESSAGES);
     }
 
     /**
@@ -100,15 +105,15 @@ public class ScavengerEnchant implements Listener
             double triggerChance = enchant.getCurrentChance();
             if (!Utils.chance(triggerChance)) return;
 
-            int maxTotalSlots = enchantsConfig.getInt(ConfigPaths.Enchants.Scavenger.MAX_TOTAL_SLOTS, 500);
-            if (playerProfile.backpack.getMaxSize() >= maxTotalSlots) return;
+            int tierCap = getTierCap(player);
+            if (playerProfile.backpack.getMaxSize() >= tierCap) return;
 
             int slotsMin   = enchantsConfig.getInt(ConfigPaths.Enchants.Scavenger.SLOTS_MIN, 1);
             int slotsMax   = enchantsConfig.getInt(ConfigPaths.Enchants.Scavenger.SLOTS_MAX, 3);
             int slotsFound = Utils.amount(slotsMin, slotsMax);
 
-            // Cap so the backpack never exceeds the server maximum
-            slotsFound = Math.min(slotsFound, maxTotalSlots - playerProfile.backpack.getMaxSize());
+            // Cap so the backpack never exceeds the tier maximum
+            slotsFound = Math.min(slotsFound, tierCap - playerProfile.backpack.getMaxSize());
 
             playerProfile.backpack.setMaxSize(playerProfile.backpack.getMaxSize() + slotsFound);
             playerProfile.save(null);
@@ -116,6 +121,60 @@ public class ScavengerEnchant implements Listener
 
             playEffects(event.getBlock(), player, slotsFound);
         });
+    }
+
+    /**
+     * Applies the Scavenger effect to a single block broken by an AoE enchant.
+     * Shares the same logic as the event-driven handler but works with already-resolved profiles.
+     */
+    public void tryTriggerForAoE(Player player, Block block,
+                                 org.benski.evolv3.models.pickaxe.PickaxeProfile pickaxeProfile,
+                                 PlayerProfile playerProfile)
+    {
+        if (pickaxeProfile == null || pickaxeProfile.enchants == null) return;
+
+        EnchantData enchant = pickaxeProfile.enchants.getEnchant(Enchants.SCAVENGER);
+        if (enchant == null || !enchant.enabled || enchant.level <= 0) return;
+        if (!Utils.chance(enchant.getCurrentChance())) return;
+
+        int tierCap = getTierCap(player);
+        if (playerProfile.backpack.getMaxSize() >= tierCap) return;
+
+        int slotsMin   = enchantsConfig.getInt(ConfigPaths.Enchants.Scavenger.SLOTS_MIN, 1);
+        int slotsMax   = enchantsConfig.getInt(ConfigPaths.Enchants.Scavenger.SLOTS_MAX, 3);
+        int slotsFound = Utils.amount(slotsMin, slotsMax);
+        slotsFound = Math.min(slotsFound, tierCap - playerProfile.backpack.getMaxSize());
+
+        playerProfile.backpack.setMaxSize(playerProfile.backpack.getMaxSize() + slotsFound);
+        playerProfile.save(null);
+        org.benski.evolv3.listeners.BackpackListener.refresh(player);
+
+        playEffects(block, player, slotsFound);
+    }
+
+    /**
+     * Returns the maximum backpack slots allowed based on the player's current backpack tier.
+     * Reads the CustomModelData from the player's offhand item and looks up the configured cap.
+     * Falls back to {@code Scavenger.MaxTotalSlots} if no matching tier is found.
+     *
+     * @param player the player
+     * @return the max slot cap for their current backpack tier
+     */
+    private int getTierCap(Player player)
+    {
+        int fallback = enchantsConfig.getInt(ConfigPaths.Enchants.Scavenger.MAX_TOTAL_SLOTS, 500);
+        ItemStack offhand = player.getInventory().getItemInOffHand();
+        if (offhand.getType() == Material.AIR) return fallback;
+
+        ItemMeta meta = offhand.getItemMeta();
+        if (meta == null || !meta.hasCustomModelData()) return fallback;
+
+        int modelData = meta.getCustomModelData();
+        FileConfiguration defaultConfig = ConfigRegistry.getInstance().get(ConfigNames.DEFAULT);
+        String path = ConfigPaths.Default.Backpack.TIERS_PREFIX + modelData;
+        if (!defaultConfig.contains(path)) return fallback;
+
+        return defaultConfig.getInt(path, fallback);
     }
 
     /**
@@ -149,7 +208,7 @@ public class ScavengerEnchant implements Listener
         }
 
         if (pref.message) {
-            String chatMessage = messagesConfig.getString(ConfigPaths.Messages.Enchants.SCAVENGER_TRIGGERED);
+            String chatMessage = StorageRegistryManager.getInstance().getConfig(ConfigNames.MESSAGES).getString(ConfigPaths.Messages.Enchants.SCAVENGER_TRIGGERED);
             if (chatMessage != null && !chatMessage.isEmpty()) {
                 chatMessage = chatMessage.replace("%slots%", String.valueOf(slotsFound));
                 player.sendMessage(Utils.formatMessage(player, chatMessage));
@@ -157,8 +216,8 @@ public class ScavengerEnchant implements Listener
         }
 
         if (pref.title) {
-            String title    = messagesConfig.getString(ConfigPaths.Messages.Enchants.SCAVENGER_TRIGGERED_TITLE, "&#FFD700&lScavenger");
-            String subtitle = messagesConfig.getString(ConfigPaths.Messages.Enchants.SCAVENGER_TRIGGERED_SUBTITLE, "&#CCCCCC+%slots% Backpack Slots!");
+            String title    = StorageRegistryManager.getInstance().getConfig(ConfigNames.MESSAGES).getString(ConfigPaths.Messages.Enchants.SCAVENGER_TRIGGERED_TITLE, "&#FFD700&lScavenger");
+            String subtitle = StorageRegistryManager.getInstance().getConfig(ConfigNames.MESSAGES).getString(ConfigPaths.Messages.Enchants.SCAVENGER_TRIGGERED_SUBTITLE, "&#CCCCCC+%slots% Backpack Slots!");
             subtitle = subtitle.replace("%slots%", String.valueOf(slotsFound));
             player.sendTitle(
                     Utils.formatMessage(player, title),

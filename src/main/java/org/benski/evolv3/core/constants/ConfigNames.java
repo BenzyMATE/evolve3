@@ -29,4 +29,9 @@ public final class ConfigNames
      * Enchantments configuration file containing enchant settings and recipes.
      */
     public static final String ENCHANTS = "enchants";
+
+    /**
+     * Ranks configuration file containing prison and staff rank definitions.
+     */
+    public static final String RANKS = "ranks";
 }

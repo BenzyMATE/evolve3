@@ -1,8 +1,10 @@
 package org.benski.evolv3.datacenters;
 
 import org.benski.evolv3.core.abstracts.BaseDataCenter;
+import org.benski.evolv3.core.constants.ConfigNames;
 import org.benski.evolv3.core.constants.ConfigPaths;
 import org.benski.evolv3.models.player.PlayerProfile;
+import org.benski.evolv3.registry.ConfigRegistry;
 import org.bukkit.entity.Player;
 
 import java.util.function.Consumer;
@@ -55,15 +57,6 @@ public class PlayerDataCenter extends BaseDataCenter<PlayerProfile>
      * {@inheritDoc}
      */
     @Override
-    protected String getLoadingMessagePath()
-    {
-        return ConfigPaths.Messages.Player.LOADING_PROFILE;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
     protected String getLogPrefix()
     {
         return "Player";
@@ -79,13 +72,7 @@ public class PlayerDataCenter extends BaseDataCenter<PlayerProfile>
     @Override
     public void get(Player player, Consumer<PlayerProfile> callback)
     {
-        String playerId = player.getUniqueId().toString();
-
-        if (data.containsKey(playerId)) {
-            PlayerProfile profile = data.get(playerId);
-            profile.initialize(player);
-            callback.accept(profile);
-        }
+        callback.accept(data.get(player.getUniqueId().toString()));
     }
 
     /**
@@ -97,14 +84,7 @@ public class PlayerDataCenter extends BaseDataCenter<PlayerProfile>
     @Override
     public PlayerProfile getLocal(Player player)
     {
-        String playerId = player.getUniqueId().toString();
-        PlayerProfile profile = data.get(playerId);
-
-        if (profile != null) {
-            profile.initialize(player);
-        }
-
-        return profile;
+        return data.get(player.getUniqueId().toString());
     }
 
     /**
@@ -121,8 +101,9 @@ public class PlayerDataCenter extends BaseDataCenter<PlayerProfile>
         profile.save(result -> {
             if (result) {
                 player.sendMessage(formatMessage(player,
-                        messagesConfig.getString(ConfigPaths.Messages.Player.PROFILE_CREATED,
-                                "&aYour profile has been created!")));
+                        ConfigRegistry.getInstance().get(ConfigNames.MESSAGES)
+                                .getString(ConfigPaths.Messages.Player.PROFILE_CREATED,
+                                        "&aYour profile has been created!")));
             }
         });
     }

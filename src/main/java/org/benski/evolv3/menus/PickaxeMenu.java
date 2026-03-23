@@ -4,15 +4,20 @@ import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.TextDecoration;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.benski.evolv3.core.abstracts.BaseMenu;
+import org.benski.evolv3.enchants.FortuneEnchant;
 import org.benski.evolv3.core.constants.ConfigNames;
 import org.benski.evolv3.core.constants.ConfigPaths;
+import org.benski.evolv3.animations.EvolutionAnimationD;
 import org.benski.evolv3.core.helpers.ItemStackExtensions;
 import org.benski.evolv3.core.managers.EnchantAnimationConfig;
 import org.benski.evolv3.core.managers.EnchantSelectionManager;
 import org.benski.evolv3.core.types.MenuType;
 import org.benski.evolv3.core.types.RarityConfig;
+import org.benski.evolv3.enums.EvolutionTier;
 import org.benski.evolv3.datacenters.PickaxeDataCenter;
-import org.benski.evolv3.managers.PickaxeManager;
+import org.benski.evolv3.datacenters.PlayerDataCenter;
+import org.benski.evolv3.core.managers.PickaxeManager;
+import org.benski.evolv3.models.player.PlayerProfile;
 import org.benski.evolv3.models.pickaxe.EnchantData;
 import org.benski.evolv3.models.pickaxe.PickaxeProfile;
 import org.benski.evolv3.items.AncientResin;
@@ -31,7 +36,11 @@ import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
 import static org.benski.evolv3.core.helpers.Utils.formatMessage;
 
@@ -62,7 +71,8 @@ public class PickaxeMenu extends BaseMenu
     // -------------------------------------------------------------------------
 
     private final PickaxeDataCenter pickaxeDataCenter;
-    private int animationFrame = 1;
+    /** Per-player animation frame counter so concurrent viewers don't share state. */
+    private final Map<UUID, Integer> animationFrames = new HashMap<>();
 
     public PickaxeMenu(JavaPlugin plugin) {
         super(plugin);
@@ -81,6 +91,7 @@ public class PickaxeMenu extends BaseMenu
     @Override
     protected void onClose(Player player) {
         player.playSound(player.getLocation(), Sound.ENTITY_ENDERMAN_TELEPORT, 0.5f, 1.2f);
+        animationFrames.remove(player.getUniqueId());
     }
 
     @Override
@@ -100,13 +111,10 @@ public class PickaxeMenu extends BaseMenu
             return "&cLoading...";
         }
 
-        animationFrame++;
-        if (animationFrame > 5) {
-            animationFrame = 1;
-        }
+        int frame = animationFrames.merge(player.getUniqueId(), 1, (cur, inc) -> cur >= 5 ? 1 : cur + 1);
 
-        String essenceIcon = getEssenceProgress(pickaxeProfile, animationFrame);
-        String evolveIcon  = getEvolveProgress(pickaxeProfile, animationFrame);
+        String essenceIcon = getEssenceProgress(pickaxeProfile, frame);
+        String evolveIcon  = getEvolveProgress(pickaxeProfile, frame);
 
         return "&f" + "七".repeat(52) + "⒑" + "七".repeat(89)
                 + essenceIcon + "七".repeat(105) + evolveIcon;
@@ -172,10 +180,15 @@ public class PickaxeMenu extends BaseMenu
         // Enchant grid slots — only respond to slots that have an unlocked enchant
         PickaxeProfile clickProfile = pickaxeDataCenter.getLocal(player);
         if (clickProfile != null) {
+            List<EnchantData> sortedEnchants = clickProfile.enchants.items.stream()
+                    .sorted(Comparator.comparingInt(e ->
+                            EnchantAnimationConfig.getEnchantRarityIndex(
+                                    EnchantAnimationConfig.getDisplayName(e.name))))
+                    .toList();
             for (int i = 0; i < ENCHANT_SLOTS.length; i++) {
                 if (slot == ENCHANT_SLOTS[i]) {
-                    if (i < clickProfile.enchants.items.size()) {
-                        EnchantData enchant = clickProfile.enchants.items.get(i);
+                    if (i < sortedEnchants.size()) {
+                        EnchantData enchant = sortedEnchants.get(i);
                         String displayName = EnchantAnimationConfig.getDisplayName(enchant.name);
                         if (event.isRightClick()) {
                             handleEnchantToggle(player, displayName);
@@ -188,14 +201,10 @@ public class PickaxeMenu extends BaseMenu
             }
         }
 
-        // Evolution stat slots — coming soon
+        // Evolution stat slots — spend an evolution roll
         for (int s : EVOLUTION_SLOTS) {
             if (slot == s) {
-                FileConfiguration messages = ConfigRegistry.getInstance().get(ConfigNames.MESSAGES);
-                String msg = messages.getString(
-                        ConfigPaths.Messages.Pickaxe.MENU_EVOLUTION_COMING_SOON,
-                        "%evolv3_prefix% &7Evolution feature coming soon!");
-                player.sendMessage(formatMessage(player, msg));
+                handleEvolutionClick(player);
                 return true;
             }
         }
@@ -243,13 +252,17 @@ public class PickaxeMenu extends BaseMenu
      */
     private void buildEnchantSlots(Player player, Inventory inventory, PickaxeProfile profile)
     {
-        List<EnchantData> unlocked = profile.enchants.items;
-        FileConfiguration menus    = ConfigRegistry.getInstance().get(ConfigNames.MENUS);
+        List<EnchantData> unlocked = profile.enchants.items.stream()
+                .sorted(Comparator.comparingInt(e ->
+                        EnchantAnimationConfig.getEnchantRarityIndex(
+                                EnchantAnimationConfig.getDisplayName(e.name))))
+                .toList();
+        FileConfiguration menus = ConfigRegistry.getInstance().get(ConfigNames.MENUS);
 
         for (int i = 0; i < ENCHANT_SLOTS.length; i++) {
             int slot = ENCHANT_SLOTS[i];
             if (i < unlocked.size()) {
-                EnchantData enchant   = unlocked.get(i);
+                EnchantData enchant     = unlocked.get(i);
                 String      displayName = EnchantAnimationConfig.getDisplayName(enchant.name);
                 inventory.setItem(slot, buildUnlockedEnchantItem(player, displayName, enchant));
             } else {
@@ -288,6 +301,7 @@ public class PickaxeMenu extends BaseMenu
         double speedPerLevel = ConfigRegistry.getInstance().get(ConfigNames.ENCHANTS)
                 .getDouble(ConfigPaths.Enchants.Efficiency.SPEED_PER_LEVEL, 0.08);
         double speedBonus = level * speedPerLevel * 100;
+        int fortuneDrops = FortuneEnchant.getDropAmount(level);
 
         // Read lore template from config and substitute all runtime tokens
         List<String> rawLore = EnchantAnimationConfig.getEnchantLore(displayName);
@@ -315,7 +329,8 @@ public class PickaxeMenu extends BaseMenu
                     .replace("{maxLevel}",    String.valueOf(maxLevel))
                     .replace("{cost}",        String.valueOf(cost))
                     .replace("{chance}",      String.format("%.1f", chance))
-                    .replace("{speed}",       String.format("%.0f%%", speedBonus));
+                    .replace("{speed}",       String.format("%.0f%%", speedBonus))
+                    .replace("{drops}",       String.valueOf(fortuneDrops));
             lore.add(deserialize(formatMessage(player, processed)));
         }
 
@@ -542,7 +557,7 @@ public class PickaxeMenu extends BaseMenu
         FileConfiguration messages = ConfigRegistry.getInstance().get(ConfigNames.MESSAGES);
 
         if (EnchantSelectionManager.getInstance().hasActiveSelection(player)) {
-            String msg = messages.getString("enchant-selection.already-active",
+            String msg = messages.getString(ConfigPaths.Messages.Pickaxe.ENCHANT_SELECTION_ALREADY_ACTIVE,
                     "&cYou already have an enchant selection active!");
             player.sendMessage(formatMessage(player, msg));
             return;
@@ -568,6 +583,49 @@ public class PickaxeMenu extends BaseMenu
                 PickaxeManager.getInstance().applyEnchantFromSelection(p, selected, updatedProfile);
             });
         });
+    }
+
+    /**
+     * Handles a click on an evolution panel slot.
+     * Validates the evolution, deducts the roll, closes the menu, rolls the stone rarity,
+     * and starts the {@link EvolutionAnimation}.  The animation callback applies the actual
+     * tier change and stone award when it completes.
+     */
+    private void handleEvolutionClick(Player player)
+    {
+        PickaxeProfile profile = pickaxeDataCenter.getLocal(player);
+        PlayerDataCenter playerDC = DataCenterRegistry.getInstance().getPlayerDataCenter();
+        if (profile == null || playerDC == null) return;
+
+        PlayerProfile playerProfile = playerDC.getLocal(player);
+        if (playerProfile == null) return;
+
+        PickaxeManager manager = PickaxeManager.getInstance();
+        if (!manager.validateEvolution(player, profile)) return;
+
+        // Determine tiers before deducting so we can pass them to the animation
+        EvolutionTier current = EvolutionTier.fromLevel(profile.evolution);
+        EvolutionTier next = current.next();
+        if (next == null) return; // guarded by validateEvolution but be safe
+
+        // Deduct the roll and persist immediately so a disconnect can't dupe it
+        profile.evolutionRolls--;
+        profile.save(null);
+
+        // Roll the stone rarity before closing the menu
+        RarityConfig stone = EnchantAnimationConfig.rollRarity();
+        if (stone == null) return;
+
+        closeMenu(player);
+
+        // Capture finals for the lambda
+        final EvolutionTier finalCurrent = current;
+        final EvolutionTier finalNext    = next;
+        final RarityConfig  finalStone   = stone;
+
+        new EvolutionAnimationD(plugin, player, finalCurrent, finalNext, finalStone, () ->
+                manager.applyEvolutionResult(player, profile, playerProfile, finalNext, finalStone)
+        ).start();
     }
 
     // -------------------------------------------------------------------------

@@ -117,9 +117,15 @@ public class ExplosionAnimation extends BaseAnimation
             flyingBlocks.add(new FlyingBlock(display, origin.clone(), velocity, rotationAxis, rotationSpeed));
         }
 
-        world.playSound(origin, Sound.ENTITY_GENERIC_EXPLODE, 0.6f + (level * 0.15f), 0.9f + ThreadLocalRandom.current().nextFloat() * 0.2f);
-
-        world.spawnParticle(Particle.EXPLOSION, origin, 1);
+        Collection<Player> soundViewers = getViewers();
+        if (soundViewers != null && !soundViewers.isEmpty()) {
+            float volume = 0.6f + (level * 0.15f);
+            float pitch = 0.9f + ThreadLocalRandom.current().nextFloat() * 0.2f;
+            for (Player viewer : soundViewers) {
+                viewer.playSound(origin, Sound.ENTITY_GENERIC_EXPLODE, volume, pitch);
+                viewer.spawnParticle(Particle.EXPLOSION, origin, 1);
+            }
+        }
     }
 
     /**
@@ -150,7 +156,12 @@ public class ExplosionAnimation extends BaseAnimation
             ));
 
             if (ThreadLocalRandom.current().nextFloat() < 0.3) {
-                world.spawnParticle(Particle.SMOKE, block.position, 1, 0.05, 0.05, 0.05, 0.01);
+                Collection<Player> smokeViewers = getViewers();
+                if (smokeViewers != null && !smokeViewers.isEmpty()) {
+                    for (Player viewer : smokeViewers) {
+                        viewer.spawnParticle(Particle.SMOKE, block.position, 1, 0.05, 0.05, 0.05, 0.01);
+                    }
+                }
             }
         }
 

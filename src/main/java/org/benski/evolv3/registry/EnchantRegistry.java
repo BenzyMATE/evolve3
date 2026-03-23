@@ -5,11 +5,22 @@ import org.benski.evolv3.Main;
 import org.benski.evolv3.core.interfaces.Registry;
 import org.benski.evolv3.core.managers.EnchantRegistryManager;
 import org.benski.evolv3.enchants.AlchemyEnchant;
+import org.benski.evolv3.enchants.DrillEnchant;
+import org.benski.evolv3.enchants.LazerEnchant;
+import org.benski.evolv3.enchants.ThorEnchant;
+import org.benski.evolv3.enchants.CascadeEnchant;
+import org.benski.evolv3.enchants.JackhammerEnchant;
+import org.benski.evolv3.enchants.NuclearShowerEnchant;
+import org.benski.evolv3.enchants.VortexEnchant;
 import org.benski.evolv3.enchants.EfficiencyEnchant;
 import org.benski.evolv3.enchants.ExplosiveEnchant;
 import org.benski.evolv3.enchants.FrostbiteEnchant;
 import org.benski.evolv3.enchants.FurnaceEnchant;
+import org.benski.evolv3.enchants.AutoSellEnchant;
+import org.benski.evolv3.enchants.ExtractionEnchant;
+import org.benski.evolv3.enchants.FortuneEnchant;
 import org.benski.evolv3.enchants.MerchantEnchant;
+import org.benski.evolv3.enchants.RadioactiveEnchant;
 import org.benski.evolv3.enchants.ScavengerEnchant;
 import org.bukkit.event.Listener;
 
@@ -37,7 +48,18 @@ public class EnchantRegistry implements Registry<Listener>
             FurnaceEnchant.class,
             AlchemyEnchant.class,
             ScavengerEnchant.class,
-            MerchantEnchant.class
+            MerchantEnchant.class,
+            AutoSellEnchant.class,
+            ExtractionEnchant.class,
+            RadioactiveEnchant.class,
+            FortuneEnchant.class,
+            DrillEnchant.class,
+            LazerEnchant.class,
+            ThorEnchant.class,
+            VortexEnchant.class,
+            CascadeEnchant.class,
+            JackhammerEnchant.class,
+            NuclearShowerEnchant.class
     );
 
     /**

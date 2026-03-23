@@ -5,14 +5,20 @@ import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextColor;
 import net.kyori.adventure.text.format.TextDecoration;
 import org.benski.evolv3.core.abstracts.BaseCommand;
+import org.benski.evolv3.core.constants.ConfigNames;
+import org.benski.evolv3.core.constants.ConfigPaths;
 import org.benski.evolv3.core.helpers.SkinRenderer;
+import org.benski.evolv3.registry.ConfigRegistry;
 import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
+import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+
+import static org.benski.evolv3.core.helpers.Utils.formatMessage;
 
 import java.util.List;
 
@@ -59,9 +65,10 @@ public class SkinCommand extends BaseCommand
         if (args.length >= 1) {
             target = Bukkit.getPlayer(args[0]);
             if (target == null) {
-                viewer.sendMessage(Component.text("Player not found: ")
-                        .color(NamedTextColor.RED)
-                        .append(Component.text(args[0]).color(NamedTextColor.WHITE)));
+                FileConfiguration messages = ConfigRegistry.getInstance().get(ConfigNames.MESSAGES);
+                String msg = messages.getString(ConfigPaths.Messages.Skin.PLAYER_NOT_FOUND,
+                        "&c&lPlayer Not Found &7— &f%name% &7is not online.");
+                viewer.sendMessage(formatMessage(viewer, msg.replace("%name%", args[0])));
                 return true;
             }
         } else {

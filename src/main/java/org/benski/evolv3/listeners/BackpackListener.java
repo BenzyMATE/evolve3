@@ -119,12 +119,6 @@ public class BackpackListener extends BaseListener
     }
 
     /**
-     * Creates and places the backpack item in the player's offhand.
-     * The item is a stick with custom model data and a PDC tag for identification.
-     *
-     * @param player The player to give the backpack item to
-     */
-    /**
      * Static convenience — refreshes the backpack item lore for the given player.
      * Safe to call from any listener; resolves the instance via ListenerRegistry.
      */

@@ -1,10 +1,16 @@
 package org.benski.evolv3.core.managers;
 
+import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.benski.evolv3.core.abstracts.BaseCommand;
+import org.benski.evolv3.core.constants.ConfigNames;
+import org.benski.evolv3.core.constants.ConfigPaths;
+import org.benski.evolv3.core.helpers.Utils;
+import org.benski.evolv3.registry.ConfigRegistry;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabCompleter;
+import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -139,7 +145,8 @@ public class CommandRegistryManager implements CommandExecutor, TabCompleter
 
         // Check permissions
         if (!baseCommand.hasPermission(sender)) {
-            sender.sendMessage("§cYou don't have permission to use this command!");
+            sendConfigMessage(sender, ConfigPaths.Messages.General.NO_PERMISSION,
+                    "&cYou don't have permission to use this command!");
             return true;
         }
 
@@ -147,7 +154,8 @@ public class CommandRegistryManager implements CommandExecutor, TabCompleter
         try {
             return baseCommand.execute(sender, command, label, args);
         } catch (Exception e) {
-            sender.sendMessage("§cAn error occurred while executing the command!");
+            sendConfigMessage(sender, ConfigPaths.Messages.Errors.INTERNAL_ERROR,
+                    "&cAn error occurred while executing the command!");
             plugin.getLogger().severe("Error executing command " + command.getName() + ": " + e.getMessage());
             e.printStackTrace();
             return true;
@@ -173,6 +181,26 @@ public class CommandRegistryManager implements CommandExecutor, TabCompleter
         } catch (Exception e) {
             plugin.getLogger().warning("Error getting tab completion for command " + command.getName() + ": " + e.getMessage());
             return null;
+        }
+    }
+
+    /**
+     * Reads a message from messages.yml and sends it to the command sender.
+     * Players receive the fully-formatted message (hex colors + PAPI placeholders).
+     * Non-player senders (e.g. console) receive a stripped plain-text version.
+     */
+    private void sendConfigMessage(CommandSender sender, String path, String fallback) {
+        String raw = ConfigRegistry.getInstance().get(ConfigNames.MESSAGES)
+                .getString(path, fallback);
+        if (sender instanceof Player player) {
+            sender.sendMessage(LegacyComponentSerializer.legacySection()
+                    .deserialize(Utils.formatMessage(player, raw)));
+        } else {
+            String plain = raw.replace("%evolv3_prefix%", "")
+                    .replaceAll("&#[0-9A-Fa-f]{6}", "")
+                    .replaceAll("&[0-9a-fk-orA-FKR]", "")
+                    .trim();
+            sender.sendMessage(plain);
         }
     }
 

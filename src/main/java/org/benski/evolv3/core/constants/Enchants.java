@@ -30,12 +30,45 @@ public final class Enchants
     /** Internal key for the Unbreaking enchantment. */
     public static final String UNBREAKING = "unbreaking";
 
-    /** Internal key for the Explosive enchantment (registered via Paper enchantment API). */
-    public static final String EXPLOSIVE  = "explosive";
+    /** Internal key for the Explosive enchantment. */
+    public static final String EXPLOSIVE   = "explosive";
 
     /** Internal key for the Scavenger enchantment. */
     public static final String SCAVENGER  = "scavenger";
 
     /** Internal key for the Merchant enchantment. */
     public static final String MERCHANT   = "merchant";
+
+    /** Internal key for the Extraction enchantment. */
+    public static final String EXTRACTION = "extraction";
+
+    /** Internal key for the Fortune enchantment. */
+    public static final String FORTUNE     = "fortune";
+
+    /** Internal key for the Radioactive enchantment. */
+    public static final String RADIOACTIVE = "radioactive";
+
+    /** Internal key for the AutoSell enchantment. */
+    public static final String AUTO_SELL   = "autosell";
+
+    /** Internal key for the Drill enchantment. */
+    public static final String DRILL       = "drill";
+
+    /** Internal key for the Lazer enchantment. */
+    public static final String LAZER       = "lazer";
+
+    /** Internal key for the Thor enchantment. */
+    public static final String THOR        = "thor";
+
+    /** Internal key for the Vortex enchantment. */
+    public static final String VORTEX      = "vortex";
+
+    /** Internal key for the Cascade enchantment. */
+    public static final String CASCADE     = "cascade";
+
+    /** Internal key for the Jackhammer enchantment. */
+    public static final String JACKHAMMER     = "jackhammer";
+
+    /** Internal key for the Nuclear Shower enchantment. */
+    public static final String NUCLEAR_SHOWER = "nuclearshower";
 }

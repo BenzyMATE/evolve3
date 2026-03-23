@@ -1,8 +1,10 @@
 package org.benski.evolv3.datacenters;
 
 import org.benski.evolv3.core.abstracts.BaseDataCenter;
+import org.benski.evolv3.core.constants.ConfigNames;
 import org.benski.evolv3.core.constants.ConfigPaths;
 import org.benski.evolv3.models.armor.ArmorProfile;
+import org.benski.evolv3.registry.ConfigRegistry;
 import org.bukkit.entity.Player;
 
 import java.util.function.Consumer;
@@ -55,15 +57,6 @@ public class ArmorDataCenter extends BaseDataCenter<ArmorProfile>
      * {@inheritDoc}
      */
     @Override
-    protected String getLoadingMessagePath()
-    {
-        return ConfigPaths.Messages.Armor.LOADING_PROFILE;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
     protected String getLogPrefix()
     {
         return "Armor";
@@ -79,13 +72,7 @@ public class ArmorDataCenter extends BaseDataCenter<ArmorProfile>
     @Override
     public void get(Player player, Consumer<ArmorProfile> callback)
     {
-        String playerId = player.getUniqueId().toString();
-
-        if (data.containsKey(playerId)) {
-            ArmorProfile profile = data.get(playerId);
-            profile.initialize(player);
-            callback.accept(profile);
-        }
+        callback.accept(data.get(player.getUniqueId().toString()));
     }
 
     /**
@@ -97,14 +84,7 @@ public class ArmorDataCenter extends BaseDataCenter<ArmorProfile>
     @Override
     public ArmorProfile getLocal(Player player)
     {
-        String playerId = player.getUniqueId().toString();
-        ArmorProfile profile = data.get(playerId);
-
-        if (profile != null) {
-            profile.initialize(player);
-        }
-
-        return profile;
+        return data.get(player.getUniqueId().toString());
     }
 
     /**
@@ -123,8 +103,9 @@ public class ArmorDataCenter extends BaseDataCenter<ArmorProfile>
         profile.save(result -> {
             if (result) {
                 player.sendMessage(formatMessage(player,
-                        messagesConfig.getString(ConfigPaths.Messages.Armor.PROFILE_CREATED,
-                                "&aYour armor has been forged!")));
+                        ConfigRegistry.getInstance().get(ConfigNames.MESSAGES)
+                                .getString(ConfigPaths.Messages.Armor.PROFILE_CREATED,
+                                        "&aYour armor has been forged!")));
             }
         });
     }

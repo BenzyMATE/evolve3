@@ -57,7 +57,12 @@ public class PreferencesCommand extends BaseCommand
         if (!requirePlayer(sender)) {
             return true;
         }
-        MenuRegistry.getInstance().get("preferences").openMenu((Player) sender);
+        var menu = MenuRegistry.getInstance().get("preferences");
+        if (menu != null) {
+            menu.openMenu((Player) sender);
+        } else {
+            sendError(sender, "Preferences menu is not available.");
+        }
         return true;
     }
 

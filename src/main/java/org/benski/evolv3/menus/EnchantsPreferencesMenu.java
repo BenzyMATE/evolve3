@@ -71,7 +71,8 @@ public class EnchantsPreferencesMenu extends BaseMenu
 
     @Override
     protected String getMenuTitle(Player player) {
-        return "&8P &7» &8Enchants";
+        FileConfiguration menus = ConfigRegistry.getInstance().get(ConfigNames.MENUS);
+        return menus.getString(ConfigPaths.Menus.EnchantsMenu.TITLE, "&8P &7» &8Enchants");
     }
 
     @Override
@@ -110,7 +111,7 @@ public class EnchantsPreferencesMenu extends BaseMenu
 
         FileConfiguration menus = ConfigRegistry.getInstance().get(ConfigNames.MENUS);
         List<String> enchants = EnchantAnimationConfig.getEnchantOrder().stream()
-                .filter(name -> !EnchantAnimationConfig.isPassive(name))
+                .filter(name -> !EnchantAnimationConfig.isPassive(name) && !EnchantAnimationConfig.isPreferencesHidden(name))
                 .toList();
 
         int page = currentPage.getOrDefault(player.getUniqueId(), 0);
@@ -165,13 +166,14 @@ public class EnchantsPreferencesMenu extends BaseMenu
     @Override
     protected boolean handleClick(Player player, int slot, InventoryClickEvent event) {
         if (slot == BACK_SLOT) {
-            MenuRegistry.getInstance().get("preferences").openMenu(player);
+            var back = MenuRegistry.getInstance().get("preferences");
+            if (back != null) back.openMenu(player);
             return true;
         }
 
         int page = currentPage.getOrDefault(player.getUniqueId(), 0);
         List<String> enchants = EnchantAnimationConfig.getEnchantOrder().stream()
-                .filter(name -> !EnchantAnimationConfig.isPassive(name))
+                .filter(name -> !EnchantAnimationConfig.isPassive(name) && !EnchantAnimationConfig.isPreferencesHidden(name))
                 .toList();
         int totalPages = Math.max(1, (int) Math.ceil(enchants.size() / (double) ITEMS_PER_PAGE));
 
@@ -197,7 +199,7 @@ public class EnchantsPreferencesMenu extends BaseMenu
                 if (enchantIdx < enchants.size()) {
                     String enchantName = enchants.get(enchantIdx);
                     EnchantOptionMenu optMenu = (EnchantOptionMenu) MenuRegistry.getInstance().get("preferences_enchant_option");
-                    optMenu.openForEnchant(player, enchantName);
+                    if (optMenu != null) optMenu.openForEnchant(player, enchantName);
                 }
                 return true;
             }
@@ -214,7 +216,7 @@ public class EnchantsPreferencesMenu extends BaseMenu
     // -------------------------------------------------------------------------
 
     private ItemStack buildEnchantItem(String enchantName, List<String> loreTpl) {
-        Material mat = EnchantAnimationConfig.getEnchantItem(enchantName);
+        ItemStack base = EnchantAnimationConfig.createEnchantItem(enchantName);
         EnchantOption option = EnchantAnimationConfig.getOption(enchantName);
 
         String rarityHex = option != null ? option.rarity().textColor().asHexString() : "#AAAAAA";
@@ -230,7 +232,18 @@ public class EnchantsPreferencesMenu extends BaseMenu
                 })
                 .toList();
 
-        return buildItem(mat, displayName, lore);
+        // Apply display name and lore to the base item (may be a skull or a plain material).
+        ItemMeta meta = base.getItemMeta();
+        if (meta != null) {
+            meta.displayName(ds(displayName));
+            List<Component> loreComponents = new ArrayList<>(lore.size());
+            for (String line : lore) {
+                loreComponents.add(line.isEmpty() ? Component.empty() : ds(line));
+            }
+            meta.lore(loreComponents);
+            base.setItemMeta(meta);
+        }
+        return base;
     }
 
     private Material mat(FileConfiguration cfg, String path, Material fallback) {

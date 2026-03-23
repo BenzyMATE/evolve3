@@ -87,6 +87,29 @@ public class WorldGuardManager
     }
 
     /**
+     * Returns the XZ bounds of the mine region containing the given location,
+     * or {@code null} if WorldGuard is disabled or the location is not inside a mine region.
+     *
+     * @param location the location to query
+     * @return int array {@code [minX, minZ, maxX, maxZ]}, or {@code null}
+     */
+    public int[] getMineRegionXZBounds(Location location)
+    {
+        if (!worldGuardEnabled || handler == null) return null;
+        if (location == null || location.getWorld() == null) return null;
+
+        try {
+            FileConfiguration config = ConfigRegistry.getInstance().get(ConfigNames.DEFAULT);
+            String mineRegionKeyword = config.getString(ConfigPaths.Default.MINE_REGION, "mine");
+            if (mineRegionKeyword == null || mineRegionKeyword.isEmpty()) return null;
+            return handler.getRegionXZBounds(location, mineRegionKeyword);
+        } catch (NoClassDefFoundError | Exception e) {
+            Bukkit.getLogger().warning("[Evolv3] Error fetching WorldGuard region bounds: " + e.getMessage());
+            return null;
+        }
+    }
+
+    /**
      * Inner handler class that contains all WorldGuard-specific code.
      * This class is only loaded when WorldGuard is actually available,
      * preventing ClassNotFoundException when WorldGuard is not installed.
@@ -120,6 +143,32 @@ public class WorldGuardManager
             }
 
             return false;
+        }
+
+        /**
+         * Returns {@code [minX, minZ, maxX, maxZ]} for the first mine region
+         * containing the given location, or {@code null} if none found.
+         */
+        public int[] getRegionXZBounds(Location location, String keyword)
+        {
+            com.sk89q.worldguard.protection.regions.RegionContainer container =
+                    com.sk89q.worldguard.WorldGuard.getInstance().getPlatform().getRegionContainer();
+
+            com.sk89q.worldguard.protection.managers.RegionManager regionManager =
+                    container.get(com.sk89q.worldedit.bukkit.BukkitAdapter.adapt(location.getWorld()));
+
+            if (regionManager == null) return null;
+
+            for (com.sk89q.worldguard.protection.regions.ProtectedRegion region :
+                    regionManager.getApplicableRegions(com.sk89q.worldedit.bukkit.BukkitAdapter.asBlockVector(location))) {
+                if (!region.getId().toLowerCase().contains(keyword.toLowerCase())) continue;
+
+                com.sk89q.worldedit.math.BlockVector3 min = region.getMinimumPoint();
+                com.sk89q.worldedit.math.BlockVector3 max = region.getMaximumPoint();
+                return new int[]{ min.x(), min.z(), max.x(), max.z() };
+            }
+
+            return null;
         }
     }
 }

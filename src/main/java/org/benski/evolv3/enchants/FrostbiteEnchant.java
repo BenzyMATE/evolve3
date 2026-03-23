@@ -49,7 +49,6 @@ import java.util.List;
 public class FrostbiteEnchant implements Listener
 {
     private final FileConfiguration enchantsConfig;
-    private final FileConfiguration messagesConfig;
     private final JavaPlugin plugin;
 
     /**
@@ -61,7 +60,6 @@ public class FrostbiteEnchant implements Listener
     {
         this.plugin = plugin;
         this.enchantsConfig = StorageRegistryManager.getInstance().getConfig(ConfigNames.ENCHANTS);
-        this.messagesConfig = StorageRegistryManager.getInstance().getConfig(ConfigNames.MESSAGES);
     }
 
     /**
@@ -179,7 +177,7 @@ public class FrostbiteEnchant implements Listener
                     }
 
                     if (pref.message) {
-                        String message = messagesConfig.getString(ConfigPaths.Messages.Enchants.FROSTBITE_TRIGGERED);
+                        String message = StorageRegistryManager.getInstance().getConfig(ConfigNames.MESSAGES).getString(ConfigPaths.Messages.Enchants.FROSTBITE_TRIGGERED);
                         if (message != null && !message.isEmpty()) {
                             message = message.replace("%blocks%", String.valueOf(totalBlocks));
                             player.sendMessage(Utils.formatMessage(player, message));
@@ -187,8 +185,8 @@ public class FrostbiteEnchant implements Listener
                     }
 
                     if (pref.title) {
-                        String title    = messagesConfig.getString(ConfigPaths.Messages.Enchants.FROSTBITE_TRIGGERED_TITLE, "&#00BFFF&lFrostbite");
-                        String subtitle = messagesConfig.getString(ConfigPaths.Messages.Enchants.FROSTBITE_TRIGGERED_SUBTITLE, "&#CCCCCCArea frozen!")
+                        String title    = StorageRegistryManager.getInstance().getConfig(ConfigNames.MESSAGES).getString(ConfigPaths.Messages.Enchants.FROSTBITE_TRIGGERED_TITLE, "&#00BFFF&lFrostbite");
+                        String subtitle = StorageRegistryManager.getInstance().getConfig(ConfigNames.MESSAGES).getString(ConfigPaths.Messages.Enchants.FROSTBITE_TRIGGERED_SUBTITLE, "&#CCCCCCArea frozen!")
                                 .replace("%blocks%", String.valueOf(totalBlocks));
                         player.sendTitle(
                                 Utils.formatMessage(player, title),
@@ -203,7 +201,7 @@ public class FrostbiteEnchant implements Listener
                 // Capture block type (e.g. COAL_ORE) for persistence/restoration,
                 // and the drop material (e.g. COAL) for BreakListener metadata.
                 Material originalBlockType = block.getType();
-                Material dropMaterial      = getDropMaterial(block);
+                Material dropMaterial      = getDropMaterial(block, player);
                 block.setMetadata(FROSTBITE_METADATA_KEY,
                         new FixedMetadataValue(Main.getInstance(), dropMaterial.name()));
 
@@ -262,9 +260,9 @@ public class FrostbiteEnchant implements Listener
      * @param block the block to check
      * @return the drop material
      */
-    private Material getDropMaterial(Block block)
+    private Material getDropMaterial(Block block, Player player)
     {
-        return block.getDrops().stream()
+        return block.getDrops(player.getInventory().getItemInMainHand()).stream()
                 .filter(i -> i != null && !i.getType().isAir())
                 .findFirst()
                 .map(ItemStack::getType)

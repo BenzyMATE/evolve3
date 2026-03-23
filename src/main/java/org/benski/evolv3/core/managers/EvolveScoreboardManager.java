@@ -7,12 +7,13 @@ import net.matrixcreations.libraries.MatrixColorAPI;
 import org.benski.evolv3.core.abstracts.BaseEnchantAnimation;
 import org.benski.evolv3.core.helpers.FontUtils;
 import org.benski.evolv3.core.constants.ConfigNames;
-import org.benski.evolv3.core.managers.EnchantAnimationConfig;
 import org.benski.evolv3.core.constants.ConfigPaths;
 import org.benski.evolv3.core.helpers.Utils;
 import org.benski.evolv3.core.types.EnchantOption;
 import org.benski.evolv3.core.types.RarityConfig;
 import org.benski.evolv3.datacenters.PickaxeDataCenter;
+import org.benski.evolv3.datacenters.PlayerDataCenter;
+import org.benski.evolv3.models.player.PlayerProfile;
 import org.benski.evolv3.registry.ConfigRegistry;
 import org.benski.evolv3.registry.DataCenterRegistry;
 import io.papermc.paper.scoreboard.numbers.NumberFormat;
@@ -88,6 +89,16 @@ public final class EvolveScoreboardManager
         EVO_REVEAL     // Typewriter-revealing Evo text from left to right
     }
 
+    /** Animation phases for the rank toggle line (current→next rank ↔ /rankup). */
+    private enum RankTogglePhase {
+        RANK_DISPLAY,   // Showing current → next rank, counting down to switch
+        RANK_ERASE,     // Typewriter-erasing rank display right to left
+        RANKUP_REVEAL,  // Typewriter-revealing /rankup text left to right
+        RANKUP_DISPLAY, // Showing /rankup, counting down to switch back
+        RANKUP_ERASE,   // Typewriter-erasing /rankup right to left
+        RANK_REVEAL     // Typewriter-revealing rank display left to right
+    }
+
     private JavaPlugin plugin;
     private BukkitTask updateTask;
     private BukkitTask animTask;
@@ -144,15 +155,17 @@ public final class EvolveScoreboardManager
         int[]        scores    = new int[lineCount];
         boolean[]    shown     = new boolean[lineCount];
 
-        // Find which line is the evo/atom toggle line, the level line, and the progress bar line
+        // Find which lines are the special animated lines
         int evoLineIndex         = -1;
         int levelLineIndex       = -1;
         int progressbarLineIndex = -1;
+        int rankLineIndex        = -1;
         for (int i = 0; i < lineCount; i++) {
             String l = lines.get(i);
             if (l.contains("%evolv3_pickaxe_evolution%"))                                                   evoLineIndex         = i;
             if (l.contains("%evolv3_pickaxe_level%") && !l.contains("%evolv3_pickaxe_evolution%"))         levelLineIndex       = i;
             if (l.contains("%evolv3_pickaxe_progressbar%"))                                                progressbarLineIndex = i;
+            if (l.contains("%evolv3_rank%"))                                                                rankLineIndex        = i;
         }
 
         for (int i = 0; i < lineCount; i++) {
@@ -167,7 +180,8 @@ public final class EvolveScoreboardManager
         }
 
         states.put(player.getUniqueId(),
-                new PlayerState(board, objective, teams, lastTexts, scores, shown, evoLineIndex, levelLineIndex, progressbarLineIndex));
+                new PlayerState(board, objective, teams, lastTexts, scores, shown,
+                        evoLineIndex, levelLineIndex, progressbarLineIndex, rankLineIndex));
         player.setScoreboard(board);
     }
 
@@ -202,7 +216,8 @@ public final class EvolveScoreboardManager
 
         for (int i = 0; i < lineCount; i++) {
             // Lines managed by the animation task
-            if (i == state.evoLineIndex) continue;
+            if (i == state.evoLineIndex)   continue;
+            if (i == state.rankLineIndex)  continue;
             if (state.levelUpAnimating && i == state.levelLineIndex) continue;
             // During enchant selection, level and progressbar lines are driven by tickAnimation
             if (enchantActive && i == state.levelLineIndex)       continue;
@@ -459,6 +474,9 @@ public final class EvolveScoreboardManager
             }
         }
 
+        // ── Rank toggle animation ─────────────────────────────────────────────
+        tickRankLine(player, state);
+
         // ── Level-up flash animation ─────────────────────────────────────────
         if (state.levelUpAnimating && state.levelLineIndex >= 0) {
             int li  = state.levelLineIndex;
@@ -473,10 +491,201 @@ public final class EvolveScoreboardManager
                 boolean bright = (llt / 5) % 2 == 0;
                 String  star   = bright ? "§b§l\uD83E\uDC79" : "§3§l\uD83E\uDC79";
                 String  lvl    = bright ? "§f§l" : "§7§l";
-                String  text   = " §8| " + star + " " + lvl + "Level " + state.levelUpNewLevel + " ";
+                String  label  = config().getString(ConfigPaths.Default.Scoreboard.LEVEL_UP_LABEL, "Level");
+                String  text   = " §8| " + star + " " + lvl + label + " " + state.levelUpNewLevel + " ";
                 pushLine(state, li, text);
             }
         }
+    }
+
+    // -------------------------------------------------------------------------
+    // Rank toggle animation
+    // -------------------------------------------------------------------------
+
+    /**
+     * Drives the rank line animation. When the player has enough coins to rankup,
+     * the line alternates between "currentRank » nextRank" and "/rankup" using
+     * the same typewriter erase/reveal pattern as the evo/atoms toggle.
+     * When the player cannot rankup (at max or insufficient coins), the line
+     * shows the static rank display without animating.
+     */
+    private void tickRankLine(Player player, PlayerState state)
+    {
+        int i = state.rankLineIndex;
+        if (i < 0) return;
+
+        // Ensure line is visible
+        if (!state.lineShown[i]) {
+            state.objective.getScore(ENTRIES[i]).setScore(state.lineScores[i]);
+            state.lineShown[i] = true;
+        }
+
+        FileConfiguration cfg     = config();
+        int toggleSeconds         = cfg.getInt(ConfigPaths.Default.Scoreboard.EVO_ATOM_TOGGLE_SECONDS, 5);
+        int displayTicks          = (int) ((toggleSeconds * 20L) / ANIM_INTERVAL_TICKS);
+
+        boolean canRankup         = canRankUp(player);
+        String  rankInner         = colored(buildRankInner(player));
+        String  rankupInner       = colored(cfg.getString(ConfigPaths.Default.Scoreboard.RANKUP_TOGGLE_TEXT, "&#55FF55&l/rankup"));
+        String  staticPrefix      = colored(" &8| &#888888Rank: ");
+
+        // If player can no longer rankup mid-animation (just ranked up / spent coins),
+        // snap back to rank display immediately.
+        if (!canRankup && state.rankPhase != RankTogglePhase.RANK_DISPLAY) {
+            state.rankPhase        = RankTogglePhase.RANK_DISPLAY;
+            state.rankDisplayTick  = 0;
+            state.rankAnimCharIndex = 0;
+        }
+
+        switch (state.rankPhase) {
+
+            case RANK_DISPLAY -> {
+                String full = staticPrefix + rankInner;
+                if (!full.equals(state.lastTexts.get(i))) {
+                    state.lastTexts.set(i, full);
+                    state.teams.get(i).prefix(legacy(full));
+                }
+                if (canRankup && ++state.rankDisplayTick >= displayTicks) {
+                    state.rankAnimFormatted = rankInner;
+                    state.rankAnimText      = stripColors(rankInner);
+                    state.rankAnimCharIndex = state.rankAnimText.length();
+                    state.rankPhase         = RankTogglePhase.RANK_ERASE;
+                    state.rankDisplayTick   = 0;
+                }
+            }
+
+            case RANK_ERASE -> {
+                state.rankAnimCharIndex = Math.max(0, state.rankAnimCharIndex - 1);
+                if (state.rankAnimCharIndex > 0) {
+                    pushLine(state, i, staticPrefix
+                            + truncateFormatted(state.rankAnimFormatted, state.rankAnimCharIndex) + "§8▌");
+                } else {
+                    pushLine(state, i, staticPrefix);
+                    state.rankAnimFormatted = rankupInner;
+                    state.rankAnimText      = stripColors(rankupInner);
+                    state.rankAnimCharIndex = 0;
+                    state.rankPhase         = RankTogglePhase.RANKUP_REVEAL;
+                }
+            }
+
+            case RANKUP_REVEAL -> {
+                state.rankAnimCharIndex = Math.min(state.rankAnimText.length(), state.rankAnimCharIndex + 1);
+                boolean done = state.rankAnimCharIndex >= state.rankAnimText.length();
+                if (done) {
+                    pushLine(state, i, staticPrefix + state.rankAnimFormatted);
+                    state.rankPhase       = RankTogglePhase.RANKUP_DISPLAY;
+                    state.rankDisplayTick = 0;
+                } else {
+                    pushLine(state, i, staticPrefix
+                            + truncateFormatted(state.rankAnimFormatted, state.rankAnimCharIndex) + "§8▌");
+                }
+            }
+
+            case RANKUP_DISPLAY -> {
+                String full = staticPrefix + rankupInner;
+                if (!full.equals(state.lastTexts.get(i))) {
+                    state.lastTexts.set(i, full);
+                    state.teams.get(i).prefix(legacy(full));
+                }
+                if (++state.rankDisplayTick >= displayTicks) {
+                    state.rankAnimFormatted = rankupInner;
+                    state.rankAnimText      = stripColors(rankupInner);
+                    state.rankAnimCharIndex = state.rankAnimText.length();
+                    state.rankPhase         = RankTogglePhase.RANKUP_ERASE;
+                    state.rankDisplayTick   = 0;
+                }
+            }
+
+            case RANKUP_ERASE -> {
+                state.rankAnimCharIndex = Math.max(0, state.rankAnimCharIndex - 1);
+                if (state.rankAnimCharIndex > 0) {
+                    pushLine(state, i, staticPrefix
+                            + truncateFormatted(state.rankAnimFormatted, state.rankAnimCharIndex) + "§8▌");
+                } else {
+                    pushLine(state, i, staticPrefix);
+                    state.rankAnimFormatted = rankInner;
+                    state.rankAnimText      = stripColors(rankInner);
+                    state.rankAnimCharIndex = 0;
+                    state.rankPhase         = RankTogglePhase.RANK_REVEAL;
+                }
+            }
+
+            case RANK_REVEAL -> {
+                state.rankAnimCharIndex = Math.min(state.rankAnimText.length(), state.rankAnimCharIndex + 1);
+                boolean done = state.rankAnimCharIndex >= state.rankAnimText.length();
+                if (done) {
+                    pushLine(state, i, staticPrefix + state.rankAnimFormatted);
+                    state.rankPhase       = RankTogglePhase.RANK_DISPLAY;
+                    state.rankDisplayTick = 0;
+                } else {
+                    pushLine(state, i, staticPrefix
+                            + truncateFormatted(state.rankAnimFormatted, state.rankAnimCharIndex) + "§8▌");
+                }
+            }
+        }
+    }
+
+    /**
+     * Resets the rank line animation to the RANK_DISPLAY phase.
+     * Call this immediately after a player ranks up so the display refreshes.
+     *
+     * @param player the player who ranked up
+     */
+    public void resetRankAnimation(Player player)
+    {
+        PlayerState state = states.get(player.getUniqueId());
+        if (state == null || state.rankLineIndex < 0) return;
+        state.rankPhase         = RankTogglePhase.RANK_DISPLAY;
+        state.rankDisplayTick   = 0;
+        state.rankAnimCharIndex = 0;
+        state.rankAnimText      = "";
+        state.rankAnimFormatted = "";
+        state.lastTexts.set(state.rankLineIndex, null); // force re-render
+    }
+
+    /**
+     * Builds the formatted inner text for the rank display:
+     * {@code "§c[A1] §8» §e[B1]"} or just {@code "§c[A1]"} at max rank.
+     */
+    private static String buildRankInner(Player player)
+    {
+        PlayerDataCenter dc = DataCenterRegistry.getInstance().getPlayerDataCenter();
+        if (dc == null) return "?";
+        PlayerProfile profile = dc.getLocal(player);
+        if (profile == null) return "?";
+
+        RankManager rm     = RankManager.getInstance();
+        String rankId      = profile.rank != null ? profile.rank : rm.getDefaultRank();
+        String current     = rm.getRankPrefix(rankId);
+        String nextRank    = rm.getNextRank(rankId);
+
+        if (nextRank == null) return current; // at max rank — no arrow needed
+
+        String next = rm.getRankPrefix(nextRank);
+        return current + " &8» " + next;
+    }
+
+    /**
+     * Returns true when the player's current coin balance meets or exceeds the
+     * cost of the next rank (and they are not already at the maximum rank).
+     */
+    private static boolean canRankUp(Player player)
+    {
+        PlayerDataCenter dc = DataCenterRegistry.getInstance().getPlayerDataCenter();
+        if (dc == null) return false;
+        PlayerProfile profile = dc.getLocal(player);
+        if (profile == null) return false;
+
+        RankManager rm  = RankManager.getInstance();
+        String rankId   = profile.rank != null ? profile.rank : rm.getDefaultRank();
+        String nextRank = rm.getNextRank(rankId);
+        if (nextRank == null) return false;
+
+        double cost = StorageRegistryManager.getInstance()
+                .getConfig(ConfigNames.RANKS)
+                .getDouble(ConfigPaths.Ranks.DATA_PREFIX + nextRank
+                        + ConfigPaths.Ranks.COST_SUFFIX, 0);
+        return profile.coins >= cost;
     }
 
     // -------------------------------------------------------------------------
@@ -502,9 +711,10 @@ public final class EvolveScoreboardManager
      * Returns a cycling "Loading." / "Loading.." / "Loading..." string based on the given tick.
      * The dot count advances once per second (every 10 animation ticks at 2-tick interval).
      */
-    private static String loadingText(int tick) {
+    private String loadingText(int tick) {
         int dots = (tick / 10) % 3 + 1;
-        return " §8| §7Loading" + ".".repeat(dots);
+        String base = config().getString(ConfigPaths.Default.Scoreboard.LOADING_TEXT, " &8| &7Loading");
+        return MatrixColorAPI.process(base) + ".".repeat(dots);
     }
 
     /** Strips all §-coded color sequences from a formatted string. */
@@ -648,8 +858,9 @@ public final class EvolveScoreboardManager
 
     private void renderRollingPhase(PlayerState state, List<EnchantOption> opts, int offset) {
         int dots = (state.enchantArrowTick / 5) % 3 + 1;
+        String rollingBase = config().getString(ConfigPaths.Default.Scoreboard.ENCHANT_ROLLING_TEXT, " &#FFD700⚙ Rolling");
         pushLineSafe(state, state.evoLineIndex,
-                colored(FontUtils.toSmallCaps(" &#FFD700⚙ Rolling" + ".".repeat(dots))));
+                colored(FontUtils.toSmallCaps(rollingBase + ".".repeat(dots))));
         pushLineSafe(state, state.levelLineIndex,
                 colored(buildArrowLine(opts, -1, false)));
         pushLineSafe(state, state.progressbarLineIndex,
@@ -657,8 +868,9 @@ public final class EvolveScoreboardManager
     }
 
     private void renderSelectingPhase(PlayerState state, List<EnchantOption> opts, int highlighted) {
+        String selectingText = config().getString(ConfigPaths.Default.Scoreboard.ENCHANT_SELECTING_TEXT, " &#00FF88✦ Selecting...");
         pushLineSafe(state, state.evoLineIndex,
-                colored(FontUtils.toSmallCaps(" &#00FF88✦ Selecting...")));
+                colored(FontUtils.toSmallCaps(selectingText)));
         pushLineSafe(state, state.levelLineIndex,
                 colored(buildArrowLine(opts, highlighted, true)));
         pushLineSafe(state, state.progressbarLineIndex,
@@ -899,6 +1111,8 @@ public final class EvolveScoreboardManager
         final int          levelLineIndex;
         /** Index of the progress-bar line, or -1 if not configured. */
         final int          progressbarLineIndex;
+        /** Index of the rank toggle line, or -1 if not configured. */
+        final int          rankLineIndex;
 
         // Evo/atom toggle animation state
         EvoAtomPhase evoAtomPhase      = EvoAtomPhase.EVO_DISPLAY;
@@ -914,6 +1128,13 @@ public final class EvolveScoreboardManager
         int     levelUpTick      = 0;
         int     levelUpNewLevel  = 0;
 
+        // Rank toggle animation state
+        RankTogglePhase rankPhase         = RankTogglePhase.RANK_DISPLAY;
+        int             rankDisplayTick   = 0;
+        int             rankAnimCharIndex = 0;
+        String          rankAnimText      = "";
+        String          rankAnimFormatted = "";
+
         // Enchant selection display state
         boolean        enchantWasActive  = false;
         int            enchantArrowTick  = 0;
@@ -926,7 +1147,8 @@ public final class EvolveScoreboardManager
         PlayerState(Scoreboard board, Objective objective,
                     List<Team> teams, List<String> lastTexts,
                     int[] lineScores, boolean[] lineShown,
-                    int evoLineIndex, int levelLineIndex, int progressbarLineIndex) {
+                    int evoLineIndex, int levelLineIndex,
+                    int progressbarLineIndex, int rankLineIndex) {
             this.board                = board;
             this.objective            = objective;
             this.teams                = teams;
@@ -936,6 +1158,7 @@ public final class EvolveScoreboardManager
             this.evoLineIndex         = evoLineIndex;
             this.levelLineIndex       = levelLineIndex;
             this.progressbarLineIndex = progressbarLineIndex;
+            this.rankLineIndex        = rankLineIndex;
         }
     }
 }

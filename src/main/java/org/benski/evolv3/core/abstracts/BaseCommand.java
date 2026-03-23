@@ -1,6 +1,9 @@
 package org.benski.evolv3.core.abstracts;
 
+import org.benski.evolv3.core.constants.ConfigNames;
+import org.benski.evolv3.core.constants.ConfigPaths;
 import org.benski.evolv3.core.helpers.Messageable;
+import org.benski.evolv3.registry.ConfigRegistry;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
@@ -122,7 +125,14 @@ public abstract class BaseCommand
      */
     protected boolean requirePlayer(CommandSender sender) {
         if (!(sender instanceof Player)) {
-            sender.sendMessage("§cThis command can only be used by players!");
+            String raw = ConfigRegistry.getInstance().get(ConfigNames.MESSAGES)
+                    .getString(ConfigPaths.Messages.General.PLAYER_ONLY,
+                            "&cThis command can only be used in-game.");
+            String plain = raw.replace("%evolv3_prefix%", "")
+                    .replaceAll("&#[0-9A-Fa-f]{6}", "")
+                    .replaceAll("&[0-9a-fk-orA-FKR]", "")
+                    .trim();
+            sender.sendMessage(plain);
             return false;
         }
         return true;

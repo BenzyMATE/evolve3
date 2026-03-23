@@ -4,9 +4,17 @@ import lombok.Getter;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
+import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.benski.evolv3.core.abstracts.BaseEnchantAnimation;
+import org.benski.evolv3.core.constants.ConfigNames;
+import org.benski.evolv3.core.constants.ConfigPaths;
 import org.benski.evolv3.core.helpers.FontUtils;
+import org.benski.evolv3.core.helpers.Utils;
 import org.benski.evolv3.core.managers.EnchantAnimationConfig;
+import org.benski.evolv3.datacenters.PickaxeDataCenter;
+import org.benski.evolv3.models.pickaxe.PickaxeProfile;
+import org.benski.evolv3.registry.ConfigRegistry;
+import org.benski.evolv3.registry.DataCenterRegistry;
 import org.benski.evolv3.core.types.EnchantOption;
 import org.benski.evolv3.core.types.RarityConfig;
 import org.bukkit.Color;
@@ -113,6 +121,8 @@ public class EnchantAnimation extends BaseEnchantAnimation
 
     private boolean labelsSpawned = false;
     private boolean scatterActive = false;
+    /** Per-option flag: true when the option is a level-up of an existing enchant; false for a new unlock. */
+    private final boolean[] isUpgradeOptions = new boolean[3];
     private boolean arrowsRemoved = false;
 
     // -------------------------------------------------------------------------
@@ -195,6 +205,18 @@ public class EnchantAnimation extends BaseEnchantAnimation
         }
         player.getInventory().setItemInMainHand(new ItemStack(Material.AIR));
 
+        // Pre-compute upgrade vs. unlock for each option so labels and action bar can use it.
+        PickaxeDataCenter pickaxeDC = DataCenterRegistry.getInstance().getPickaxeDataCenter();
+        if (pickaxeDC != null) {
+            PickaxeProfile profile = pickaxeDC.getLocalFromItem(originalItem);
+            if (profile != null && profile.enchants != null) {
+                for (int r = 0; r < enchantOptions.size(); r++) {
+                    String internalName = enchantOptions.get(r).name().toLowerCase().replace(" ", "");
+                    isUpgradeOptions[r] = profile.enchants.getEnchant(internalName) != null;
+                }
+            }
+        }
+
         // Pre-generate filler rarities using rarity weights so the strip reflects real odds
         for (int i = 0; i < STRIP_SIZE; i++) {
             if (!isResultIndex(i)) {
@@ -211,19 +233,20 @@ public class EnchantAnimation extends BaseEnchantAnimation
             stripRarities[RESULT_INDICES[r]] = enchantOptions.get(r).rarity();
         }
 
-        // Spawn 30 concrete BlockDisplays at pre-scroll positions
+        // Spawn 30 concrete BlockDisplays underground — tickScroll positions them each tick
+        Location undergroundLoc = stripCenter.clone().add(0, -20, 0);
         for (int i = 0; i < STRIP_SIZE; i++) {
             Material mat = materialForSlot(i);
-            double rightAxis = i * SPACING + INITIAL_OFFSET;
-            Location spawnLoc = stripCenter.clone().add(rightDir.clone().multiply(rightAxis));
             final int idx = i;
 
-            BlockDisplay block = world.spawn(spawnLoc, BlockDisplay.class, e -> {
+            BlockDisplay block = world.spawn(undergroundLoc, BlockDisplay.class, e -> {
+                e.setVisibleByDefault(false);
                 e.setBlock(mat.createBlockData());
                 e.setBrightness(new Display.Brightness(15, 15));
                 e.setPersistent(false);
                 e.setTransformation(centeredTransform(BLOCK_SCALE));
             });
+            player.showEntity(plugin, block);
             stripBlocks[idx] = block;
         }
 
@@ -236,6 +259,7 @@ public class EnchantAnimation extends BaseEnchantAnimation
                 .add(0, 0.65, 0);
 
             TextDisplay arrow = world.spawn(arrowLoc, TextDisplay.class, e -> {
+                e.setVisibleByDefault(false);
                 e.setBillboard(Display.Billboard.CENTER);
                 e.setBrightness(new Display.Brightness(15, 15));
                 e.setPersistent(false);
@@ -249,6 +273,7 @@ public class EnchantAnimation extends BaseEnchantAnimation
                     new AxisAngle4f(0, 0, 1, 0)
                 ));
             });
+            player.showEntity(plugin, arrow);
             arrows[idx] = arrow;
         }
 
@@ -291,6 +316,8 @@ public class EnchantAnimation extends BaseEnchantAnimation
 
         world.playSound(stripCenter, Sound.BLOCK_AMETHYST_BLOCK_CHIME, 0.9f, 1.5f);
         world.playSound(stripCenter, Sound.BLOCK_ENCHANTMENT_TABLE_USE, 0.6f, 2.0f);
+
+        // isUpgradeOptions[] was already populated in doStart() — nothing to compute here.
     }
 
     @Override
@@ -423,7 +450,6 @@ public class EnchantAnimation extends BaseEnchantAnimation
             if (tick < slotStart) continue;
 
             int revealTick = tick - slotStart;
-
             if (!revealStarted[r]) {
                 revealStarted[r] = true;
                 spawnEnchantItem(world, r);
@@ -466,15 +492,22 @@ public class EnchantAnimation extends BaseEnchantAnimation
         boolean done       = chars >= enchantName.length();
 
         EnchantOption opt = enchantOptions.get(r);
-        labels[r].text(
-            Component.text(FontUtils.toSmallCaps(opt.rarity().displayName()))
+        Component label = Component.text(FontUtils.toSmallCaps(opt.rarity().displayName()))
                 .color(opt.rarity().textColor())
                 .decorate(TextDecoration.BOLD)
                 .append(Component.newline())
                 .append(Component.text(enchantName.substring(0, chars) + (done ? "" : "\u258c"))
                     .color(NamedTextColor.WHITE)
-                    .decoration(TextDecoration.BOLD, false))
-        );
+                    .decoration(TextDecoration.BOLD, false));
+        if (done) {
+            String statusText = isUpgradeOptions[r] ? "+1 Level" : "Unlock";
+            label = label
+                .append(Component.newline())
+                .append(Component.text(FontUtils.toSmallCaps(statusText))
+                    .color(opt.rarity().textColor())
+                    .decoration(TextDecoration.BOLD, false));
+        }
+        labels[r].text(label);
 
         if (writeTick % 2 == 0 && !done) {
             float pitch = 1.4f + (chars / (float) enchantName.length()) * 0.6f;
@@ -513,12 +546,11 @@ public class EnchantAnimation extends BaseEnchantAnimation
         }
 
         if (tick == selectionReady) {
-            player.sendActionBar(
-                Component.text(FontUtils.toSmallCaps("Look at an enchant and ")).color(NamedTextColor.YELLOW)
-                    .append(Component.text(FontUtils.toSmallCaps("LEFT-CLICK"))
-                        .color(NamedTextColor.GREEN)
-                        .decorate(TextDecoration.BOLD))
-                    .append(Component.text(FontUtils.toSmallCaps(" to claim it!")).color(NamedTextColor.YELLOW)));
+            String promptRaw = ConfigRegistry.getInstance().get(ConfigNames.MESSAGES)
+                    .getString(ConfigPaths.Messages.EnchantAnimation.SELECTION_PROMPT,
+                            "&#FFFF55Look at an enchant and &a&lLEFT-CLICK &#FFFF55to claim it!");
+            player.sendActionBar(LegacyComponentSerializer.legacySection()
+                    .deserialize(Utils.formatMessage(player, promptRaw)));
         }
     }
 
@@ -629,27 +661,24 @@ public class EnchantAnimation extends BaseEnchantAnimation
             // Refresh action bar every 10 ticks so it doesn't fade
             if ((sp - 25) % 10 == 0) {
                 if (sp < 35) {
-                    // Phase A — announce unlock
+                    // Phase A — announce unlock or upgrade in the enchant's rarity colour
+                    String phaseAText = isUpgradeOptions[selectedIndex] ? "+1 LEVEL" : "UNLOCKED";
                     player.sendActionBar(
-                        Component.text(FontUtils.toSmallCaps("\u2726 ENCHANT UNLOCKED \u2726"))
-                            .color(NamedTextColor.GOLD)
+                        Component.text(phaseAText)
+                            .color(selected.rarity().textColor())
                             .decorate(TextDecoration.BOLD));
                 } else {
-                    // Phase B — show enchant details
+                    // Phase B — show enchant name and rarity
                     player.sendActionBar(
-                        Component.text("\u2726 ")
-                            .color(selected.rarity().textColor())
-                            .append(Component.text(FontUtils.toSmallCaps(selected.name()))
-                                .color(NamedTextColor.WHITE)
-                                .decorate(TextDecoration.BOLD))
+                        Component.text(FontUtils.toSmallCaps(selected.name()))
+                            .color(NamedTextColor.WHITE)
+                            .decorate(TextDecoration.BOLD)
                             .append(Component.text("  \u00B7  ")
                                 .color(NamedTextColor.GRAY)
                                 .decoration(TextDecoration.BOLD, false))
                             .append(Component.text(FontUtils.toSmallCaps(selected.rarity().displayName()))
                                 .color(selected.rarity().textColor())
-                                .decoration(TextDecoration.BOLD, false))
-                            .append(Component.text(" \u2726")
-                                .color(selected.rarity().textColor())));
+                                .decoration(TextDecoration.BOLD, false)));
                 }
             }
 
@@ -696,12 +725,14 @@ public class EnchantAnimation extends BaseEnchantAnimation
         final int cr = r;
 
         enchantItems[cr] = world.spawn(resultPos[r].clone(), ItemDisplay.class, e -> {
+            e.setVisibleByDefault(false);
             e.setItemStack(enchantItem);
             e.setBrightness(new Display.Brightness(15, 15));
             e.setPersistent(false);
             e.setItemDisplayTransform(ItemDisplay.ItemDisplayTransform.GROUND);
             e.setTransformation(itemTransform(0.001f, -0.25f));
         });
+        player.showEntity(plugin, enchantItems[cr]);
     }
 
     /** Spawns rarity-only TextDisplay labels above the three result blocks,
@@ -717,6 +748,7 @@ public class EnchantAnimation extends BaseEnchantAnimation
             final int cr = r;
 
             labels[cr] = world.spawn(labelLoc, TextDisplay.class, e -> {
+                e.setVisibleByDefault(false);
                 e.setBillboard(Display.Billboard.CENTER);
                 e.setBrightness(new Display.Brightness(15, 15));
                 e.setPersistent(false);
@@ -731,6 +763,7 @@ public class EnchantAnimation extends BaseEnchantAnimation
                     new AxisAngle4f(0, 0, 1, 0)
                 ));
             });
+            player.showEntity(plugin, labels[cr]);
 
             // Description display: spawned at scale 0 and animated in on hover
             String desc = EnchantAnimationConfig.getEnchantDescription(opt.name());
@@ -746,6 +779,7 @@ public class EnchantAnimation extends BaseEnchantAnimation
                             .decoration(TextDecoration.ITALIC, false));
 
             descDisplays[cr] = world.spawn(descLoc, TextDisplay.class, e -> {
+                e.setVisibleByDefault(false);
                 e.setBillboard(Display.Billboard.CENTER);
                 e.setBrightness(new Display.Brightness(15, 15));
                 e.setPersistent(false);
@@ -760,6 +794,7 @@ public class EnchantAnimation extends BaseEnchantAnimation
                     new AxisAngle4f(0, 0, 1, 0)
                 ));
             });
+            player.showEntity(plugin, descDisplays[cr]);
         }
     }
 
@@ -795,21 +830,6 @@ public class EnchantAnimation extends BaseEnchantAnimation
                 new AxisAngle4f(0, 0, 1, 0)
             ));
         }
-    }
-
-    /** Returns the item to the player's hand, fires the callback, and schedules stop. */
-    private void returnItemToPlayer(World world, Location playerLoc) {
-        if (itemReturned) return;
-        itemReturned = true;
-
-        world.playSound(playerLoc, Sound.BLOCK_BEACON_POWER_SELECT, 0.8f, 1.5f);
-        player.getInventory().setItemInMainHand(originalItem);
-        fireCallback();
-
-        new BukkitRunnable() {
-            @Override
-            public void run() { stop(); }
-        }.runTaskLater(plugin, 8L);
     }
 
     // -------------------------------------------------------------------------

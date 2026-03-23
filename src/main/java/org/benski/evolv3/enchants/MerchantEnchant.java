@@ -46,15 +46,17 @@ import java.util.List;
 @ExtensionMethod(ItemStackExtensions.class)
 public class MerchantEnchant implements Listener
 {
+    @lombok.Getter
+    private static MerchantEnchant instance;
+
     private final FileConfiguration enchantsConfig;
-    private final FileConfiguration messagesConfig;
     private final JavaPlugin plugin;
 
     public MerchantEnchant(JavaPlugin plugin)
     {
+        instance = this;
         this.plugin = plugin;
         this.enchantsConfig = StorageRegistryManager.getInstance().getConfig(ConfigNames.ENCHANTS);
-        this.messagesConfig = StorageRegistryManager.getInstance().getConfig(ConfigNames.MESSAGES);
     }
 
     /**
@@ -111,6 +113,30 @@ public class MerchantEnchant implements Listener
     }
 
     /**
+     * Applies the Merchant effect to a single block broken by an AoE enchant.
+     * Shares the same logic as the event-driven handler but works with already-resolved profiles.
+     */
+    public void tryTriggerForAoE(Player player, Block block,
+                                 org.benski.evolv3.models.pickaxe.PickaxeProfile pickaxeProfile,
+                                 org.benski.evolv3.models.player.PlayerProfile playerProfile)
+    {
+        if (pickaxeProfile == null || pickaxeProfile.enchants == null) return;
+
+        EnchantData enchant = pickaxeProfile.enchants.getEnchant(Enchants.MERCHANT);
+        if (enchant == null || !enchant.enabled || enchant.level <= 0) return;
+        if (!Utils.chance(enchant.getCurrentChance())) return;
+
+        int coinsMin   = enchantsConfig.getInt(ConfigPaths.Enchants.Merchant.COINS_MIN, 1);
+        int coinsMax   = enchantsConfig.getInt(ConfigPaths.Enchants.Merchant.COINS_MAX, 50);
+        int coinsFound = Utils.amount(coinsMin, coinsMax);
+
+        playerProfile.addCoins(coinsFound);
+        playerProfile.save(null);
+
+        playEffects(block, player, coinsFound);
+    }
+
+    /**
      * Plays visual and audio feedback for the coin discovery.
      *
      * @param block      the block that was mined
@@ -142,7 +168,7 @@ public class MerchantEnchant implements Listener
         }
 
         if (pref.message) {
-            String chatMessage = messagesConfig.getString(ConfigPaths.Messages.Enchants.MERCHANT_TRIGGERED);
+            String chatMessage = StorageRegistryManager.getInstance().getConfig(ConfigNames.MESSAGES).getString(ConfigPaths.Messages.Enchants.MERCHANT_TRIGGERED);
             if (chatMessage != null && !chatMessage.isEmpty()) {
                 chatMessage = chatMessage.replace("%coins%", String.valueOf(coinsFound));
                 player.sendMessage(Utils.formatMessage(player, chatMessage));
@@ -150,8 +176,8 @@ public class MerchantEnchant implements Listener
         }
 
         if (pref.title) {
-            String title    = messagesConfig.getString(ConfigPaths.Messages.Enchants.MERCHANT_TRIGGERED_TITLE, "&#FFD700&lMerchant");
-            String subtitle = messagesConfig.getString(ConfigPaths.Messages.Enchants.MERCHANT_TRIGGERED_SUBTITLE, "&#CCCCCC+%coins% ⛁ Coins!");
+            String title    = StorageRegistryManager.getInstance().getConfig(ConfigNames.MESSAGES).getString(ConfigPaths.Messages.Enchants.MERCHANT_TRIGGERED_TITLE, "&#FFD700&lMerchant");
+            String subtitle = StorageRegistryManager.getInstance().getConfig(ConfigNames.MESSAGES).getString(ConfigPaths.Messages.Enchants.MERCHANT_TRIGGERED_SUBTITLE, "&#CCCCCC+%coins% ⛁ Coins!");
             subtitle = subtitle.replace("%coins%", String.valueOf(coinsFound));
             player.sendTitle(
                     Utils.formatMessage(player, title),
@@ -166,7 +192,8 @@ public class MerchantEnchant implements Listener
         if (pdc == null) return new EnchantPreference();
         PlayerProfile profile = pdc.getLocal(player);
         if (profile == null) return new EnchantPreference();
-        String enchantName = enchantsConfig.getString(ConfigPaths.Enchants.Merchant.NAME, "Merchant");
-        return profile.preferences.getOrCreateEnchantPref(enchantName);
+        String  enchantName     = enchantsConfig.getString(ConfigPaths.Enchants.Merchant.NAME, "Merchant");
+        boolean defaultHologram = enchantsConfig.getBoolean(ConfigPaths.Enchants.Merchant.HOLOGRAM_DEFAULT_ENABLED, false);
+        return profile.preferences.getOrCreateEnchantPref(enchantName, defaultHologram);
     }
 }

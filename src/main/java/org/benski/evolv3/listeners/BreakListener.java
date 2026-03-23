@@ -1,7 +1,6 @@
 package org.benski.evolv3.listeners;
 
 import org.benski.evolv3.animations.pickup.DissolvePickupAnimation;
-import org.benski.evolv3.listeners.BackpackListener;
 import org.benski.evolv3.core.abstracts.BaseListener;
 import org.benski.evolv3.core.constants.ConfigNames;
 import org.benski.evolv3.core.constants.ConfigPaths;
@@ -16,8 +15,11 @@ import org.benski.evolv3.core.managers.FrostbiteBlockManager;
 import org.benski.evolv3.core.managers.PickupAnimationManager;
 import org.benski.evolv3.core.managers.WorldGuardManager;
 import org.benski.evolv3.datacenters.PlayerDataCenter;
+import org.benski.evolv3.enchants.ExtractionEnchant;
+import org.benski.evolv3.enchants.FortuneEnchant;
 import org.benski.evolv3.enchants.FrostbiteEnchant;
-import org.benski.evolv3.managers.PickaxeManager;
+import org.benski.evolv3.enchants.RadioactiveEnchant;
+import org.benski.evolv3.core.managers.PickaxeManager;
 import org.benski.evolv3.models.backpack.Backpack;
 import org.benski.evolv3.models.pickaxe.EnchantData;
 import org.benski.evolv3.models.pickaxe.PickaxeProfile;
@@ -201,6 +203,8 @@ public class BreakListener extends BaseListener
         }
 
         ItemStack finalDrop = handleEnchantDrops(player.getUniqueId(), ctx.baseDrop());
+        int fortuneAmount = FortuneEnchant.popDropAmount(player.getUniqueId());
+        int finalDropAmount = fortuneAmount > 0 ? fortuneAmount : ctx.dropAmount();
 
         if (finalDrop.getType().isAir()) return;
 
@@ -211,9 +215,14 @@ public class BreakListener extends BaseListener
         }
 
         // Pre-roll essence and atom chances so the animation can reflect the outcome visually.
+        // Extraction enchant (NORMAL priority) may have written a bonus chance — add it to the base.
         FileConfiguration rollConfig = ConfigRegistry.getInstance().get(ConfigNames.DEFAULT);
-        boolean essenceHit = Utils.chance(rollConfig.getDouble("Essence.DiscoveryChance", 5.0));
-        boolean atomHit    = Utils.chance(rollConfig.getDouble(ConfigPaths.Default.Atoms.DISCOVERY_CHANCE, 1.0));
+        double baseEssenceChance      = rollConfig.getDouble(ConfigPaths.Default.Essence.DISCOVERY_CHANCE, 5.0);
+        double extractionBonus        = ExtractionEnchant.popBonus(player.getUniqueId());
+        boolean essenceHit = Utils.chance(baseEssenceChance + extractionBonus);
+        double baseAtomChance  = rollConfig.getDouble(ConfigPaths.Default.Atoms.DISCOVERY_CHANCE, 1.0);
+        double radioactiveBonus = RadioactiveEnchant.popBonus(player.getUniqueId());
+        boolean atomHit    = Utils.chance(baseAtomChance + radioactiveBonus);
 
         PreferenceType.DropCategory dropCategory = essenceHit ? PreferenceType.DropCategory.ESSENCE
                                                  : atomHit    ? PreferenceType.DropCategory.ATOM
@@ -227,7 +236,7 @@ public class BreakListener extends BaseListener
                 dropCategory
         );
 
-        ctx.backpack().addItem(player, finalDrop.getType(), ctx.dropAmount(), ctx.isEnchantDrop());
+        ctx.backpack().addItem(player, finalDrop.getType(), finalDropAmount, ctx.isEnchantDrop());
         BackpackListener.refresh(player);
 
         ctx.playerProfile().isEnchanting = false;
@@ -317,7 +326,6 @@ public class BreakListener extends BaseListener
         Backpack backpack = playerProfile.backpack;
 
         // Suppress vanilla drops — all checks passed, we own this break
-        event.setCancelled(false); // un-cancel if WorldGuard blocked it
         event.setDropItems(false);
 
         if (backpack.isFull()) {
@@ -463,11 +471,14 @@ public class BreakListener extends BaseListener
     /**
      * Clears all enchant state for a player when a break is cancelled.
      * Frostbite metadata is already consumed in onBreakCapture, so only
-     * EnchantDropManager needs clearing here.
+     * EnchantDropManager and ExtractionEnchant bonus need clearing here.
      */
     private void clearEnchantState(UUID playerUuid)
     {
         EnchantDropManager.pop(playerUuid);
+        ExtractionEnchant.popBonus(playerUuid);
+        RadioactiveEnchant.popBonus(playerUuid);
+        FortuneEnchant.popDropAmount(playerUuid);
     }
 
     /**
@@ -498,8 +509,8 @@ public class BreakListener extends BaseListener
         animationRegistry.play("atom", animLoc, List.of(player), amount);
 
         PlayerDataCenter pdcAtom = DataCenterRegistry.getInstance().getPlayerDataCenter();
-        boolean atomHologramOn = pdcAtom == null || pdcAtom.getLocal(player) == null
-                || pdcAtom.getLocal(player).preferences.atomHologram;
+        PlayerProfile atomProfile = pdcAtom != null ? pdcAtom.getLocal(player) : null;
+        boolean atomHologramOn = atomProfile == null || atomProfile.preferences.atomHologram;
 
         if (atomHologramOn && config.getBoolean(ConfigPaths.Default.Atoms.HOLOGRAM_ENABLED, true)) {
             String text = config.getString(ConfigPaths.Default.Atoms.HOLOGRAM_TEXT, "&#FFEE00⚛ &#FFFFFF&l+ %amount% &#FFEE00Atoms");

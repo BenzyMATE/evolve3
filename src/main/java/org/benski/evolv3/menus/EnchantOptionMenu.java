@@ -81,7 +81,9 @@ public class EnchantOptionMenu extends BaseMenu
     @Override
     protected String getMenuTitle(Player player) {
         String enchantName = selectedEnchant.getOrDefault(player.getUniqueId(), "Enchant");
-        return "&8P &7» &8E &7» &8" + enchantName;
+        return ConfigRegistry.getInstance().get(ConfigNames.MENUS)
+                .getString(ConfigPaths.Menus.EnchantOptionMenu.MENU_TITLE, "&8P &7» &8E &7» &8%enchant%")
+                .replace("%enchant%", enchantName);
     }
 
     @Override
@@ -153,7 +155,8 @@ public class EnchantOptionMenu extends BaseMenu
     @Override
     protected boolean handleClick(Player player, int slot, InventoryClickEvent event) {
         if (slot == BACK_SLOT) {
-            MenuRegistry.getInstance().get("preferences_enchants").openMenu(player);
+            var back = MenuRegistry.getInstance().get("preferences_enchants");
+            if (back != null) back.openMenu(player);
             return true;
         }
 

@@ -8,9 +8,11 @@ import org.benski.evolv3.core.managers.ListenerRegistryManager;
 import org.benski.evolv3.listeners.BackpackListener;
 import org.benski.evolv3.listeners.EnchantListener;
 import org.benski.evolv3.listeners.BreakListener;
+import org.benski.evolv3.listeners.FurnaceListener;
 import org.benski.evolv3.listeners.InteractListener;
 import org.benski.evolv3.listeners.JoinListener;
 import org.benski.evolv3.listeners.PickaxeOwnershipListener;
+import org.benski.evolv3.listeners.RankChatListener;
 import org.benski.evolv3.listeners.ScoreboardListener;
 
 import java.util.List;
@@ -34,8 +36,10 @@ public class ListenerRegistry implements Registry<BaseListener>
             EnchantListener.class,
             InteractListener.class,
             BackpackListener.class,
+            FurnaceListener.class,
             PickaxeOwnershipListener.class,
-            ScoreboardListener.class
+            ScoreboardListener.class,
+            RankChatListener.class
     );
 
     /**

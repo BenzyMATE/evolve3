@@ -1,6 +1,7 @@
 package org.benski.evolv3.core.abstracts;
 
 import org.benski.evolv3.core.builders.ItemBuilder;
+import org.benski.evolv3.core.constants.ConfigNames;
 import org.benski.evolv3.registry.ConfigRegistry;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
@@ -58,7 +59,7 @@ public abstract class ConfigurableMenu extends BaseMenu
 
     public ConfigurableMenu(JavaPlugin plugin) {
         super(plugin);
-        this.menusConfig = ConfigRegistry.getInstance().get("menus");
+        this.menusConfig = ConfigRegistry.getInstance().get(ConfigNames.MENUS);
     }
 
     /**

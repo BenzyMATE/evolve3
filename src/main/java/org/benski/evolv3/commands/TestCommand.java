@@ -1,9 +1,19 @@
 package org.benski.evolv3.commands;
 
 import lombok.experimental.ExtensionMethod;
+import org.benski.evolv3.animations.EvolutionAnimationD;
 import org.benski.evolv3.core.abstracts.BaseCommand;
 import org.benski.evolv3.core.helpers.ItemStackExtensions;
+import org.benski.evolv3.core.managers.EnchantAnimationConfig;
 import org.benski.evolv3.core.managers.EnchantSelectionManager;
+import org.benski.evolv3.core.managers.PickaxeManager;
+import org.benski.evolv3.core.types.RarityConfig;
+import org.benski.evolv3.datacenters.PickaxeDataCenter;
+import org.benski.evolv3.datacenters.PlayerDataCenter;
+import org.benski.evolv3.enums.EvolutionTier;
+import org.benski.evolv3.models.pickaxe.PickaxeProfile;
+import org.benski.evolv3.models.player.PlayerProfile;
+import org.benski.evolv3.registry.DataCenterRegistry;
 import org.benski.evolv3.registry.MenuRegistry;
 import org.bukkit.Material;
 import org.bukkit.command.Command;
@@ -137,6 +147,43 @@ public class TestCommand extends BaseCommand
                     sendError(player, "Could not start enchant selection (animation budget exceeded)!");
                 }
                 break;
+            case "evolve": {
+                DataCenterRegistry dcr = DataCenterRegistry.getInstance();
+                PickaxeDataCenter pickaxeDC = dcr.getPickaxeDataCenter();
+                PlayerDataCenter playerDC   = dcr.getPlayerDataCenter();
+
+                pickaxeDC.get(player, profile -> {
+                    if (profile == null) {
+                        sendError(player, "No pickaxe found in hand — hold your pickaxe first.");
+                        return;
+                    }
+                    PlayerProfile playerProfile = playerDC.getLocal(player);
+                    if (playerProfile == null) {
+                        sendError(player, "Player profile not loaded.");
+                        return;
+                    }
+
+                    EvolutionTier from = EvolutionTier.fromLevel(profile.evolution);
+                    EvolutionTier to   = from.next();
+                    if (to == null) {
+                        sendError(player, "Pickaxe is already at max tier (" + from.displayName + ").");
+                        return;
+                    }
+
+                    RarityConfig stone = EnchantAnimationConfig.rollRarity();
+                    if (stone == null) {
+                        sendError(player, "No rarities loaded — check enchants.yml.");
+                        return;
+                    }
+
+                    EvolutionTier finalTo = to;
+                    new EvolutionAnimationD(plugin, player, from, finalTo, stone, () ->
+                            PickaxeManager.getInstance().applyEvolutionResult(
+                                    player, profile, playerProfile, finalTo, stone)
+                    ).start();
+                });
+                break;
+            }
             default:
                 sendError(player, "Unknown argument: " + arg);
                 break;
@@ -158,10 +205,9 @@ public class TestCommand extends BaseCommand
             completions.add("cache");
             completions.add("explosive");
             completions.add("enchant");
-
+            completions.add("evolve");
             String input = args[0].toLowerCase();
             completions.removeIf(s -> !s.toLowerCase().startsWith(input));
-
             return completions;
         }
         return null;

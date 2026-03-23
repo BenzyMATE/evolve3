@@ -72,6 +72,10 @@ public final class ConfigPaths
             // Durability warning threshold (% remaining durability, e.g. 10 = warn below 10%)
             public static final String DURABILITY_WARNING_THRESHOLD = "Pickaxe.DurabilityWarningThreshold";
 
+            // Durability lore display
+            public static final String DURABILITY_LABEL      = "Pickaxe.DurabilityLabel";
+            public static final String DURABILITY_BAR_PREFIX = "Pickaxe.DurabilityBarPrefix";
+
             // Hologram settings
             public static final String HOLOGRAM_ENABLED = "Pickaxe.Hologram.Enabled";
             public static final String HOLOGRAM_TEXT = "Pickaxe.Hologram.Text";
@@ -183,6 +187,8 @@ public final class ConfigPaths
             public static final String FULL_MESSAGE = "Backpack.FullMessage";
             public static final String LORE = "Backpack.Lore";
             public static final String CUSTOM_MODEL_DATA = "Backpack.CustomModelData";
+            /** Prefix for per-tier slot caps. Append the CustomModelData value (e.g. "Backpack.Tiers.2"). */
+            public static final String TIERS_PREFIX = "Backpack.Tiers.";
 
             // Hologram settings
             public static final String HOLOGRAM_ENABLED = "Backpack.Hologram.Enabled";
@@ -218,6 +224,17 @@ public final class ConfigPaths
             public static final String EVO_ATOM_TOGGLE_TEXT    = "Scoreboard.EvoAtomToggleText";
             /** Seconds each phase is displayed before animating to the other. */
             public static final String EVO_ATOM_TOGGLE_SECONDS = "Scoreboard.EvoAtomToggleSeconds";
+            /** Base text for the pickaxe-loading indicator (dots appended dynamically). */
+            public static final String LOADING_TEXT            = "Scoreboard.LoadingText";
+            /** Label used in the level-up flash animation (e.g. "Level"). */
+            public static final String LEVEL_UP_LABEL          = "Scoreboard.LevelUpLabel";
+            /** Text shown on the evo line while the enchant animation is rolling. */
+            public static final String ENCHANT_ROLLING_TEXT    = "Scoreboard.EnchantRollingText";
+            /** Text shown on the evo line while the player is selecting an enchant. */
+            public static final String ENCHANT_SELECTING_TEXT  = "Scoreboard.EnchantSelectingText";
+
+            /** Text shown on the rank line when the player can afford to rankup (animates in/out). */
+            public static final String RANKUP_TOGGLE_TEXT      = "Scoreboard.RankupToggleText";
         }
 
         /**
@@ -281,6 +298,9 @@ public final class ConfigPaths
             public static final String DROP_CONFIRMATION        = "pickaxe.drop-confirmation";
             public static final String PICKUP_NEW_OWNER         = "pickaxe.pickup-new-owner";
             public static final String DURABILITY_WARNING       = "pickaxe.durability-warning";
+            /** Template for the floating TextDisplay shown above a dropped pickaxe.
+             *  Supports %level%, %xp%, %target% placeholders. */
+            public static final String DROPPED_DISPLAY_TEXT    = "pickaxe.dropped-display-text";
 
             // Enchant messages
             public static final String ENCHANT_INSUFFICIENT_ESSENCE = "pickaxe.enchant.insufficient-essence";
@@ -301,9 +321,17 @@ public final class ConfigPaths
             public static final String MENU_EVOLUTION_COMING_SOON = "pickaxe.menu.evolution-coming-soon";
 
             // Evolution messages
-            public static final String EVOLVE_NOT_AVAILABLE = "pickaxe.evolve.not-available";
+            public static final String EVOLVE_NOT_AVAILABLE     = "pickaxe.evolve.not-available";
             public static final String EVOLVE_INSUFFICIENT_SPINS = "pickaxe.evolve.insufficient-spins";
-            public static final String EVOLVE_SUCCESS = "pickaxe.evolve.success";
+            public static final String EVOLVE_MAX_TIER          = "pickaxe.evolve.max-tier";
+            public static final String EVOLVE_SUCCESS           = "pickaxe.evolve.success";
+            public static final String EVOLVE_TIER_SUCCESS      = "pickaxe.evolve.evolve-success";
+            public static final String EVOLVE_STONE_PLACEHOLDER = "pickaxe.evolve.stone-placeholder";
+            public static final String EVOLVE_RESULT            = "pickaxe.evolve.result";
+            public static final String EVOLVE_ESSENCE_REWARD    = "Pickaxe.Defaults.EvolutionEssenceReward";
+
+            // Enchant selection messages
+            public static final String ENCHANT_SELECTION_ALREADY_ACTIVE = "enchant-selection.already-active";
         }
 
         /**
@@ -331,6 +359,41 @@ public final class ConfigPaths
             public static final String DATABASE_ERROR = "errors.database-error";
             public static final String INTERNAL_ERROR = "errors.internal-error";
             public static final String INVALID_ARGUMENTS = "errors.invalid-arguments";
+            /** Sent when a menu type is not registered. Supports %menu% placeholder. */
+            public static final String MENU_NOT_FOUND = "errors.menu-not-found";
+        }
+
+        /**
+         * Admin command messages (/evolv3 help and /evolv3 info).
+         */
+        public static final class Admin
+        {
+            private Admin() {}
+
+            /** Multi-line list shown by /evolv3 help. */
+            public static final String HELP = "admin.help";
+            /** Multi-line list shown by /evolv3 info. */
+            public static final String INFO = "admin.info";
+        }
+
+        /**
+         * Balance command messages (/bal).
+         * Placeholders: %name%, %balance%
+         */
+        public static final class Bal
+        {
+            private Bal() {}
+
+            public static final String PLAYER_NOT_FOUND = "bal.player-not-found";
+            public static final String OTHER_BALANCE     = "bal.other-balance";
+            public static final String OWN_BALANCE       = "bal.own-balance";
+        }
+
+        public static final class Skin
+        {
+            private Skin() {}
+
+            public static final String PLAYER_NOT_FOUND = "skin.player-not-found";
         }
 
         /**
@@ -341,6 +404,10 @@ public final class ConfigPaths
             private Enchants() {}
 
             public static final String EFFICIENCY_APPLIED = "enchants.efficiency.applied";
+
+            public static final String EXPLOSIVE_TRIGGERED          = "enchants.explosive.triggered";
+            public static final String EXPLOSIVE_TRIGGERED_TITLE    = "enchants.explosive.triggered-title";
+            public static final String EXPLOSIVE_TRIGGERED_SUBTITLE = "enchants.explosive.triggered-subtitle";
 
             public static final String FROSTBITE_TRIGGERED          = "enchants.frostbite.triggered";
             public static final String FROSTBITE_TRIGGERED_TITLE    = "enchants.frostbite.triggered-title";
@@ -361,6 +428,42 @@ public final class ConfigPaths
             public static final String MERCHANT_TRIGGERED          = "enchants.merchant.triggered";
             public static final String MERCHANT_TRIGGERED_TITLE    = "enchants.merchant.triggered-title";
             public static final String MERCHANT_TRIGGERED_SUBTITLE = "enchants.merchant.triggered-subtitle";
+
+            public static final String EXTRACTION_TRIGGERED          = "enchants.extraction.triggered";
+            public static final String EXTRACTION_TRIGGERED_TITLE    = "enchants.extraction.triggered-title";
+            public static final String EXTRACTION_TRIGGERED_SUBTITLE = "enchants.extraction.triggered-subtitle";
+
+            public static final String AUTO_SELL_TRIGGERED          = "enchants.autosell.triggered";
+            public static final String AUTO_SELL_TRIGGERED_TITLE    = "enchants.autosell.triggered-title";
+            public static final String AUTO_SELL_TRIGGERED_SUBTITLE = "enchants.autosell.triggered-subtitle";
+
+            public static final String DRILL_TRIGGERED          = "enchants.drill.triggered";
+            public static final String DRILL_TRIGGERED_TITLE    = "enchants.drill.triggered-title";
+            public static final String DRILL_TRIGGERED_SUBTITLE = "enchants.drill.triggered-subtitle";
+
+            public static final String LAZER_TRIGGERED          = "enchants.lazer.triggered";
+            public static final String LAZER_TRIGGERED_TITLE    = "enchants.lazer.triggered-title";
+            public static final String LAZER_TRIGGERED_SUBTITLE = "enchants.lazer.triggered-subtitle";
+
+            public static final String THOR_TRIGGERED          = "enchants.thor.triggered";
+            public static final String THOR_TRIGGERED_TITLE    = "enchants.thor.triggered-title";
+            public static final String THOR_TRIGGERED_SUBTITLE = "enchants.thor.triggered-subtitle";
+
+            public static final String VORTEX_TRIGGERED          = "enchants.vortex.triggered";
+            public static final String VORTEX_TRIGGERED_TITLE    = "enchants.vortex.triggered-title";
+            public static final String VORTEX_TRIGGERED_SUBTITLE = "enchants.vortex.triggered-subtitle";
+
+            public static final String CASCADE_TRIGGERED          = "enchants.cascade.triggered";
+            public static final String CASCADE_TRIGGERED_TITLE    = "enchants.cascade.triggered-title";
+            public static final String CASCADE_TRIGGERED_SUBTITLE = "enchants.cascade.triggered-subtitle";
+
+            public static final String JACKHAMMER_TRIGGERED          = "enchants.jackhammer.triggered";
+            public static final String JACKHAMMER_TRIGGERED_TITLE    = "enchants.jackhammer.triggered-title";
+            public static final String JACKHAMMER_TRIGGERED_SUBTITLE = "enchants.jackhammer.triggered-subtitle";
+
+            public static final String NUCLEAR_SHOWER_TRIGGERED          = "enchants.nuclearshower.triggered";
+            public static final String NUCLEAR_SHOWER_TRIGGERED_TITLE    = "enchants.nuclearshower.triggered-title";
+            public static final String NUCLEAR_SHOWER_TRIGGERED_SUBTITLE = "enchants.nuclearshower.triggered-subtitle";
         }
 
         /**
@@ -434,9 +537,10 @@ public final class ConfigPaths
         {
             private Backpack() {}
 
-            public static final String FULL = "backpack.full";
-            public static final String ITEM_ADDED = "backpack.item-added";
-            public static final String SELL_ITEMS = "backpack.sell-items";
+            public static final String FULL             = "backpack.full";
+            public static final String ITEM_ADDED       = "backpack.item-added";
+            public static final String SELL_ITEMS       = "backpack.sell-items";
+            public static final String NOTHING_SELECTED = "backpack.nothing-selected";
         }
 
         /**
@@ -472,6 +576,53 @@ public final class ConfigPaths
             public static final String REPAIR_ALREADY_FULL = "pickaxe-limit.repair-already-full";
             public static final String CLAIM_RATE_LIMITED = "pickaxe-limit.claim-rate-limited";
             public static final String PICKUP_NO_SLOTS = "pickaxe-limit.pickup-no-slots";
+        }
+
+        /**
+         * Pickup animation command messages.
+         */
+        /**
+         * Enchant animation action bar messages.
+         */
+        public static final class EnchantAnimation
+        {
+            private EnchantAnimation() {}
+
+            /** Action bar shown when the selection is ready. */
+            public static final String SELECTION_PROMPT = "enchant-animation.selection-prompt";
+            /** Action bar shown briefly when an enchant is unlocked (phase A). */
+            public static final String ENCHANT_UNLOCKED = "enchant-animation.enchant-unlocked";
+        }
+
+        public static final class PickupAnimation
+        {
+            private PickupAnimation() {}
+
+            public static final String USAGE_SET              = "pickup-animation.usage-set";
+            public static final String UNKNOWN_SUBCOMMAND     = "pickup-animation.unknown-subcommand";
+            public static final String CURRENT_HEADER         = "pickup-animation.current-header";
+            public static final String CURRENT                = "pickup-animation.current";
+            public static final String HINT                   = "pickup-animation.hint";
+            public static final String LIST_HEADER            = "pickup-animation.list-header";
+            public static final String LIST_ITEM_SELECTED     = "pickup-animation.list-item-selected";
+            public static final String LIST_ITEM              = "pickup-animation.list-item";
+            public static final String LIST_FOOTER            = "pickup-animation.list-footer";
+            public static final String SET_SUCCESS            = "pickup-animation.set-success";
+            public static final String INVALID_ANIMATION      = "pickup-animation.invalid-animation";
+            public static final String CYCLED                 = "pickup-animation.cycled";
+            public static final String OTHERS_ENABLED         = "pickup-animation.others-enabled";
+            public static final String OTHERS_DISABLED        = "pickup-animation.others-disabled";
+        }
+
+        /**
+         * Furnace smelt menu messages.
+         */
+        public static final class FurnaceSmelt
+        {
+            private FurnaceSmelt() {}
+
+            /** Lore tag appended to smeltable items in the backpack menu. Supports %result%. */
+            public static final String SMELTABLE_TAG = "furnace-smelt.smeltable-tag";
         }
     }
 
@@ -533,6 +684,7 @@ public final class ConfigPaths
         {
             private PreferencesMenu() {}
 
+            public static final String TITLE                = "Preferences Menu.Title";
             public static final String ANIMATIONS_MATERIAL = "Preferences Menu.Animations.Material";
             public static final String ANIMATIONS_NAME     = "Preferences Menu.Animations.Name";
             public static final String ANIMATIONS_LORE     = "Preferences Menu.Animations.Lore";
@@ -554,6 +706,7 @@ public final class ConfigPaths
         {
             private EnchantsMenu() {}
 
+            public static final String TITLE              = "Enchants Menu.Title";
             public static final String BACK_MATERIAL      = "Enchants Menu.Back.Material";
             public static final String BACK_NAME          = "Enchants Menu.Back.Name";
             public static final String BACK_LORE          = "Enchants Menu.Back.Lore";
@@ -575,6 +728,8 @@ public final class ConfigPaths
         {
             private EnchantOptionMenu() {}
 
+            /** Menu title. Supports %enchant% placeholder. */
+            public static final String MENU_TITLE        = "Enchant Option Menu.MenuTitle";
             public static final String BACK_MATERIAL     = "Enchant Option Menu.Back.Material";
             public static final String BACK_NAME         = "Enchant Option Menu.Back.Name";
             public static final String BACK_LORE         = "Enchant Option Menu.Back.Lore";
@@ -599,6 +754,7 @@ public final class ConfigPaths
         {
             private AnimationsMenu() {}
 
+            public static final String TITLE         = "Animations Menu.Title";
             public static final String BACK_MATERIAL = "Animations Menu.Back.Material";
             public static final String BACK_NAME     = "Animations Menu.Back.Name";
             public static final String BACK_LORE     = "Animations Menu.Back.Lore";
@@ -650,6 +806,46 @@ public final class ConfigPaths
             public static final String ESSENCE_GLOW_NAME        = "Animations Menu.EssenceFX.Glow.Name";
             public static final String ESSENCE_GLOW_LORE        = "Animations Menu.EssenceFX.Glow.Lore";
         }
+
+        /**
+         * Backpack menu title paths.
+         */
+        public static final class BackpackMenu
+        {
+            private BackpackMenu() {}
+
+            /** Title shown when the backpack has no pages or is on a single page. */
+            public static final String TITLE       = "Backpack Menu.Title";
+            /** Title format for multi-page view. Supports %page% and %total% placeholders. */
+            public static final String TITLE_PAGED = "Backpack Menu.TitlePaged";
+        }
+
+        /**
+         * Armor menu title paths.
+         */
+        public static final class ArmorMenu
+        {
+            private ArmorMenu() {}
+
+            /** Title when no armor type is selected. */
+            public static final String TITLE          = "Armor Menu.Title";
+            /** Title template for a specific armor type. Supports %type% placeholder. */
+            public static final String TITLE_WITH_TYPE = "Armor Menu.TitleWithType";
+        }
+
+        /**
+         * Furnace smelt menu item paths.
+         * Ticks per item controlled via {@link #SMELT_TICKS_PER_ITEM}.
+         */
+        public static final class FurnaceSmeltMenu
+        {
+            private FurnaceSmeltMenu() {}
+
+            public static final String TITLE                = "Furnace Smelt Menu.Title";
+            /** Server ticks to smelt one item. Vanilla = 200. Default = 20 (10× faster). */
+            public static final String SMELT_TICKS_PER_ITEM = "Furnace Smelt Menu.SmeltTicksPerItem";
+        }
+
     }
 
     /**
@@ -712,6 +908,9 @@ public final class ConfigPaths
         /** Whether this enchant is passive (no triggered notification/effects). */
         public static final String ENCHANT_PASSIVE = "Passive";
 
+        /** Whether this enchant should be hidden from the per-enchant preferences menu. */
+        public static final String ENCHANT_PREFERENCES_HIDDEN = "PreferencesHidden";
+
         /** Brief one-line description shown on hover during enchant selection. */
         public static final String ENCHANT_DESCRIPTION = "Description";
 
@@ -762,8 +961,9 @@ public final class ConfigPaths
             public static final String ITEM = "Furnace.Item";
             public static final String MAX_LEVEL = "Furnace.MaxLevel";
             public static final String MAX_CHANCE = "Furnace.MaxChance";
-            public static final String HOLOGRAM_ENABLED = "Furnace.Hologram.Enabled";
-            public static final String HOLOGRAM_MESSAGE = "Furnace.Hologram.Message";
+            public static final String HOLOGRAM_ENABLED         = "Furnace.Hologram.Enabled";
+            public static final String HOLOGRAM_DEFAULT_ENABLED = "Furnace.Hologram.DefaultEnabled";
+            public static final String HOLOGRAM_MESSAGE         = "Furnace.Hologram.Message";
             public static final String RECIPES = "Furnace.Recipes";
         }
 
@@ -815,8 +1015,258 @@ public final class ConfigPaths
             public static final String MAX_CHANCE       = "Merchant.MaxChance";
             public static final String COINS_MIN        = "Merchant.CoinsMin";
             public static final String COINS_MAX        = "Merchant.CoinsMax";
-            public static final String HOLOGRAM_ENABLED = "Merchant.Hologram.Enabled";
-            public static final String HOLOGRAM_MESSAGE = "Merchant.Hologram.Message";
+            public static final String HOLOGRAM_ENABLED         = "Merchant.Hologram.Enabled";
+            public static final String HOLOGRAM_DEFAULT_ENABLED = "Merchant.Hologram.DefaultEnabled";
+            public static final String HOLOGRAM_MESSAGE         = "Merchant.Hologram.Message";
+        }
+
+        /**
+         * Fortune enchantment configuration.
+         */
+        public static final class Fortune
+        {
+            private Fortune() {}
+
+            public static final String NAME      = "Fortune.Name";
+            public static final String MAX_LEVEL = "Fortune.MaxLevel";
+        }
+
+        /**
+         * AutoSell enchantment configuration.
+         */
+        public static final class AutoSell
+        {
+            private AutoSell() {}
+
+            public static final String NAME                  = "AutoSell.Name";
+            public static final String MAX_LEVEL             = "AutoSell.MaxLevel";
+            public static final String MAX_CHANCE            = "AutoSell.MaxChance";
+            public static final String HOLOGRAM_ENABLED         = "AutoSell.Hologram.Enabled";
+            public static final String HOLOGRAM_DEFAULT_ENABLED = "AutoSell.Hologram.DefaultEnabled";
+            public static final String HOLOGRAM_MESSAGE         = "AutoSell.Hologram.Message";
+        }
+
+        /**
+         * Radioactive enchantment configuration.
+         */
+        public static final class Radioactive
+        {
+            private Radioactive() {}
+
+            public static final String NAME      = "Radioactive.Name";
+            public static final String MAX_LEVEL = "Radioactive.MaxLevel";
+            public static final String MAX_CHANCE = "Radioactive.MaxChance";
+        }
+
+        /**
+         * Extraction enchantment configuration.
+         */
+        public static final class Extraction
+        {
+            private Extraction() {}
+
+            public static final String NAME                  = "Extraction.Name";
+            public static final String MAX_LEVEL             = "Extraction.MaxLevel";
+            public static final String MAX_CHANCE            = "Extraction.MaxChance";
+            public static final String ESSENCE_MIN           = "Extraction.EssenceMin";
+            public static final String ESSENCE_MAX           = "Extraction.EssenceMax";
+            public static final String HOLOGRAM_ENABLED         = "Extraction.Hologram.Enabled";
+            public static final String HOLOGRAM_DEFAULT_ENABLED = "Extraction.Hologram.DefaultEnabled";
+            public static final String HOLOGRAM_MESSAGE         = "Extraction.Hologram.Message";
+        }
+
+        /**
+         * Explosive enchantment configuration.
+         */
+        public static final class Explosive
+        {
+            private Explosive() {}
+
+            public static final String NAME                      = "Explosive.Name";
+            public static final String MAX_LEVEL                 = "Explosive.MaxLevel";
+            public static final String MAX_CHANCE                = "Explosive.MaxChance";
+            public static final String MAX_RADIUS                = "Explosive.MaxRadius";
+            public static final String HOLOGRAM_ENABLED         = "Explosive.Hologram.Enabled";
+            public static final String HOLOGRAM_DEFAULT_ENABLED = "Explosive.Hologram.DefaultEnabled";
+            public static final String HOLOGRAM_MESSAGE         = "Explosive.Hologram.Message";
+        }
+
+        /**
+         * Drill enchantment configuration.
+         */
+        public static final class Drill
+        {
+            private Drill() {}
+
+            public static final String NAME                  = "Drill.Name";
+            public static final String MAX_LEVEL             = "Drill.MaxLevel";
+            public static final String MAX_CHANCE            = "Drill.MaxChance";
+            public static final String DEPTH                 = "Drill.MaxDepth";
+            public static final String HOLOGRAM_ENABLED         = "Drill.Hologram.Enabled";
+            public static final String HOLOGRAM_DEFAULT_ENABLED = "Drill.Hologram.DefaultEnabled";
+            public static final String HOLOGRAM_MESSAGE         = "Drill.Hologram.Message";
+        }
+
+        /**
+         * Lazer enchantment configuration.
+         */
+        public static final class Lazer
+        {
+            private Lazer() {}
+
+            public static final String NAME                  = "Lazer.Name";
+            public static final String MAX_LEVEL             = "Lazer.MaxLevel";
+            public static final String MAX_CHANCE            = "Lazer.MaxChance";
+            public static final String MAX_RANGE             = "Lazer.MaxRange";
+            public static final String HOLOGRAM_ENABLED         = "Lazer.Hologram.Enabled";
+            public static final String HOLOGRAM_DEFAULT_ENABLED = "Lazer.Hologram.DefaultEnabled";
+            public static final String HOLOGRAM_MESSAGE         = "Lazer.Hologram.Message";
+        }
+
+        /**
+         * Thor enchantment configuration.
+         */
+        public static final class Thor
+        {
+            private Thor() {}
+
+            public static final String NAME                      = "Thor.Name";
+            public static final String MAX_LEVEL                 = "Thor.MaxLevel";
+            public static final String MAX_CHANCE                = "Thor.MaxChance";
+            public static final String MAX_COLUMN_HEIGHT         = "Thor.MaxColumnHeight";
+            public static final String HOLOGRAM_ENABLED         = "Thor.Hologram.Enabled";
+            public static final String HOLOGRAM_DEFAULT_ENABLED = "Thor.Hologram.DefaultEnabled";
+            public static final String HOLOGRAM_MESSAGE         = "Thor.Hologram.Message";
+        }
+
+        /**
+         * Vortex enchantment configuration.
+         */
+        public static final class Vortex
+        {
+            private Vortex() {}
+
+            public static final String NAME                      = "Vortex.Name";
+            public static final String MAX_LEVEL                 = "Vortex.MaxLevel";
+            public static final String MAX_CHANCE                = "Vortex.MaxChance";
+            public static final String MAX_RADIUS                = "Vortex.MaxRadius";
+            public static final String HOLOGRAM_ENABLED         = "Vortex.Hologram.Enabled";
+            public static final String HOLOGRAM_DEFAULT_ENABLED = "Vortex.Hologram.DefaultEnabled";
+            public static final String HOLOGRAM_MESSAGE         = "Vortex.Hologram.Message";
+        }
+
+        /**
+         * Cascade enchantment configuration.
+         */
+        public static final class Cascade
+        {
+            private Cascade() {}
+
+            public static final String NAME                      = "Cascade.Name";
+            public static final String MAX_LEVEL                 = "Cascade.MaxLevel";
+            public static final String MAX_CHANCE                = "Cascade.MaxChance";
+            public static final String MAX_CHAIN_LENGTH          = "Cascade.MaxChainLength";
+            public static final String STEP_DISTANCE             = "Cascade.StepDistance";
+            public static final String EXPLOSION_RADIUS          = "Cascade.ExplosionRadius";
+            public static final String MAX_RADIUS_BONUS          = "Cascade.MaxRadiusBonus";
+            public static final String MAX_CHAINS                = "Cascade.MaxChains";
+            public static final String HOLOGRAM_ENABLED         = "Cascade.Hologram.Enabled";
+            public static final String HOLOGRAM_DEFAULT_ENABLED = "Cascade.Hologram.DefaultEnabled";
+            public static final String HOLOGRAM_MESSAGE         = "Cascade.Hologram.Message";
+        }
+
+        /**
+         * Jackhammer enchantment configuration.
+         */
+        public static final class Jackhammer
+        {
+            private Jackhammer() {}
+
+            public static final String NAME                      = "Jackhammer.Name";
+            public static final String MAX_LEVEL                 = "Jackhammer.MaxLevel";
+            public static final String MAX_CHANCE                = "Jackhammer.MaxChance";
+            public static final String MAX_SCAN_RADIUS           = "Jackhammer.MaxScanRadius";
+            public static final String HOLOGRAM_ENABLED         = "Jackhammer.Hologram.Enabled";
+            public static final String HOLOGRAM_DEFAULT_ENABLED = "Jackhammer.Hologram.DefaultEnabled";
+            public static final String HOLOGRAM_MESSAGE         = "Jackhammer.Hologram.Message";
+        }
+
+        /**
+         * Nuclear Shower enchantment configuration.
+         */
+        public static final class NuclearShower
+        {
+            private NuclearShower() {}
+
+            public static final String NAME                      = "NuclearShower.Name";
+            public static final String MAX_LEVEL                 = "NuclearShower.MaxLevel";
+            public static final String MAX_CHANCE                = "NuclearShower.MaxChance";
+            public static final String MAX_STREAMS               = "NuclearShower.MaxStreams";
+            public static final String MAX_DEPTH_PER_STREAM     = "NuclearShower.MaxDepthPerStream";
+            public static final String BATCH_SIZE               = "NuclearShower.BatchSize";
+            public static final String MAX_SCAN_RADIUS           = "NuclearShower.MaxScanRadius";
+            public static final String HOLOGRAM_ENABLED         = "NuclearShower.Hologram.Enabled";
+            public static final String HOLOGRAM_DEFAULT_ENABLED = "NuclearShower.Hologram.DefaultEnabled";
+            public static final String HOLOGRAM_MESSAGE         = "NuclearShower.Hologram.Message";
         }
     }
+
+    /**
+     * Paths for the ranks configuration file (ranks.yml).
+     */
+    public static final class Ranks
+    {
+        private Ranks() {}
+
+        /** The rank id new players start at (e.g. "A1"). */
+        public static final String DEFAULT_RANK   = "Ranks.DefaultRank";
+
+        /** Ordered list of rank ids defining rankup progression. */
+        public static final String ORDER          = "Ranks.Order";
+
+        /** Prefix for per-rank data sections. Append the rank id (e.g. "Ranks.Data.A1"). */
+        public static final String DATA_PREFIX    = "Ranks.Data.";
+
+        /** Ordered list of staff rank ids. */
+        public static final String STAFF_ORDER    = "StaffRanks.Order";
+
+        /** Prefix for per-staff-rank data sections. Append the rank id (e.g. "StaffRanks.Data.helper"). */
+        public static final String STAFF_DATA_PREFIX = "StaffRanks.Data.";
+
+        /** Cost (in coins) to rank up TO this rank. Append to DATA_PREFIX + rankId. */
+        public static final String COST_SUFFIX        = ".Cost";
+
+        /** Color-formatted tag shown in chat and scoreboard. Append to DATA_PREFIX + rankId. */
+        public static final String PREFIX_SUFFIX      = ".Prefix";
+
+        /** Hex color applied to the player's name in chat. Append to DATA_PREFIX + rankId. */
+        public static final String CHAT_COLOR_SUFFIX  = ".ChatColor";
+
+        /** The prison block letter this rank belongs to (A–F). Append to DATA_PREFIX + rankId. */
+        public static final String BLOCK_SUFFIX       = ".Block";
+
+        /** Extra permissions granted when reaching this rank. Append to DATA_PREFIX + rankId. */
+        public static final String PERMISSIONS_SUFFIX = ".Permissions";
+
+        /**
+         * Rankup message paths (inside ranks.yml under Messages.*).
+         */
+        public static final class Messages
+        {
+            private Messages() {}
+
+            public static final String RANKUP_SUCCESS      = "Messages.Rankup.Success";
+            public static final String RANKUP_INSUFFICIENT = "Messages.Rankup.Insufficient";
+            public static final String RANKUP_AT_MAX       = "Messages.Rankup.AtMaxRank";
+
+            public static final String SET_RANK_SUCCESS          = "Messages.SetRank.Success";
+            public static final String SET_RANK_PLAYER_NOTIFIED  = "Messages.SetRank.PlayerNotified";
+
+            public static final String SET_STAFF_SUCCESS          = "Messages.SetStaff.Success";
+            public static final String SET_STAFF_CLEARED          = "Messages.SetStaff.Cleared";
+            public static final String SET_STAFF_PLAYER_NOTIFIED  = "Messages.SetStaff.PlayerNotified";
+            public static final String SET_STAFF_PLAYER_CLEARED   = "Messages.SetStaff.PlayerCleared";
+        }
+    }
+
 }

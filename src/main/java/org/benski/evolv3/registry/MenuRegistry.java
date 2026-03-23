@@ -12,6 +12,7 @@ import org.benski.evolv3.menus.BackpackMenu;
 import org.benski.evolv3.menus.EnchantOptionMenu;
 import org.benski.evolv3.menus.EnchantsPreferencesMenu;
 import org.benski.evolv3.menus.ExampleConfigMenu;
+import org.benski.evolv3.menus.FurnaceSmeltMenu;
 import org.benski.evolv3.menus.PickaxeLimitMenu;
 import org.benski.evolv3.menus.PickaxeMenu;
 import org.benski.evolv3.menus.PreferencesMenu;
@@ -42,7 +43,8 @@ public class MenuRegistry implements Registry<Menu>
             PreferencesMenu.class,
             AnimationsMenu.class,
             EnchantsPreferencesMenu.class,
-            EnchantOptionMenu.class
+            EnchantOptionMenu.class,
+            FurnaceSmeltMenu.class
     );
 
     /**

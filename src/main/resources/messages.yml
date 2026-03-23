@@ -19,53 +19,49 @@ prefix: "&3&lE &8➧ "
 # =====================================================
 # Join Message
 # =====================================================
-# Displays when a player joins. The player's 8×8 skin face
-# is shown on the left; the 8 lines below appear to the right.
-# Supports color codes (&/&#RRGGBB) and PlaceholderAPI.
-# skin-padding: spaces prepended to the left of the skin (indentation).
-# Exactly 8 lines — use "" for an empty row.
-# =====================================================
 join-message:
   enabled: true
   skin-padding: "  "
   lines:
     - ""
-    - "&#00FFFF&lWelcome back, &#FFFFFF&l%evolv3_player_name%"
-    - "&#888888Good to see you again."
+    - "  &#00FFFF&lWelcome back, &#FFFFFF&l%evolv3_player_name%"
+    - "  &#888888Good to see you again."
     - ""
-    - "&#B366D9Essence 🔥 %evolv3_player_essence%"
-    - "&#FFEE00Atoms ⚛ %evolv3_pickaxe_evolution_atoms%"
-    - "&#FFD700Coins ⛁ %evolv3_player_coins%"
+    - "  &#B366D9Essence 🔥 %evolv3_player_essence%"
+    - "  &#FFEE00Atoms ⚛ %evolv3_pickaxe_evolution_atoms%"
+    - "  &#FFD700Coins ⛁ %evolv3_player_coins%"
     - ""
 
 general:
-  no-permission: "%evolv3_prefix% &#CCCCCCYou don't have permission to do that."
-  player-only: "%evolv3_prefix% &#CCCCCCThis command can only be used in-game."
-  unknown-command: "%evolv3_prefix% &#CCCCCCUnknown command."
-  reload-success: "%evolv3_prefix% &#00FFFFReload complete."
-  reload-failed: "%evolv3_prefix% &cReload failed. Check the console for details."
+  no-permission: "  %evolv3_prefix% &#CCCCCCYou don't have permission to do that."
+  player-only: "  %evolv3_prefix% &#CCCCCCThis command can only be used in-game."
+  unknown-command: "  %evolv3_prefix% &#CCCCCCUnknown command."
+  reload-success: "  %evolv3_prefix% &#00FFFFReload complete."
+  reload-failed: "  %evolv3_prefix% &cReload failed. Check the console for details."
 
 errors:
-  database-error: "%evolv3_prefix% &cA database error occurred. Please try again."
-  internal-error: "%evolv3_prefix% &cSomething went wrong. Please try again."
-  invalid-arguments: "%evolv3_prefix% &cInvalid usage: &#CCCCCC%usage%"
+  database-error: "  %evolv3_prefix% &cA database error occurred. Please try again."
+  internal-error: "  %evolv3_prefix% &cSomething went wrong. Please try again."
+  invalid-arguments: "  %evolv3_prefix% &cInvalid usage: &#CCCCCC%usage%"
+  menu-not-found: "  %evolv3_prefix% &cMenu not found: &#CCCCCC%menu%"
 
 # =====================================================
 # Pickaxe Messages
 # =====================================================
 pickaxe:
-  loading-profile: "Loading pickaxe profile..."
-  profile-created: "%evolv3_prefix% &#00FFFFPickaxe profile created."
-  no-pickaxe: "%evolv3_prefix% &#CCCCCCYou don't have a pickaxe in storage."
-  enchant-roll-gained: "%evolv3_prefix% &#B366D9&l[Enchant Roll] &#CCCCCCYou earned an Enchant Roll!"
-  pickaxe-broken: "&#FF4444Your pickaxe has broken and been removed from storage."
+  loading-profile: "  Loading pickaxe profile..."
+  profile-created: "  %evolv3_prefix% &#00FFFFPickaxe profile created."
+  no-pickaxe: "  %evolv3_prefix% &#CCCCCCYou don't have a pickaxe in storage."
+  enchant-roll-gained: "  %evolv3_prefix% &#B366D9&l[Enchant Roll] &#CCCCCCYou earned an Enchant Roll!"
+  pickaxe-broken: "  &#FF4444Your pickaxe has broken and been removed from storage."
   drop-confirmation:
     - ""
     - "  &#FF4444⚠ &lConfirm Drop"
     - "  &#CCCCCCDropping this pickaxe will release your ownership."
     - "  &#FFFFFFPress Q again &#CCCCCCto confirm."
     - ""
-  pickup-new-owner: "&#00FFFFYou picked up a pickaxe!"
+  pickup-new-owner: "  &#00FFFFYou picked up a pickaxe!"
+  dropped-display-text: "&b⛏ &f&lLevel %level%  &7XP &f%xp%/%target%"
   durability-warning:
     - ""
     - "  &#FF4444⚠ &lPickaxe Durability Critical"
@@ -89,53 +85,62 @@ pickaxe:
     subtitle: "&#CCCCCCPickaxe is now level &#FFFFFF%level%"
 
   enchant:
-    insufficient-essence: "%evolv3_prefix% &#CCCCCCYou need &#B366D9🔥 &#FFFFFF%required_essence% &#B366D9Essence &#CCCCCCto upgrade &#FFFFFF%enchant_name%&#CCCCCC."
-    upgrade-success: "%evolv3_prefix% &#00FFFF&l[Upgraded] &#FFFFFF%enchant_name% &#CCCCCCis now level &#FFFFFF%new_level%&#CCCCCC."
-    max-level: "%evolv3_prefix% &#FFFFFF%enchant_name% &#CCCCCCis already at max level."
-    all-maxed: "%evolv3_prefix% &#CCCCCCAll enchants are at maximum level."
-    not-available: "%evolv3_prefix% &#CCCCCCThat enchant is not available."
-    unlocked: "%evolv3_prefix% &#B366D9&l[Enchant Unlocked] &#FFFFFF%enchant_name%&#CCCCCC."
-    not-unlocked: "%evolv3_prefix% &#FFFFFF%enchant_name% &#CCCCCChasn't been unlocked yet."
-    no-spins: "%evolv3_prefix% &#CCCCCCNo Enchant Rolls available. Keep mining to earn one."
-    area-secured: "%evolv3_prefix% &#00FFFFArea secured."
-    access-denied: "%evolv3_prefix% &#CCCCCCYou can't use that here."
-    confirm-selection: "%evolv3_prefix% &#00FFFFEnchant selected!"
-    toggle-enabled: "%evolv3_prefix% &#00FF88✔ &#FFFFFF%enchant_name% &#CCCCCCenabled."
-    toggle-disabled: "%evolv3_prefix% &#FF5555✗ &#FFFFFF%enchant_name% &#CCCCCCdisabled."
+    insufficient-essence: "  %evolv3_prefix% &#CCCCCCYou need &#B366D9🔥 &#FFFFFF%required_essence% &#B366D9Essence &#CCCCCCto upgrade &#FFFFFF%enchant_name%&#CCCCCC."
+    upgrade-success: "  %evolv3_prefix% &#FFFFFF%enchant_name% &#CCCCCCis now level &#FFFFFF%new_level%&#CCCCCC."
+    max-level: "  %evolv3_prefix% &#FFFFFF%enchant_name% &#CCCCCCis already at max level."
+    all-maxed: "  %evolv3_prefix% &#CCCCCCAll enchants are at maximum level."
+    not-available: "  %evolv3_prefix% &#CCCCCCThat enchant is not available."
+    unlocked: "  %evolv3_prefix% &#B366D9&l[Enchant Unlocked] &#FFFFFF%enchant_name%&#CCCCCC."
+    not-unlocked: "  %evolv3_prefix% &#FFFFFF%enchant_name% &#CCCCCChasn't been unlocked yet."
+    no-spins: "  %evolv3_prefix% &#CCCCCCNo Enchant Rolls available. Keep mining to earn one."
+    area-secured: "  %evolv3_prefix% &#00FFFFArea secured."
+    access-denied: "  %evolv3_prefix% &#CCCCCCYou can't use that here."
+    confirm-selection: "  %evolv3_prefix% &#00FFFFEnchant selected!"
+    toggle-enabled: "  %evolv3_prefix% &#00FF88✔ &#FFFFFF%enchant_name% &#CCCCCCenabled."
+    toggle-disabled: "  %evolv3_prefix% &#FF5555✗ &#FFFFFF%enchant_name% &#CCCCCCdisabled."
 
   menu:
-    evolution-coming-soon: "%evolv3_prefix% &#CCCCCC&oEvolution coming soon..."
+    evolution-coming-soon: "  %evolv3_prefix% &#CCCCCC&oEvolution coming soon..."
 
   evolve:
-    not-available: "%evolv3_prefix% &#CCCCCCEvolution is not yet available."
-    insufficient-spins: "%evolv3_prefix% &#CCCCCCNot enough Evolution Rolls."
-    success: "%evolv3_prefix% &#FFD700&l[Evolution Roll] &#CCCCCCYou earned an Evolution Roll!"
+    not-available: "  %evolv3_prefix% &#CCCCCCEvolution is not yet available."
+    insufficient-spins: "  %evolv3_prefix% &#CCCCCCNot enough Evolution Rolls."
+    success: "  %evolv3_prefix% &#FFD700&l[Evolution Roll] &#CCCCCCYou earned an Evolution Roll!"
+    result:
+      - ""
+      - "  &b⛏ &b&l EVOLUTION %evolution_level%"
+      - "  &#888888Your pickaxe has ascended to %tier%&#888888."
+      - ""
+      - "  &#FFFFFF&lRewards"
+      - "  &#B366D9🔥 &#FFFFFF+%essence% &#B366D9Essence"
+      - "  %stone_color%✦ &#FFFFFF+1 %stone_rarity% &#FFFFFFEvolution Stone"
+      - ""
 
 # =====================================================
 # Player Messages
 # =====================================================
 player:
-  loading-profile: "Loading player profile..."
-  profile-created: "%evolv3_prefix% &#00FFFFPlayer profile created."
+  loading-profile: "  Loading player profile..."
+  profile-created: "  %evolv3_prefix% &#00FFFFPlayer profile created."
   profile-loaded: ""
 
 # =====================================================
 # Armor Messages
 # =====================================================
 armor:
-  loading-profile: "Loading armor profile..."
-  profile-created: "%evolv3_prefix% &#00FFFFArmor profile created."
-  evolution: "%evolv3_prefix% &#FFD700&l[Evolution] &#CCCCCCYour armor has evolved!"
+  loading-profile: "  Loading armor profile..."
+  profile-created: "  %evolv3_prefix% &#00FFFFArmor profile created."
+  evolution: "  %evolv3_prefix% &#FFD700&l[Evolution] &#CCCCCCYour armor has evolved!"
 
   level-up:
     helmet:
-      - "%evolv3_prefix% &#00FFFF&l[Level Up] &#CCCCCCHelmet reached level &#FFFFFF%level%&#CCCCCC!"
+      - "  %evolv3_prefix% &#00FFFF&l[Level Up] &#CCCCCCHelmet reached level &#FFFFFF%level%&#CCCCCC!"
     chestplate:
-      - "%evolv3_prefix% &#00FFFF&l[Level Up] &#CCCCCCChestplate reached level &#FFFFFF%level%&#CCCCCC!"
+      - "  %evolv3_prefix% &#00FFFF&l[Level Up] &#CCCCCCChestplate reached level &#FFFFFF%level%&#CCCCCC!"
     leggings:
-      - "%evolv3_prefix% &#00FFFF&l[Level Up] &#CCCCCCLeggings reached level &#FFFFFF%level%&#CCCCCC!"
+      - "  %evolv3_prefix% &#00FFFF&l[Level Up] &#CCCCCCLeggings reached level &#FFFFFF%level%&#CCCCCC!"
     boots:
-      - "%evolv3_prefix% &#00FFFF&l[Level Up] &#CCCCCCBoots reached level &#FFFFFF%level%&#CCCCCC!"
+      - "  %evolv3_prefix% &#00FFFF&l[Level Up] &#CCCCCCBoots reached level &#FFFFFF%level%&#CCCCCC!"
 
   level-up-title:
     helmet:
@@ -152,23 +157,24 @@ armor:
       subtitle: "&#CCCCCCBoots is now level &#FFFFFF%level%"
 
   toggle:
-    enabled: "%evolv3_prefix% &#00FFFFArmor tracking enabled."
-    disabled: "%evolv3_prefix% &#888888Armor tracking disabled."
+    enabled: "  %evolv3_prefix% &#00FFFFArmor tracking enabled."
+    disabled: "  %evolv3_prefix% &#888888Armor tracking disabled."
 
   remove:
-    blocked: "%evolv3_prefix% &cThis armor piece cannot be removed."
+    blocked: "  %evolv3_prefix% &cThis armor piece cannot be removed."
 
   drop:
-    confirmation: "%evolv3_prefix% &#CCCCCCArmor dropped."
-    new-owner: "%evolv3_prefix% &#00FFFFYou picked up &#FFFFFF%player%&#00FFFF's armor."
-    no-slots: "%evolv3_prefix% &cYour inventory is full."
+    confirmation: "  %evolv3_prefix% &#CCCCCCArmor dropped."
+    new-owner: "  %evolv3_prefix% &#00FFFFYou picked up &#FFFFFF%player%&#00FFFF's armor."
+    no-slots: "  %evolv3_prefix% &cYour inventory is full."
 
 # =====================================================
 # Backpack Messages
 # =====================================================
 backpack:
-  full: "%evolv3_prefix% &#CCCCCCYour backpack is full."
+  full: "  %evolv3_prefix% &#CCCCCCYour backpack is full."
   item-added: ""
+  nothing-selected: "  &c&lNothing Selected &7— Click items to select them first."
   sell-items:
     - ""
     - "  &#FFD700⛁ &#FFFFFF&lItems Sold &#CCCCCC(Sell Summary)"
@@ -181,67 +187,106 @@ backpack:
 # =====================================================
 enchants:
   efficiency:
-    applied: "&#00FFFF&l[Efficiency] &#CCCCCCSpeed boost applied!"
+    applied: "  &#00FFFF&l[Efficiency] &#CCCCCCSpeed boost applied!"
   frostbite:
     triggered: " &#F0F0F0FROSTBITE &#CCCCCCFroze %blocks% blocks!"
     triggered-title: "&#F0F0F0&lFrostbite"
     triggered-subtitle: "&#CCCCCCFroze %blocks% blocks!"
   furnace:
     triggered: " &#55FF55&lFURNACE &#CCCCCC%original% &#FF6B35> &#CCCCCC%result%"
-    triggered-title: "&#FF6B35&lFurnace"
+    triggered-title: "&#55FF55&lFurnace"
     triggered-subtitle: "&#CCCCCC%original% &#FF6B35> &#CCCCCC%result%"
   alchemy:
     triggered: " &#F0F0F0&lALCHEMY &#CCCCCC%original% &#B366D9> &#CCCCCC%upgrade%"
-    triggered-title: "&#B366D9&lAlchemy"
+    triggered-title: "&#F0F0F0&lAlchemy"
     triggered-subtitle: "&#CCCCCC%original% &#B366D9> &#CCCCCC%upgrade%"
   scavenger:
     triggered: " &#55FF55&lSCAVENGER &#CCCCCCFound +%slots% backpack slots!"
-    triggered-title: "&#FFD700&lScavenger"
+    triggered-title: "&#55FF55&lScavenger"
     triggered-subtitle: "&#CCCCCC+%slots% Backpack Slots!"
   merchant:
     triggered: " &#55FF55&lMERCHANT &#CCCCCCFound +%coins% ⛁ Coins!"
-    triggered-title: "&#FFD700&lMerchant"
+    triggered-title: "&#55FF55&lMerchant"
     triggered-subtitle: "&#CCCCCC+%coins% ⛁ Coins!"
+  extraction:
+    triggered: " &#00FFFF&lEXTRACTION &#CCCCCCExtracted +%essence% 🔥 Essence!"
+    triggered-title: "&#00FFFF&lExtraction"
+    triggered-subtitle: "&#CCCCCC+%essence% 🔥 Essence!"
+  explosive:
+    triggered: " &#FF55CC&lEXPLOSIVE &#CCCCCCBlasted %blocks% blocks!"
+    triggered-title: "&#FF55CC&lExplosive"
+    triggered-subtitle: "&#CCCCCCBlasted %blocks% blocks!"
+  autosell:
+    triggered-title: "&#00FFFF&lAutoSell"
+    triggered-subtitle: "&#00FFFF⛁ &#CCCCCC+%coins%"
+  drill:
+    triggered: " &#00FFFF&lDRILL &#CCCCCCDrilled %blocks% blocks!"
+    triggered-title: "&#00FFFF&lDrill"
+    triggered-subtitle: "&#CCCCCCDrilled %blocks% blocks!"
+  lazer:
+    triggered: " &#FF55CC&lLAZER &#CCCCCCVaporized %blocks% blocks!"
+    triggered-title: "&#FF55CC&lLazer"
+    triggered-subtitle: "&#CCCCCCVaporized %blocks% blocks!"
+  thor:
+    triggered: " &#FF55CC&lTHOR &#CCCCCCStruck %blocks% blocks!"
+    triggered-title: "&#FF55CC&lThor"
+    triggered-subtitle: "&#CCCCCCStruck %blocks% blocks!"
+  vortex:
+    triggered: " &#FFAA00&lVORTEX &#CCCCCCAbsorbed %blocks% blocks!"
+    triggered-title: "&#FFAA00&lVortex"
+    triggered-subtitle: "&#CCCCCCAbsorbed %blocks% blocks!"
+  cascade:
+    triggered: " &#FFAA00&lCASCADE &#CCCCCCChained %blocks% blocks!"
+    triggered-title: "&#FFAA00&lCascade"
+    triggered-subtitle: "&#CCCCCCChained %blocks% blocks!"
+  jackhammer:
+    triggered: " &#FFAA00&lJACKHAMMER &#CCCCCCSmashed %blocks% blocks!"
+    triggered-title: "&#FFAA00&lJackhammer"
+    triggered-subtitle: "&#CCCCCCSmashed %blocks% blocks!"
+  nuclearshower:
+    triggered: " &#39FF14&lNUCLEAR SHOWER &#CCCCCCDissolved %blocks% blocks!"
+    triggered-title: "&#39FF14&lNuclear Shower"
+    triggered-subtitle: "&#CCCCCCDissolved %blocks% blocks!"
 
 # =====================================================
 # Pickaxe Limit Messages
 # =====================================================
 pickaxe-limit:
-  profile-load-error: "%evolv3_prefix% &cFailed to load your profile."
-  already-has-pickaxe: "%evolv3_prefix% &#CCCCCCA pickaxe is already stored in this slot."
-  cooldown-active: "%evolv3_prefix% &#CCCCCCSlow down — wait a moment before clicking again."
-  cooldown-click: "%evolv3_prefix% &#CCCCCCClick again to confirm."
-  blocked-click: "%evolv3_prefix% &#CCCCCCThis slot is locked. Purchase it to unlock."
-  all-slots-unlocked: "%evolv3_prefix% &#00FF88All pickaxe storage slots are already unlocked."
-  slot-purchased: "%evolv3_prefix% &#00FFFF&l[Unlocked] &#CCCCCCSlot &#FFFFFF%slot% &#CCCCCCis now available."
-  insufficient-essence: "%evolv3_prefix% &#CCCCCCNot enough resources to unlock this slot."
-  insufficient-wood: "%evolv3_prefix% &#CCCCCCYou need &#FFFFFF%required_amount% %required_wood% &#CCCCCCto unlock the next slot."
-  purchase-error: "%evolv3_prefix% &cSomething went wrong. Please try again."
+  profile-load-error: "  %evolv3_prefix% &cFailed to load your profile."
+  already-has-pickaxe: "  %evolv3_prefix% &#CCCCCCA pickaxe is already stored in this slot."
+  cooldown-active: "  %evolv3_prefix% &#CCCCCCSlow down — wait a moment before clicking again."
+  cooldown-click: "  %evolv3_prefix% &#CCCCCCClick again to confirm."
+  blocked-click: "  %evolv3_prefix% &#CCCCCCThis slot is locked. Purchase it to unlock."
+  all-slots-unlocked: "  %evolv3_prefix% &#00FF88All pickaxe storage slots are already unlocked."
+  slot-purchased: "  %evolv3_prefix% &#00FFFF&l[Unlocked] &#CCCCCCSlot &#FFFFFF%slot% &#CCCCCCis now available."
+  insufficient-essence: "  %evolv3_prefix% &#CCCCCCNot enough resources to unlock this slot."
+  insufficient-wood: "  %evolv3_prefix% &#CCCCCCYou need &#FFFFFF%required_amount% %required_wood% &#CCCCCCto unlock the next slot."
+  purchase-error: "  %evolv3_prefix% &cSomething went wrong. Please try again."
   pickaxe-deposited:
     - ""
     - "  &#00FFFF⛏ &lPickaxe Deposited"
     - "  &#CCCCCCYour pickaxe has been stored safely."
     - ""
-  pickaxe-not-found: "%evolv3_prefix% &#CCCCCCPickaxe not found in your inventory."
-  must-deposit-before-withdraw: "%evolv3_prefix% &#CCCCCCDeposit your active pickaxe before withdrawing another."
-  inventory-full: "%evolv3_prefix% &cYour inventory is full."
+  pickaxe-not-found: "  %evolv3_prefix% &#CCCCCCPickaxe not found in your inventory."
+  must-deposit-before-withdraw: "  %evolv3_prefix% &#CCCCCCDeposit your active pickaxe before withdrawing another."
+  inventory-full: "  %evolv3_prefix% &cYour inventory is full."
   pickaxe-withdrawn:
     - ""
     - "  &#00FFFF⛏ &lPickaxe Withdrawn"
     - "  &#CCCCCCYour pickaxe is ready to mine."
     - ""
-  must-deposit-before-claim: "%evolv3_prefix% &#CCCCCCDeposit your active pickaxe before claiming a new one."
+  must-deposit-before-claim: "  %evolv3_prefix% &#CCCCCCDeposit your active pickaxe before claiming a new one."
   pickaxe-claimed:
     - ""
     - "  &#00FFFF⛏ &lPickaxe Claimed"
     - "  &#CCCCCCYour journey as a miner begins now."
     - ""
-  must-deposit-before-craft: "%evolv3_prefix% &#CCCCCCDeposit your active pickaxe before crafting."
-  wood-consumption-error: "%evolv3_prefix% &cFailed to consume materials. Please try again."
-  pickaxe-crafted: "%evolv3_prefix% &#00FFFFPickaxe crafted."
-  craft-save-error: "%evolv3_prefix% &cFailed to save the new pickaxe."
-  claim-rate-limited: "&#FF4444Too many claims in a short time. Please wait a moment."
-  pickup-no-slots: "&#CCCCCCYou need a free pickaxe storage slot to pick this up."
+  must-deposit-before-craft: "  %evolv3_prefix% &#CCCCCCDeposit your active pickaxe before crafting."
+  wood-consumption-error: "  %evolv3_prefix% &cFailed to consume materials. Please try again."
+  pickaxe-crafted: "  %evolv3_prefix% &#00FFFFPickaxe crafted."
+  craft-save-error: "  %evolv3_prefix% &cFailed to save the new pickaxe."
+  claim-rate-limited: "  &#FF4444Too many claims in a short time. Please wait a moment."
+  pickup-no-slots: "  &#CCCCCCYou need a free pickaxe storage slot to pick this up."
   repair-success:
     - ""
     - "  &#00FFFF⛏ &lPickaxe Repaired"
@@ -258,3 +303,86 @@ pickaxe-limit:
     - "  &#00FF88⛏ &lAlready Repaired"
     - "  &#CCCCCCYour pickaxe is already at full durability."
     - ""
+
+# =====================================================
+# Pickup Animation Command
+# =====================================================
+pickup-animation:
+  usage-set: "  &cUsage: /pickupanimation set <animation>"
+  unknown-subcommand: "  &cUnknown option. Use: list, set <animation>, next, or others"
+  current-header: "  &#00FFFF&l[Pickup Animation]"
+  current: "  &#CCCCCCCurrent: &#00FFFF%name% &#888888- &#CCCCCC%description%"
+  hint: "  &#CCCCCCUse &#00FFFF/pa list &#CCCCCCto see all options, or &#00FFFF/pa next &#CCCCCCto cycle."
+  list-header: "  &#00FFFF&l[Available Pickup Animations]"
+  list-item-selected: " &#00FFFF> &#FFFFFF%name% &#888888- &#CCCCCC%description% &#00FFFF(selected)"
+  list-item: " &#888888> &#CCCCCC%name% &#888888- &#CCCCCC%description%"
+  list-footer: "  &#CCCCCCUse &#00FFFF/pa set <name> &#CCCCCCto select an animation."
+  set-success: "  &#00FFFFPickup animation set to: &#FFFFFF%name%"
+  invalid-animation: "  &cInvalid animation: %name%. Use /pa list to see available options."
+  cycled: "  &#00FFFFSwitched to: &#FFFFFF%name% &#888888- &#CCCCCC%description%"
+  others-enabled: "  &#00FFFFYou can now see other players' pickup animations."
+  others-disabled: "  &#CCCCCCYou will no longer see other players' pickup animations."
+
+# =====================================================
+# Admin Command Messages (/evolve)
+# =====================================================
+admin:
+  help:
+    - ""
+    - "  &#FFD700&l⚒ &f&lEvolv3 &#888888— &7Command Reference"
+    - "  &#444444&m                                    "
+    - ""
+    - "  &#00CCFF● &fPlayer Commands"
+    - "  &#888888  /pickaxe &#444444» &#CCCCCC Pickaxe menu"
+    - "  &#888888  /backpack &#444444» &#CCCCCC Backpack menu"
+    - "  &#888888  /preferences &#444444» &#CCCCCC Preferences menu"
+    - "  &#888888  /rankup &#444444» &#CCCCCC Rank up"
+    - "  &#888888  /bal [player] &#444444» &#CCCCCC Check balance"
+    - ""
+    - "  &#FFD700● &fRank Management"
+    - "  &#888888  /setrank <player> <rank> &#444444» &#CCCCCC Set prison rank"
+    - "  &#888888  /setstaff <player> <rank|clear> &#444444» &#CCCCCC Set staff rank"
+    - "  &#888888  /rankperm <add|remove|list> <rank> &#444444» &#CCCCCC Rank permissions"
+    - ""
+    - "  &#FF5555● &fAdmin"
+    - "  &#888888  /evolve reload &#444444» &#CCCCCC Reload configs"
+    - "  &#888888  /evolve info &#444444» &#CCCCCC Plugin info"
+    - "  &#888888  /evolve resetpickaxes <player> &#444444» &#CCCCCC Wipe pickaxe data"
+    - "  &#888888  /evolve resetprofile <player> &#444444» &#CCCCCC Delete profile"
+    - "  &#888888  /enchantpickaxe &#444444» &#CCCCCC Force-set enchant on held pickaxe"
+    - ""
+  info:
+    - "  &6&l[Evolv3] &ePlugin Information"
+    - "  &7Version: &f%version%"
+    - "  &7Author: &fBenski"
+    - "  &7Platform: &fPaper 1.21.1"
+    - ""
+    - "  &7Registered Systems:"
+    - "  &7- &aPickaxe Progression"
+    - "  &7- &aArmor Multipliers"
+    - "  &7- &aBackpack System"
+    - "  &7- &aEnchantment System"
+
+# =====================================================
+# Balance Command (/bal)
+# =====================================================
+bal:
+  player-not-found: "  &c&lPlayer Not Found &7— &f%name% &7is not online."
+
+skin:
+  player-not-found: "  &c&lPlayer Not Found &7— &f%name% &7is not online."
+  other-balance: "  &#FFD700⛁ &#FFD700&l%name% &#888888has &#FFD700⛁ &#FFD700&l%balance% &#888888Coins"
+  own-balance: "  &#FFD700⛁ &#FFD700&lYour Balance: &#FFD700⛁ &#FFD700&l%balance% &#888888Coins"
+
+# =====================================================
+# Furnace Smelt Menu Messages
+# =====================================================
+furnace-smelt:
+  smeltable-tag: " &8| &#FF8C00🔥 Smeltable &#888888→ &#FFFFFF%result%"
+
+# =====================================================
+# Enchant Animation Action Bar Messages
+# =====================================================
+enchant-animation:
+  selection-prompt: "  &#FFFF55Look at an enchant and &a&lLEFT-CLICK &#FFFF55to claim it!"
+  enchant-unlocked: "  &#FFD700&l✦ ENCHANT UNLOCKED ✦"

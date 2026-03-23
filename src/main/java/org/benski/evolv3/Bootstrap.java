@@ -35,20 +35,6 @@ public class Bootstrap implements PluginBootstrap {
      * @param event The registry compose event
      */
     private void registerCustomEnchantments(RegistryComposeEvent<Enchantment, EnchantmentRegistryEntry.@NotNull Builder> event) {
-        // Register Explosive Enchantment
-        event.registry().register(
-            TypedKey.create(RegistryKey.ENCHANTMENT, Key.key("evolv3", "explosive")),
-            builder -> builder
-                .description(Component.text("Explosive"))
-                .supportedItems(event.getOrCreateTag(ItemTypeTagKeys.ENCHANTABLE_MINING))
-                .anvilCost(4)
-                .maxLevel(3)
-                .weight(2)  // Rare enchantment
-                .minimumCost(EnchantmentRegistryEntry.EnchantmentCost.of(15, 9))
-                .maximumCost(EnchantmentRegistryEntry.EnchantmentCost.of(65, 9))
-                .activeSlots(EquipmentSlotGroup.MAINHAND)
-        );
-
         // Register Efficiency Enchantment (Passive - Mining Speed)
         event.registry().register(
             TypedKey.create(RegistryKey.ENCHANTMENT, Key.key("evolv3", "efficiency")),

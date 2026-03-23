@@ -157,7 +157,7 @@ public class ItemStackExtensions
 
     /**
      * Updates the display name and lore of an ItemStack using the pickaxe config.
-     * Delegates to {@link org.benski.evolv3.managers.PickaxeManager#updateLore} so that
+     * Delegates to {@link org.benski.evolv3.core.managers.PickaxeManager#updateLore} so that
      * the enchant list is rendered as separate lore lines (not a single PAPI-joined string).
      *
      * @param item    The ItemStack to update
@@ -165,7 +165,7 @@ public class ItemStackExtensions
      */
     public static void updateLore(ItemStack item, PickaxeProfile profile) {
         if (item == null || item.getType() == Material.AIR || profile == null) return;
-        org.benski.evolv3.managers.PickaxeManager.getInstance().updateLore(profile.getOwner(), item);
+        org.benski.evolv3.core.managers.PickaxeManager.getInstance().updateLore(profile.getOwner(), item);
     }
 
     /**

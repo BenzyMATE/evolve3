@@ -12,8 +12,8 @@ import java.util.logging.Logger;
  */
 public abstract class MongoDocument implements MongoCollection
 {
-    protected MongoManager mongoManager = MongoManager.getInstance();
-    protected Logger LOGGER = Main.getInstance().getLogger();
+    protected static final MongoManager mongoManager = MongoManager.getInstance();
+    protected static final Logger LOGGER = Main.getInstance().getLogger();
 
     /**
      * Initializes the entity

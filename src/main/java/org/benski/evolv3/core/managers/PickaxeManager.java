@@ -1,13 +1,13 @@
-package org.benski.evolv3.managers;
+package org.benski.evolv3.core.managers;
 
 import lombok.Getter;
 import lombok.experimental.ExtensionMethod;
+import org.benski.evolv3.Main;
 import org.benski.evolv3.core.constants.ConfigNames;
 import org.benski.evolv3.core.constants.ConfigPaths;
 import org.benski.evolv3.core.constants.Enchants;
 import org.benski.evolv3.core.helpers.ItemStackExtensions;
 import org.benski.evolv3.core.helpers.Utils;
-import org.benski.evolv3.core.managers.EnchantAnimationConfig;
 import org.benski.evolv3.core.types.EnchantOption;
 import org.benski.evolv3.datacenters.ArmorDataCenter;
 import org.benski.evolv3.datacenters.PickaxeDataCenter;
@@ -17,6 +17,7 @@ import org.benski.evolv3.enums.ArmorType;
 import org.benski.evolv3.models.armor.ArmorItem;
 import org.benski.evolv3.models.armor.ArmorProfile;
 import org.benski.evolv3.models.pickaxe.EnchantData;
+import org.benski.evolv3.enums.EvolutionTier;
 import org.benski.evolv3.models.pickaxe.PickaxeProfile;
 import org.benski.evolv3.models.player.PlayerProfile;
 import org.benski.evolv3.registry.DataCenterRegistry;
@@ -249,16 +250,9 @@ public class PickaxeManager
         // Send level up message (multi-line, centered)
         List<String> levelUpLines = getMessagesConfig().getStringList(ConfigPaths.Messages.Pickaxe.LEVEL_UP);
         if (levelUpLines.isEmpty()) {
-            levelUpLines = List.of(
-                    "",
-                    "&#FFFFFF&lLEVEL %old_level% &#888888➤ &#00FFFFLEVEL %level%",
-                    "&#CCCCCCYou leveled up your Pickaxe!",
-                    "",
-                    "&#FFFFFF&lRewards",
-                    " &8| &#B366D9🔥 &#FFFFFF+%essence% &#B366D9Essence",
-                    " &8| &#FFEE00⚛ &#FFFFFF+%atoms% &#FFEE00Atoms",
-                    ""
-            );
+            Main.getInstance().getLogger().warning(
+                    "Missing messages.yml key: " + ConfigPaths.Messages.Pickaxe.LEVEL_UP);
+            levelUpLines = List.of("Level up! Now level %level%.");
         }
         for (String line : levelUpLines) {
             String processed = line
@@ -334,6 +328,126 @@ public class PickaxeManager
         player.sendMessage(Utils.formatMessage(player, msg));
     }
 
+    // -------------------------------------------------------------------------
+    // Evolution
+    // -------------------------------------------------------------------------
+
+    /**
+     * Validates whether a player can evolve their pickaxe, sending an error message
+     * and playing a failure sound if not.
+     *
+     * @param player  the player attempting to evolve
+     * @param profile the pickaxe profile to check
+     * @return true if evolution is possible, false if blocked
+     */
+    public boolean validateEvolution(@org.jetbrains.annotations.NotNull Player player,
+                                     @org.jetbrains.annotations.NotNull PickaxeProfile profile)
+    {
+        FileConfiguration messages = getMessagesConfig();
+        EvolutionTier current = EvolutionTier.fromLevel(profile.evolution);
+
+        if (current.isMax()) {
+            String msg = messages.getString(ConfigPaths.Messages.Pickaxe.EVOLVE_MAX_TIER,
+                    "%evolv3_prefix% &#CCCCCCYour pickaxe is already at the highest tier.");
+            player.sendMessage(Utils.formatMessage(player, msg));
+            player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_BASS, 0.8f, 0.8f);
+            return false;
+        }
+
+        if (profile.evolutionRolls <= 0) {
+            String msg = messages.getString(ConfigPaths.Messages.Pickaxe.EVOLVE_INSUFFICIENT_SPINS,
+                    "%evolv3_prefix% &#CCCCCCNot enough Evolution Rolls.");
+            player.sendMessage(Utils.formatMessage(player, msg));
+            player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Applies the result of an evolution after the animation completes.
+     *
+     * <p>Updates the pickaxe tier, material, lore, and sends the success message
+     * including the stone rarity reward. Should only be called from the
+     * {@link org.benski.evolv3.animations.EvolutionAnimation} callback.</p>
+     *
+     * @param player        the owning player
+     * @param profile       the pickaxe profile to update
+     * @param playerProfile the player's profile (holds stored-pickaxe entries)
+     * @param next          the tier the pickaxe is advancing to
+     * @param stone         the evolution stone rarity awarded
+     */
+    public void applyEvolutionResult(@org.jetbrains.annotations.NotNull Player player,
+                                     @org.jetbrains.annotations.NotNull PickaxeProfile profile,
+                                     @org.jetbrains.annotations.NotNull PlayerProfile playerProfile,
+                                     @org.jetbrains.annotations.NotNull EvolutionTier next,
+                                     @org.jetbrains.annotations.NotNull org.benski.evolv3.core.types.RarityConfig stone)
+    {
+        profile.evolution = next.level;
+
+        updateStoredPickaxeMaterial(playerProfile, profile.key, next.material);
+
+        // Update held item material if this pickaxe is currently in the player's hand
+        ItemStack held = player.getInventory().getItemInMainHand();
+        String heldId = ItemStackExtensions.getData(held, "id");
+        if (profile.key.equals(heldId)) {
+            held.setType(next.material);
+            player.getInventory().setItemInMainHand(held);
+        }
+
+        // Award essence reward
+        int essenceReward = getDefaultConfig().getInt(
+                ConfigPaths.Messages.Pickaxe.EVOLVE_ESSENCE_REWARD, 250);
+        profile.currentEssence  += essenceReward;
+        playerProfile.essence   += essenceReward;
+
+        profile.save(null);
+        playerProfile.save(null);
+        updateLore(player, null);
+
+        // Build rarity color tag (&#RRGGBB format)
+        String rarityHex   = String.format("%06X", stone.textColor().value());
+        String stoneColor  = "&#" + rarityHex;
+
+        // Send multi-line result message (mirrors the level-up format)
+        FileConfiguration messages = getMessagesConfig();
+        List<String> resultLines = messages.getStringList(ConfigPaths.Messages.Pickaxe.EVOLVE_RESULT);
+        if (resultLines.isEmpty()) {
+            // Fallback single-line if config missing
+            String fallback = "%evolv3_prefix% &#FFD700&l[Evolution] &#CCCCCCPickaxe evolved to %tier%&#CCCCCC!";
+            player.sendMessage(Utils.formatMessage(player, fallback.replace("%tier%", next.displayName)));
+        } else {
+            for (String line : resultLines) {
+                String formatted = line
+                        .replace("%tier%",              next.displayName)
+                        .replace("%evolution_level%",   String.valueOf(next.level))
+                        .replace("%essence%",           String.valueOf(essenceReward))
+                        .replace("%stone_color%",       stoneColor)
+                        .replace("%stone_rarity%",      stone.displayName());
+                player.sendMessage(Utils.formatMessage(player, formatted));
+            }
+        }
+    }
+
+    /**
+     * Updates the material stored in the {@code storedPickaxes} list entry for the
+     * given pickaxe ID. The entry format is {@code "pickaxeId:MATERIAL_NAME"}.
+     */
+    private void updateStoredPickaxeMaterial(@org.jetbrains.annotations.NotNull PlayerProfile playerProfile,
+                                             @org.jetbrains.annotations.NotNull String pickaxeId,
+                                             @org.jetbrains.annotations.NotNull Material material)
+    {
+        List<String> stored = playerProfile.storedPickaxes;
+        for (int i = 0; i < stored.size(); i++) {
+            String entry = stored.get(i);
+            if (entry != null && entry.startsWith(pickaxeId + ":")) {
+                stored.set(i, pickaxeId + ":" + material.name());
+                return;
+            }
+        }
+    }
+
     /**
      * Calculates the essence reward for a level up.
      * Formula: random between ((level-1)*increment+1) and (level*increment)
@@ -364,7 +478,7 @@ public class PickaxeManager
      * @param profile  the player's current pickaxe profile
      */
     public void applyEnchantFromSelection(Player player, EnchantOption selected, PickaxeProfile profile) {
-        String internalName = selected.name().toLowerCase();
+        String internalName = selected.name().toLowerCase().replace(" ", "");
         int    maxLevel     = EnchantAnimationConfig.getEnchantMaxLevel(selected.name());
 
         FileConfiguration messages = getMessagesConfig();
@@ -372,7 +486,7 @@ public class PickaxeManager
 
         if (existing != null) {
             if (existing.isMaxLevel()) {
-                // Already at max — notify but don't consume the roll (caller already deducted it)
+                // Already at max — notify via action bar since the animation has ended by now
                 String msg = messages.getString(ConfigPaths.Messages.Pickaxe.ENCHANT_MAX_LEVEL,
                         "%evolv3_prefix% &7Your enchant is already at maximum level.");
                 msg = msg.replace("%enchant_name%", selected.name())
@@ -380,21 +494,14 @@ public class PickaxeManager
                 player.sendMessage(Utils.formatMessage(player, msg));
             } else {
                 existing.level++;
-                String msg = messages.getString(ConfigPaths.Messages.Pickaxe.ENCHANT_UPGRADE_SUCCESS,
-                        "%evolv3_prefix% &7Upgraded %enchant_name% to level %new_level%!");
-                msg = msg.replace("%enchant_name%", selected.name())
-                         .replace("%new_level%", String.valueOf(existing.level));
-                player.sendMessage(Utils.formatMessage(player, msg));
+                // Result already communicated by the animation's action bar (✦ +1 LEVEL)
             }
         } else {
             // Unlock as a new enchant at level 1
             double maxChance = EnchantAnimationConfig.getEnchantMaxChance(selected.name());
             EnchantData newEnchant = new EnchantData(internalName, 1, maxLevel, maxChance);
             profile.enchants.setEnchant(newEnchant);
-            String msg = messages.getString(ConfigPaths.Messages.Pickaxe.ENCHANT_UNLOCKED,
-                    "%evolv3_prefix% &#B366D9&l[ENCHANT] &#CCCCCCYou unlocked &#FFFFFF%enchant_name%&#CCCCCC!");
-            msg = msg.replace("%enchant_name%", selected.name());
-            player.sendMessage(Utils.formatMessage(player, msg));
+            // Result already communicated by the animation's action bar (✦ UNLOCKED)
         }
 
         profile.save(null);
@@ -413,7 +520,7 @@ public class PickaxeManager
      */
     public boolean upgradeEnchantWithEssence(Player player, PickaxeProfile profile,
                                               PlayerProfile playerProfile, String displayName) {
-        String internalName = displayName.toLowerCase();
+        String internalName = displayName.toLowerCase().replace(" ", "");
         EnchantData enchant = profile.enchants.getEnchant(internalName);
         FileConfiguration messages = getMessagesConfig();
 
@@ -441,6 +548,7 @@ public class PickaxeManager
             msg = msg.replace("%required_essence%", String.valueOf(cost))
                      .replace("%enchant_name%", displayName);
             player.sendMessage(Utils.formatMessage(player, msg));
+            player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
             return false;
         }
 
@@ -456,6 +564,7 @@ public class PickaxeManager
         msg = msg.replace("%enchant_name%", displayName)
                  .replace("%new_level%", String.valueOf(enchant.level));
         player.sendMessage(Utils.formatMessage(player, msg));
+        player.playSound(player.getLocation(), Sound.BLOCK_ENCHANTMENT_TABLE_USE, 1.0f, 1.2f);
 
         return true;
     }
@@ -480,31 +589,14 @@ public class PickaxeManager
     public List<Component> buildLoreComponents(Player player, PickaxeProfile profile,
                                                List<String> footerLines, String durabilityBar)
     {
-        LegacyComponentSerializer serializer = LegacyComponentSerializer.legacySection();
         List<String> loreTemplate = getDefaultConfig().getStringList(ConfigPaths.Default.Pickaxe.LORE);
-        List<String> rawLore = new ArrayList<>();
-
-        for (String line : loreTemplate) {
-            if (line.contains("%evolv3_pickaxe_enchants%")) {
-                handleEnchantsLore(profile, rawLore, player);
-            } else {
-                rawLore.add(Utils.formatMessage(player, substitutePlaceholders(line, profile, durabilityBar)));
-            }
-        }
+        List<String> rawLore = buildFormattedLoreStrings(player, profile, loreTemplate, durabilityBar);
 
         for (String line : footerLines) {
             rawLore.add(Utils.formatMessage(player, substitutePlaceholders(line, profile, durabilityBar)));
         }
 
-        List<Component> components = new ArrayList<>();
-        for (String line : rawLore) {
-            if (line.isEmpty()) {
-                components.add(Component.empty());
-            } else {
-                components.add(serializer.deserialize(line).decoration(TextDecoration.ITALIC, false));
-            }
-        }
-        return components;
+        return toComponents(rawLore);
     }
 
     /**
@@ -572,39 +664,25 @@ public class PickaxeManager
         String durabilityBar = Utils.buildDurabilityBar(damage, item.getType().getMaxDurability());
 
         List<String> loreTemplate = getDefaultConfig().getStringList(ConfigPaths.Default.Pickaxe.LORE);
-        List<String> loreFooter = getDefaultConfig().getStringList(ConfigPaths.Default.Pickaxe.LORE_FOOTER);
-        List<String> formattedLore = new ArrayList<>();
+        List<String> loreFooter   = getDefaultConfig().getStringList(ConfigPaths.Default.Pickaxe.LORE_FOOTER);
 
-        for (String line : loreTemplate) {
-            if (line.contains("%evolv3_pickaxe_enchants%")) {
-                handleEnchantsLore(profile, formattedLore, player);
-            } else {
-                formattedLore.add(Utils.formatMessage(player, substitutePlaceholders(line, profile, durabilityBar)));
-            }
-        }
+        List<String> formattedLore = buildFormattedLoreStrings(player, profile, loreTemplate, durabilityBar);
 
         // Blank line + durability bar — appended after statistics, before footer
         formattedLore.add("");
-        formattedLore.add(Utils.formatMessage(player, " &8| &#00FFFFDurability:"));
-        formattedLore.add(Utils.formatMessage(player, " &8| " + durabilityBar));
+        String durabilityLabel = getDefaultConfig().getString(ConfigPaths.Default.Pickaxe.DURABILITY_LABEL, " &8| &#00FFFFDurability:");
+        formattedLore.add(Utils.formatMessage(player, durabilityLabel));
+        String barPrefix = getDefaultConfig().getString(ConfigPaths.Default.Pickaxe.DURABILITY_BAR_PREFIX, " &8| ");
+        formattedLore.add(Utils.formatMessage(player, barPrefix + durabilityBar));
 
         for (String line : loreFooter) {
             formattedLore.add(Utils.formatMessage(player, substitutePlaceholders(line, profile, durabilityBar)));
         }
 
-        LegacyComponentSerializer serializer = LegacyComponentSerializer.legacySection();
-        List<Component> loreComponents = new ArrayList<>();
-        for (String line : formattedLore) {
-            if (line.isEmpty()) {
-                loreComponents.add(Component.empty());
-            } else {
-                loreComponents.add(serializer.deserialize(line).decoration(TextDecoration.ITALIC, false));
-            }
-        }
-        meta.lore(loreComponents);
+        meta.lore(toComponents(formattedLore));
 
         String name = getDefaultConfig().getString(ConfigPaths.Default.Pickaxe.NAME, "&bPickaxe");
-        meta.displayName(serializer.deserialize(Utils.formatMessage(player, name))
+        meta.displayName(LegacyComponentSerializer.legacySection().deserialize(Utils.formatMessage(player, name))
                 .decoration(TextDecoration.ITALIC, false));
 
         EnchantData efficiency = profile.enchants.getEnchant(Enchants.EFFICIENCY);
@@ -630,6 +708,40 @@ public class PickaxeManager
     }
 
     /**
+     * Builds the list of formatted lore strings from a template, expanding the enchants
+     * placeholder inline. Used by both {@link #buildLoreComponents} and {@link #applyLoreAndName}
+     * to avoid duplicating the iteration logic.
+     */
+    private List<String> buildFormattedLoreStrings(Player player, PickaxeProfile profile,
+                                                    List<String> template, String durabilityBar) {
+        List<String> result = new ArrayList<>();
+        for (String line : template) {
+            if (line.contains("%evolv3_pickaxe_enchants%")) {
+                handleEnchantsLore(profile, result, player);
+            } else {
+                result.add(Utils.formatMessage(player, substitutePlaceholders(line, profile, durabilityBar)));
+            }
+        }
+        return result;
+    }
+
+    /**
+     * Converts a list of legacy-colour strings to Adventure {@link Component}s with italic suppressed.
+     */
+    private List<Component> toComponents(List<String> lines) {
+        LegacyComponentSerializer serializer = LegacyComponentSerializer.legacySection();
+        List<Component> components = new ArrayList<>(lines.size());
+        for (String line : lines) {
+            if (line.isEmpty()) {
+                components.add(Component.empty());
+            } else {
+                components.add(serializer.deserialize(line).decoration(TextDecoration.ITALIC, false));
+            }
+        }
+        return components;
+    }
+
+    /**
      * Handles the enchants placeholder in lore, replacing it with one line per enchant.
      * Each enchant line is coloured with the enchant's rarity colour and includes the level.
      *
@@ -645,7 +757,13 @@ public class PickaxeManager
             return;
         }
 
-        for (EnchantData enchant : profile.enchants.items) {
+        List<EnchantData> sorted = profile.enchants.items.stream()
+                .sorted(java.util.Comparator.comparingInt(e ->
+                        EnchantAnimationConfig.getEnchantRarityIndex(
+                                EnchantAnimationConfig.getDisplayName(e.name))))
+                .toList();
+
+        for (EnchantData enchant : sorted) {
             String displayName = EnchantAnimationConfig.getDisplayName(enchant.name);
 
             // Resolve rarity colour — uppercase hex required for MatrixColorAPI

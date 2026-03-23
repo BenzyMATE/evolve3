@@ -1,6 +1,7 @@
 package org.benski.evolv3.models.pickaxe;
 
 import org.benski.evolv3.core.interfaces.MongoSubDocument;
+import org.benski.evolv3.core.managers.EnchantAnimationConfig;
 import org.bson.Document;
 
 /**
@@ -94,8 +95,8 @@ public class EnchantData implements MongoSubDocument
         Document doc = new Document();
         doc.put("name", name);
         doc.put("level", level);
-        doc.put("maxLevel", maxLevel);
-        doc.put("maxChance", maxChance);
+        // maxLevel and maxChance are config-driven — not persisted so config changes
+        // always take effect without a DB migration.
         doc.put("enabled", enabled);
         return doc;
     }
@@ -111,8 +112,11 @@ public class EnchantData implements MongoSubDocument
         }
         this.name = document.getString("name");
         this.level = document.getInteger("level", 0);
-        this.maxLevel = document.getInteger("maxLevel", 100);
-        this.maxChance = document.getDouble("maxChance") != null ? document.getDouble("maxChance") : 0.0;
         this.enabled = document.getBoolean("enabled", true);
+        // Resolve maxLevel and maxChance from config so they always reflect the
+        // current enchants.yml values rather than a potentially stale DB snapshot.
+        String displayName = EnchantAnimationConfig.getDisplayName(this.name != null ? this.name : "");
+        this.maxLevel  = EnchantAnimationConfig.getEnchantMaxLevel(displayName);
+        this.maxChance = EnchantAnimationConfig.getEnchantMaxChance(displayName);
     }
 }

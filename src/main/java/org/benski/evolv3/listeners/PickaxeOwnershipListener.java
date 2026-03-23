@@ -2,15 +2,15 @@ package org.benski.evolv3.listeners;
 
 import lombok.experimental.ExtensionMethod;
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
+import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.benski.evolv3.core.abstracts.BaseListener;
 import org.benski.evolv3.core.constants.ConfigNames;
 import org.benski.evolv3.core.constants.ConfigPaths;
 import org.benski.evolv3.core.helpers.ItemStackExtensions;
 import org.benski.evolv3.core.helpers.Utils;
 import org.benski.evolv3.datacenters.PlayerDataCenter;
-import org.benski.evolv3.managers.PickaxeManager;
+import org.benski.evolv3.core.managers.PickaxeManager;
 import org.benski.evolv3.models.pickaxe.PickaxeProfile;
 import org.benski.evolv3.models.player.PlayerProfile;
 import org.benski.evolv3.registry.ConfigRegistry;
@@ -451,15 +451,19 @@ public class PickaxeOwnershipListener extends BaseListener
 
     /**
      * Builds the Adventure Component text shown in the floating TextDisplay.
+     * Template is read from messages.yml to allow server customization.
      */
     private Component buildDisplayText(PickaxeProfile profile)
     {
-        return Component.empty()
-            .append(Component.text("⛏ ", NamedTextColor.AQUA))
-            .append(Component.text("Level " + profile.level, NamedTextColor.WHITE)
-                .decorate(TextDecoration.BOLD))
-            .append(Component.text("  XP ", NamedTextColor.GRAY))
-            .append(Component.text(profile.xp + "/" + profile.target, NamedTextColor.WHITE));
+        String template = ConfigRegistry.getInstance().get(ConfigNames.MESSAGES)
+                .getString(ConfigPaths.Messages.Pickaxe.DROPPED_DISPLAY_TEXT,
+                        "&b⛏ &f&lLevel %level%  &7XP &f%xp%/%target%")
+                .replace("%level%", String.valueOf(profile.level))
+                .replace("%xp%", String.valueOf(profile.xp))
+                .replace("%target%", String.valueOf(profile.target));
+        return LegacyComponentSerializer.legacyAmpersand()
+                .deserialize(template)
+                .decoration(TextDecoration.ITALIC, false);
     }
 
     /**

@@ -3,6 +3,13 @@ package org.benski.evolv3.registry;
 import lombok.Getter;
 import org.benski.evolv3.Main;
 import org.benski.evolv3.animations.AtomAnimation;
+import org.benski.evolv3.animations.DrillAnimation;
+import org.benski.evolv3.animations.LazerAnimation;
+import org.benski.evolv3.animations.CascadeAnimation;
+import org.benski.evolv3.animations.JackhammerAnimation;
+import org.benski.evolv3.animations.NuclearShowerAnimation;
+import org.benski.evolv3.animations.ThorAnimation;
+import org.benski.evolv3.animations.VortexAnimation;
 import org.benski.evolv3.animations.EnchantAnimation;
 import org.benski.evolv3.animations.EssenceAnimation;
 import org.benski.evolv3.animations.ExplosionAnimation;
@@ -50,7 +57,14 @@ public class AnimationRegistry implements Registry<BaseAnimation>
             EssenceAnimation.class,
             AtomAnimation.class,
             HologramAnimation.class,
-            ResinAnimation.class
+            ResinAnimation.class,
+            DrillAnimation.class,
+            LazerAnimation.class,
+            ThorAnimation.class,
+            VortexAnimation.class,
+            CascadeAnimation.class,
+            JackhammerAnimation.class,
+            NuclearShowerAnimation.class
     );
 
     @Override
@@ -62,7 +76,8 @@ public class AnimationRegistry implements Registry<BaseAnimation>
 
     @Override
     public BaseAnimation get(String id) {
-        return null;
+        throw new UnsupportedOperationException(
+                "AnimationRegistry does not store instances. Use create(id, args) or play(id, location, viewers).");
     }
 
     @Override

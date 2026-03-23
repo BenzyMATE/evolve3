@@ -1,7 +1,12 @@
 package org.benski.evolv3.core.managers;
 
+import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
+import org.benski.evolv3.core.constants.ConfigNames;
+import org.benski.evolv3.core.constants.ConfigPaths;
+import org.benski.evolv3.core.helpers.Utils;
 import org.benski.evolv3.core.interfaces.Menu;
 import org.benski.evolv3.core.types.MenuType;
+import org.benski.evolv3.registry.ConfigRegistry;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -74,7 +79,12 @@ public class MenuRegistryManager implements Listener
     public void openMenu(Player player, MenuType menuType) {
         Menu menu = menuMap.get(menuType);
         if (menu == null) {
-            player.sendMessage("§cMenu not found: " + menuType.toString());
+            String msg = ConfigRegistry.getInstance().get(ConfigNames.MESSAGES)
+                    .getString(ConfigPaths.Messages.Errors.MENU_NOT_FOUND,
+                            "&cMenu not found: &#CCCCCC%menu%")
+                    .replace("%menu%", menuType.toString());
+            player.sendMessage(LegacyComponentSerializer.legacySection()
+                    .deserialize(Utils.formatMessage(player, msg)));
             plugin.getLogger().warning("Attempted to open unregistered menu: " + menuType.toString());
             return;
         }

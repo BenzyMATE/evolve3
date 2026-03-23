@@ -5,7 +5,7 @@ import org.benski.evolv3.core.abstracts.BaseCommand;
 import org.benski.evolv3.core.helpers.ItemStackExtensions;
 import org.benski.evolv3.core.managers.EnchantAnimationConfig;
 import org.benski.evolv3.datacenters.PickaxeDataCenter;
-import org.benski.evolv3.managers.PickaxeManager;
+import org.benski.evolv3.core.managers.PickaxeManager;
 import org.benski.evolv3.models.pickaxe.EnchantData;
 import org.benski.evolv3.models.pickaxe.PickaxeProfile;
 import org.benski.evolv3.registry.DataCenterRegistry;
@@ -17,6 +17,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -47,9 +48,10 @@ public class EnchantPickaxeCommand extends BaseCommand
 
         if (!requireArgs(sender, args, 2, getUsage())) return true;
 
+        // Level is always the last argument; enchant name is everything before it.
         int level;
         try {
-            level = Integer.parseInt(args[1]);
+            level = Integer.parseInt(args[args.length - 1]);
         } catch (NumberFormatException e) {
             sendError(player, "Level must be a number.");
             return true;
@@ -60,7 +62,8 @@ public class EnchantPickaxeCommand extends BaseCommand
             return true;
         }
 
-        String displayName = resolveDisplayName(args[0]);
+        String enchantInput = String.join(" ", Arrays.copyOfRange(args, 0, args.length - 1));
+        String displayName = resolveDisplayName(enchantInput);
         if (displayName == null) {
             sendError(player, "Unknown enchant: " + args[0]
                     + ". Valid names: " + String.join(", ", EnchantAnimationConfig.getEnchantOrder()));
@@ -86,7 +89,7 @@ public class EnchantPickaxeCommand extends BaseCommand
         PickaxeProfile profile = dc.getAll().get(pickaxeId);
         if (profile == null) { sendError(player, "Could not find a profile for this pickaxe."); return true; }
 
-        String internalName  = displayName.toLowerCase();
+        String internalName  = displayName.toLowerCase().replace(" ", "");
         double maxChance     = EnchantAnimationConfig.getEnchantMaxChance(displayName);
         EnchantData existing = profile.enchants.getEnchant(internalName);
 
@@ -106,20 +109,30 @@ public class EnchantPickaxeCommand extends BaseCommand
     public @Nullable List<String> getTabCompletion(@NotNull CommandSender sender, @NotNull Command command,
                                                     @NotNull String alias, @NotNull String[] args)
     {
-        if (args.length == 1) {
-            String input = args[0].toLowerCase();
-            return EnchantAnimationConfig.getEnchantOrder().stream()
-                    .filter(name -> name.toLowerCase().startsWith(input))
-                    .toList();
-        }
-        if (args.length == 2) {
-            String displayName = resolveDisplayName(args[0]);
-            if (displayName != null) {
-                int max = EnchantAnimationConfig.getEnchantMaxLevel(displayName);
-                return List.of("1", String.valueOf(max / 2), String.valueOf(max));
+        // Everything typed so far except the current arg is a candidate enchant prefix.
+        String currentArg   = args[args.length - 1].toLowerCase();
+        String typedBefore  = args.length > 1
+                ? String.join(" ", Arrays.copyOfRange(args, 0, args.length - 1))
+                : "";
+
+        // If everything typed before this arg resolves to a complete enchant name,
+        // the user is now completing the level.
+        if (!typedBefore.isEmpty()) {
+            String resolved = resolveDisplayName(typedBefore);
+            if (resolved != null) {
+                int max = EnchantAnimationConfig.getEnchantMaxLevel(resolved);
+                return List.of("1", String.valueOf(max / 2), String.valueOf(max))
+                        .stream().filter(s -> s.startsWith(currentArg)).toList();
             }
         }
-        return null;
+
+        // Otherwise suggest enchant names whose next word matches the current arg.
+        String prefix = typedBefore.isEmpty() ? currentArg : typedBefore + " " + currentArg;
+        return EnchantAnimationConfig.getEnchantOrder().stream()
+                .filter(name -> name.toLowerCase().startsWith(prefix.toLowerCase()))
+                .map(name -> name.split(" ")[typedBefore.isEmpty() ? 0 : typedBefore.split(" ").length])
+                .distinct()
+                .toList();
     }
 
     private @Nullable String resolveDisplayName(String input)

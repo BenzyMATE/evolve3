@@ -7,8 +7,11 @@ import org.benski.evolv3.core.abstracts.BaseEnchantAnimation;
 import org.benski.evolv3.core.types.EnchantOption;
 import org.benski.evolv3.core.types.PendingEnchantData;
 import org.benski.evolv3.core.types.PreferenceType;
+import org.benski.evolv3.datacenters.PickaxeDataCenter;
 import org.benski.evolv3.datacenters.PlayerDataCenter;
+import org.benski.evolv3.models.pickaxe.EnchantData;
 import org.benski.evolv3.models.pickaxe.PendingEnchantDocument;
+import org.benski.evolv3.models.pickaxe.PickaxeProfile;
 import org.benski.evolv3.models.player.PlayerProfile;
 import org.benski.evolv3.registry.AnimationRegistry;
 import org.benski.evolv3.registry.DataCenterRegistry;
@@ -19,8 +22,10 @@ import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitRunnable;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiConsumer;
@@ -136,7 +141,7 @@ public class EnchantSelectionManager
      * @return {@code true} if the animation started successfully
      */
     public boolean startSelection(Player player, BiConsumer<Player, EnchantOption> onSelect) {
-        List<EnchantOption> options = EnchantAnimationConfig.generateRandom(3);
+        List<EnchantOption> options = EnchantAnimationConfig.generateRandom(3, resolveMaxedEnchants(player));
         return startSelectionInternal(player, options, onSelect, null);
     }
 
@@ -155,7 +160,7 @@ public class EnchantSelectionManager
      */
     public boolean startSelection(Player player, String pickaxeKey,
                                   BiConsumer<Player, EnchantOption> onSelect) {
-        List<EnchantOption> options = EnchantAnimationConfig.generateRandom(3);
+        List<EnchantOption> options = EnchantAnimationConfig.generateRandom(3, resolveMaxedEnchants(player));
         return startSelectionInternal(player, options, onSelect, pickaxeKey);
     }
 
@@ -375,6 +380,26 @@ public class EnchantSelectionManager
     // -------------------------------------------------------------------------
     // Internal
     // -------------------------------------------------------------------------
+
+    /**
+     * Returns the set of internal enchant names that are at max level on the player's
+     * current pickaxe.  These are excluded from the selection pool so the player is
+     * never offered an enchant they can no longer upgrade.
+     */
+    private Set<String> resolveMaxedEnchants(Player player) {
+        PickaxeDataCenter pickaxeDC = DataCenterRegistry.getInstance().getPickaxeDataCenter();
+        if (pickaxeDC == null) return java.util.Collections.emptySet();
+        PickaxeProfile profile = pickaxeDC.getLocal(player);
+        if (profile == null || profile.enchants == null) return java.util.Collections.emptySet();
+
+        Set<String> maxed = new HashSet<>();
+        for (EnchantData enchant : profile.enchants.items) {
+            if (enchant.isMaxLevel()) {
+                maxed.add(enchant.name);
+            }
+        }
+        return maxed;
+    }
 
     /**
      * Launches an enchant selection animation using a pre-determined option list.

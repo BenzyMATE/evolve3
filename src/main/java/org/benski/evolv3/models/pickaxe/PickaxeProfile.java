@@ -230,7 +230,10 @@ public class PickaxeProfile extends MongoDocument
         this.evolutionRolls = document.getInteger("evolutionRolls", 0);
         this.enchantRolls = document.getInteger("enchantRolls", 0);
         this.currentEssence = document.getInteger("currentEssence", 0);
-        this.targetEssence = document.getInteger("targetEssence", 0);
+        int savedTargetEssence = document.getInteger("targetEssence", 0);
+        this.targetEssence = savedTargetEssence > 0 ? savedTargetEssence
+                : ConfigRegistry.getInstance().get(ConfigNames.DEFAULT)
+                        .getInt(ConfigPaths.Default.Pickaxe.DEFAULT_ESSENCE_TARGET, 100);
 
         this.durability = document.getInteger("durability", 0);
 

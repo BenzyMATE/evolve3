@@ -87,14 +87,18 @@ public class Backpack extends MongoSubDoc
             return false;
         }
 
+        // Clamp to remaining capacity so no call site can accidentally overfill the backpack
+        // (e.g. Fortune with a large multiplier, or multiple enchants firing simultaneously).
+        int clamped = Math.min(amount, maxSize - totalItems);
+
         Optional<BackpackItem> existingItem = items.stream()
                 .filter(item -> item.getMaterial() == material && item.isEvolveItem() == evolveItem)
                 .findFirst();
 
         if (existingItem.isPresent()) {
-            existingItem.get().addAmount(amount);
+            existingItem.get().addAmount(clamped);
         } else {
-            items.add(BackpackItem.create(material, amount, evolveItem));
+            items.add(BackpackItem.create(material, clamped, evolveItem));
         }
 
         updateStats();

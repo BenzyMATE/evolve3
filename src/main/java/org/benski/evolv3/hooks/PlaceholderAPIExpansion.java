@@ -6,6 +6,7 @@ import org.benski.evolv3.core.constants.ConfigNames;
 import org.benski.evolv3.core.constants.ConfigPaths;
 import org.benski.evolv3.core.helpers.Utils;
 import org.benski.evolv3.core.managers.EnchantAnimationConfig;
+import org.benski.evolv3.core.managers.RankManager;
 import org.benski.evolv3.core.managers.StorageRegistryManager;
 import org.benski.evolv3.datacenters.PickaxeDataCenter;
 import org.benski.evolv3.models.pickaxe.EnchantData;
@@ -107,6 +108,10 @@ public class PlaceholderAPIExpansion extends PlaceholderExpansion
 
         if (params.startsWith("enchant_")) {
             return handleEnchantPlaceholder(player, params.substring(8));
+        }
+
+        if (params.startsWith("rank")) {
+            return handleRankPlaceholder(player, params);
         }
 
         return null;
@@ -250,6 +255,41 @@ public class PlaceholderAPIExpansion extends PlaceholderExpansion
         if (target <= 0) return "0%";
         int percentage = (int) Math.round((double) current / target * 100);
         return percentage + "%";
+    }
+
+    /**
+     * Handles rank-related placeholders.
+     *
+     * <ul>
+     *   <li>{@code %evolv3_rank%} — formatted rank prefix (e.g. "&#AAAAAA[A1]")</li>
+     *   <li>{@code %evolv3_rank_id%} — raw rank id (e.g. "A1")</li>
+     *   <li>{@code %evolv3_rank_staff%} — formatted staff rank prefix, or "" if none</li>
+     *   <li>{@code %evolv3_rank_staff_id%} — raw staff rank id, or "" if none</li>
+     * </ul>
+     *
+     * @param player The player
+     * @param param  The full placeholder parameter (e.g. "rank", "rank_id")
+     * @return The placeholder value, or null if not recognised
+     */
+    private String handleRankPlaceholder(Player player, String param)
+    {
+        PlayerDataCenter dc = DataCenterRegistry.getInstance().getPlayerDataCenter();
+        if (dc == null) return "";
+
+        PlayerProfile pp = dc.getLocal(player);
+        if (pp == null) return "";
+
+        RankManager rm = RankManager.getInstance();
+        String rankId = pp.rank != null ? pp.rank : rm.getDefaultRank();
+
+        return switch (param) {
+            case "rank"          -> rm.getRankPrefix(rankId);
+            case "rank_id"       -> rankId;
+            case "rank_staff"    -> pp.staffRank != null && !pp.staffRank.isEmpty()
+                                      ? rm.getStaffPrefix(pp.staffRank) : "";
+            case "rank_staff_id" -> pp.staffRank != null ? pp.staffRank : "";
+            default -> null;
+        };
     }
 
     /**

@@ -30,11 +30,21 @@ Scoreboard:
   EvoAtomToggleSeconds: 5
   # Text shown on the evo line during the atoms phase. Supports PlaceholderAPI.
   EvoAtomToggleText: "&#FFEE00⚛ &#FFEE00%evolv3_pickaxe_evolution_atoms%"
+  # Base text for the loading indicator shown while pickaxe data is loading (dots appended dynamically)
+  LoadingText: " &8| &7Loading"
+  # Label used in the level-up flash on the scoreboard (e.g. "Level")
+  LevelUpLabel: "Level"
+  # Text shown on the evo line while the enchant reel is rolling
+  EnchantRollingText: " &#FFD700⚙ Rolling"
+  # Text shown on the evo line while the player is selecting an enchant
+  EnchantSelectingText: " &#00FF88✦ Selecting..."
+  # Text shown on the rank line when the player can afford to rankup (animates in/out like evo/atoms)
+  RankupToggleText: "&#55FF55&l/rankup"
   Lines:
     - ""
     - " &#FFFFFF&l%evolv3_player_name%"
-    - " &8| &#888888Rank: &cNull"
-    - " &8| &#888888BP: &#FFFFFF%evolv3_player_backpack_items%&#888888/&#FFFFFF%evolv3_player_backpack_size%"
+    - " &8| &#888888Rank: %evolv3_rank%"
+    - " &8| &#888888Backpack: &#FFFFFF%evolv3_player_backpack_items%&#888888/&#FFFFFF%evolv3_player_backpack_size%"
     - "%evolv3_pickaxe_blank%"
     - " &#CCCCCCPickaxe &8(&#00FFFF&lEvo %evolv3_pickaxe_evolution%&8)"
     - " &8| &#888888Level: &#FFFFFF%evolv3_pickaxe_level%      &#00FF88%evolv3_pickaxe_percentage%"
@@ -79,11 +89,16 @@ Pickaxe:
     EnchantRolls: 0
     EvolutionAtoms: 0
     XPMultiplier: 1.15
+    EvolutionEssenceReward: 250  # Essence awarded to the player when their pickaxe evolves
     EssenceMultiplier: 1.5     # Multiplied per roll (100 → 150 → 225 → ...)
     EssenceTargetCap: 10000    # Maximum essence target
 
   # Durability warning threshold (percentage of remaining durability, e.g. 10 = warn below 10%)
   DurabilityWarningThreshold: 10
+
+  # Durability lore section displayed below the main lore template
+  DurabilityLabel: " &8| &#00FFFFDurability:"
+  DurabilityBarPrefix: " &8| "
 
   # Progress bar visual elements
   Progressbar Symbol 1: "&#00FF88▄"
@@ -291,6 +306,14 @@ Backpack:
     - ''
   # Custom model data for the backpack item (resource pack)
   CustomModelData: 2
+  # Per-tier max slot caps. Key = CustomModelData value, value = max slots for that tier.
+  # Scavenger enchant uses these to cap slot discovery based on the player's backpack level.
+  Tiers:
+    2: 1000
+    3: 5000
+    4: 20000
+    5: 50000
+    6: 100000
   # Hologram displayed when items are added to backpack
   Hologram:
     Enabled: true

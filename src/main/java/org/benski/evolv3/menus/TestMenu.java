@@ -3,10 +3,10 @@ package org.benski.evolv3.menus;
 import org.benski.evolv3.core.abstracts.BaseMenu;
 import org.benski.evolv3.core.builders.ItemBuilder;
 import org.benski.evolv3.core.builders.MessageBuilder;
+import org.benski.evolv3.core.constants.ConfigNames;
 import org.benski.evolv3.core.types.MenuType;
 import org.benski.evolv3.registry.ConfigRegistry;
 import org.bukkit.Material;
-import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.inventory.Inventory;
@@ -18,8 +18,7 @@ import org.bukkit.plugin.java.JavaPlugin;
  */
 public class TestMenu extends BaseMenu
 {
-    private static final MenuType MENU_TYPE = MenuType.register("profile");
-    private final FileConfiguration menusCfg = ConfigRegistry.getInstance().get("menus");
+    private static final MenuType MENU_TYPE = MenuType.register("test");
 
     public TestMenu(JavaPlugin plugin) {
         super(plugin);
@@ -48,7 +47,7 @@ public class TestMenu extends BaseMenu
     protected void populateMenu(Player player, Inventory inventory)
     {
         ItemStack infoItem = new ItemBuilder(Material.BOOK)
-                .name(menusCfg.getString(""))
+                .name(ConfigRegistry.getInstance().get(ConfigNames.MENUS).getString("test_menu.info_item_name", "&e&lInfo Item"))
                 .lore(
                         "&7Click for information",
                         "&7about this menu"

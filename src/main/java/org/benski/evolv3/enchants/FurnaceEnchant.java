@@ -53,8 +53,10 @@ import java.util.Map;
 @ExtensionMethod(ItemStackExtensions.class)
 public class FurnaceEnchant implements Listener
 {
+    @lombok.Getter
+    private static FurnaceEnchant instance;
+
     private final FileConfiguration enchantsConfig;
-    private final FileConfiguration messagesConfig;
     private final JavaPlugin plugin;
 
     /**
@@ -70,9 +72,9 @@ public class FurnaceEnchant implements Listener
 
     public FurnaceEnchant(JavaPlugin plugin)
     {
+        instance = this;
         this.plugin = plugin;
         this.enchantsConfig = StorageRegistryManager.getInstance().getConfig(ConfigNames.ENCHANTS);
-        this.messagesConfig = StorageRegistryManager.getInstance().getConfig(ConfigNames.MESSAGES);
         loadSmeltingRecipes();
     }
 
@@ -146,7 +148,7 @@ public class FurnaceEnchant implements Listener
             }
 
             Block block = event.getBlock();
-            Material materialToSmelt = getMaterialToSmelt(player.getUniqueId(), block);
+            Material materialToSmelt = getMaterialToSmelt(player, block);
 
             Material smeltResult = smeltingRecipes.get(materialToSmelt);
             if (smeltResult == null) {
@@ -164,14 +166,14 @@ public class FurnaceEnchant implements Listener
      * Reads Alchemy's result from {@link EnchantDropManager} for chaining, since Alchemy
      * fires first (NORMAL priority) and has already written its result before Furnace (HIGH).
      *
-     * @param playerUuid the UUID of the player breaking the block
-     * @param block      the block being broken
+     * @param player the player breaking the block (used for Fortune/Silk Touch context)
+     * @param block  the block being broken
      * @return the material to smelt
      */
-    private Material getMaterialToSmelt(java.util.UUID playerUuid, Block block)
+    private Material getMaterialToSmelt(Player player, Block block)
     {
         // Alchemy already wrote its result — chain off it.
-        Material alchemyResult = EnchantDropManager.get(playerUuid);
+        Material alchemyResult = EnchantDropManager.get(player.getUniqueId());
         if (alchemyResult != null) {
             return alchemyResult;
         }
@@ -184,7 +186,7 @@ public class FurnaceEnchant implements Listener
             }
         }
 
-        return block.getDrops().stream()
+        return block.getDrops(player.getInventory().getItemInMainHand()).stream()
                 .filter(i -> i != null && !i.getType().isAir())
                 .findFirst()
                 .map(ItemStack::getType)
@@ -225,7 +227,7 @@ public class FurnaceEnchant implements Listener
         }
 
         if (pref.message) {
-            String chatMessage = messagesConfig.getString(ConfigPaths.Messages.Enchants.FURNACE_TRIGGERED);
+            String chatMessage = StorageRegistryManager.getInstance().getConfig(ConfigNames.MESSAGES).getString(ConfigPaths.Messages.Enchants.FURNACE_TRIGGERED);
             if (chatMessage != null && !chatMessage.isEmpty()) {
                 chatMessage = chatMessage.replace("%original%", formatMaterialName(original));
                 chatMessage = chatMessage.replace("%result%", formatMaterialName(smeltResult));
@@ -234,8 +236,8 @@ public class FurnaceEnchant implements Listener
         }
 
         if (pref.title) {
-            String title    = messagesConfig.getString(ConfigPaths.Messages.Enchants.FURNACE_TRIGGERED_TITLE, "&#FF6B35&lFurnace");
-            String subtitle = messagesConfig.getString(ConfigPaths.Messages.Enchants.FURNACE_TRIGGERED_SUBTITLE, "&#CCCCCC%original% &#FF6B35> &#CCCCCC%result%");
+            String title    = StorageRegistryManager.getInstance().getConfig(ConfigNames.MESSAGES).getString(ConfigPaths.Messages.Enchants.FURNACE_TRIGGERED_TITLE, "&#FF6B35&lFurnace");
+            String subtitle = StorageRegistryManager.getInstance().getConfig(ConfigNames.MESSAGES).getString(ConfigPaths.Messages.Enchants.FURNACE_TRIGGERED_SUBTITLE, "&#CCCCCC%original% &#FF6B35> &#CCCCCC%result%");
             subtitle = subtitle.replace("%original%", formatMaterialName(original))
                                .replace("%result%", formatMaterialName(smeltResult));
             player.sendTitle(
@@ -250,8 +252,9 @@ public class FurnaceEnchant implements Listener
         if (pdc == null) return new EnchantPreference();
         org.benski.evolv3.models.player.PlayerProfile profile = pdc.getLocal(player);
         if (profile == null) return new EnchantPreference();
-        String enchantName = enchantsConfig.getString(ConfigPaths.Enchants.Furnace.NAME, "Furnace");
-        return profile.preferences.getOrCreateEnchantPref(enchantName);
+        String  enchantName     = enchantsConfig.getString(ConfigPaths.Enchants.Furnace.NAME, "Furnace");
+        boolean defaultHologram = enchantsConfig.getBoolean(ConfigPaths.Enchants.Furnace.HOLOGRAM_DEFAULT_ENABLED, false);
+        return profile.preferences.getOrCreateEnchantPref(enchantName, defaultHologram);
     }
 
     /**

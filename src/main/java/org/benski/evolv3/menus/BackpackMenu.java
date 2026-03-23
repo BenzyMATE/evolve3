@@ -21,6 +21,8 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
+import org.benski.evolv3.core.helpers.SmeltingHelper;
+import org.bukkit.inventory.FurnaceRecipe;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.text.NumberFormat;
@@ -97,14 +99,19 @@ public class BackpackMenu extends BaseMenu
     @Override
     protected String getMenuTitle(Player player)
     {
+        FileConfiguration menus = ConfigRegistry.getInstance().get(ConfigNames.MENUS);
         PlayerProfile profile = playerDataCenter.getLocal(player);
         if (profile == null) {
-            return "&8Backpack";
+            return menus.getString(ConfigPaths.Menus.BackpackMenu.TITLE, "&8Backpack");
         }
 
         int page = currentPage.getOrDefault(player.getUniqueId(), 0);
         int totalPages = getTotalPages(profile.backpack);
-        return "&8Backpack &7(Page " + (page + 1) + "/" + Math.max(1, totalPages) + ")";
+        String pagedTitle = menus.getString(ConfigPaths.Menus.BackpackMenu.TITLE_PAGED,
+                "&8Backpack &7(Page %page%/%total%)");
+        return pagedTitle
+                .replace("%page%", String.valueOf(page + 1))
+                .replace("%total%", String.valueOf(Math.max(1, totalPages)));
     }
 
     /**
@@ -159,6 +166,15 @@ public class BackpackMenu extends BaseMenu
             lore.add(fmt(player, " &8| &#00FFFFValue: &#FFD700⛁ &#FFD700" + formatCoins(getItemValue(item))));
             if (item.isEvolveItem()) {
                 lore.add(fmt(player, " &8| &#9932CC✦ Enchant Drop"));
+            }
+            if (SmeltingHelper.isSmeltable(item.getMaterial())) {
+                FurnaceRecipe recipe = SmeltingHelper.getRecipe(item.getMaterial());
+                String resultName = recipe != null ? formatMaterialName(recipe.getResult().getType()) : "?";
+                FileConfiguration messages = ConfigRegistry.getInstance().get(ConfigNames.MESSAGES);
+                String smeltTag = messages.getString(ConfigPaths.Messages.FurnaceSmelt.SMELTABLE_TAG,
+                                " &8| &#FF8C00🔥 Smeltable &#888888→ &#FFFFFF%result%")
+                        .replace("%result%", resultName);
+                lore.add(fmt(player, smeltTag));
             }
             lore.add("");
             lore.add(isSelected
@@ -258,7 +274,10 @@ public class BackpackMenu extends BaseMenu
 
         if (slot == SELL_SLOT) {
             if (selected.isEmpty()) {
-                player.sendMessage(fmt(player, "&c&lNothing Selected &7— Click items to select them first."));
+                FileConfiguration messages = ConfigRegistry.getInstance().get(ConfigNames.MESSAGES);
+                String nothingSelected = messages.getString(ConfigPaths.Messages.Backpack.NOTHING_SELECTED,
+                        "&c&lNothing Selected &7— Click items to select them first.");
+                player.sendMessage(fmt(player, nothingSelected));
                 player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
                 return true;
             }

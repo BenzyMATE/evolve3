@@ -83,7 +83,8 @@ public class AnimationsMenu extends BaseMenu
 
     @Override
     protected String getMenuTitle(Player player) {
-        return "&8P &7» &8Animations";
+        FileConfiguration menus = ConfigRegistry.getInstance().get(ConfigNames.MENUS);
+        return menus.getString(ConfigPaths.Menus.AnimationsMenu.TITLE, "&8P &7» &8Animations");
     }
 
     @Override
@@ -214,7 +215,8 @@ public class AnimationsMenu extends BaseMenu
     @Override
     protected boolean handleClick(Player player, int slot, InventoryClickEvent event) {
         if (slot == BACK_SLOT) {
-            MenuRegistry.getInstance().get("preferences").openMenu(player);
+            var back = MenuRegistry.getInstance().get("preferences");
+            if (back != null) back.openMenu(player);
             return true;
         }
 

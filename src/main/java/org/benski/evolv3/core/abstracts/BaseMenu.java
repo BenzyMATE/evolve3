@@ -1,7 +1,10 @@
 package org.benski.evolv3.core.abstracts;
 
+import org.benski.evolv3.core.constants.ConfigNames;
+import org.benski.evolv3.core.constants.ConfigPaths;
 import org.benski.evolv3.core.helpers.Messageable;
 import org.benski.evolv3.core.interfaces.Menu;
+import org.benski.evolv3.registry.ConfigRegistry;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -223,11 +226,13 @@ public abstract class BaseMenu implements Menu, InventoryHolder, Listener
     }
 
     /**
-     * {@inheritDoc}
+     * Not supported — this menu manages per-player inventories.
+     * Use {@link #openInventories} to access a specific player's inventory.
      */
     @Override
     public Inventory getInventory() {
-        return null;
+        throw new UnsupportedOperationException(
+                "BaseMenu manages per-player inventories. Use openInventories.get(playerUuid) instead.");
     }
 
     /**
@@ -258,21 +263,17 @@ public abstract class BaseMenu implements Menu, InventoryHolder, Listener
      */
     @EventHandler
     public void onInventoryClick(InventoryClickEvent event) {
-        if (!(event.getWhoClicked() instanceof Player)) {
+        if (!(event.getWhoClicked() instanceof Player player)) {
             return;
         }
-
-        Player player = (Player) event.getWhoClicked();
 
         if (event.getClickedInventory() == null) {
             return;
         }
 
-        if (!(event.getClickedInventory().getHolder() instanceof BaseMenu)) {
+        if (!(event.getClickedInventory().getHolder() instanceof BaseMenu menu)) {
             return;
         }
-
-        BaseMenu menu = (BaseMenu) event.getClickedInventory().getHolder();
 
         if (menu != this) {
             return;
@@ -287,9 +288,11 @@ public abstract class BaseMenu implements Menu, InventoryHolder, Listener
         try {
             handleClick(player, event.getSlot(), event);
         } catch (Exception e) {
-            player.sendMessage("§cAn error occurred while handling your click!");
-            plugin.getLogger().severe("Error handling menu click: " + e.getMessage());
-            e.printStackTrace();
+            String msg = ConfigRegistry.getInstance().get(ConfigNames.MESSAGES)
+                    .getString(ConfigPaths.Messages.Errors.INTERNAL_ERROR,
+                            "&cSomething went wrong. Please try again.");
+            player.sendMessage(formatMessage(player, msg));
+            plugin.getLogger().log(java.util.logging.Level.SEVERE, "Error handling menu click", e);
         }
     }
 

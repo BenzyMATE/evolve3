@@ -1,0 +1,295 @@
+# =====================================================
+# Evolv3 - Prison Rank Configuration
+# =====================================================
+# Prison blocks: A → B → C → D → E → F (4 sub-ranks each)
+# Staff ranks: Helper → Moderator → Admin → Owner
+#
+# Cost: coins required to rankup TO this rank (0 = starting rank)
+# Prefix: color-formatted tag shown in chat/scoreboard
+# ChatColor: color applied to the player's name in chat
+# Block: the prison block this rank belongs to
+# Permissions: extra permissions granted whenMake the players name gray  reaching this rank
+#
+# Block colors:
+#   A → Red    (&c)
+#   B → Yellow (&e)
+#   C → Green  (&a)
+#   D → Orange (&6)
+#   E → Blue   (&9)
+#   F → Pink   (&d)
+# =====================================================
+
+Ranks:
+  DefaultRank: "A1"
+
+  # Defines the exact progression order (lowest → highest)
+  Order:
+    - A1
+    - A2
+    - A3
+    - A4
+    - B1
+    - B2
+    - B3
+    - B4
+    - C1
+    - C2
+    - C3
+    - C4
+    - D1
+    - D2
+    - D3
+    - D4
+    - E1
+    - E2
+    - E3
+    - E4
+    - F1
+    - F2
+    - F3
+    - F4
+
+  Data:
+
+    # ─────────────────────── A Block (Red) ───────────────────────
+    A1:
+      Cost: 0
+      Prefix: "&c[A1]"
+      ChatColor: "&c"
+      Block: "A"
+      Permissions: []
+
+    A2:
+      Cost: 500
+      Prefix: "&c[A2]"
+      ChatColor: "&c"
+      Block: "A"
+      Permissions: []
+
+    A3:
+      Cost: 1500
+      Prefix: "&c[A3]"
+      ChatColor: "&c"
+      Block: "A"
+      Permissions: []
+
+    A4:
+      Cost: 4000
+      Prefix: "&c[A4]"
+      ChatColor: "&c"
+      Block: "A"
+      Permissions: []
+
+    # ─────────────────────── B Block (Yellow) ───────────────────────
+    B1:
+      Cost: 10000
+      Prefix: "&e[B1]"
+      ChatColor: "&e"
+      Block: "B"
+      Permissions: []
+
+    B2:
+      Cost: 25000
+      Prefix: "&e[B2]"
+      ChatColor: "&e"
+      Block: "B"
+      Permissions: []
+
+    B3:
+      Cost: 60000
+      Prefix: "&e[B3]"
+      ChatColor: "&e"
+      Block: "B"
+      Permissions: []
+
+    B4:
+      Cost: 125000
+      Prefix: "&e[B4]"
+      ChatColor: "&e"
+      Block: "B"
+      Permissions: []
+
+    # ─────────────────────── C Block (Green) ───────────────────────
+    C1:
+      Cost: 250000
+      Prefix: "&a[C1]"
+      ChatColor: "&a"
+      Block: "C"
+      Permissions: []
+
+    C2:
+      Cost: 500000
+      Prefix: "&a[C2]"
+      ChatColor: "&a"
+      Block: "C"
+      Permissions: []
+
+    C3:
+      Cost: 1000000
+      Prefix: "&a[C3]"
+      ChatColor: "&a"
+      Block: "C"
+      Permissions: []
+
+    C4:
+      Cost: 2000000
+      Prefix: "&a[C4]"
+      ChatColor: "&a"
+      Block: "C"
+      Permissions: []
+
+    # ─────────────────────── D Block (Orange) ───────────────────────
+    D1:
+      Cost: 4000000
+      Prefix: "&6[D1]"
+      ChatColor: "&6"
+      Block: "D"
+      Permissions: []
+
+    D2:
+      Cost: 8000000
+      Prefix: "&6[D2]"
+      ChatColor: "&6"
+      Block: "D"
+      Permissions: []
+
+    D3:
+      Cost: 15000000
+      Prefix: "&6[D3]"
+      ChatColor: "&6"
+      Block: "D"
+      Permissions: []
+
+    D4:
+      Cost: 30000000
+      Prefix: "&6[D4]"
+      ChatColor: "&6"
+      Block: "D"
+      Permissions: []
+
+    # ─────────────────────── E Block (Blue) ───────────────────────
+    E1:
+      Cost: 60000000
+      Prefix: "&9[E1]"
+      ChatColor: "&9"
+      Block: "E"
+      Permissions: []
+
+    E2:
+      Cost: 100000000
+      Prefix: "&9[E2]"
+      ChatColor: "&9"
+      Block: "E"
+      Permissions: []
+
+    E3:
+      Cost: 175000000
+      Prefix: "&9[E3]"
+      ChatColor: "&9"
+      Block: "E"
+      Permissions: []
+
+    E4:
+      Cost: 300000000
+      Prefix: "&9[E4]"
+      ChatColor: "&9"
+      Block: "E"
+      Permissions: []
+
+    # ─────────────────────── F Block (Pink) ───────────────────────
+    F1:
+      Cost: 500000000
+      Prefix: "&d[F1]"
+      ChatColor: "&d"
+      Block: "F"
+      Permissions: []
+
+    F2:
+      Cost: 750000000
+      Prefix: "&d[F2]"
+      ChatColor: "&d"
+      Block: "F"
+      Permissions: []
+
+    F3:
+      Cost: 1000000000
+      Prefix: "&d[F3]"
+      ChatColor: "&d"
+      Block: "F"
+      Permissions: []
+
+    F4:
+      Cost: 1500000000
+      Prefix: "&d[F4]"
+      ChatColor: "&d"
+      Block: "F"
+      Permissions: []
+
+# =====================================================
+# Staff Rank Configuration
+# =====================================================
+StaffRanks:
+  Order:
+    - helper
+    - moderator
+    - admin
+    - owner
+
+  Data:
+    helper:
+      Prefix: "&a&lHELPER"
+      ChatColor: "&a"
+      Permissions:
+        - "evolv3.staff"
+        - "evolv3.staff.helper"
+
+    moderator:
+      Prefix: "&bMOD"
+      ChatColor: "&b"
+      Permissions:
+        - "evolv3.staff"
+        - "evolv3.staff.helper"
+        - "evolv3.staff.moderator"
+
+    admin:
+      Prefix: "&6&lADMIN"
+      ChatColor: "&6"
+      Permissions:
+        - "evolv3.staff"
+        - "evolv3.staff.helper"
+        - "evolv3.staff.moderator"
+        - "evolv3.staff.admin"
+        - "evolv3.rank.setrank"
+        - "evolv3.rank.setstaff"
+
+    owner:
+      Prefix: "&c&lOWNER"
+      ChatColor: "&c"
+      Permissions:
+        - "evolv3.staff"
+        - "evolv3.staff.helper"
+        - "evolv3.staff.moderator"
+        - "evolv3.staff.admin"
+        - "evolv3.staff.owner"
+        - "evolv3.rank.setrank"
+        - "evolv3.rank.setstaff"
+        - "*"
+
+# =====================================================
+# Rankup Messages
+# =====================================================
+Messages:
+  Rankup:
+    Success: "&#55FF55&lRANK UP! &#CCCCCCYou are now rank %rank%&#CCCCCC!"
+    Insufficient: "&#FF5555&lInsufficient Coins! &#CCCCCCYou need &#FFD700&l%cost% &#FFD700⛁ &#CCCCCCto rank up to %rank%&#CCCCCC."
+    AtMaxRank: "&dYou are already at the highest rank &d&l[F4]&d!"
+
+  SetRank:
+    Success: "&#55FF55Set &#FFFFFF%player%&#55FF55's rank to %rank%&#55FF55."
+    PlayerNotified: "&#55FF55Your rank has been set to %rank% &#55FF55by an admin."
+
+  SetStaff:
+    Success: "&#55FF55Set &#FFFFFF%player%&#55FF55's staff rank to &#FFFFFF%rank%&#55FF55."
+    Cleared: "&#55FF55Cleared &#FFFFFF%player%&#55FF55's staff rank."
+    PlayerNotified: "&#55FF55Your staff rank has been set to &#FFFFFF%rank%&#55FF55 by an admin."
+    PlayerCleared: "&#CCCCCCYour staff rank has been removed by an admin."

@@ -70,6 +70,11 @@ profile_menu:
     name: " "
     slots: "0-8,45-53,9,17,18,26,27,35,36,44"
 
+# Backpack Menu
+Backpack Menu:
+  Title: "&8Backpack"
+  TitlePaged: "&8Backpack &7(Page %page%/%total%)"
+
 # Pickaxe Menu panel items
 # All text is automatically converted to small-caps via FontUtils in the formatMessage pipeline.
 Pickaxe Menu:
@@ -185,6 +190,7 @@ Pickaxe Limit Menu:
 
 # Preferences Menu
 Preferences Menu:
+  Title: "&8Preferences"
   Animations:
     Material: FIREWORK_ROCKET
     Name: "&#00FFFFAnimations"
@@ -220,6 +226,7 @@ Preferences Menu:
 
 # Animations Menu
 Animations Menu:
+  Title: "&8P &7» &8Animations"
   Back:
     Material: RED_STAINED_GLASS_PANE
     Name: "&#AAAAAA← Back"
@@ -379,6 +386,7 @@ Animations Menu:
 
 # Enchants Preferences Menu
 Enchants Menu:
+  Title: "&8P &7» &8Enchants"
   Back:
     Material: RED_STAINED_GLASS_PANE
     Name: "&#AAAAAA← Back"
@@ -406,8 +414,14 @@ Enchants Menu:
       - ' &8| &aLeft-Click &#AAAAAAto configure'
       - ''
 
+# Armor Menu
+Armor Menu:
+  Title: "&8Armor"
+  TitleWithType: "&8%type% Settings"
+
 # Enchant Option Sub-Menu
 Enchant Option Menu:
+  MenuTitle: "&8P &7» &8E &7» &8%enchant%"
   Back:
     Material: RED_STAINED_GLASS_PANE
     Name: "&#AAAAAA← Back"
@@ -460,6 +474,14 @@ Enchant Option Menu:
       - ''
       - ' &8| &aLeft-Click &#AAAAAAto toggle'
       - ''
+
+# Furnace Smelt Menu
+# Opens an actual furnace GUI. Items are placed from the player's inventory.
+# The flame and arrow animate exactly like vanilla — just at the configured speed.
+Furnace Smelt Menu:
+  Title: "&8Furnace &7» &8Smelting"
+  # Server ticks to smelt each item. Vanilla = 200 (10 s). Default = 20 (1 s).
+  SmeltTicksPerItem: 20
 
 # =====================================================
 # Action Types Reference:

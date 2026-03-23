@@ -1,7 +1,6 @@
 package org.benski.evolv3.commands;
 
 import org.benski.evolv3.core.abstracts.BaseCommand;
-import org.benski.evolv3.core.types.MenuType;
 import org.benski.evolv3.menus.PickaxeLimitMenu;
 import org.benski.evolv3.registry.MenuRegistry;
 import org.bukkit.command.Command;

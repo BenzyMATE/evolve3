@@ -6,7 +6,7 @@ import org.benski.evolv3.core.constants.ConfigPaths;
 import org.benski.evolv3.core.helpers.ItemStackExtensions;
 import org.benski.evolv3.core.helpers.PlayerExtensions;
 import org.benski.evolv3.datacenters.PickaxeDataCenter;
-import org.benski.evolv3.managers.PickaxeManager;
+import org.benski.evolv3.core.managers.PickaxeManager;
 import org.benski.evolv3.models.pickaxe.PickaxeProfile;
 import org.benski.evolv3.registry.DataCenterRegistry;
 import org.bukkit.Bukkit;
@@ -34,7 +34,7 @@ public class PickaxeCheckSchedule extends BaseSchedule
 
     /**
      * {@inheritDoc}
-     * Default: 100 ticks (5 seconds). Matches the default.yml configured value.
+     * Default: 40 ticks (2 seconds). Matches the default.yml configured value.
      * BaseSchedule reads from plugin.getConfig() which doesn't contain this key,
      * so the fallback here must match the intended default.
      */
@@ -111,14 +111,14 @@ public class PickaxeCheckSchedule extends BaseSchedule
             String newId = UUID.randomUUID().toString();
             pickaxeDataCenter.loadOrCreate(player, newId);
             updatePlayerPickaxe(player);
-            plugin.getLogger().fine("Player " + player.getName() + " holding new pickaxe, created with ID: " + newId);
+            plugin.getLogger().fine(() -> "Player " + player.getName() + " holding new pickaxe, created with ID: " + newId);
             return;
         }
 
         // Pickaxe has an ID - load it into cache (or create if not in DB)
         // loadOrCreate handles checking if it exists in cache/DB
         pickaxeDataCenter.loadOrCreate(player, pickaxeId);
-        plugin.getLogger().fine("Player " + player.getName() + " holding pickaxe with ID: " + pickaxeId);
+        plugin.getLogger().fine(() -> "Player " + player.getName() + " holding pickaxe with ID: " + pickaxeId);
     }
 
     /**
@@ -146,7 +146,7 @@ public class PickaxeCheckSchedule extends BaseSchedule
      */
     @Override
     public void onStart() {
-        plugin.getLogger().info("Pickaxe check schedule started - checking every " +
+        plugin.getLogger().info(() -> "Pickaxe check schedule started - checking every " +
                 (getActualInterval() / 20) + " seconds");
     }
 

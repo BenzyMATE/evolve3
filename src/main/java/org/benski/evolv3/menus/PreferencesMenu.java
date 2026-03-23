@@ -48,7 +48,8 @@ public class PreferencesMenu extends BaseMenu
 
     @Override
     protected String getMenuTitle(Player player) {
-        return "&8Preferences";
+        FileConfiguration menus = ConfigRegistry.getInstance().get(ConfigNames.MENUS);
+        return menus.getString(ConfigPaths.Menus.PreferencesMenu.TITLE, "&8Preferences");
     }
 
     @Override
@@ -104,8 +105,8 @@ public class PreferencesMenu extends BaseMenu
     @Override
     protected boolean handleClick(Player player, int slot, InventoryClickEvent event) {
         switch (slot) {
-            case ANIMATIONS_SLOT -> MenuRegistry.getInstance().get("preferences_animations").openMenu(player);
-            case ENCHANTS_SLOT   -> MenuRegistry.getInstance().get("preferences_enchants").openMenu(player);
+            case ANIMATIONS_SLOT -> { var m = MenuRegistry.getInstance().get("preferences_animations"); if (m != null) m.openMenu(player); }
+            case ENCHANTS_SLOT   -> { var m = MenuRegistry.getInstance().get("preferences_enchants");   if (m != null) m.openMenu(player); }
             case MESSAGES_SLOT   -> player.sendMessage(
                     formatMessage(player, "%evolv3_prefix% &#888888&oMessages preferences — coming soon."));
             case CLOSE_SLOT      -> closeMenu(player);

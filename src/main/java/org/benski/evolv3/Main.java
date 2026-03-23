@@ -7,12 +7,13 @@ import org.benski.evolv3.core.constants.ConfigPaths;
 import org.benski.evolv3.core.managers.EnchantSelectionManager;
 import org.benski.evolv3.core.managers.FrostbiteBlockManager;
 import org.benski.evolv3.core.managers.MongoManager;
-import org.benski.evolv3.managers.PickaxeManager;
+import org.benski.evolv3.core.managers.PickaxeManager;
 import org.benski.evolv3.core.managers.PickupAnimationManager;
 import org.benski.evolv3.core.managers.TaskManager;
 import org.benski.evolv3.core.managers.WorldGuardManager;
 import org.benski.evolv3.datacenters.ArmorDataCenter;
 import org.benski.evolv3.datacenters.PlayerDataCenter;
+import org.benski.evolv3.core.helpers.Utils;
 import org.benski.evolv3.hooks.PlaceholderAPIExpansion;
 import org.bukkit.Bukkit;
 import org.benski.evolv3.registry.AnimationRegistry;
@@ -94,6 +95,7 @@ public final class Main extends JavaPlugin
     private void useRegistry()
     {
         ConfigRegistry.getInstance().initialize();
+        Utils.loadProgressBarSymbols();
         WorldGuardManager.getInstance().initialize();
         EnchantRegistry.getInstance().initialize();
         CommandRegistry.getInstance().initialize();
@@ -171,7 +173,7 @@ public final class Main extends JavaPlugin
      * Sends a console message.
      * @param message The message you want to send.
      */
-    public void  sendConsoleMessage(String message) {
+    public void sendConsoleMessage(String message) {
         getLogger().info(getBlue() + "========================================" + getReset());
         getLogger().info(getBlue() + message + getReset());
         getLogger().info(getBlue() + "========================================" + getReset());

@@ -21,6 +21,20 @@ public class Utils
 {
     private static final boolean PLACEHOLDER_API_ENABLED = Bukkit.getPluginManager().getPlugin("PlaceholderAPI") != null;
 
+    /** Cached progress-bar symbols — set once after config loads, never change at runtime. */
+    private static String PROGRESSBAR_FILLED = "█";
+    private static String PROGRESSBAR_EMPTY  = "░";
+
+    /**
+     * Caches the progress-bar symbols from config so they are not re-read on every block break.
+     * Call this once after {@link org.benski.evolv3.registry.ConfigRegistry} has been initialised.
+     */
+    public static void loadProgressBarSymbols() {
+        FileConfiguration config = StorageRegistryManager.getInstance().getConfig(ConfigNames.DEFAULT);
+        PROGRESSBAR_FILLED = config.getString(ConfigPaths.Default.Pickaxe.PROGRESSBAR_SYMBOL_FILLED, "█");
+        PROGRESSBAR_EMPTY  = config.getString(ConfigPaths.Default.Pickaxe.PROGRESSBAR_SYMBOL_EMPTY,  "░");
+    }
+
     /**
      * Inner class to isolate PlaceholderAPI dependency.
      * This class is only loaded when PlaceholderAPI is confirmed to be available,
@@ -42,10 +56,10 @@ public class Utils
      */
     public static String formatMessage(Player player, String message)
     {
-        message = FontUtils.toSmallCaps(message);
         if (PLACEHOLDER_API_ENABLED) {
             message = PlaceholderHook.setPlaceholders(player, message);
         }
+        message = FontUtils.toSmallCaps(message);
         message = MatrixColorAPI.process(message);
         return message;
     }
@@ -130,12 +144,9 @@ public class Utils
         double ratio = 1.0 - (double) damage / maxDurability;
         int filled = (int) Math.round(ratio * 8);
         String barColor = ratio > 0.6 ? "&#00FF88" : ratio > 0.3 ? "&#FFAA00" : "&#FF4444";
-        FileConfiguration config = StorageRegistryManager.getInstance().getConfig(ConfigNames.DEFAULT);
-        String filledChar = config.getString(ConfigPaths.Default.Pickaxe.PROGRESSBAR_SYMBOL_FILLED, "█");
-        String emptyChar  = config.getString(ConfigPaths.Default.Pickaxe.PROGRESSBAR_SYMBOL_EMPTY, "░");
         // Strip embedded color codes so barColor controls the fill colour
-        String filledSymbol = filledChar.replaceAll("^(&[#][0-9A-Fa-f]{6}|&[0-9a-fk-orA-FK-OR])+", "");
-        String emptySymbol  = emptyChar.replaceAll("^(&[#][0-9A-Fa-f]{6}|&[0-9a-fk-orA-FK-OR])+", "");
+        String filledSymbol = PROGRESSBAR_FILLED.replaceAll("^(&[#][0-9A-Fa-f]{6}|&[0-9a-fk-orA-FK-OR])+", "");
+        String emptySymbol  = PROGRESSBAR_EMPTY.replaceAll("^(&[#][0-9A-Fa-f]{6}|&[0-9a-fk-orA-FK-OR])+", "");
         return barColor + filledSymbol.repeat(filled) + "&#444444" + emptySymbol.repeat(8 - filled)
                 + " " + barColor + Math.round(ratio * 100) + "%";
     }
@@ -149,21 +160,17 @@ public class Utils
      */
     public static String generateProgressBar(int current, int max)
     {
-        FileConfiguration config = StorageRegistryManager.getInstance().getConfig(ConfigNames.DEFAULT);
-        String filledChar = config.getString(ConfigPaths.Default.Pickaxe.PROGRESSBAR_SYMBOL_FILLED, "█");
-        String emptyChar  = config.getString(ConfigPaths.Default.Pickaxe.PROGRESSBAR_SYMBOL_EMPTY,  "░");
-
-        if (max <= 0) return emptyChar.repeat(10);
+        if (max <= 0) return PROGRESSBAR_EMPTY.repeat(10);
 
         double progress     = Math.min(1.0, (double) current / max);
         int    filledLength = (int) Math.round(progress * 10);
         int    emptyLength  = 10 - filledLength;
 
         // Strip any leading &# color code from the filled symbol so we can apply a dynamic color.
-        String filledSymbol = filledChar.replaceAll("^(&[#][0-9A-Fa-f]{6}|&[0-9a-fk-orA-FK-OR])+", "");
+        String filledSymbol = PROGRESSBAR_FILLED.replaceAll("^(&[#][0-9A-Fa-f]{6}|&[0-9a-fk-orA-FK-OR])+", "");
         String dynamicColor = progressBarColor(progress);
 
-        return dynamicColor + filledSymbol.repeat(filledLength) + emptyChar.repeat(emptyLength);
+        return dynamicColor + filledSymbol.repeat(filledLength) + PROGRESSBAR_EMPTY.repeat(emptyLength);
     }
 
     /**
@@ -263,20 +270,13 @@ public class Utils
     public static void glowWithColor(Player player, NamedTextColor color, long durationTicks, JavaPlugin plugin)
     {
         String teamName = "evolv3_glow_" + color.toString();
-
-        // Register the team on every scoreboard that is currently active
-        for (Player online : Bukkit.getOnlinePlayers()) {
-            addToGlowTeam(online.getScoreboard(), teamName, color, player);
-        }
-        addToGlowTeam(Bukkit.getScoreboardManager().getMainScoreboard(), teamName, color, player);
-
+        // Teams on the main scoreboard are broadcast to all clients automatically.
+        Scoreboard main = Bukkit.getScoreboardManager().getMainScoreboard();
+        addToGlowTeam(main, teamName, color, player);
         player.setGlowing(true);
 
         Bukkit.getScheduler().runTaskLater(plugin, () -> {
-            for (Player online : Bukkit.getOnlinePlayers()) {
-                removeFromGlowTeam(online.getScoreboard(), teamName, player);
-            }
-            removeFromGlowTeam(Bukkit.getScoreboardManager().getMainScoreboard(), teamName, player);
+            removeFromGlowTeam(main, teamName, player);
             if (player.isOnline()) player.setGlowing(false);
         }, durationTicks);
     }

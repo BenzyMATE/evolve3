@@ -3,6 +3,7 @@ package org.benski.evolv3.models.player;
 import org.benski.evolv3.core.abstracts.MongoDocument;
 import org.benski.evolv3.core.constants.ConfigNames;
 import org.benski.evolv3.core.constants.ConfigPaths;
+import org.jetbrains.annotations.Nullable;
 import org.benski.evolv3.core.managers.StorageRegistryManager;
 import org.benski.evolv3.models.backpack.Backpack;
 import org.bson.Document;
@@ -73,6 +74,18 @@ public final class PlayerProfile extends MongoDocument
     public List<String> storedPickaxes = new ArrayList<>();
 
     /**
+     * The player's current prison rank id (e.g. "A1", "B3").
+     * Defaults to the configured default rank on first join.
+     */
+    public String rank;
+
+    /**
+     * The player's staff rank id (e.g. "helper", "admin"), or null if not a staff member.
+     */
+    @Nullable
+    public String staffRank;
+
+    /**
      * Gets the Player object. May return null if the player is offline.
      *
      * @return The Player object or null if offline
@@ -124,6 +137,10 @@ public final class PlayerProfile extends MongoDocument
         }
 
         doc.put("storedPickaxes", storedPickaxes);
+        doc.put("rank", rank);
+        if (staffRank != null) {
+            doc.put("staffRank", staffRank);
+        }
 
         return doc;
     }
@@ -138,7 +155,10 @@ public final class PlayerProfile extends MongoDocument
         this.playerUuid = UUID.fromString(this.id);
         this.isEnchanting = document.getBoolean("isEnchanting", false);
         this.isEvolving = document.getBoolean("isEvolving", false);
-        this.pickaxeLimit = document.getInteger("pickaxeLimit", 0);
+        int savedLimit = document.getInteger("pickaxeLimit", 0);
+        this.pickaxeLimit = savedLimit > 0 ? savedLimit
+                : StorageRegistryManager.getInstance().getConfig(ConfigNames.DEFAULT)
+                        .getInt(ConfigPaths.Default.Player.DEFAULT_PICKAXE_LIMIT, 1);
         this.essence = document.getInteger("essence", 0);
         Double savedCoins = document.getDouble("coins");
         this.coins = savedCoins != null ? savedCoins : 0.0;
@@ -164,6 +184,12 @@ public final class PlayerProfile extends MongoDocument
         while (this.storedPickaxes.size() < 9) {
             this.storedPickaxes.add("");
         }
+
+        String savedRank = document.getString("rank");
+        this.rank = savedRank != null && !savedRank.isEmpty() ? savedRank
+                : StorageRegistryManager.getInstance().getConfig(ConfigNames.RANKS)
+                        .getString(ConfigPaths.Ranks.DEFAULT_RANK, "A1");
+        this.staffRank = document.getString("staffRank");
     }
 
     /**
@@ -224,6 +250,9 @@ public final class PlayerProfile extends MongoDocument
         for (int i = 0; i < 9; i++) {
             profile.storedPickaxes.add("");
         }
+
+        profile.rank = config.getString(ConfigPaths.Ranks.DEFAULT_RANK, "A1");
+        profile.staffRank = null;
 
         return profile;
     }

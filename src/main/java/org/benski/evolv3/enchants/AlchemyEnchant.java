@@ -53,8 +53,10 @@ import java.util.Map;
 @ExtensionMethod(ItemStackExtensions.class)
 public class AlchemyEnchant implements Listener
 {
+    @lombok.Getter
+    private static AlchemyEnchant instance;
+
     private final FileConfiguration enchantsConfig;
-    private final FileConfiguration messagesConfig;
     private final JavaPlugin plugin;
 
     /**
@@ -69,9 +71,9 @@ public class AlchemyEnchant implements Listener
 
     public AlchemyEnchant(JavaPlugin plugin)
     {
+        instance = this;
         this.plugin = plugin;
         this.enchantsConfig = StorageRegistryManager.getInstance().getConfig(ConfigNames.ENCHANTS);
-        this.messagesConfig = StorageRegistryManager.getInstance().getConfig(ConfigNames.MESSAGES);
         loadUpgradeRecipes();
     }
 
@@ -146,7 +148,7 @@ public class AlchemyEnchant implements Listener
             }
 
             Block block = event.getBlock();
-            Material materialToUpgrade = getMaterialToUpgrade(block);
+            Material materialToUpgrade = getMaterialToUpgrade(block, player);
 
             Material upgradeResult = upgradeRecipes.get(materialToUpgrade);
             if (upgradeResult == null) {
@@ -162,10 +164,11 @@ public class AlchemyEnchant implements Listener
     /**
      * Determines the material to upgrade, accounting for Frostbite frozen blocks.
      *
-     * @param block the block being broken
+     * @param block  the block being broken
+     * @param player the player breaking the block (used for Fortune/Silk Touch context)
      * @return the material to upgrade
      */
-    private Material getMaterialToUpgrade(Block block)
+    private Material getMaterialToUpgrade(Block block, Player player)
     {
         if (block.hasMetadata(FrostbiteEnchant.FROSTBITE_METADATA_KEY)) {
             String originalMaterial = block.getMetadata(FrostbiteEnchant.FROSTBITE_METADATA_KEY).get(0).asString();
@@ -175,7 +178,7 @@ public class AlchemyEnchant implements Listener
             }
         }
 
-        return block.getDrops().stream()
+        return block.getDrops(player.getInventory().getItemInMainHand()).stream()
                 .filter(i -> i != null && !i.getType().isAir())
                 .findFirst()
                 .map(ItemStack::getType)
@@ -216,7 +219,7 @@ public class AlchemyEnchant implements Listener
         }
 
         if (pref.message) {
-            String chatMessage = messagesConfig.getString(ConfigPaths.Messages.Enchants.ALCHEMY_TRIGGERED);
+            String chatMessage = StorageRegistryManager.getInstance().getConfig(ConfigNames.MESSAGES).getString(ConfigPaths.Messages.Enchants.ALCHEMY_TRIGGERED);
             if (chatMessage != null && !chatMessage.isEmpty()) {
                 chatMessage = chatMessage.replace("%original%", formatMaterialName(original));
                 chatMessage = chatMessage.replace("%upgrade%", formatMaterialName(upgradeResult));
@@ -225,8 +228,8 @@ public class AlchemyEnchant implements Listener
         }
 
         if (pref.title) {
-            String title    = messagesConfig.getString(ConfigPaths.Messages.Enchants.ALCHEMY_TRIGGERED_TITLE, "&#B366D9&lAlchemy");
-            String subtitle = messagesConfig.getString(ConfigPaths.Messages.Enchants.ALCHEMY_TRIGGERED_SUBTITLE, "&#CCCCCC%original% &#B366D9> &#CCCCCC%upgrade%");
+            String title    = StorageRegistryManager.getInstance().getConfig(ConfigNames.MESSAGES).getString(ConfigPaths.Messages.Enchants.ALCHEMY_TRIGGERED_TITLE, "&#B366D9&lAlchemy");
+            String subtitle = StorageRegistryManager.getInstance().getConfig(ConfigNames.MESSAGES).getString(ConfigPaths.Messages.Enchants.ALCHEMY_TRIGGERED_SUBTITLE, "&#CCCCCC%original% &#B366D9> &#CCCCCC%upgrade%");
             subtitle = subtitle.replace("%original%", formatMaterialName(original))
                                .replace("%upgrade%", formatMaterialName(upgradeResult));
             player.sendTitle(

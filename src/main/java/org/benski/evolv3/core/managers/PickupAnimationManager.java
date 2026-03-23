@@ -35,7 +35,6 @@ public class PickupAnimationManager
 
     private final JavaPlugin plugin;
     private final Map<String, Function<JavaPlugin, BasePickupAnimation>> animationFactories = new HashMap<>();
-    private final Map<UUID, String> playerPreferences = new HashMap<>();
     private final Map<UUID, Boolean> showOthersAnimations = new HashMap<>();
     private final List<String> animationIds = new ArrayList<>();
 
@@ -53,6 +52,7 @@ public class PickupAnimationManager
     public void initialize() {
         registerAnimation("teleport", TeleportPickupAnimation::new);
         registerAnimation("dissolve", DissolvePickupAnimation::new);
+        animationIds.add("disabled"); // handled specially — no factory needed
 
         plugin.getLogger().info("Pickup Animation Manager initialized with " + animationIds.size() + " animations");
     }
@@ -83,38 +83,53 @@ public class PickupAnimationManager
     }
 
     /**
-     * Gets the preferred animation ID for a player.
+     * Gets the preferred animation ID for a player, derived from their persisted
+     * {@link PlayerPreferences#pickupEffect} field.
      *
      * @param player the player
-     * @return the animation ID, or default if not set
+     * @return the animation ID, or the default if the profile is unavailable
      */
     public String getPlayerAnimation(Player player) {
-        return playerPreferences.getOrDefault(player.getUniqueId(), DEFAULT_ANIMATION);
+        PlayerDataCenter pdc = DataCenterRegistry.getInstance().getPlayerDataCenter();
+        if (pdc != null) {
+            PlayerProfile profile = pdc.getLocal(player);
+            if (profile != null) {
+                return effectToId(profile.preferences.pickupEffect);
+            }
+        }
+        return DEFAULT_ANIMATION;
     }
 
     /**
-     * Sets the preferred animation for a player.
+     * Sets the preferred animation for a player and persists it to their profile.
      *
-     * @param player the player
-     * @param animationId the animation identifier
+     * @param player      the player
+     * @param animationId the animation identifier ("dissolve", "teleport", or "disabled")
      * @return true if the animation was set successfully
      */
     public boolean setPlayerAnimation(Player player, String animationId) {
-        String id = animationId.toLowerCase();
-        if (!animationFactories.containsKey(id)) {
-            return false;
-        }
-        playerPreferences.put(player.getUniqueId(), id);
+        if (!isValidAnimation(animationId)) return false;
+        PlayerDataCenter pdc = DataCenterRegistry.getInstance().getPlayerDataCenter();
+        if (pdc == null) return false;
+        PlayerProfile profile = pdc.getLocal(player);
+        if (profile == null) return false;
+        profile.preferences.pickupEffect = idToEffect(animationId);
+        profile.save();
         return true;
     }
 
     /**
-     * Clears the animation preference for a player.
+     * Resets the animation preference for a player to the default.
      *
      * @param player the player
      */
     public void clearPlayerAnimation(Player player) {
-        playerPreferences.remove(player.getUniqueId());
+        PlayerDataCenter pdc = DataCenterRegistry.getInstance().getPlayerDataCenter();
+        if (pdc == null) return;
+        PlayerProfile profile = pdc.getLocal(player);
+        if (profile == null) return;
+        profile.preferences.pickupEffect = PreferenceType.PickupEffect.DEFAULT;
+        profile.save();
     }
 
     /**
@@ -253,16 +268,19 @@ public class PickupAnimationManager
     }
 
     /**
-     * Gets information about an animation.
+     * Gets display information about an animation.
+     * For "disabled", information is sourced directly from {@link PreferenceType.PickupEffect}.
      *
      * @param id the animation identifier
      * @return array with [displayName, description], or null if not found
      */
     public String[] getAnimationInfo(String id) {
-        BasePickupAnimation animation = createAnimation(id);
-        if (animation == null) {
-            return null;
+        if (id.equalsIgnoreCase("disabled")) {
+            PreferenceType.PickupEffect e = PreferenceType.PickupEffect.DISABLED;
+            return new String[] { e.getDisplayName(), e.getDescription() };
         }
+        BasePickupAnimation animation = createAnimation(id);
+        if (animation == null) return null;
         return new String[] { animation.getDisplayName(), animation.getDescription() };
     }
 
@@ -273,11 +291,12 @@ public class PickupAnimationManager
      * @return true if the animation exists
      */
     public boolean isValidAnimation(String id) {
-        return animationFactories.containsKey(id.toLowerCase());
+        String lower = id.toLowerCase();
+        return animationFactories.containsKey(lower) || lower.equals("disabled");
     }
 
     /**
-     * Gets the next animation in the cycle for a player.
+     * Cycles to the next animation in the list for a player and persists the change.
      *
      * @param player the player
      * @return the next animation ID
@@ -292,10 +311,31 @@ public class PickupAnimationManager
     }
 
     /**
+     * Maps a {@link PreferenceType.PickupEffect} to its animation ID string.
+     */
+    private static String effectToId(PreferenceType.PickupEffect effect) {
+        return switch (effect) {
+            case SIMPLE   -> "teleport";
+            case DISABLED -> "disabled";
+            default       -> "dissolve";
+        };
+    }
+
+    /**
+     * Maps an animation ID string to the corresponding {@link PreferenceType.PickupEffect}.
+     */
+    private static PreferenceType.PickupEffect idToEffect(String id) {
+        return switch (id.toLowerCase()) {
+            case "teleport" -> PreferenceType.PickupEffect.SIMPLE;
+            case "disabled" -> PreferenceType.PickupEffect.DISABLED;
+            default         -> PreferenceType.PickupEffect.DEFAULT;
+        };
+    }
+
+    /**
      * Cleans up resources when the plugin is disabled.
      */
     public void cleanup() {
-        playerPreferences.clear();
         showOthersAnimations.clear();
         animationFactories.clear();
         animationIds.clear();

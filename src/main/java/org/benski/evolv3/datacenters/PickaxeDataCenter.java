@@ -6,8 +6,9 @@ import org.benski.evolv3.core.constants.ConfigNames;
 import org.benski.evolv3.core.constants.ConfigPaths;
 import org.benski.evolv3.core.helpers.ItemStackExtensions;
 import org.benski.evolv3.models.pickaxe.PickaxeProfile;
-import org.bukkit.configuration.file.FileConfiguration;
+import org.benski.evolv3.registry.ConfigRegistry;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.ItemStack;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.function.Consumer;
@@ -39,11 +40,6 @@ public class PickaxeDataCenter extends BaseDataCenter<PickaxeProfile>
     }
 
     @Override
-    protected String getLoadingMessagePath() {
-        return ConfigPaths.Messages.Pickaxe.LOADING_PROFILE;
-    }
-
-    @Override
     protected String getLogPrefix() {
         return "Pickaxe";
     }
@@ -54,15 +50,11 @@ public class PickaxeDataCenter extends BaseDataCenter<PickaxeProfile>
         String pickaxeId = player.getInventory().getItemInMainHand().getData("id");
         if (pickaxeId == null || pickaxeId.isEmpty())
         {
+            callback.accept(null);
             return;
         }
 
-        if (data.containsKey(pickaxeId))
-        {
-            PickaxeProfile profile = data.get(pickaxeId);
-            profile.initialize(player);
-            callback.accept(profile);
-        }
+        callback.accept(data.get(pickaxeId));
     }
 
     @Override
@@ -74,43 +66,39 @@ public class PickaxeDataCenter extends BaseDataCenter<PickaxeProfile>
             return null;
         }
 
-        PickaxeProfile profile = data.get(pickaxeId);
-        if (profile != null)
-        {
-            profile.initialize(player);
-        }
-        return profile;
+        return data.get(pickaxeId);
+    }
+
+    /**
+     * Returns the cached {@link PickaxeProfile} for the given item, or {@code null} if not cached.
+     * Useful when the item is not currently in the player's hand (e.g. during an animation that
+     * has temporarily replaced the player's held item).
+     *
+     * @param item the pickaxe item stack to look up
+     * @return the cached profile, or {@code null}
+     */
+    public PickaxeProfile getLocalFromItem(@NotNull ItemStack item)
+    {
+        String pickaxeId = item.getData("id");
+        if (pickaxeId == null || pickaxeId.isEmpty()) return null;
+        return data.get(pickaxeId);
     }
 
     @Override
     protected void createNewProfile(@NotNull Player player, String id)
     {
-        var pickaxeProfile = new PickaxeProfile();
-        pickaxeProfile.key = id;
-        pickaxeProfile.ownerUuid = player.getUniqueId();
-
-        FileConfiguration defaultConfig = storageManager.getConfig(ConfigNames.DEFAULT);
-        pickaxeProfile.level = defaultConfig.getInt(ConfigPaths.Default.Pickaxe.DEFAULT_LEVEL, 1);
-        pickaxeProfile.xp = defaultConfig.getInt(ConfigPaths.Default.Pickaxe.DEFAULT_XP, 0);
-        pickaxeProfile.target = defaultConfig.getInt(ConfigPaths.Default.Pickaxe.DEFAULT_TARGET, 100);
-        pickaxeProfile.evolution = 1;
-        pickaxeProfile.currentEssence = defaultConfig.getInt(ConfigPaths.Default.Pickaxe.DEFAULT_CURRENT_ESSENCE, 0);
-        pickaxeProfile.targetEssence = defaultConfig.getInt(ConfigPaths.Default.Pickaxe.DEFAULT_ESSENCE_TARGET, 125);
-        pickaxeProfile.enchantRolls = defaultConfig.getInt(ConfigPaths.Default.Pickaxe.DEFAULT_ENCHANT_ROLLS, 0);
-        pickaxeProfile.evolutionAtoms = defaultConfig.getInt(ConfigPaths.Default.Pickaxe.DEFAULT_EVOLUTION_ATOMS, 0);
-        pickaxeProfile.atomTarget = defaultConfig.getInt(ConfigPaths.Default.Atoms.DEFAULT_ATOM_TARGET, 100);
-        pickaxeProfile.evolutionRolls = 0;
+        PickaxeProfile pickaxeProfile = PickaxeProfile.createDefault(player, id);
 
         player.getInventory().getItemInMainHand().setData("id", id);
-        this.initializeProfile(pickaxeProfile, player);
 
         data.put(id, pickaxeProfile);
 
         pickaxeProfile.save(result -> {
             if (result) {
                 player.sendMessage(formatMessage(player,
-                        messagesConfig.getString(ConfigPaths.Messages.Pickaxe.PROFILE_CREATED,
-                                "&aPickaxe profile created!")));
+                        ConfigRegistry.getInstance().get(ConfigNames.MESSAGES)
+                                .getString(ConfigPaths.Messages.Pickaxe.PROFILE_CREATED,
+                                        "&aPickaxe profile created!")));
             }
         });
     }

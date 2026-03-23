@@ -24,7 +24,8 @@ public class ConfigRegistry implements Registry<FileConfiguration>
             "default",
             "messages",
             "menus",
-            "enchants"
+            "enchants",
+            "ranks"
     );
 
     /**

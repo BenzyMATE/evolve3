@@ -232,7 +232,7 @@ public class AnimationRegistryManager
      * @return true if within budget
      */
     public boolean canPlay(BaseAnimation animation) {
-        if (activeAnimations.size() >= maxConcurrentAnimations) {
+        if (activeAnimations.size() + pendingAdditions.size() >= maxConcurrentAnimations) {
             return false;
         }
         return currentResourceCost + animation.getResourceCost() <= maxResourceCost;

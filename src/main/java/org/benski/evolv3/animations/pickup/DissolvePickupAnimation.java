@@ -364,17 +364,17 @@ public class DissolvePickupAnimation extends BasePickupAnimation
         switch (dropCategory) {
             case ESSENCE -> {
                 spawnParticle(world, Particle.ENCHANT, pos.clone().add(0, 0.1, 0), 18, 0.30, 0.20, 0.30, 0.12, null);
-                world.playSound(pos, Sound.BLOCK_ENCHANTMENT_TABLE_USE, 0.5f, 1.6f);
-                world.playSound(pos, Sound.BLOCK_GLASS_BREAK, 0.18f, 2.0f);
+                playSound(pos, Sound.BLOCK_ENCHANTMENT_TABLE_USE, 0.5f, 1.6f);
+                playSound(pos, Sound.BLOCK_GLASS_BREAK, 0.18f, 2.0f);
             }
             case ATOM -> {
                 spawnParticle(world, Particle.END_ROD, pos.clone().add(0, 0.1, 0), 10, 0.28, 0.18, 0.28, 0.08, null);
-                world.playSound(pos, Sound.BLOCK_AMETHYST_CLUSTER_BREAK, 0.5f, 2.0f);
-                world.playSound(pos, Sound.BLOCK_GLASS_BREAK, 0.18f, 2.0f);
+                playSound(pos, Sound.BLOCK_AMETHYST_CLUSTER_BREAK, 0.5f, 2.0f);
+                playSound(pos, Sound.BLOCK_GLASS_BREAK, 0.18f, 2.0f);
             }
             default -> {
                 spawnParticle(world, Particle.SMOKE, pos.clone().add(0, 0.1, 0), 5, 0.08, 0.04, 0.08, 0.01, null);
-                world.playSound(pos, Sound.BLOCK_GLASS_BREAK, 0.22f, 1.9f);
+                playSound(pos, Sound.BLOCK_GLASS_BREAK, 0.22f, 1.9f);
             }
         }
     }
@@ -469,6 +469,17 @@ public class DissolvePickupAnimation extends BasePickupAnimation
         } else {
             for (Player viewer : viewers) {
                 viewer.spawnParticle(particle, loc, count, ox, oy, oz, speed, data);
+            }
+        }
+    }
+
+    private void playSound(Location loc, Sound sound, float volume, float pitch) {
+        Collection<Player> viewers = getViewers();
+        if (viewers == null) {
+            loc.getWorld().playSound(loc, sound, volume, pitch);
+        } else {
+            for (Player viewer : viewers) {
+                viewer.playSound(loc, sound, volume, pitch);
             }
         }
     }

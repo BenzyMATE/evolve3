@@ -1,9 +1,13 @@
 package org.benski.evolv3.commands;
 
 import org.benski.evolv3.core.abstracts.BaseCommand;
+import org.benski.evolv3.core.constants.ConfigNames;
+import org.benski.evolv3.core.constants.ConfigPaths;
 import org.benski.evolv3.datacenters.PlayerDataCenter;
 import org.benski.evolv3.models.player.PlayerProfile;
+import org.benski.evolv3.registry.ConfigRegistry;
 import org.benski.evolv3.registry.DataCenterRegistry;
+import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
@@ -63,26 +67,33 @@ public class BalCommand extends BaseCommand
     public boolean execute(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args)
     {
         PlayerDataCenter dc = DataCenterRegistry.getInstance().getPlayerDataCenter();
+        FileConfiguration messages = ConfigRegistry.getInstance().get(ConfigNames.MESSAGES);
 
         if (args.length >= 1) {
             Player target = Bukkit.getPlayer(args[0]);
             if (target == null) {
-                sender.sendMessage(formatSender(sender, "&c&lPlayer Not Found &7— &f" + args[0] + " &7is not online."));
+                String msg = messages.getString(ConfigPaths.Messages.Bal.PLAYER_NOT_FOUND,
+                        "&c&lPlayer Not Found &7— &f%name% &7is not online.");
+                sender.sendMessage(formatSender(sender, msg.replace("%name%", args[0])));
                 return true;
             }
 
             PlayerProfile targetProfile = dc != null ? dc.getLocal(target) : null;
             double balance = targetProfile != null ? targetProfile.coins : 0.0;
-            sender.sendMessage(formatSender(sender, "&#FFD700⛁ &#FFD700&l" + target.getName()
-                    + " &#888888has &#FFD700⛁ &#FFD700&l" + formatCoins(balance) + " &#888888Coins"));
+            String msg = messages.getString(ConfigPaths.Messages.Bal.OTHER_BALANCE,
+                    "&#FFD700⛁ &#FFD700&l%name% &#888888has &#FFD700⛁ &#FFD700&l%balance% &#888888Coins");
+            sender.sendMessage(formatSender(sender, msg
+                    .replace("%name%", target.getName())
+                    .replace("%balance%", formatCoins(balance))));
         } else {
             if (!requirePlayer(sender)) return true;
             Player player = (Player) sender;
 
             PlayerProfile profile = dc != null ? dc.getLocal(player) : null;
             double balance = profile != null ? profile.coins : 0.0;
-            player.sendMessage(formatMessage(player, "&#FFD700⛁ &#FFD700&lYour Balance: &#FFD700⛁ &#FFD700&l"
-                    + formatCoins(balance) + " &#888888Coins"));
+            String msg = messages.getString(ConfigPaths.Messages.Bal.OWN_BALANCE,
+                    "&#FFD700⛁ &#FFD700&lYour Balance: &#FFD700⛁ &#FFD700&l%balance% &#888888Coins");
+            player.sendMessage(formatMessage(player, msg.replace("%balance%", formatCoins(balance))));
         }
 
         return true;
@@ -126,6 +137,6 @@ public class BalCommand extends BaseCommand
         if (sender instanceof Player player) {
             return formatMessage(player, message);
         }
-        return message.replaceAll("&#[0-9A-Fa-f]{6}", "").replace("&[0-9a-fk-or]", "");
+        return message.replaceAll("&#[0-9A-Fa-f]{6}", "").replaceAll("&[0-9a-fk-or]", "");
     }
 }

@@ -9,8 +9,10 @@ import org.benski.evolv3.core.constants.ConfigPaths;
 import org.benski.evolv3.core.helpers.SkinRenderer;
 import org.benski.evolv3.core.helpers.Utils;
 import org.benski.evolv3.core.managers.EnchantSelectionManager;
+import org.benski.evolv3.core.managers.RankManager;
 import org.benski.evolv3.datacenters.ArmorDataCenter;
 import org.benski.evolv3.datacenters.PlayerDataCenter;
+import org.benski.evolv3.models.player.PlayerProfile;
 import org.benski.evolv3.registry.ConfigRegistry;
 import org.benski.evolv3.registry.DataCenterRegistry;
 import org.bukkit.Bukkit;
@@ -66,6 +68,17 @@ public class JoinListener extends BaseListener
         // Restore any in-progress enchant selection (same options, pickaxe returned)
         EnchantSelectionManager.getInstance().handlePlayerJoin(player);
 
+        // Apply rank permissions once the profile has had a tick to load from cache.
+        // The profile is loaded synchronously from cache on the same tick for returning
+        // players; a 2-tick delay covers the async DB load path for new/first joins.
+        Bukkit.getScheduler().runTaskLater(plugin, () -> {
+            if (!player.isOnline()) return;
+            PlayerProfile profile = playerDataCenter != null ? playerDataCenter.getLocal(player) : null;
+            if (profile != null) {
+                RankManager.getInstance().applyPermissions(player, profile);
+            }
+        }, 2L);
+
         // Send skin join message — slight delay so the player's client is fully loaded
         Bukkit.getScheduler().runTaskLater(plugin, () -> sendJoinMessage(player), 20L);
     }
@@ -118,6 +131,9 @@ public class JoinListener extends BaseListener
     public void onQuitEvent(PlayerQuitEvent event)
     {
         Player player = event.getPlayer();
+
+        // Revoke rank permissions before the player fully disconnects
+        RankManager.getInstance().revokePermissions(player);
 
         // Save enchant animation state first, while the player is still technically online
         EnchantSelectionManager.getInstance().handlePlayerQuit(player);

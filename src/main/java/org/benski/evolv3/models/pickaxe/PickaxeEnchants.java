@@ -4,7 +4,9 @@ import org.benski.evolv3.core.interfaces.MongoSubDocument;
 import org.bson.Document;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Container for all enchantments on a pickaxe.
@@ -15,9 +17,15 @@ import java.util.List;
 public class PickaxeEnchants implements MongoSubDocument
 {
     /**
-     * The list of enchantments on this pickaxe.
+     * Ordered list of enchantments — used by PickaxeMenu for slot-indexed rendering.
      */
     public List<EnchantData> items = new ArrayList<>();
+
+    /**
+     * Fast lookup map keyed by lowercase internal enchant name.
+     * Always kept in sync with {@link #items}.
+     */
+    private final Map<String, EnchantData> index = new HashMap<>();
 
     /**
      * Default constructor.
@@ -34,10 +42,8 @@ public class PickaxeEnchants implements MongoSubDocument
      */
     public EnchantData getEnchant(String name)
     {
-        return items.stream()
-                .filter(e -> e.name != null && e.name.equalsIgnoreCase(name))
-                .findFirst()
-                .orElse(null);
+        if (name == null) return null;
+        return index.get(normalizeKey(name));
     }
 
     /**
@@ -82,11 +88,14 @@ public class PickaxeEnchants implements MongoSubDocument
      */
     public void setEnchant(EnchantData enchant)
     {
-        EnchantData existing = getEnchant(enchant.name);
+        String key = enchant.name != null ? normalizeKey(enchant.name) : "";
+        EnchantData existing = index.get(key);
         if (existing != null) {
-            items.remove(existing);
+            items.set(items.indexOf(existing), enchant);
+        } else {
+            items.add(enchant);
         }
-        items.add(enchant);
+        index.put(key, enchant);
     }
 
     /**
@@ -97,9 +106,12 @@ public class PickaxeEnchants implements MongoSubDocument
      */
     public boolean removeEnchant(String name)
     {
-        EnchantData enchant = getEnchant(name);
+        if (name == null) return false;
+        String key = normalizeKey(name);
+        EnchantData enchant = index.remove(key);
         if (enchant != null) {
-            return items.remove(enchant);
+            items.remove(enchant);
+            return true;
         }
         return false;
     }
@@ -127,6 +139,16 @@ public class PickaxeEnchants implements MongoSubDocument
     /**
      * {@inheritDoc}
      */
+    /**
+     * Normalises an enchant name to a consistent lookup key.
+     * Lowercases and strips all spaces so that "Nuclear Shower",
+     * "nuclear shower", and "nuclearshower" all resolve to the same key.
+     */
+    private static String normalizeKey(String name)
+    {
+        return name.toLowerCase().replace(" ", "");
+    }
+
     @Override
     public Document toDocument()
     {
@@ -147,6 +169,7 @@ public class PickaxeEnchants implements MongoSubDocument
     public void fromDocument(Document document)
     {
         items.clear();
+        index.clear();
         if (document == null) {
             return;
         }
@@ -157,6 +180,9 @@ public class PickaxeEnchants implements MongoSubDocument
                 EnchantData enchant = new EnchantData();
                 enchant.fromDocument(enchantDoc);
                 items.add(enchant);
+                if (enchant.name != null) {
+                    index.put(normalizeKey(enchant.name), enchant);
+                }
             }
         }
     }

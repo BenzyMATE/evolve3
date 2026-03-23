@@ -142,6 +142,7 @@ public class EssenceAnimation extends BaseAnimation
         if (targetPlayer == null || !targetPlayer.isOnline()) return;
 
         playArrivalEffects();
+        showHologram();
     }
 
     /**

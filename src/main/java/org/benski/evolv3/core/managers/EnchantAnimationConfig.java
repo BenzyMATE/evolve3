@@ -21,6 +21,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 
@@ -47,7 +48,8 @@ public final class EnchantAnimationConfig
     private static final Map<String, Double>       ENCHANT_MAX_CHANCES   = new HashMap<>();
     private static final Map<String, List<String>> ENCHANT_LORES         = new HashMap<>();
     private static final Map<String, String>       ENCHANT_DESCRIPTIONS  = new HashMap<>();
-    private static final java.util.Set<String>     PASSIVE_ENCHANTS      = new java.util.HashSet<>();
+    private static final java.util.Set<String>     PASSIVE_ENCHANTS             = new java.util.HashSet<>();
+    private static final java.util.Set<String>     PREFERENCES_HIDDEN_ENCHANTS  = new java.util.HashSet<>();
     private static int totalWeight = 0;
 
     private EnchantAnimationConfig() {}
@@ -77,6 +79,7 @@ public final class EnchantAnimationConfig
         ENCHANT_LORES.clear();
         ENCHANT_DESCRIPTIONS.clear();
         PASSIVE_ENCHANTS.clear();
+        PREFERENCES_HIDDEN_ENCHANTS.clear();
         totalWeight = 0;
 
         loadRarities(config);
@@ -131,7 +134,8 @@ public final class EnchantAnimationConfig
             int          cost      = es.getInt(ConfigPaths.Enchants.ENCHANT_COST, 100);
             String       texture   = es.getString(ConfigPaths.Enchants.ENCHANT_TEXTURE, "");
             double       maxChance = es.getDouble(ConfigPaths.Enchants.ENCHANT_MAX_CHANCE, 0.0);
-            boolean      passive     = es.getBoolean(ConfigPaths.Enchants.ENCHANT_PASSIVE, false);
+            boolean      passive             = es.getBoolean(ConfigPaths.Enchants.ENCHANT_PASSIVE, false);
+            boolean      preferencesHidden   = es.getBoolean(ConfigPaths.Enchants.ENCHANT_PREFERENCES_HIDDEN, false);
             List<String> lore        = es.getStringList(ConfigPaths.Enchants.ENCHANT_LORE);
             String       description = es.getString(ConfigPaths.Enchants.ENCHANT_DESCRIPTION, "");
 
@@ -141,7 +145,10 @@ public final class EnchantAnimationConfig
             ENCHANT_ITEMS.put(name, mat);
             ENCHANT_ORDER.add(name);
             ENCHANT_DISPLAY_NAMES.put(name.toLowerCase(), name);
+            // Also register without spaces so "nuclearshower" resolves to "Nuclear Shower".
+            ENCHANT_DISPLAY_NAMES.put(name.toLowerCase().replace(" ", ""), name);
             if (passive) PASSIVE_ENCHANTS.add(name);
+            if (preferencesHidden) PREFERENCES_HIDDEN_ENCHANTS.add(name);
             ENCHANT_MAX_LEVELS.put(name, maxLevel);
             ENCHANT_COSTS.put(name, cost);
             ENCHANT_MAX_CHANCES.put(name, maxChance);
@@ -192,25 +199,45 @@ public final class EnchantAnimationConfig
      * @return list of randomly selected enchant options
      */
     public static List<EnchantOption> generateRandom(int count) {
+        return generateRandom(count, Collections.emptySet());
+    }
+
+    /**
+     * Generates a list of random enchant options, excluding any enchants whose
+     * internal name (lowercase, no spaces) is in {@code excludedInternalNames}.
+     * Use this overload to filter out enchants the player already has at max level.
+     *
+     * @param count                 number of options to generate
+     * @param excludedInternalNames set of internal names to skip (e.g. "furnace", "haste i")
+     * @return list of randomly selected enchant options
+     */
+    public static List<EnchantOption> generateRandom(int count, Set<String> excludedInternalNames) {
         List<EnchantOption> options = new ArrayList<>(count);
-        for (int i = 0; i < count; i++) {
+        int attempts = 0;
+        int maxAttempts = count * 10; // prevent infinite loops when nearly all enchants are maxed
+        while (options.size() < count && attempts++ < maxAttempts) {
             RarityConfig rarity = rollRarity();
             if (rarity == null) continue;
 
             List<String> pool = RARITY_POOLS.getOrDefault(rarity.displayName(), Collections.emptyList());
+            List<String> candidates;
             if (pool.isEmpty()) {
-                // Fallback: pick from the full pool if this rarity has no enchants yet
-                List<String> allNames = new ArrayList<>(ENCHANT_ITEMS.keySet());
-                if (!allNames.isEmpty()) {
-                    String name = allNames.get(ThreadLocalRandom.current().nextInt(allNames.size()));
-                    RarityConfig fallbackRarity = ENCHANT_RARITIES.getOrDefault(name, rarity);
-                    options.add(new EnchantOption(name, fallbackRarity));
-                }
-                continue;
+                candidates = new ArrayList<>(ENCHANT_ITEMS.keySet());
+            } else {
+                candidates = new ArrayList<>(pool);
             }
 
-            String name = pool.get(ThreadLocalRandom.current().nextInt(pool.size()));
-            options.add(new EnchantOption(name, rarity));
+            // Shuffle to avoid always landing on the first non-excluded name
+            Collections.shuffle(candidates, ThreadLocalRandom.current());
+            for (String name : candidates) {
+                String internalName = name.toLowerCase().replace(" ", "");
+                if (excludedInternalNames.contains(internalName)) continue;
+                RarityConfig actualRarity = pool.isEmpty()
+                        ? ENCHANT_RARITIES.getOrDefault(name, rarity)
+                        : rarity;
+                options.add(new EnchantOption(name, actualRarity));
+                break;
+            }
         }
         return options;
     }
@@ -275,6 +302,17 @@ public final class EnchantAnimationConfig
      */
     public static boolean isPassive(String enchantName) {
         return PASSIVE_ENCHANTS.contains(enchantName);
+    }
+
+    /**
+     * Returns {@code true} if the named enchant should be hidden from the per-enchant preferences menu.
+     * Enchants controlled by dedicated preference sections (e.g. essence, atoms) use this flag.
+     *
+     * @param enchantName the enchant display name
+     * @return true if the enchant should not appear in the enchants preferences list
+     */
+    public static boolean isPreferencesHidden(String enchantName) {
+        return PREFERENCES_HIDDEN_ENCHANTS.contains(enchantName);
     }
 
     /**
@@ -352,6 +390,23 @@ public final class EnchantAnimationConfig
      */
     public static String getDisplayName(String internalName) {
         return ENCHANT_DISPLAY_NAMES.getOrDefault(internalName.toLowerCase(), internalName);
+    }
+
+    /**
+     * Returns the sort index of an enchant's rarity, matching the order rarities
+     * are declared in {@code enchants.yml} (Common=0, Uncommon=1, Rare=2, …).
+     * Unknown enchants sort to the end ({@link Integer#MAX_VALUE}).
+     *
+     * @param displayName the enchant's display name (e.g. "Nuclear Shower")
+     * @return the rarity index, ascending from worst to best
+     */
+    public static int getEnchantRarityIndex(String displayName) {
+        RarityConfig rarity = ENCHANT_RARITIES.get(displayName);
+        if (rarity == null) return Integer.MAX_VALUE;
+        for (int i = 0; i < RARITIES.size(); i++) {
+            if (RARITIES.get(i).displayName().equals(rarity.displayName())) return i;
+        }
+        return Integer.MAX_VALUE;
     }
 
     /**

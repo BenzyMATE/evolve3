@@ -1,13 +1,11 @@
 package org.benski.evolv3.core.abstracts;
 
 import org.benski.evolv3.Main;
-import org.benski.evolv3.core.constants.ConfigNames;
 import org.benski.evolv3.core.interfaces.DataCenter;
 import org.benski.evolv3.core.interfaces.MongoCollection;
 import org.benski.evolv3.core.managers.MongoManager;
 import org.benski.evolv3.core.managers.StorageRegistryManager;
 import org.benski.evolv3.core.managers.TaskManager;
-import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
 
 import java.util.HashMap;
@@ -15,14 +13,11 @@ import java.util.Map;
 import java.util.function.Consumer;
 import java.util.logging.Logger;
 
-import static org.benski.evolv3.core.helpers.Utils.formatMessage;
-
 public abstract class BaseDataCenter<T extends MongoCollection> implements DataCenter<T>
 {
     protected final Map<String, T> data = new HashMap<>();
     protected final MongoManager mongoManager = MongoManager.getInstance();
     protected final StorageRegistryManager storageManager = StorageRegistryManager.getInstance();
-    protected final FileConfiguration messagesConfig = storageManager.getConfig(ConfigNames.MESSAGES);
     private final Logger logger = Main.getInstance().getLogger();
 
     /**
@@ -78,10 +73,6 @@ public abstract class BaseDataCenter<T extends MongoCollection> implements DataC
                     initializeProfile(profile, player);
                     data.put(profileId, profile);
 
-                    player.sendMessage(formatMessage(player,
-                            messagesConfig.getString(getLoadingMessagePath(),
-                                    "Loading your profile...")));
-
                 }, TaskManager.getInstance()::runSync)
                 .exceptionally(throwable -> {
                     logger.severe("Failed to load profile " + profileId + ": " + throwable.getMessage());
@@ -112,6 +103,5 @@ public abstract class BaseDataCenter<T extends MongoCollection> implements DataC
     protected abstract void initializeProfile(T profile, Player player);
     protected abstract void createNewProfile(Player player, String id);
     protected abstract String getProfileId(T profile);
-    protected abstract String getLoadingMessagePath();
     protected abstract String getLogPrefix();
 }
