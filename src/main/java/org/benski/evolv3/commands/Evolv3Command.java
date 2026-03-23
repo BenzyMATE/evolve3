@@ -29,6 +29,7 @@ import org.jetbrains.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.UUID;
 
 /**
  * Main admin command for the Evolv3 plugin.
@@ -46,21 +47,21 @@ public class Evolv3Command extends BaseCommand
     @Override
     public String getCommandName()
     {
-        return "evolv3";
+        return "evolve";
     }
 
     /** {@inheritDoc} */
     @Override
     public @Nullable String getDescription()
     {
-        return "Main admin command for Evolv3 plugin";
+        return "Main admin command for the Evolv3 plugin";
     }
 
     /** {@inheritDoc} */
     @Override
     public @Nullable String getUsage()
     {
-        return "/evolv3 <help|reload|info|resetpickaxes|resetprofile>";
+        return "/evolve <help|reload|info|resetpickaxes|resetprofile>";
     }
 
     /** {@inheritDoc} */
@@ -74,15 +75,13 @@ public class Evolv3Command extends BaseCommand
     @Override
     public @Nullable List<String> getAliases()
     {
-        return List.of("ev3", "e3");
+        return List.of("e");
     }
 
     /** {@inheritDoc} */
     @Override
     public boolean execute(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args)
     {
-        FileConfiguration messagesConfig = ConfigRegistry.getInstance().get(ConfigNames.MESSAGES);
-
         if (args.length == 0) {
             showHelp(sender);
             return true;
@@ -99,7 +98,7 @@ public class Evolv3Command extends BaseCommand
             case "resetprofile" -> handleResetProfile(sender, args);
             default -> {
                 sendError(sender, "Unknown subcommand: " + args[0]);
-                sendInfo(sender, "Use /evolv3 help for available commands.");
+                sendInfo(sender, "Use /evolve help for available commands.");
             }
         }
 
@@ -113,18 +112,10 @@ public class Evolv3Command extends BaseCommand
      */
     private void showHelp(CommandSender sender)
     {
-        sender.sendMessage("§6§l[Evolv3] §eAvailable Commands:");
-        sender.sendMessage("§7- §e/evolv3 help §7- Show this help message");
-        sender.sendMessage("§7- §e/evolv3 reload [config] §7- Reload configuration files");
-        sender.sendMessage("§7- §e/evolv3 info §7- Show plugin information");
-        sender.sendMessage("§7- §e/evolv3 backpack model <number> [player] §7- Set backpack model data");
-        sender.sendMessage("§7- §e/evolv3 resetpickaxes <player> §7- Delete all of a player's pickaxe data");
-        sender.sendMessage("§7- §e/evolv3 resetprofile <player> §7- Delete a player's profile and held pickaxe");
-        sender.sendMessage("");
-        sender.sendMessage("§7Player Commands:");
-        sender.sendMessage("§7- §e/pickaxe §7- Open pickaxe management menu");
-        sender.sendMessage("§7- §e/backpack §7- Open backpack menu");
-        sender.sendMessage("§7- §e/preferences §7- Open preferences menu");
+        FileConfiguration messages = ConfigRegistry.getInstance().get(ConfigNames.MESSAGES);
+        for (String line : messages.getStringList(ConfigPaths.Messages.Admin.HELP)) {
+            sender.sendMessage(formatMessage(sender, line));
+        }
     }
 
     /**
@@ -135,12 +126,12 @@ public class Evolv3Command extends BaseCommand
      */
     private void handleReload(CommandSender sender, String[] args)
     {
-        FileConfiguration messagesConfig = ConfigRegistry.getInstance().get(ConfigNames.MESSAGES);
-
         if (args.length == 1) {
             ConfigRegistry.getInstance().cleanup();
             ConfigRegistry.getInstance().initialize();
 
+            // Read from the newly loaded config, not the stale reference
+            FileConfiguration messagesConfig = ConfigRegistry.getInstance().get(ConfigNames.MESSAGES);
             String successMsg = messagesConfig.getString(ConfigPaths.Messages.General.RELOAD_SUCCESS,
                     "&aConfiguration reloaded successfully!");
             sender.sendMessage(formatMessage(sender, successMsg));
@@ -150,6 +141,7 @@ public class Evolv3Command extends BaseCommand
             ConfigRegistry.getInstance().cleanup();
             ConfigRegistry.getInstance().initialize();
 
+            FileConfiguration messagesConfig = ConfigRegistry.getInstance().get(ConfigNames.MESSAGES);
             String successMsg = messagesConfig.getString(ConfigPaths.Messages.General.RELOAD_SUCCESS,
                     "&aConfiguration reloaded successfully!");
             sender.sendMessage(formatMessage(sender, successMsg.replace("%config%", configName)));
@@ -166,7 +158,7 @@ public class Evolv3Command extends BaseCommand
     private void handleBackpack(CommandSender sender, String[] args)
     {
         if (args.length < 3 || !args[1].equalsIgnoreCase("model")) {
-            sendInfo(sender, "Usage: /evolv3 backpack model <number> [player]");
+            sendInfo(sender, "Usage: /evolve backpack model <number> [player]");
             return;
         }
 
@@ -215,16 +207,11 @@ public class Evolv3Command extends BaseCommand
      */
     private void showInfo(CommandSender sender)
     {
-        sender.sendMessage("§6§l[Evolv3] §ePlugin Information");
-        sender.sendMessage("§7Version: §f" + plugin.getDescription().getVersion());
-        sender.sendMessage("§7Author: §fBenski");
-        sender.sendMessage("§7Platform: §fPaper 1.21.1");
-        sender.sendMessage("");
-        sender.sendMessage("§7Registered Systems:");
-        sender.sendMessage("§7- §aPickaxe Progression");
-        sender.sendMessage("§7- §aArmor Multipliers");
-        sender.sendMessage("§7- §aBackpack System");
-        sender.sendMessage("§7- §aEnchantment System");
+        FileConfiguration messages = ConfigRegistry.getInstance().get(ConfigNames.MESSAGES);
+        for (String line : messages.getStringList(ConfigPaths.Messages.Admin.INFO)) {
+            String processed = line.replace("%version%", plugin.getDescription().getVersion());
+            sender.sendMessage(formatMessage(sender, processed));
+        }
     }
 
     /**
@@ -238,7 +225,7 @@ public class Evolv3Command extends BaseCommand
     private void handleResetPickaxes(CommandSender sender, String[] args)
     {
         if (args.length < 2) {
-            sendInfo(sender, "Usage: /evolv3 resetpickaxes <player>");
+            sendInfo(sender, "Usage: /evolve resetpickaxes <player>");
             return;
         }
 
@@ -304,7 +291,7 @@ public class Evolv3Command extends BaseCommand
     private void handleResetProfile(CommandSender sender, String[] args)
     {
         if (args.length < 2) {
-            sendInfo(sender, "Usage: /evolv3 resetprofile <player>");
+            sendInfo(sender, "Usage: /evolve resetprofile <player>");
             return;
         }
 
@@ -318,26 +305,50 @@ public class Evolv3Command extends BaseCommand
         PickaxeDataCenter pickaxeDC = DataCenterRegistry.getInstance().getPickaxeDataCenter();
         MongoManager mongo = MongoManager.getInstance();
 
-        // Delete the target player's profile
-        String playerId = target.getUniqueId().toString();
-        mongo.deleteAsync("Players", "id", playerId);
-        playerDC.getAll().remove(playerId);
-        sendSuccess(sender, "Deleted " + target.getName() + "'s player profile.");
+        // Collect and delete all pickaxes owned by this player
+        UUID targetUuid = target.getUniqueId();
+        List<String> pickaxeIds = new ArrayList<>();
 
-        // Delete the admin's held pickaxe profile if applicable
-        if (sender instanceof Player admin) {
-            ItemStack heldItem = admin.getInventory().getItemInMainHand();
-            String pickaxeId = ItemStackExtensions.getData(heldItem, "id");
-            if (pickaxeId != null && !pickaxeId.isEmpty()) {
-                mongo.deleteAsync("Pickaxes", "id", pickaxeId);
-                pickaxeDC.getAll().remove(pickaxeId);
-                ItemStackExtensions.setData(heldItem, "id", "");
-                admin.getInventory().setItemInMainHand(heldItem);
-                sendSuccess(sender, "Deleted held pickaxe profile (" + pickaxeId + ").");
-            } else {
-                sendInfo(sender, "No registered pickaxe held — pickaxe profile not deleted.");
+        // Pickaxes from stored slots (if profile is still in cache)
+        PlayerProfile profile = playerDC.getLocal(target);
+        if (profile != null) {
+            for (String entry : profile.storedPickaxes) {
+                if (entry == null || entry.isEmpty()) continue;
+                String[] parts = entry.split(":", 2);
+                if (!parts[0].isEmpty()) pickaxeIds.add(parts[0]);
             }
         }
+
+        // Any pickaxe cached in PickaxeDataCenter that belongs to this player
+        pickaxeDC.getAll().values().stream()
+                .filter(p -> targetUuid.equals(p.ownerUuid))
+                .map(p -> p.key)
+                .filter(k -> k != null && !k.isEmpty())
+                .forEach(k -> { if (!pickaxeIds.contains(k)) pickaxeIds.add(k); });
+
+        // Clear ID from any pickaxe the player is currently holding
+        for (int i = 0; i < target.getInventory().getContents().length; i++) {
+            ItemStack item = target.getInventory().getContents()[i];
+            if (item == null || !item.getType().name().contains("PICKAXE")) continue;
+            String id = ItemStackExtensions.getData(item, "id");
+            if (id != null && !id.isEmpty()) {
+                ItemStackExtensions.setData(item, "id", "");
+                target.getInventory().setItem(i, item);
+            }
+        }
+
+        for (String id : pickaxeIds) {
+            mongo.deleteAsync("Pickaxes", "id", id);
+            pickaxeDC.getAll().remove(id);
+        }
+
+        // Delete the target player's profile
+        String playerId = targetUuid.toString();
+        mongo.deleteAsync("Players", "id", playerId);
+        playerDC.getAll().remove(playerId);
+
+        sendSuccess(sender, "Reset " + target.getName() + "'s profile and deleted "
+                + pickaxeIds.size() + " pickaxe(s).");
     }
 
     /**

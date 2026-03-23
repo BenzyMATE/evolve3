@@ -48,8 +48,20 @@ SelectionPool:
   Alchemy: Common
   Frostbite: Common
   Furnace: Uncommon
+  Fortune: Uncommon
   Scavenger: Uncommon
   Merchant: Uncommon
+  AutoSell: Rare
+  Extraction: Rare
+  Radioactive: Rare
+  Drill: Rare
+  Explosive: Epic
+  Lazer: Epic
+  Thor: Epic
+  Vortex: Legendary
+  Cascade: Legendary
+  Jackhammer: Legendary
+  NuclearShower: Legendary
 
 # Display text when pickaxe has no enchants
 NoEnchants: "&cNone"
@@ -96,8 +108,9 @@ Unbreaking:
     - ' {rarity}'
     - ''
     - ' &#FFFFFF&lDescription'
-    - ' &8| &#CCCCCCPassively reduces the chance of'
-    - ' &8| &#CCCCCCyour pickaxe taking durability damage.'
+    - ' &8| &#CCCCCCNegates pickaxe durability loss'
+    - ' &8| &#CCCCCCon each block you break.'
+    - ' &8| &#CCCCCCProtects your pickaxe longer.'
     - ''
     - ' &#FFFFFF&lStatistics'
     - ' &8| &#888888Level: &#FFFFFF{level}&#888888/&#FFFFFF{maxLevel}'
@@ -126,8 +139,9 @@ Efficiency:
     - ' {rarity}'
     - ''
     - ' &#FFFFFF&lDescription'
-    - ' &8| &#CCCCCCPassively increases your mining'
-    - ' &8| &#CCCCCCspeed based on enchant level.'
+    - ' &8| &#CCCCCCPassively boosts mining speed.'
+    - ' &8| &#CCCCCCSpeed multiplier increases with'
+    - ' &8| &#CCCCCCevery level you upgrade.'
     - ''
     - ' &#FFFFFF&lStatistics'
     - ' &8| &#888888Level: &#FFFFFF{level}&#888888/&#FFFFFF{maxLevel}'
@@ -158,8 +172,9 @@ Furnace:
     - ' {rarity}'
     - ''
     - ' &#FFFFFF&lDescription'
-    - ' &8| &#CCCCCCChance to automatically smelt'
-    - ' &8| &#CCCCCCmined blocks into refined goods.'
+    - ' &8| &#CCCCCCOn each block mined,'
+    - ' &8| &#CCCCCCchance to auto-smelt it'
+    - ' &8| &#CCCCCCinto a refined good.'
     - ''
     - ' &#FFFFFF&lStatistics'
     - ' &8| &#888888Level: &#FFFFFF{level}&#888888/&#FFFFFF{maxLevel}'
@@ -171,7 +186,8 @@ Furnace:
     - ''
   Hologram:
     Enabled: true
-    Message: "&#F0F0F0%original% &a> &#00FFFF%smelt%"
+    DefaultEnabled: false
+    Message: "&#55FF55&lFURNACE &#CCCCCC%original% &#FF6B35> &#CCCCCC%smelt%"
   # Smelting recipes: ORIGINAL -> RESULT
   Recipes:
     COBBLESTONE: STONE
@@ -201,8 +217,9 @@ Frostbite:
     - ' {rarity}'
     - ''
     - ' &#FFFFFF&lDescription'
-    - ' &8| &#CCCCCCChance to freeze nearby blocks,'
-    - ' &8| &#CCCCCCconverting them to packed ice.'
+    - ' &8| &#CCCCCCFreezes blocks in a'
+    - ' &8| &#CCCCCCradius into packed ice.'
+    - ' &8| &#CCCCCCBreaking them collects their ore.'
     - ''
     - ' &#FFFFFF&lStatistics'
     - ' &8| &#888888Level: &#FFFFFF{level}&#888888/&#FFFFFF{maxLevel}'
@@ -217,7 +234,7 @@ Frostbite:
   Hologram:
     Enabled: true
     DefaultEnabled: false
-    Message: "&#F0F0F0Froze &#00FFFF%blocks% &#F0F0F0blocks!"
+    Message: "&#F0F0F0FROSTBITE &#CCCCCCFroze %blocks% blocks!"
 
 # =====================================================
 # Alchemy Enchantment (Active)
@@ -236,8 +253,9 @@ Alchemy:
     - ' {rarity}'
     - ''
     - ' &#FFFFFF&lDescription'
-    - ' &8| &#CCCCCCChance to upgrade mined blocks'
-    - ' &8| &#CCCCCCto a higher-tier material.'
+    - ' &8| &#CCCCCCChance to transmute mined'
+    - ' &8| &#CCCCCCblocks into higher-value ores.'
+    - ' &8| &#CCCCCCChains with Furnace enchant.'
     - ''
     - ' &#FFFFFF&lStatistics'
     - ' &8| &#888888Level: &#FFFFFF{level}&#888888/&#FFFFFF{maxLevel}'
@@ -249,7 +267,7 @@ Alchemy:
     - ''
   Hologram:
     Enabled: true
-    Message: "&#F0F0F0%original% &a> &#00FFFF%upgrade%"
+    Message: "&#F0F0F0&lALCHEMY &#CCCCCC%original% &#B366D9> &#CCCCCC%upgrade%"
   # Upgrade recipes: ORIGINAL -> UPGRADED
   Upgrades:
     COBBLESTONE: COAL
@@ -279,8 +297,9 @@ Scavenger:
     - ' {rarity}'
     - ''
     - ' &#FFFFFF&lDescription'
-    - ' &8| &#CCCCCCChance to discover extra backpack'
-    - ' &8| &#CCCCCCslots while mining.'
+    - ' &8| &#CCCCCCChance to discover bonus'
+    - ' &8| &#CCCCCCbackpack slots while mining.'
+    - ' &8| &#CCCCCCSlots are permanently kept.'
     - ''
     - ' &#FFFFFF&lStatistics'
     - ' &8| &#888888Level: &#FFFFFF{level}&#888888/&#FFFFFF{maxLevel}'
@@ -292,7 +311,7 @@ Scavenger:
     - ''
   Hologram:
     Enabled: true
-    Message: "&#00FFFF+%slots% &#F0F0F0Backpack Slots!"
+    Message: "&#55FF55&lSCAVENGER &#CCCCCCFound +%slots% backpack slots!"
   # Slots found per trigger (random between min and max)
   SlotsMin: 1
   SlotsMax: 3
@@ -317,8 +336,9 @@ Merchant:
     - ' {rarity}'
     - ''
     - ' &#FFFFFF&lDescription'
-    - ' &8| &#CCCCCCChance to discover coins'
-    - ' &8| &#CCCCCCwhile mining.'
+    - ' &8| &#CCCCCCChance to uncover coins'
+    - ' &8| &#CCCCCChidden inside mined blocks.'
+    - ' &8| &#CCCCCCCoin amount scales with level.'
     - ''
     - ' &#FFFFFF&lStatistics'
     - ' &8| &#888888Level: &#FFFFFF{level}&#888888/&#FFFFFF{maxLevel}'
@@ -330,7 +350,460 @@ Merchant:
     - ''
   Hologram:
     Enabled: true
-    Message: "&#FFD700+%coins% ⛁ Coins!"
+    DefaultEnabled: false
+    Message: "&#55FF55&lMERCHANT &#CCCCCCFound +%coins% ⛁ Coins!"
   # Coins found per trigger (random between min and max)
   CoinsMin: 1
   CoinsMax: 50
+
+# =====================================================
+# Fortune Enchantment (Passive)
+# =====================================================
+# Passively increases blocks received per block broken.
+# Drop amount = 2 + floor(level / 20)
+# Level 1=2 blocks, 20=3, 40=4, 60=5, 80=6, 100=7
+Fortune:
+  Name: "Fortune"
+  Description: "Multiply the blocks you receive when mining."
+  Passive: true
+  MaxLevel: 100
+  MaxChance: 0
+  Cost: 20
+  Item: DIAMOND_ORE
+  Texture: "http://textures.minecraft.net/texture/3ea4dd2e6a1bdb47e61da84d5185e5e4f59ea3e87d8ad9f6c2a3b1e4d7f0c9b2"
+  Lore:
+    - ' {rarity}'
+    - ''
+    - ' &#FFFFFF&lDescription'
+    - ' &8| &#CCCCCCMultiplies blocks collected per'
+    - ' &8| &#CCCCCCbreak. Gain +1 drop'
+    - ' &8| &#CCCCCCevery 20 levels upgraded.'
+    - ''
+    - ' &#FFFFFF&lStatistics'
+    - ' &8| &#888888Level: &#FFFFFF{level}&#888888/&#FFFFFF{maxLevel}'
+    - ' &8| &#888888Cost: &#B366D9🔥 &#B366D9{cost}'
+    - ' &8| &#888888Blocks per Break: &#00FF88{drops}x'
+    - ''
+    - ' &8| &aLeft-Click &#AAAAAAto upgrade'
+    - ' &8| &aRight-Click &#AAAAAAto toggle'
+    - ''
+
+# =====================================================
+# AutoSell Enchantment (Active)
+# =====================================================
+# Chance to automatically sell the entire backpack contents while mining.
+# Uses the same sell prices and helmet multiplier as the manual sell system.
+# Chance = (level / MaxLevel) * MaxChance
+AutoSell:
+  Name: "AutoSell"
+  Description: "Automatically sell your entire backpack."
+  MaxLevel: 100
+  MaxChance: 2.5
+  Cost: 75
+  Item: EMERALD
+  Texture: "http://textures.minecraft.net/texture/2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0e1f2a3b"
+  Hologram:
+    Enabled: true
+    DefaultEnabled: false
+    Message: "&#00FFFF&lAUTOSELL &#CCCCCC⛁ +%coins% (%items% items)"
+  Lore:
+    - ' {rarity}'
+    - ''
+    - ' &#FFFFFF&lDescription'
+    - ' &8| &#CCCCCCChance to instantly sell'
+    - ' &8| &#CCCCCCyour full backpack contents'
+    - ' &8| &#CCCCCCfor coins while mining.'
+    - ''
+    - ' &#FFFFFF&lStatistics'
+    - ' &8| &#888888Level: &#FFFFFF{level}&#888888/&#FFFFFF{maxLevel}'
+    - ' &8| &#888888Cost: &#B366D9🔥 &#B366D9{cost}'
+    - ' &8| &#888888Chance: &#00FF88{chance}%'
+    - ''
+    - ' &8| &aLeft-Click &#AAAAAAto upgrade'
+    - ' &8| &aRight-Click &#AAAAAAto toggle'
+    - ''
+
+# =====================================================
+# Extraction Enchantment (Active)
+# =====================================================
+# Chance to find essence while mining.
+# Essence amount is random between EssenceMin and EssenceMax per trigger.
+# Chance = (level / MaxLevel) * MaxChance
+Extraction:
+  Name: "Extraction"
+  Description: "Find essence while mining."
+  PreferencesHidden: true
+  MaxLevel: 100
+  MaxChance: 10
+  Cost: 40
+  Item: EXPERIENCE_BOTTLE
+  Texture: "http://textures.minecraft.net/texture/a3d98b4e2a8e7b1e6c4f0d8c2a5b7e9f1c3d5e7a9b1c3d5e7f9a1b3c5d7e9f1"
+  Lore:
+    - ' {rarity}'
+    - ''
+    - ' &#FFFFFF&lDescription'
+    - ' &8| &#CCCCCCBoosts your base essence'
+    - ' &8| &#CCCCCCdiscovery chance per block.'
+    - ' &8| &#CCCCCCBonus scales with level.'
+    - ''
+    - ' &#FFFFFF&lStatistics'
+    - ' &8| &#888888Level: &#FFFFFF{level}&#888888/&#FFFFFF{maxLevel}'
+    - ' &8| &#888888Cost: &#B366D9🔥 &#B366D9{cost}'
+    - ' &8| &#888888Chance: &#00FF88{chance}%'
+    - ''
+    - ' &8| &aLeft-Click &#AAAAAAto upgrade'
+    - ' &8| &aRight-Click &#AAAAAAto toggle'
+    - ''
+  Hologram:
+    Enabled: true
+    DefaultEnabled: false
+    Message: "&#00FFFF&lEXTRACTION &#CCCCCCExtracted +%essence% 🔥 Essence!"
+  # Essence found per trigger (random between min and max)
+  EssenceMin: 1
+  EssenceMax: 10
+
+# =====================================================
+# Radioactive Enchantment (Active)
+# =====================================================
+# Increases the player's base atom discovery chance while mining.
+# Bonus chance scales with level: (level / MaxLevel) * MaxChance
+# At max level: base 2.5% + 7.5% bonus = 10.0% total atom chance
+Radioactive:
+  Name: "Radioactive"
+  Description: "Increases your chance of discovering atoms."
+  PreferencesHidden: true
+  MaxLevel: 100
+  MaxChance: 7.5
+  Cost: 50
+  Item: LIME_DYE
+  Texture: "http://textures.minecraft.net/texture/7b2d1c8a4f6e0d3b5a9c7e1f2b4d6e8a0c2e4f6a8b0c2d4e6f8a0b2c4d6e8f0"
+  Lore:
+    - ' {rarity}'
+    - ''
+    - ' &#FFFFFF&lDescription'
+    - ' &8| &#CCCCCCBoosts your base atom'
+    - ' &8| &#CCCCCCdiscovery chance per block.'
+    - ' &8| &#CCCCCCBonus scales with level.'
+    - ''
+    - ' &#FFFFFF&lStatistics'
+    - ' &8| &#888888Level: &#FFFFFF{level}&#888888/&#FFFFFF{maxLevel}'
+    - ' &8| &#888888Cost: &#B366D9🔥 &#B366D9{cost}'
+    - ' &8| &#888888Chance Bonus: &#00FF88+{chance}%'
+    - ''
+    - ' &8| &aLeft-Click &#AAAAAAto upgrade'
+    - ' &8| &aRight-Click &#AAAAAAto toggle'
+    - ''
+
+# =====================================================
+# Drill Enchantment (Active)
+# =====================================================
+# Chance to bore a 2×2 shaft straight down from the mined block.
+# Each level is broken one at a time with a shard animation between each.
+# Depth per trigger is randomised: 2, 3, or 4 levels (capped by MaxDepth).
+# Respects Fortune and records XP per block.
+# Chance = (level / MaxLevel) * MaxChance
+Drill:
+  Name: "Drill"
+  Description: "Bores a 2x2 shaft down, shattering 2-4 levels one at a time."
+  MaxLevel: 100
+  MaxChance: 10
+  Cost: 60
+  Item: PLAYER_HEAD
+  Texture: "REPLACE_ME"
+  # Maximum depth the drill can reach. Actual depth per trigger is random between 2 and this value (max 4).
+  MaxDepth: 4
+  Lore:
+    - ' {rarity}'
+    - ''
+    - ' &#FFFFFF&lDescription'
+    - ' &8| &#CCCCCCBores a 2&#888888x&#CCCCCC2 shaft'
+    - ' &8| &#CCCCCCstraight down, shattering up'
+    - ' &8| &#CCCCCCto 4 layers deep.'
+    - ''
+    - ' &#FFFFFF&lStatistics'
+    - ' &8| &#888888Level: &#FFFFFF{level}&#888888/&#FFFFFF{maxLevel}'
+    - ' &8| &#888888Cost: &#B366D9🔥 &#B366D9{cost}'
+    - ' &8| &#888888Chance: &#00FF88{chance}%'
+    - ''
+    - ' &8| &aLeft-Click &#AAAAAAto upgrade'
+    - ' &8| &aRight-Click &#AAAAAAto toggle'
+    - ''
+  Hologram:
+    Enabled: true
+    DefaultEnabled: false
+    Message: "&#00FFFF&lDRILL &#CCCCCCDrilled %blocks% blocks!"
+
+Explosive:
+  Name: "Explosive"
+  Description: "Detonates a sphere of blocks around each block mined."
+  MaxLevel: 100
+  MaxChance: 12
+  Cost: 120
+  Item: PLAYER_HEAD
+  Texture: "REPLACE_ME"
+  # Maximum explosion radius at max level (sphere). Scales with level: radius = 1 to MaxRadius.
+  MaxRadius: 2
+  Lore:
+    - ' {rarity}'
+    - ''
+    - ' &#FFFFFF&lDescription'
+    - ' &8| &#CCCCCCDetonates a block sphere'
+    - ' &8| &#CCCCCCaround each block mined.'
+    - ' &8| &#CCCCCCRadius grows with enchant level.'
+    - ''
+    - ' &#FFFFFF&lStatistics'
+    - ' &8| &#888888Level: &#FFFFFF{level}&#888888/&#FFFFFF{maxLevel}'
+    - ' &8| &#888888Cost: &#B366D9🔥 &#B366D9{cost}'
+    - ' &8| &#888888Chance: &#00FF88{chance}%'
+    - ''
+    - ' &8| &aLeft-Click &#AAAAAAto upgrade'
+    - ' &8| &aRight-Click &#AAAAAAto toggle'
+    - ''
+  Hologram:
+    Enabled: true
+    DefaultEnabled: false
+    Message: "&#FF55CC&lEXPLOSIVE &#CCCCCCBlasted %blocks% blocks!"
+
+Lazer:
+  Name: "Lazer"
+  Description: "Fires a laser beam, vaporizing all blocks in a line across the mine."
+  MaxLevel: 100
+  MaxChance: 8
+  Cost: 100
+  Item: PLAYER_HEAD
+  Texture: "REPLACE_ME"
+  # Maximum number of blocks the laser can travel before stopping.
+  MaxRange: 50
+  Lore:
+    - ' {rarity}'
+    - ''
+    - ' &#FFFFFF&lDescription'
+    - ' &8| &#CCCCCCFires a beam that'
+    - ' &8| &#CCCCCCvaporizes every block in'
+    - ' &8| &#CCCCCCits path across the mine.'
+    - ''
+    - ' &#FFFFFF&lStatistics'
+    - ' &8| &#888888Level: &#FFFFFF{level}&#888888/&#FFFFFF{maxLevel}'
+    - ' &8| &#888888Cost: &#B366D9🔥 &#B366D9{cost}'
+    - ' &8| &#888888Chance: &#00FF88{chance}%'
+    - ''
+    - ' &8| &aLeft-Click &#AAAAAAto upgrade'
+    - ' &8| &aRight-Click &#AAAAAAto toggle'
+    - ''
+  Hologram:
+    Enabled: true
+    DefaultEnabled: false
+    Message: "&#FF55CC&lLAZER &#CCCCCCVaporized %blocks% blocks!"
+
+# =====================================================
+# Thor Enchantment (Epic)
+# =====================================================
+# Calls a lightning bolt at the mined block's column, breaking every solid block
+# from the top of the mine region to the bottom in a 1x1 shaft.
+# Air gaps are skipped so the bolt passes through holes made from above.
+# Respects Fortune and records XP per block.
+# Chance = (level / MaxLevel) * MaxChance
+Thor:
+  Name: "Thor"
+  Description: "Strikes lightning, shattering an entire 1x1 column from sky to bedrock."
+  MaxLevel: 100
+  MaxChance: 6
+  Cost: 150
+  Item: PLAYER_HEAD
+  Texture: "REPLACE_ME"
+  # Maximum column height scanned in each direction (up + down from origin).
+  MaxColumnHeight: 100
+  Lore:
+    - ' {rarity}'
+    - ''
+    - ' &#FFFFFF&lDescription'
+    - ' &8| &#CCCCCCCalls a lightning bolt'
+    - ' &8| &#CCCCCCthat shatters a full'
+    - ' &8| &#CCCCCCcolumn top to bottom.'
+    - ''
+    - ' &#FFFFFF&lStatistics'
+    - ' &8| &#888888Level: &#FFFFFF{level}&#888888/&#FFFFFF{maxLevel}'
+    - ' &8| &#888888Cost: &#B366D9🔥 &#B366D9{cost}'
+    - ' &8| &#888888Chance: &#00FF88{chance}%'
+    - ''
+    - ' &8| &aLeft-Click &#AAAAAAto upgrade'
+    - ' &8| &aRight-Click &#AAAAAAto toggle'
+    - ''
+  Hologram:
+    Enabled: true
+    DefaultEnabled: false
+    Message: "&#FF55CC&lTHOR &#CCCCCCStruck %blocks% blocks!"
+
+# =====================================================
+# Vortex Enchantment (Legendary)
+# =====================================================
+# Spawns a black hole at the mined block, pulling all blocks in a sphere radius
+# towards it. Blocks are instantly broken and collected; the animation shows
+# block-shard entities spiralling inward before being absorbed.
+# Radius scales 1 → MaxRadius with level. Respects Fortune and Frostbite.
+# Chance = (level / MaxLevel) * MaxChance
+Vortex:
+  Name: "Vortex"
+  Description: "Creates a black hole that pulls all nearby blocks into the void."
+  MaxLevel: 100
+  MaxChance: 5
+  Cost: 200
+  Item: PLAYER_HEAD
+  Texture: "REPLACE_ME"
+  # Maximum sphere radius at max level. Scales with level: radius = 1 to MaxRadius.
+  MaxRadius: 3
+  Lore:
+    - ' {rarity}'
+    - ''
+    - ' &#FFFFFF&lDescription'
+    - ' &8| &#CCCCCCSpawns a black hole'
+    - ' &8| &#CCCCCCthat pulls and collects'
+    - ' &8| &#CCCCCCall blocks within range.'
+    - ''
+    - ' &#FFFFFF&lStatistics'
+    - ' &8| &#888888Level: &#FFFFFF{level}&#888888/&#FFFFFF{maxLevel}'
+    - ' &8| &#888888Cost: &#B366D9🔥 &#B366D9{cost}'
+    - ' &8| &#888888Chance: &#00FF88{chance}%'
+    - ''
+    - ' &8| &aLeft-Click &#AAAAAAto upgrade'
+    - ' &8| &aRight-Click &#AAAAAAto toggle'
+    - ''
+  Hologram:
+    Enabled: true
+    DefaultEnabled: false
+    Message: "&#FFAA00&lVORTEX &#CCCCCCAbsorbed %blocks% blocks!"
+
+# =====================================================
+# Cascade Enchantment (Legendary)
+# =====================================================
+# Fires a chain of explosions that rips through the mine in a random direction.
+# Each link detonates a sphere of blocks then the chain advances StepDistance
+# blocks further (with slight angular drift). Links fire every StepDelayTicks
+# so the chain visibly propagates across the mine.
+# Chain length scales 2 → MaxChainLength with level. Respects Fortune and Frostbite.
+# Chance = (level / MaxLevel) * MaxChance
+Cascade:
+  Name: "Cascade"
+  Description: "Triggers a chain of explosions that rips through the mine."
+  MaxLevel: 100
+  MaxChance: 4
+  Cost: 200
+  Item: PLAYER_HEAD
+  Texture: "REPLACE_ME"
+  # Maximum number of chain links at max level (scales from 3 at level 1).
+  MaxChainLength: 16
+  # Blocks advanced between each chain-link centre.
+  StepDistance: 5
+  # Base sphere radius broken at each chain link.
+  ExplosionRadius: 2
+  # Extra radius added at max level (grows from ExplosionRadius → ExplosionRadius+MaxRadiusBonus).
+  MaxRadiusBonus: 3
+  # Maximum simultaneous chains fired (scales from 1 at level 1 to MaxChains at max level).
+  MaxChains: 3
+  Lore:
+    - ' {rarity}'
+    - ''
+    - ' &#FFFFFF&lDescription'
+    - ' &8| &#CCCCCCFires multiple chains that'
+    - ' &8| &#CCCCCCexplode through the mine.'
+    - ' &8| &#CCCCCCMore chains at higher levels.'
+    - ''
+    - ' &#FFFFFF&lStatistics'
+    - ' &8| &#888888Level: &#FFFFFF{level}&#888888/&#FFFFFF{maxLevel}'
+    - ' &8| &#888888Cost: &#B366D9🔥 &#B366D9{cost}'
+    - ' &8| &#888888Chance: &#00FF88{chance}%'
+    - ''
+    - ' &8| &aLeft-Click &#AAAAAAto upgrade'
+    - ' &8| &aRight-Click &#AAAAAAto toggle'
+    - ''
+  Hologram:
+    Enabled: true
+    DefaultEnabled: false
+    Message: "&#FFAA00&lCASCADE &#CCCCCCChained %blocks% blocks!"
+
+# =====================================================
+# Jackhammer Enchantment (Legendary)
+# =====================================================
+# Smashes every breakable block on the entire Y-layer of the mine —
+# all blocks at the same height as the mined block, within the mine
+# region's XZ footprint. When WorldGuard is absent, a MaxScanRadius
+# square is searched instead.
+# Fortune and Frostbite resolution are applied to every block collected.
+# Chance = (level / MaxLevel) * MaxChance
+Jackhammer:
+  Name: "Jackhammer"
+  Description: "Obliterates the entire layer of the mine in one devastating blow."
+  MaxLevel: 100
+  MaxChance: 3
+  Cost: 200
+  Item: PLAYER_HEAD
+  Texture: "REPLACE_ME"
+  # Fallback search radius (blocks) when WorldGuard is not installed.
+  MaxScanRadius: 100
+  Lore:
+    - ' {rarity}'
+    - ''
+    - ' &#FFFFFF&lDescription'
+    - ' &8| &#CCCCCCObliterates every block on'
+    - ' &8| &#CCCCCCthe current mine layer'
+    - ' &8| &#CCCCCCin one devastating blow.'
+    - ''
+    - ' &#FFFFFF&lStatistics'
+    - ' &8| &#888888Level: &#FFFFFF{level}&#888888/&#FFFFFF{maxLevel}'
+    - ' &8| &#888888Cost: &#B366D9🔥 &#B366D9{cost}'
+    - ' &8| &#888888Chance: &#00FF88{chance}%'
+    - ''
+    - ' &8| &aLeft-Click &#AAAAAAto upgrade'
+    - ' &8| &aRight-Click &#AAAAAAto toggle'
+    - ''
+  Hologram:
+    Enabled: true
+    DefaultEnabled: false
+    Message: "&#FFAA00&lJACKHAMMER &#CCCCCCSmashed %blocks% blocks!"
+
+# =====================================================
+# Nuclear Shower Enchantment (Legendary)
+# =====================================================
+# Summons a radioactive cloud at the top of the mine that rains acid streams
+# down across the entire XZ footprint, dissolving blocks from ceiling to floor.
+# Stream count scales from 5 at level 1 to MaxStreams at max level.
+# Each stream breaks a full vertical column at a random X/Z position inside
+# the mine bounds. Streams fire every 2 ticks so the rain sweeps visually.
+# Fortune and Frostbite resolution applied to every block collected.
+# Chance = (level / MaxLevel) * MaxChance
+NuclearShower:
+  Name: "Nuclear Shower"
+  Description: "Summons an acid rainstorm that dissolves a large portion of the mine."
+  MaxLevel: 100
+  MaxChance: 2
+  Cost: 250
+  Item: PLAYER_HEAD
+  Texture: "REPLACE_ME"
+  # Number of rain stream columns at max level (scales from 10 at level 1).
+  MaxStreams: 150
+  # Blocks each acid column eats through vertically (scales from 1 at level 1).
+  MaxDepthPerStream: 15
+  # Stream columns processed per tick batch (higher = faster but more CPU per tick).
+  BatchSize: 10
+  # Fallback search radius (blocks) when WorldGuard is not installed.
+  MaxScanRadius: 100
+  Lore:
+    - ' {rarity}'
+    - ''
+    - ' &#FFFFFF&lDescription'
+    - ' &8| &#CCCCCCRains acid that dissolves'
+    - ' &8| &#CCCCCCcolumns ceiling to floor'
+    - ' &8| &#CCCCCCacross the entire mine.'
+    - ''
+    - ' &#FFFFFF&lStatistics'
+    - ' &8| &#888888Level: &#FFFFFF{level}&#888888/&#FFFFFF{maxLevel}'
+    - ' &8| &#888888Cost: &#B366D9🔥 &#B366D9{cost}'
+    - ' &8| &#888888Chance: &#00FF88{chance}%'
+    - ''
+    - ' &8| &aLeft-Click &#AAAAAAto upgrade'
+    - ' &8| &aRight-Click &#AAAAAAto toggle'
+    - ''
+  Hologram:
+    Enabled: true
+    DefaultEnabled: false
+    Message: "&#39FF14&lNUCLEAR SHOWER &#CCCCCCDissolved %blocks% blocks!"

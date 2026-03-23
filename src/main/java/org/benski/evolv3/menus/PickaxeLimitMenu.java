@@ -12,7 +12,7 @@ import org.benski.evolv3.core.helpers.ItemStackExtensions;
 import org.benski.evolv3.core.types.MenuType;
 import org.benski.evolv3.datacenters.PickaxeDataCenter;
 import org.benski.evolv3.datacenters.PlayerDataCenter;
-import org.benski.evolv3.managers.PickaxeManager;
+import org.benski.evolv3.core.managers.PickaxeManager;
 import org.benski.evolv3.models.pickaxe.PickaxeProfile;
 import org.benski.evolv3.models.player.PlayerProfile;
 import org.benski.evolv3.items.AncientResin;
@@ -210,6 +210,26 @@ public class PickaxeLimitMenu extends BaseMenu
      */
     private void handleDeposit(Player player, String pickaxeId)
     {
+        // Check cursor first — player may have picked up their pickaxe onto the cursor
+        ItemStack cursor = player.getOpenInventory().getCursor();
+        if (cursor != null && cursor.getType().name().contains("PICKAXE")
+                && pickaxeId.equals(cursor.getData("id"))) {
+            ItemMeta depositMeta = cursor.getItemMeta();
+            if (depositMeta instanceof Damageable dmg) {
+                PickaxeProfile depositProfile = pickaxeDataCenter.getAll().get(pickaxeId);
+                if (depositProfile != null) {
+                    depositProfile.durability = dmg.getDamage();
+                    depositProfile.save(null);
+                }
+            }
+            player.getOpenInventory().setCursor(new ItemStack(Material.AIR));
+            player.playSound(player.getLocation(), Sound.BLOCK_SHULKER_BOX_CLOSE, 1.0f, 1.2f);
+            sendMessageList(player, ConfigPaths.Messages.PickaxeLimit.PICKAXE_DEPOSITED);
+            refresh(player);
+            return;
+        }
+
+        // Check inventory
         ItemStack[] contents = player.getInventory().getContents();
         for (int i = 0; i < contents.length; i++) {
             ItemStack item = contents[i];
@@ -414,10 +434,14 @@ public class PickaxeLimitMenu extends BaseMenu
 
         if (pickProfile != null) {
             String durabilityBar = buildDurabilityBar(damage, material.getMaxDurability());
+            FileConfiguration activeConfig = ConfigRegistry.getInstance().get(ConfigNames.DEFAULT);
+            String durabilityLabel = activeConfig.getString(ConfigPaths.Default.Pickaxe.DURABILITY_LABEL,
+                    " &8| &#00FFFFDurability:");
+            String barPrefix = activeConfig.getString(ConfigPaths.Default.Pickaxe.DURABILITY_BAR_PREFIX, " &8| ");
             List<String> footer = new ArrayList<>();
             footer.add("");
-            footer.add(" &8| &#00FFFFDurability:");
-            footer.add(" &8| " + durabilityBar);
+            footer.add(durabilityLabel);
+            footer.add(barPrefix + durabilityBar);
             footer.add("");
             footer.add(" &8| &aLeft-Click &#AAAAAAto deposit");
             footer.add(" &8| &#FFEE00Right-Click &#AAAAAAto repair &#777777(&#E8890A5 &#777777Ancient Resin)");
@@ -467,10 +491,13 @@ public class PickaxeLimitMenu extends BaseMenu
                     .decoration(TextDecoration.ITALIC, false));
 
             String durabilityBar = buildDurabilityBar(pickProfile.durability, material.getMaxDurability());
+            String durabilityLabel = config.getString(ConfigPaths.Default.Pickaxe.DURABILITY_LABEL,
+                    " &8| &#00FFFFDurability:");
+            String barPrefix = config.getString(ConfigPaths.Default.Pickaxe.DURABILITY_BAR_PREFIX, " &8| ");
             List<String> footer = new ArrayList<>();
             footer.add("");
-            footer.add(" &8| &#00FFFFDurability:");
-            footer.add(" &8| " + durabilityBar);
+            footer.add(durabilityLabel);
+            footer.add(barPrefix + durabilityBar);
             footer.add("");
             footer.add(" &8| &aLeft-Click &#AAAAAAto withdraw");
             footer.add(" &8| &#FFEE00Right-Click &#AAAAAAto repair &#777777(&#E8890A5 &#777777Ancient Resin)");
@@ -757,6 +784,12 @@ public class PickaxeLimitMenu extends BaseMenu
 
     private boolean playerHasRegisteredPickaxe(Player player)
     {
+        // Check cursor item — player may have picked up their pickaxe mid-GUI
+        ItemStack cursor = player.getOpenInventory().getCursor();
+        if (cursor != null && cursor.getType().name().contains("PICKAXE")) {
+            String id = cursor.getData("id");
+            if (id != null && !id.isEmpty()) return true;
+        }
         for (ItemStack item : player.getInventory().getContents()) {
             if (item == null || !item.getType().name().contains("PICKAXE")) continue;
             String id = item.getData("id");
@@ -767,6 +800,12 @@ public class PickaxeLimitMenu extends BaseMenu
 
     private boolean pickaxeIsActive(Player player, String pickaxeId)
     {
+        // Check cursor item — player may have picked up their pickaxe mid-GUI
+        ItemStack cursor = player.getOpenInventory().getCursor();
+        if (cursor != null && cursor.getType().name().contains("PICKAXE")
+                && pickaxeId.equals(cursor.getData("id"))) {
+            return true;
+        }
         for (ItemStack item : player.getInventory().getContents()) {
             if (item == null || !item.getType().name().contains("PICKAXE")) continue;
             if (pickaxeId.equals(item.getData("id"))) return true;
