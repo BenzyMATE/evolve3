@@ -48,6 +48,13 @@ public final class PlayerProfile extends MongoDocument
     public int pickaxeLimit;
 
     /**
+     * The highest evolution level ever reached across all of this player's pickaxes.
+     * Persisted so the pickaxe storage menu shows the correct number of unlocked slots
+     * even when the highest-tier pickaxe is in storage and not loaded into local cache.
+     */
+    public int highestEvolution = 1;
+
+    /**
      * Player's total essence currency.
      */
     public int essence;
@@ -125,6 +132,7 @@ public final class PlayerProfile extends MongoDocument
         doc.put("isEnchanting", isEnchanting);
         doc.put("isEvolving", isEvolving);
         doc.put("pickaxeLimit", pickaxeLimit);
+        doc.put("highestEvolution", highestEvolution);
         doc.put("essence", essence);
         doc.put("coins", coins);
 
@@ -159,6 +167,7 @@ public final class PlayerProfile extends MongoDocument
         this.pickaxeLimit = savedLimit > 0 ? savedLimit
                 : StorageRegistryManager.getInstance().getConfig(ConfigNames.DEFAULT)
                         .getInt(ConfigPaths.Default.Player.DEFAULT_PICKAXE_LIMIT, 1);
+        this.highestEvolution = Math.max(1, document.getInteger("highestEvolution", 1));
         this.essence = document.getInteger("essence", 0);
         Double savedCoins = document.getDouble("coins");
         this.coins = savedCoins != null ? savedCoins : 0.0;
@@ -240,6 +249,7 @@ public final class PlayerProfile extends MongoDocument
 
         FileConfiguration config = StorageRegistryManager.getInstance().getConfig(ConfigNames.DEFAULT);
         profile.pickaxeLimit = config.getInt(ConfigPaths.Default.Player.DEFAULT_PICKAXE_LIMIT, 1);
+        profile.highestEvolution = 1;
         profile.essence = config.getInt(ConfigPaths.Default.Player.DEFAULT_ESSENCE, 0);
         profile.coins = config.getDouble(ConfigPaths.Default.Player.DEFAULT_COINS, 0.0);
         profile.isEnchanting = false;

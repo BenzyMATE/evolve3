@@ -407,6 +407,12 @@ public class PickaxeManager
     {
         profile.evolution = next.level;
 
+        // Keep the player's persisted highestEvolution in sync so the storage menu
+        // shows the correct slot count even when this pickaxe is put into storage.
+        if (next.level > playerProfile.highestEvolution) {
+            playerProfile.highestEvolution = next.level;
+        }
+
         updateStoredPickaxeMaterial(playerProfile, profile.key, next.material);
 
         // Update held item material if this pickaxe is currently in the player's hand

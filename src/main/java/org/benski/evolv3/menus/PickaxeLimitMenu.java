@@ -541,11 +541,8 @@ public class PickaxeLimitMenu extends BaseMenu
 
     private ItemStack buildEvolutionInfoButton(Player player, int unlockedSlots, int maxSlots)
     {
-        int currentMaxEvolution = pickaxeDataCenter.getAll().values().stream()
-                .filter(p -> player.getUniqueId().equals(p.ownerUuid))
-                .mapToInt(p -> p.evolution)
-                .max()
-                .orElse(1);
+        PlayerProfile profile = playerDataCenter.getLocal(player);
+        int currentMaxEvolution = profile != null ? profile.highestEvolution : unlockedSlots;
         int nextEvolution = unlockedSlots + 1;
 
         List<String> lore = new ArrayList<>();
@@ -594,16 +591,36 @@ public class PickaxeLimitMenu extends BaseMenu
     }
 
     /**
-     * Returns the number of unlocked slots for the player, derived from the highest
-     * evolution level across all of their pickaxes. Defaults to 1 if no pickaxes exist yet.
+     * Returns the number of unlocked slots for the player.
+     *
+     * <p>Reads from {@link PlayerProfile#highestEvolution}, which is persisted to MongoDB
+     * and updated every time a pickaxe evolves. This means the correct slot count is
+     * available on join regardless of which pickaxes are held or in storage.</p>
+     *
+     * <p>As a migration safety net, locally-cached pickaxe profiles are also scanned.
+     * If any cached pickaxe has a higher evolution than the stored value, the profile is
+     * updated and saved so the value self-corrects for players who evolved before this
+     * field was introduced.</p>
      */
     private int getUnlockedSlots(Player player)
     {
-        int maxEvolution = pickaxeDataCenter.getAll().values().stream()
+        PlayerProfile profile = playerDataCenter.getLocal(player);
+        int stored = profile != null ? profile.highestEvolution : 1;
+
+        // Self-healing migration: if any loaded pickaxe is higher than the stored value, sync it
+        int cached = pickaxeDataCenter.getAll().values().stream()
                 .filter(p -> player.getUniqueId().equals(p.ownerUuid))
                 .mapToInt(p -> p.evolution)
                 .max()
                 .orElse(1);
+
+        int maxEvolution = Math.max(stored, cached);
+
+        if (profile != null && cached > stored) {
+            profile.highestEvolution = cached;
+            profile.save(null);
+        }
+
         return Math.min(maxEvolution, getMaxSlots());
     }
 
