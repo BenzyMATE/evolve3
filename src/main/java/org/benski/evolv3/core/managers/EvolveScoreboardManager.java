@@ -308,6 +308,9 @@ public final class EvolveScoreboardManager
             state.displayTick  = 0;
         }
 
+        // Rank line is independent of pickaxe hold state — always tick it
+        tickRankLine(player, state);
+
         if (state.evoLineIndex < 0) return;
 
         int i = state.evoLineIndex;
@@ -473,9 +476,6 @@ public final class EvolveScoreboardManager
                 }
             }
         }
-
-        // ── Rank toggle animation ─────────────────────────────────────────────
-        tickRankLine(player, state);
 
         // ── Level-up flash animation ─────────────────────────────────────────
         if (state.levelUpAnimating && state.levelLineIndex >= 0) {

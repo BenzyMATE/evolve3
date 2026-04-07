@@ -1,5 +1,6 @@
 package org.benski.evolv3.core.abstracts;
 
+import lombok.Getter;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -39,13 +40,43 @@ import java.util.Collection;
  */
 public abstract class BaseAnimation
 {
+    /**
+     * -- GETTER --
+     *  Gets the plugin instance.
+     */
+    @Getter
     protected final JavaPlugin plugin;
+    /**
+     * -- GETTER --
+     *  Gets the animation duration in ticks.
+     */
+    @Getter
     protected final int duration;
 
     private Location origin;
+    /**
+     * -- GETTER --
+     *  Gets the viewers for this animation.
+     */
+    @Getter
     private Collection<Player> viewers;
+    /**
+     * -- GETTER --
+     *  Gets the current tick.
+     */
+    @Getter
     private int currentTick;
+    /**
+     * -- GETTER --
+     *  Checks if the animation is currently playing.
+     */
+    @Getter
     private boolean playing;
+    /**
+     * -- GETTER --
+     *  Checks if the animation has completed.
+     */
+    @Getter
     private boolean complete;
 
     /**
@@ -157,48 +188,12 @@ public abstract class BaseAnimation
     // Getters
 
     /**
-     * Gets the plugin instance.
-     *
-     * @return the plugin
-     */
-    public JavaPlugin getPlugin() {
-        return plugin;
-    }
-
-    /**
-     * Gets the animation duration in ticks.
-     *
-     * @return the duration
-     */
-    public int getDuration() {
-        return duration;
-    }
-
-    /**
      * Gets the origin location.
      *
      * @return the origin location, or null if not playing
      */
     public Location getOrigin() {
         return origin != null ? origin.clone() : null;
-    }
-
-    /**
-     * Gets the viewers for this animation.
-     *
-     * @return the viewers, or null if visible to all players
-     */
-    public Collection<Player> getViewers() {
-        return viewers;
-    }
-
-    /**
-     * Gets the current tick.
-     *
-     * @return the current tick
-     */
-    public int getCurrentTick() {
-        return currentTick;
     }
 
     /**
@@ -210,21 +205,4 @@ public abstract class BaseAnimation
         return duration > 0 ? (double) currentTick / duration : 1.0;
     }
 
-    /**
-     * Checks if the animation is currently playing.
-     *
-     * @return true if playing
-     */
-    public boolean isPlaying() {
-        return playing;
-    }
-
-    /**
-     * Checks if the animation has completed.
-     *
-     * @return true if complete
-     */
-    public boolean isComplete() {
-        return complete;
-    }
 }

@@ -79,7 +79,10 @@ public class DrillEnchant implements Listener
 
             EnchantData drill = pickaxeProfile.enchants.getEnchant(Enchants.DRILL);
             if (drill == null || !drill.enabled || drill.level <= 0) return;
-            if (!Utils.chance(drill.getCurrentChance())) return;
+            // Rare (Tuned Head): +5% to proc chance
+            double procChance = drill.getCurrentChance();
+            if (DrillStoneHandler.hasStone(drill, "Rare")) procChance += 5.0;
+            if (!Utils.chance(procChance)) return;
 
             Block origin = event.getBlock();
 
@@ -87,7 +90,7 @@ public class DrillEnchant implements Listener
             new BukkitRunnable()
             {
                 @Override
-                public void run() { startDrill(player, origin, pickaxeProfile); }
+                public void run() { startDrill(player, origin, pickaxeProfile, drill, 0); }
             }.runTaskLater(plugin, 1L);
         });
     }
@@ -98,9 +101,13 @@ public class DrillEnchant implements Listener
 
     /**
      * Entry point for the sequential drill. Resolves profiles, rolls a random depth,
-     * and kicks off level 0.
+     * applies stone effects, and kicks off level 0.
+     *
+     * @param reDepth 0 = first trigger; 1+ = secondary (Epic parallel) — stone chain-triggering
+     *                effects (Epic, Legendary) are skipped when reDepth > 0
      */
-    private void startDrill(Player player, Block origin, PickaxeProfile pickaxeProfile)
+    private void startDrill(Player player, Block origin, PickaxeProfile pickaxeProfile,
+                            EnchantData drill, int reDepth)
     {
         if (!player.isOnline()) return;
 
@@ -116,10 +123,49 @@ public class DrillEnchant implements Listener
         int maxDepth = config.getInt(ConfigPaths.Enchants.Drill.DEPTH, 4);
         int depth = 2 + ThreadLocalRandom.current().nextInt(Math.min(3, Math.max(1, maxDepth - 1)));
 
+        // Common (Deep Reach): +1 to tunnel depth
+        if (DrillStoneHandler.hasStone(drill, "Common")) depth += 1;
+
+        // Legendary (Overcharge): +5 to tunnel depth
+        if (DrillStoneHandler.hasStone(drill, "Legendary")) depth += 5;
+
+        // Epic (Parallel Strike): fire a second drill 3 blocks to the side (first trigger only)
+        if (reDepth == 0 && DrillStoneHandler.hasStone(drill, "Epic")) {
+            Block parallelOrigin = origin.getRelative(3, 0, 0);
+            if (WorldGuardManager.getInstance().isWithinMineRegion(parallelOrigin.getLocation())) {
+                new BukkitRunnable() {
+                    @Override
+                    public void run() { startDrill(player, parallelOrigin, pickaxeProfile, drill, 1); }
+                }.runTaskLater(plugin, 2L);
+            }
+        }
+
         int fortuneAmount = resolveFortune(pickaxeProfile);
         AtomicInteger totalBroken = new AtomicInteger(0);
 
-        drillLevel(player, origin, playerProfile, pickaxeProfile, config, 0, depth, fortuneAmount, totalBroken);
+        // Secondary (parallel) drills have an unbroken origin block — break it now so level 0
+        // produces a full 2×2 footprint instead of an L-shape.
+        if (reDepth > 0 && AoEDropResolver.isBreakable(origin)
+                && WorldGuardManager.getInstance().isWithinMineRegion(origin.getLocation())) {
+            Material mat = AoEDropResolver.resolve(
+                    origin, player.getInventory().getItemInMainHand(), plugin, pickaxeProfile);
+            if (!mat.isAir()) {
+                int remaining = playerProfile.backpack.getMaxSize() - playerProfile.backpack.getTotalItems();
+                if (remaining > 0) {
+                    origin.setType(Material.AIR);
+                    playerProfile.backpack.addItem(player, mat,
+                            Math.min(fortuneAmount > 0 ? fortuneAmount : 1, remaining), false);
+                    PickaxeManager.getInstance().addStatistics(player, mat, playerProfile);
+                    AoEDropResolver.rollSideEffects(player, origin, pickaxeProfile, playerProfile);
+                    totalBroken.incrementAndGet();
+                }
+            }
+        }
+
+        AoEDropResolver.startAccumulation(player.getUniqueId());
+
+        drillLevel(player, origin, playerProfile, pickaxeProfile, config, 0, depth,
+                   fortuneAmount, totalBroken, drill);
     }
 
     /**
@@ -130,21 +176,37 @@ public class DrillEnchant implements Listener
      * @param currentLevel 0 = same Y as the original break; 1+ = levels below
      * @param maxLevel     the deepest level to drill
      * @param totalBroken  running count of extra blocks broken across all levels
+     * @param drill        active enchant data (used for stone effects)
      */
     private void drillLevel(Player player, Block origin, PlayerProfile playerProfile,
                             PickaxeProfile pickaxeProfile,
                             FileConfiguration config, int currentLevel, int maxLevel,
-                            int fortuneAmount, AtomicInteger totalBroken)
+                            int fortuneAmount, AtomicInteger totalBroken,
+                            EnchantData drill)
     {
         if (!player.isOnline()) return;
 
         Backpack backpack = playerProfile.backpack;
         if (backpack.isFull()) {
+            AoEDropResolver.flushAccumulation(player, origin, pickaxeProfile);
             if (totalBroken.get() > 0) showNotification(player, origin, config, totalBroken.get());
             return;
         }
 
-        List<Block> levelBlocks  = getLevelBlocks(origin, currentLevel);
+        // Base block list for this level.
+        List<Block> levelBlocks = new ArrayList<>(getLevelBlocks(origin, currentLevel));
+
+        // Uncommon (Broad Bore): always extend footprint by one extra row (+Z) → 3×2 tunnel.
+        if (DrillStoneHandler.hasStone(drill, "Uncommon")) {
+            if (currentLevel == 0) {
+                levelBlocks.add(origin.getRelative(0, 0, 2));
+                levelBlocks.add(origin.getRelative(1, 0, 2));
+            } else {
+                levelBlocks.add(origin.getRelative(0, -currentLevel, 2));
+                levelBlocks.add(origin.getRelative(1, -currentLevel, 2));
+            }
+        }
+
         List<Material> levelMats = new ArrayList<>();
 
         for (Block block : levelBlocks) {
@@ -155,7 +217,7 @@ public class DrillEnchant implements Listener
 
             Material mat = AoEDropResolver.resolve(
                     block, player.getInventory().getItemInMainHand(), plugin, pickaxeProfile);
-            if (mat.isAir()) continue; // safety: block was already removed by another process
+            if (mat.isAir()) continue;
             levelMats.add(mat);
             block.setType(Material.AIR);
 
@@ -186,10 +248,11 @@ public class DrillEnchant implements Listener
                 public void run()
                 {
                     drillLevel(player, origin, playerProfile, pickaxeProfile, config,
-                               currentLevel + 1, maxLevel, fortuneAmount, totalBroken);
+                               currentLevel + 1, maxLevel, fortuneAmount, totalBroken, drill);
                 }
             }.runTaskLater(plugin, LEVEL_DELAY_TICKS);
         } else {
+            AoEDropResolver.flushAccumulation(player, origin, pickaxeProfile);
             if (totalBroken.get() > 0) showNotification(player, origin, config, totalBroken.get());
         }
     }

@@ -73,10 +73,16 @@ public class VortexEnchant implements Listener
 
             EnchantData vortex = pickaxeProfile.enchants.getEnchant(Enchants.VORTEX);
             if (vortex == null || !vortex.enabled || vortex.level <= 0) return;
-            if (!Utils.chance(vortex.getCurrentChance())) return;
+
+            // Common (Attract): +2% to Vortex proc chance
+            // Uncommon (Enhanced Mag): +3% to Vortex proc chance
+            double triggerChance = vortex.getCurrentChance();
+            if (VortexStoneHandler.hasStone(vortex, "Common"))   triggerChance += 2.0;
+            if (VortexStoneHandler.hasStone(vortex, "Uncommon")) triggerChance += 3.0;
+            if (!Utils.chance(triggerChance)) return;
 
             Block origin = event.getBlock();
-            triggerVortex(player, origin, pickaxeProfile, vortex.level);
+            triggerVortex(player, origin, pickaxeProfile, vortex);
         });
     }
 
@@ -84,7 +90,8 @@ public class VortexEnchant implements Listener
     // Vortex logic
     // -------------------------------------------------------------------------
 
-    private void triggerVortex(Player player, Block origin, PickaxeProfile pickaxeProfile, int enchantLevel)
+    private void triggerVortex(Player player, Block origin, PickaxeProfile pickaxeProfile,
+                               EnchantData vortex)
     {
         if (!player.isOnline()) return;
 
@@ -100,15 +107,24 @@ public class VortexEnchant implements Listener
         int maxRadius = config.getInt(ConfigPaths.Enchants.Vortex.MAX_RADIUS, 4);
 
         // Radius scales 1 → maxRadius with level.
-        int radius = Math.max(1, (int) Math.ceil((double) enchantLevel / maxLevel * maxRadius));
+        int radius = Math.max(1, (int) Math.ceil((double) vortex.level / maxLevel * maxRadius));
+
+        // Legendary (Infinite Pull): permanently double the pull radius
+        if (VortexStoneHandler.hasStone(vortex, "Legendary")) radius *= 2;
 
         int fortuneAmount = resolveFortune(pickaxeProfile);
         Backpack backpack = playerProfile.backpack;
 
         if (backpack.isFull()) return;
 
+        // Epic (Black Hole): every 5th proc pulls all item entities in a 2× radius
+        boolean isBlackHole = VortexStoneHandler.hasStone(vortex, "Epic")
+                && VortexStoneHandler.incrementAndCheckBlackHole(player.getUniqueId());
+
         List<VortexAnimation.BlockEntry> entries = new ArrayList<>();
         int broken = 0;
+
+        AoEDropResolver.startAccumulation(player.getUniqueId());
 
         int radiusSq = radius * radius;
         outer:
@@ -141,6 +157,49 @@ public class VortexEnchant implements Listener
             }
         }
 
+        // Epic (Black Hole): every 5th proc fires beams N/E/S/W pulling blocks up to 10 each side
+        if (isBlackHole) {
+            int[][] cardinalDirs = {{1, 0}, {-1, 0}, {0, 1}, {0, -1}};
+            for (int[] dir : cardinalDirs) {
+                for (int dist = 1; dist <= 10; dist++) {
+                    Block armBlock = origin.getRelative(dir[0] * dist, 0, dir[1] * dist);
+                    if (!WorldGuardManager.getInstance().isWithinMineRegion(armBlock.getLocation())) break;
+                    if (!AoEDropResolver.isBreakable(armBlock)) continue;
+
+                    int remaining = backpack.getMaxSize() - backpack.getTotalItems();
+                    if (remaining <= 0) break;
+
+                    Material mat = AoEDropResolver.resolve(
+                            armBlock, player.getInventory().getItemInMainHand(), plugin, pickaxeProfile);
+                    if (mat.isAir()) continue;
+
+                    entries.add(new VortexAnimation.BlockEntry(armBlock.getLocation().clone(), mat));
+                    armBlock.setType(Material.AIR);
+
+                    int dropCount = Math.min(fortuneAmount > 0 ? fortuneAmount : 1, remaining);
+                    backpack.addItem(player, mat, dropCount, false);
+                    PickaxeManager.getInstance().addStatistics(player, mat, playerProfile);
+                    AoEDropResolver.rollSideEffects(player, armBlock, pickaxeProfile, playerProfile);
+                    broken++;
+                }
+            }
+        }
+
+        // Rare (Orb Collector): each block absorbed has a 15% chance to yield 1 essence
+        if (VortexStoneHandler.hasStone(vortex, "Rare") && broken > 0) {
+            PlayerDataCenter pdc2 = DataCenterRegistry.getInstance().getPlayerDataCenter();
+            if (pdc2 != null) {
+                PlayerProfile pp2 = pdc2.getLocal(player);
+                if (pp2 != null) {
+                    int essenceGained = 0;
+                    for (int i = 0; i < broken; i++) {
+                        if (Utils.chance(15.0)) essenceGained++;
+                    }
+                    if (essenceGained > 0) pp2.addEssence(essenceGained);
+                }
+            }
+        }
+
         if (broken > 0) {
             BackpackListener.refresh(player);
             playerProfile.save(null);
@@ -151,11 +210,12 @@ public class VortexEnchant implements Listener
         entries.add(0, new VortexAnimation.BlockEntry(origin.getLocation().clone(), origin.getType()));
         EnchantPreferenceResult pref = getEnchantPref(player, config);
 
-        Location center = origin.getLocation().clone().add(0.5, 0.5, 0.5);
+        Location animCenter = origin.getLocation().clone().add(0.5, 0.5, 0.5);
         VortexAnimation anim = new VortexAnimation(plugin, entries, pref.sound, pref.particles);
-        AnimationRegistry.getInstance().play(anim, center, List.of(player));
+        AnimationRegistry.getInstance().play(anim, animCenter, List.of(player));
 
         if (broken > 0) {
+            AoEDropResolver.flushAccumulation(player, origin, pickaxeProfile);
             showNotification(player, origin, config, pref, broken);
         }
     }

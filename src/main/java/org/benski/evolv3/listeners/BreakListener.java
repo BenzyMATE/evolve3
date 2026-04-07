@@ -15,9 +15,15 @@ import org.benski.evolv3.core.managers.FrostbiteBlockManager;
 import org.benski.evolv3.core.managers.PickupAnimationManager;
 import org.benski.evolv3.core.managers.WorldGuardManager;
 import org.benski.evolv3.datacenters.PlayerDataCenter;
+import org.benski.evolv3.enchants.AlchemyStoneHandler;
+import org.benski.evolv3.enchants.EfficiencyStoneHandler;
+import org.benski.evolv3.enchants.UnbreakingStoneHandler;
 import org.benski.evolv3.enchants.ExtractionEnchant;
+import org.benski.evolv3.enchants.ExtractionStoneHandler;
 import org.benski.evolv3.enchants.FortuneEnchant;
+import org.benski.evolv3.enchants.FortuneStoneHandler;
 import org.benski.evolv3.enchants.FrostbiteEnchant;
+import org.benski.evolv3.enchants.FurnaceStoneHandler;
 import org.benski.evolv3.enchants.RadioactiveEnchant;
 import org.benski.evolv3.core.managers.PickaxeManager;
 import org.benski.evolv3.models.backpack.Backpack;
@@ -41,10 +47,10 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Handles block break events for the pickaxe progression system.
@@ -69,7 +75,7 @@ public class BreakListener extends BaseListener
      * Per-player context captured at NORMAL priority, consumed at HIGHEST.
      * Ensures block type and base drop are read while the block is intact.
      */
-    private final Map<UUID, BreakContext> pendingBreaks = new HashMap<>();
+    private final Map<UUID, BreakContext> pendingBreaks = new ConcurrentHashMap<>();
 
     private record BreakContext(
         Material blockType,
@@ -115,8 +121,16 @@ public class BreakListener extends BaseListener
         Material blockType = block.getType();
 
         // Stale PACKED_ICE (frozen before server restart — metadata doesn't survive restarts).
-        // Not a valid mine block; let it break normally with vanilla drops.
+        // Suppress drops entirely; we can't recover the original material so give nothing.
         if (blockType == Material.PACKED_ICE && !block.hasMetadata(FrostbiteEnchant.FROSTBITE_METADATA_KEY)) {
+            event.setDropItems(false);
+            return;
+        }
+
+        // Sculk placed by Thor's Arctic Strike stone — reward is handled by ThorEnchant.
+        // Skip the entire backpack/animation pipeline; just suppress vanilla drops.
+        if (blockType == Material.SCULK) {
+            event.setDropItems(false);
             return;
         }
 
@@ -140,10 +154,14 @@ public class BreakListener extends BaseListener
         final Material dropMaterial;
         if (block.hasMetadata(FrostbiteEnchant.FROSTBITE_METADATA_KEY)) {
             String stored = block.getMetadata(FrostbiteEnchant.FROSTBITE_METADATA_KEY).getFirst().asString();
-            Material parsed = blockType;
+            Material parsed = null;
             try { parsed = Material.valueOf(stored); } catch (IllegalArgumentException ignored) {}
-            dropMaterial = parsed;
             FrostbiteBlockManager.getInstance().removeFrozenBlock(block.getLocation());
+            // If the stored material is unrecognised, air, or still PACKED_ICE, break silently
+            if (parsed == null || parsed.isAir() || parsed == Material.PACKED_ICE) {
+                return;
+            }
+            dropMaterial = parsed;
         } else {
             dropMaterial = drops.stream()
                     .filter(i -> i != null && !i.getType().isAir())
@@ -205,6 +223,9 @@ public class BreakListener extends BaseListener
         ItemStack finalDrop = handleEnchantDrops(player.getUniqueId(), ctx.baseDrop());
         int fortuneAmount = FortuneEnchant.popDropAmount(player.getUniqueId());
         int finalDropAmount = fortuneAmount > 0 ? fortuneAmount : ctx.dropAmount();
+        // Common (Hot Batch): double the smelted output if Furnace stone proc'd
+        if (FurnaceStoneHandler.popDoubleSmelt(player.getUniqueId())) finalDropAmount *= 2;
+        boolean gemSeeker = FortuneEnchant.popGemSeeker(player.getUniqueId());
 
         if (finalDrop.getType().isAir()) return;
 
@@ -220,9 +241,21 @@ public class BreakListener extends BaseListener
         double baseEssenceChance      = rollConfig.getDouble(ConfigPaths.Default.Essence.DISCOVERY_CHANCE, 5.0);
         double extractionBonus        = ExtractionEnchant.popBonus(player.getUniqueId());
         boolean essenceHit = Utils.chance(baseEssenceChance + extractionBonus);
-        double baseAtomChance  = rollConfig.getDouble(ConfigPaths.Default.Atoms.DISCOVERY_CHANCE, 1.0);
+        double baseAtomChance   = rollConfig.getDouble(ConfigPaths.Default.Atoms.DISCOVERY_CHANCE, 1.0);
         double radioactiveBonus = RadioactiveEnchant.popBonus(player.getUniqueId());
         boolean atomHit    = Utils.chance(baseAtomChance + radioactiveBonus);
+
+        // Extraction stone multipliers (Rare 2×, Epic 3×, Legendary every-5th 5×).
+        // Resolved now so the value can be captured in dissolve lambdas below.
+        int baseEssenceMultiplier     = ExtractionEnchant.popEssenceMultiplier(player.getUniqueId());
+        boolean legendaryExtraction   = ExtractionEnchant.popLegendaryActive(player.getUniqueId());
+        final int finalEssenceMultiplier;
+        if (essenceHit && legendaryExtraction
+                && ExtractionStoneHandler.incrementAndCheckLegendary(player.getUniqueId())) {
+            finalEssenceMultiplier = 5;
+        } else {
+            finalEssenceMultiplier = baseEssenceMultiplier;
+        }
 
         PreferenceType.DropCategory dropCategory = essenceHit ? PreferenceType.DropCategory.ESSENCE
                                                  : atomHit    ? PreferenceType.DropCategory.ATOM
@@ -273,20 +306,29 @@ public class BreakListener extends BaseListener
             // so origin passed to animation adds (0.5,0.5,0.5) inside — we subtract 0.5 from y so it lands at float top
             final Location floatTop = ctx.blockLocation().clone().add(0, DissolvePickupAnimation.FLOAT_HEIGHT - 0.5, 0);
             if (essenceHit && showEssence) {
-                final PlayerProfile delayedProfile = ctx.playerProfile();
-                plugin.getServer().getScheduler().runTaskLater(plugin,
-                        () -> checkEssenceDiscovery(player, delayedProfile, floatTop, hologramLoc), delay);
+                plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
+                    if (!player.isOnline()) return;
+                    PlayerDataCenter pdc = DataCenterRegistry.getInstance().getPlayerDataCenter();
+                    PlayerProfile freshProfile = pdc != null ? pdc.getLocal(player) : null;
+                    if (freshProfile != null) checkEssenceDiscovery(player, freshProfile, floatTop, hologramLoc, finalEssenceMultiplier);
+                }, delay);
             }
             if (atomHit && showAtom) {
                 plugin.getServer().getScheduler().runTaskLater(plugin,
-                        () -> checkAtomDiscovery(player, floatTop, hologramLoc), delay);
+                        () -> { if (player.isOnline()) checkAtomDiscovery(player, floatTop, hologramLoc); }, delay);
             }
         } else {
-            if (essenceHit && showEssence) checkEssenceDiscovery(player, ctx.playerProfile(), ctx.blockLocation(), hologramLoc);
+            if (essenceHit && showEssence) checkEssenceDiscovery(player, ctx.playerProfile(), ctx.blockLocation(), hologramLoc, finalEssenceMultiplier);
             if (atomHit    && showAtom)    checkAtomDiscovery(player, ctx.blockLocation(), hologramLoc);
         }
 
+        // Rare Fortune (Gem Seeker): 20% chance per block break to discover essence independently.
+        if (gemSeeker && Utils.chance(20.0) && showEssence) {
+            checkEssenceDiscovery(player, ctx.playerProfile(), ctx.blockLocation(), hologramLoc, 1);
+        }
+
         pickaxeManager.recordBreak(player.getUniqueId());
+        EfficiencyStoneHandler.getInstance().onBlockBreak(player);
 
         ctx.playerProfile().save(null);
     }
@@ -420,11 +462,34 @@ public class BreakListener extends BaseListener
         if (profile == null) return;
 
         EnchantData unbreaking = profile.enchants.getEnchant(Enchants.UNBREAKING);
-        if (unbreaking == null || !unbreaking.enabled || unbreaking.level <= 0) return;
+        if (unbreaking == null) return;
+
+        // Legendary (Eternal): pickaxe never loses durability — checked before the level/enabled
+        // guard so the stone works even if Unbreaking hasn't been leveled or enabled yet.
+        if (unbreaking.hasStone("Legendary")) {
+            event.setCancelled(true);
+            return;
+        }
+
+        if (!unbreaking.enabled || unbreaking.level <= 0) return;
 
         double negateChance = unbreaking.getCurrentChance();
-        if (Utils.chance(negateChance)) {
+
+        // Common: +5% flat bonus to negate chance
+        if (unbreaking.hasStone("Common")) {
+            negateChance += 5.0;
+        }
+
+        boolean negated = Utils.chance(negateChance);
+
+        // Rare: second independent 50% roll if first failed (effectively 2x slower drain)
+        if (!negated && unbreaking.hasStone("Rare")) {
+            negated = Utils.chance(50.0);
+        }
+
+        if (negated) {
             event.setCancelled(true);
+            UnbreakingStoneHandler.getInstance().onNegate(player, unbreaking, item);
         }
     }
 
@@ -477,8 +542,12 @@ public class BreakListener extends BaseListener
     {
         EnchantDropManager.pop(playerUuid);
         ExtractionEnchant.popBonus(playerUuid);
+        ExtractionEnchant.popEssenceMultiplier(playerUuid);
+        ExtractionEnchant.popLegendaryActive(playerUuid);
         RadioactiveEnchant.popBonus(playerUuid);
+        RadioactiveEnchant.popAmountMultiplier(playerUuid);
         FortuneEnchant.popDropAmount(playerUuid);
+        FortuneEnchant.popGemSeeker(playerUuid);
     }
 
     /**
@@ -491,9 +560,10 @@ public class BreakListener extends BaseListener
     {
         FileConfiguration config = ConfigRegistry.getInstance().get(ConfigNames.DEFAULT);
 
-        int minAmount = config.getInt(ConfigPaths.Default.Atoms.DISCOVERY_MIN_AMOUNT, 1);
-        int maxAmount = config.getInt(ConfigPaths.Default.Atoms.DISCOVERY_MAX_AMOUNT, 3);
-        int amount    = Utils.amount(minAmount, maxAmount);
+        int minAmount  = config.getInt(ConfigPaths.Default.Atoms.DISCOVERY_MIN_AMOUNT, 1);
+        int maxAmount  = config.getInt(ConfigPaths.Default.Atoms.DISCOVERY_MAX_AMOUNT, 3);
+        int multiplier = RadioactiveEnchant.popAmountMultiplier(player.getUniqueId());
+        int amount     = Utils.amount(minAmount, maxAmount) * Math.max(1, multiplier);
 
         var pickaxeDataCenter = DataCenterRegistry.getInstance().getPickaxeDataCenter();
         if (pickaxeDataCenter == null) return;
@@ -503,6 +573,7 @@ public class BreakListener extends BaseListener
                 pickaxeProfile.evolutionAtoms += amount;
                 pickaxeManager.checkAtoms(pickaxeProfile, player);
                 pickaxeProfile.save(null);
+                EfficiencyStoneHandler.getInstance().onAtomPickup(player);
             }
         });
 
@@ -524,21 +595,22 @@ public class BreakListener extends BaseListener
      *
      * @param animLoc     where the essence particle animation originates (float top for dissolve)
      * @param hologramLoc where the hologram text appears (original mine block)
+     * @param multiplier  amount multiplier from Extraction stones (1 = normal, 2 = Rare, 3 = Epic, 5 = Legendary 5th)
      */
-    private void checkEssenceDiscovery(Player player, PlayerProfile playerProfile, Location animLoc, Location hologramLoc)
+    private void checkEssenceDiscovery(Player player, PlayerProfile playerProfile, Location animLoc, Location hologramLoc, int multiplier)
     {
         FileConfiguration config = ConfigRegistry.getInstance().get(ConfigNames.DEFAULT);
 
         int minAmount = config.getInt(ConfigPaths.Default.Essence.DISCOVERY_MIN_AMOUNT, 1);
         int maxAmount = config.getInt(ConfigPaths.Default.Essence.DISCOVERY_MAX_AMOUNT, 5);
-        int amount = Utils.amount(minAmount, maxAmount);
-
-        playerProfile.essence += amount;
+        int amount = Utils.amount(minAmount, maxAmount) * Math.max(1, multiplier);
 
         var pickaxeDataCenter = DataCenterRegistry.getInstance().getPickaxeDataCenter();
         if (pickaxeDataCenter == null) return;
         pickaxeDataCenter.get(player, pickaxeProfile -> {
             if (pickaxeProfile != null) {
+                // Both pools updated together so they stay in sync even if the DC lookup is slow
+                playerProfile.essence += amount;
                 pickaxeProfile.currentEssence += amount;
                 pickaxeManager.checkEssence(pickaxeProfile, player);
                 pickaxeProfile.save(null);

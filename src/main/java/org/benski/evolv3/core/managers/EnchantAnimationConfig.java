@@ -447,6 +447,17 @@ public final class EnchantAnimationConfig
     // Helpers
     // -------------------------------------------------------------------------
 
+    /**
+     * Returns the {@link RarityConfig} whose display name matches {@code name}, or
+     * {@code null} if no rarity by that name has been loaded.
+     *
+     * @param name the rarity display name (e.g. "Common", "Legendary")
+     * @return the matching rarity, or {@code null}
+     */
+    public static RarityConfig getRarityByName(String name) {
+        return findRarity(name);
+    }
+
     private static RarityConfig findRarity(String key) {
         for (RarityConfig r : RARITIES) {
             if (r.displayName().equals(key)) return r;

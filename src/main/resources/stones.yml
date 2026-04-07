@@ -1,0 +1,37 @@
+# =====================================================
+# Evolution Stone Configuration
+# =====================================================
+# Tokens available:
+#   {hex}         - stone rarity colour as RRGGBB (no #)
+#   {enchant_hex} - enchant's own rarity colour as RRGGBB (no #)
+#   {rarity}      - rarity display name (e.g. "Common")
+#   {stone_name}  - unique stone name (e.g. "Hyperdrive")
+#   {enchant}     - enchant display name (e.g. "Efficiency")
+#   {effect}      - effect text (one wrapped line at a time)
+#   {index}       - socket slot number (1, 2, 3)
+# =====================================================
+
+Item:
+  Name: "&#{hex}◆ &l{stone_name}"
+  RarityLine: " &#{hex}&l{rarity} &#888888Evolution Stone"
+  BoundTo: " &#888888Bound to &#{enchant_hex}&l{enchant}"
+  EffectHeader: " &#FFFFFF&lEffect"
+  EffectLine: " &8| &#CCCCCC{effect}"
+  ApplyHint:
+    - " &#555555Apply via the Pickaxe Menu."
+    - " &#555555Shift+Right-Click an enchant"
+    - " &#555555slot to socket this stone."
+
+Socket Menu:
+  Filled Stone:
+    Name: "&#{hex}◆ &l{stone_name}"
+    RarityLine: " &#{hex}&l{rarity} &#888888Evolution Stone &8— &#{enchant_hex}{enchant}"
+    EffectHeader: " &#FFFFFF&lPassive Effect"
+    EffectLine: " &8| &#{hex}{effect}"
+    RemoveHint: " &8| &cRight-Click &#AAAAAAto remove this stone."
+  Empty Socket:
+    Name: "&#888888Socket {index} &#444444\u2014 Empty"
+    HowToHeader: " &#FFFFFF&lHow to Socket"
+    HowToLines:
+      - " &8| &#888888Hold an &#00FFFFEvolution Stone"
+      - " &8| &#888888in your cursor and left-click."

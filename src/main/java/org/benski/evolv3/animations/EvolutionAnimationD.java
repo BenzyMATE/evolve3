@@ -7,7 +7,11 @@ import net.kyori.adventure.text.format.TextColor;
 import net.kyori.adventure.text.format.TextDecoration;
 import org.benski.evolv3.core.managers.EnchantAnimationConfig;
 import org.benski.evolv3.core.types.RarityConfig;
+import org.benski.evolv3.datacenters.PickaxeDataCenter;
+import org.benski.evolv3.items.EvolutionStone;
 import org.benski.evolv3.enums.EvolutionTier;
+import org.benski.evolv3.models.pickaxe.PickaxeProfile;
+import org.benski.evolv3.registry.DataCenterRegistry;
 import org.bukkit.Color;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -31,6 +35,7 @@ import org.joml.Vector3f;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * Evolution animation — Dimensional Rift.
@@ -121,6 +126,7 @@ public class EvolutionAnimationD
     private final EvolutionTier currentTier;
     private final EvolutionTier nextTier;
     private final RarityConfig  winningRarity;
+    private final String        stoneEnchantName;
     private final Runnable      callback;
 
     private final BlockDisplay[][] ringBlocks    = new BlockDisplay[NUM_RINGS][];
@@ -164,10 +170,12 @@ public class EvolutionAnimationD
     private TextDisplay evolutionTitle;
     private Location    titleLowerPos;
 
-    private boolean callbackFired = false;
-    private boolean itemsReturned = false;
-    private int     currentTick   = 0;
-    private boolean finished      = false;
+    private boolean  callbackFired = false;
+    private boolean  itemsReturned = false;
+    private int      currentTick   = 0;
+    private boolean  finished      = false;
+    /** Optional callback invoked after items are successfully delivered to an online player. */
+    private Runnable onComplete    = null;
 
     // -------------------------------------------------------------------------
     // Constructor
@@ -180,12 +188,75 @@ public class EvolutionAnimationD
                                @NotNull RarityConfig winningRarity,
                                @NotNull Runnable callback)
     {
-        this.plugin        = plugin;
-        this.player        = player;
-        this.currentTier   = currentTier;
-        this.nextTier      = nextTier;
-        this.winningRarity = winningRarity;
-        this.callback      = callback;
+        this.plugin           = plugin;
+        this.player           = player;
+        this.currentTier      = currentTier;
+        this.nextTier         = nextTier;
+        this.winningRarity    = winningRarity;
+        this.stoneEnchantName = pickRandomEnchant(player);
+        this.callback         = callback;
+    }
+
+    /** Picks a random enchant display name from the player's unlocked enchants, or from all enchants if none. */
+    private static String pickRandomEnchant(Player player) {
+        PickaxeDataCenter pdc = (PickaxeDataCenter) DataCenterRegistry.getInstance().get("pickaxe");
+        if (pdc != null) {
+            PickaxeProfile profile = pdc.getLocal(player);
+            if (profile != null && !profile.enchants.items.isEmpty()) {
+                List<String> displayNames = profile.enchants.items.stream()
+                        .map(e -> EnchantAnimationConfig.getDisplayName(e.name))
+                        .filter(n -> n != null && !n.isEmpty())
+                        .toList();
+                if (!displayNames.isEmpty()) {
+                    return displayNames.get(ThreadLocalRandom.current().nextInt(displayNames.size()));
+                }
+            }
+        }
+        List<String> all = EnchantAnimationConfig.getEnchantOrder();
+        return all.get(ThreadLocalRandom.current().nextInt(all.size()));
+    }
+
+    // -------------------------------------------------------------------------
+    // Public state accessors
+    // -------------------------------------------------------------------------
+
+    /** Returns {@code true} if the evolution callback has already fired (tier change applied). */
+    public boolean isCallbackFired() { return callbackFired; }
+
+    /** Returns {@code true} if the animation has finished or been stopped. */
+    public boolean isFinished()      { return finished; }
+
+    /**
+     * Returns the pickaxe that was taken from the player's hand when the animation started,
+     * or {@code null} if the animation has not started yet.
+     */
+    public ItemStack getHeldPickaxe() { return heldPickaxe; }
+
+    /**
+     * Registers a callback invoked after items are successfully delivered to the player.
+     * Only fires when the player is online at delivery time — it is not called if the
+     * animation is stopped early or if the player is offline during cleanup.
+     *
+     * @param onComplete the runnable to invoke on successful delivery
+     */
+    public void setOnComplete(Runnable onComplete) { this.onComplete = onComplete; }
+
+    /**
+     * Stops the animation immediately, removing all spawned entities.
+     * Does <em>not</em> fire the evolution callback and does <em>not</em> deliver items
+     * to the player — the caller is responsible for handling those.
+     */
+    public void stop()
+    {
+        if (finished) return;
+        finished = true;
+        for (BlockDisplay[] ring : ringBlocks) {
+            if (ring == null) continue;
+            for (BlockDisplay bd : ring) { if (bd != null && !bd.isDead()) bd.remove(); }
+        }
+        if (currentPickaxeDisplay != null && !currentPickaxeDisplay.isDead()) currentPickaxeDisplay.remove();
+        flyingOrbs.clear();
+        removeItemDisplays();
     }
 
     // -------------------------------------------------------------------------
@@ -558,7 +629,7 @@ public class EvolutionAnimationD
     {
         stoneDisplay = world.spawn(riftCenter, ItemDisplay.class, e -> {
             e.setVisibleByDefault(false);
-            e.setItemStack(new ItemStack(winningRarity.concreteMaterial()));
+            e.setItemStack(EvolutionStone.create(winningRarity, stoneEnchantName));
             e.setItemDisplayTransform(ItemDisplay.ItemDisplayTransform.GROUND);
             e.setBrightness(new Display.Brightness(15, 15));
             e.setPersistent(false);
@@ -567,7 +638,7 @@ public class EvolutionAnimationD
         player.showEntity(plugin, stoneDisplay);
 
         stoneLabelText = spawnLabel(world, riftCenter,
-                Component.text(winningRarity.displayName() + " Stone")
+                Component.text(winningRarity.displayName() + " Evolution Stone")
                         .color(winningRarity.textColor())
                         .decoration(TextDecoration.BOLD, true)
                         .decoration(TextDecoration.ITALIC, false));
@@ -822,8 +893,15 @@ public class EvolutionAnimationD
             }
         }
 
+        if (!player.isOnline()) {
+            // Player disconnected — items will be delivered by EvolutionSelectionManager on rejoin.
+            // Do NOT fire onComplete here; the pending entry must survive for item recovery.
+            removeItemDisplays();
+            return;
+        }
+
         // Stone reward
-        player.getInventory().addItem(new ItemStack(winningRarity.concreteMaterial()));
+        player.getInventory().addItem(EvolutionStone.create(winningRarity, stoneEnchantName));
 
         world.playSound(player.getLocation(), Sound.ENTITY_ITEM_PICKUP,         0.80f, 1.10f);
         world.playSound(player.getLocation(), Sound.BLOCK_AMETHYST_BLOCK_CHIME, 0.60f, 1.40f);
@@ -831,6 +909,9 @@ public class EvolutionAnimationD
                 Key.key("minecraft", "ui.toast.challenge_complete"),
                 Source.MASTER, 1.0f, 1.0f));
         removeItemDisplays();
+
+        // Items delivered successfully — notify the selection manager to clean up
+        if (onComplete != null) onComplete.run();
     }
 
     private void removeItemDisplays()

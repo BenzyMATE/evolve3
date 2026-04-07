@@ -448,6 +448,52 @@ BlockDefaults:
     XP: 90
     Sell: 55.0
 
+  # Raw ore drops (Fortune/vanilla drops — these are what end up in the backpack)
+  COAL:
+    XP: 10
+    Sell: 5.0
+  RAW_IRON:
+    XP: 15
+    Sell: 8.0
+  RAW_COPPER:
+    XP: 12
+    Sell: 6.0
+  RAW_GOLD:
+    XP: 20
+    Sell: 12.0
+  REDSTONE:
+    XP: 15
+    Sell: 8.0
+  LAPIS_LAZULI:
+    XP: 18
+    Sell: 10.0
+  DIAMOND:
+    XP: 50
+    Sell: 30.0
+  EMERALD:
+    XP: 75
+    Sell: 45.0
+  QUARTZ:
+    XP: 15
+    Sell: 8.0
+  GOLD_NUGGET:
+    XP: 18
+    Sell: 10.0
+  NETHERITE_SCRAP:
+    XP: 100
+    Sell: 75.0
+
+  # Furnace-smelted results (stored in backpack by Furnace enchant)
+  IRON_INGOT:
+    XP: 15
+    Sell: 8.0
+  COPPER_INGOT:
+    XP: 12
+    Sell: 6.0
+  GOLD_INGOT:
+    XP: 20
+    Sell: 12.0
+
   # Nether blocks
   NETHERRACK:
     XP: 3

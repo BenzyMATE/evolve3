@@ -3,8 +3,10 @@ package org.benski.evolv3.animations;
 import org.benski.evolv3.core.abstracts.BaseAnimation;
 import org.bukkit.Color;
 import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.Particle;
 import org.bukkit.Sound;
+import org.bukkit.block.data.BlockData;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -116,14 +118,15 @@ public class NuclearShowerAnimation extends BaseAnimation
         ThreadLocalRandom rng = ThreadLocalRandom.current();
         double frontY = origin.getY() - (progress * columnHeight);
 
-        Particle.DustOptions acidDrop = new Particle.DustOptions(ACID_GREEN,
+        Particle.DustOptions acidDrop  = new Particle.DustOptions(ACID_GREEN,
                 (float) Math.max(0.6, 1.8 - progress));
         Particle.DustOptions cloudSwirl = new Particle.DustOptions(CLOUD_GREEN, 2.0f);
+        BlockData limeBlock = Material.LIME_CONCRETE.createBlockData();
 
         // ---- Cloud swirl at the ceiling ----------------------------------------
         if (progress < 0.85) {
             int cloudCount = (int)(halfRadius * 1.5) + 6;
-            double cloudAngle = progress * Math.PI * 10; // rotates as time passes
+            double cloudAngle = progress * Math.PI * 10;
             for (int i = 0; i < cloudCount; i++) {
                 double angle = cloudAngle + (2.0 * Math.PI * i) / cloudCount;
                 double cr    = halfRadius * (0.3 + 0.7 * rng.nextDouble());
@@ -135,9 +138,20 @@ public class NuclearShowerAnimation extends BaseAnimation
             }
         }
 
-        // ---- Falling rain front ------------------------------------------------
-        // Dense drops at the leading edge of the rain.
-        int leadCount = Math.max(12, halfRadius * 3);
+        // ---- Acid drops falling from the cloud ----------------------------------
+        // FALLING_DUST spawned at cloud level so each drop visibly falls under gravity
+        // from the cloud all the way down into the mine below.
+        int dropCount = Math.max(6, halfRadius * 2);
+        for (int i = 0; i < dropCount; i++) {
+            double px = origin.getX() + (rng.nextDouble() * 2 - 1) * halfRadius;
+            double pz = origin.getZ() + (rng.nextDouble() * 2 - 1) * halfRadius;
+            Location cloudDrop = new Location(origin.getWorld(), px, origin.getY() - 0.5, pz);
+            targetPlayer.spawnParticle(Particle.FALLING_DUST, cloudDrop, 1,
+                    halfRadius * 0.04, 0.1, halfRadius * 0.04, 0, limeBlock);
+        }
+
+        // ---- Dense acid impact at the current rain front -----------------------
+        int leadCount = Math.max(8, halfRadius * 2);
         for (int i = 0; i < leadCount; i++) {
             double px = origin.getX() + (rng.nextDouble() * 2 - 1) * halfRadius;
             double pz = origin.getZ() + (rng.nextDouble() * 2 - 1) * halfRadius;
@@ -145,20 +159,10 @@ public class NuclearShowerAnimation extends BaseAnimation
             targetPlayer.spawnParticle(Particle.DUST, drop, 2, 0.15, 0.3, 0.15, 0, acidDrop);
         }
 
-        // Sparse trailing drips between cloud and front — creates depth.
-        int trailCount = Math.max(4, halfRadius);
-        for (int i = 0; i < trailCount; i++) {
-            double px = origin.getX() + (rng.nextDouble() * 2 - 1) * halfRadius;
-            double pz = origin.getZ() + (rng.nextDouble() * 2 - 1) * halfRadius;
-            double py = origin.getY() - (rng.nextDouble() * progress * columnHeight);
-            Location trail = new Location(origin.getWorld(), px, py, pz);
-            targetPlayer.spawnParticle(Particle.DUST, trail, 1, 0.05, 0.1, 0.05, 0, acidDrop);
-        }
-
-        // Acid splash sparks at the impact zone (floor level).
+        // ---- Acid splash sparks where rain meets the floor ---------------------
         if (progress > 0.3) {
             double splashY = origin.getY() - columnHeight;
-            int splashCount = (int)(progress * halfRadius * 2);
+            int splashCount = (int)(progress * halfRadius * 1.5);
             for (int i = 0; i < splashCount; i++) {
                 double px = origin.getX() + (rng.nextDouble() * 2 - 1) * halfRadius;
                 double pz = origin.getZ() + (rng.nextDouble() * 2 - 1) * halfRadius;

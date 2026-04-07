@@ -9,13 +9,19 @@ import org.benski.evolv3.core.constants.Enchants;
 import org.benski.evolv3.core.helpers.ItemStackExtensions;
 import org.benski.evolv3.core.helpers.Utils;
 import org.benski.evolv3.core.managers.FrostbiteBlockManager;
+import org.benski.evolv3.core.managers.PickaxeManager;
 import org.benski.evolv3.core.managers.StorageRegistryManager;
 import org.benski.evolv3.core.managers.WorldGuardManager;
 import org.benski.evolv3.datacenters.PlayerDataCenter;
 import org.benski.evolv3.datacenters.PickaxeDataCenter;
-import org.benski.evolv3.models.player.EnchantPreference;
+import org.benski.evolv3.enchants.EfficiencyStoneHandler;
+import org.benski.evolv3.listeners.BackpackListener;
 import org.benski.evolv3.models.pickaxe.EnchantData;
+import org.benski.evolv3.models.pickaxe.PickaxeProfile;
+import org.benski.evolv3.models.player.EnchantPreference;
+import org.benski.evolv3.models.player.PlayerProfile;
 import org.benski.evolv3.registry.AnimationRegistry;
+import org.benski.evolv3.registry.ConfigRegistry;
 import org.benski.evolv3.registry.DataCenterRegistry;
 import org.bukkit.*;
 import org.bukkit.block.Block;
@@ -33,6 +39,7 @@ import org.bukkit.scheduler.BukkitRunnable;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Listener for the Frostbite custom enchantment.
@@ -110,11 +117,47 @@ public class FrostbiteEnchant implements Listener
             }
 
             double triggerChance = enchant.getCurrentChance();
+            // Uncommon (Frost Vein): +3% to trigger chance
+            if (FrostbiteStoneHandler.hasStone(enchant, "Uncommon")) triggerChance += 3.0;
             if (!Utils.chance(triggerChance)) {
                 return;
             }
 
-            applyFreezingEffect(block, player);
+            applyFreezingEffect(block, player, enchant);
+        });
+    }
+
+    /**
+     * Handles block break events on frozen blocks (PACKED_ICE with frostbite metadata).
+     * Applies Rare (Ripple) and Epic (Cold Loot) stone effects.
+     */
+    @EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
+    public void onFrozenBlockBreak(BlockBreakEvent event)
+    {
+        Block block = event.getBlock();
+        if (!block.hasMetadata(FROSTBITE_METADATA_KEY)) return;
+
+        Player player = event.getPlayer();
+        if (!Utils.isPickaxe(player.getInventory().getItemInMainHand().getType())) return;
+        if (!WorldGuardManager.getInstance().isWithinMineRegion(block.getLocation())) return;
+
+        PickaxeDataCenter pickaxeDC = DataCenterRegistry.getInstance().getPickaxeDataCenter();
+        if (pickaxeDC == null) return;
+
+        pickaxeDC.get(player, profile -> {
+            if (profile == null || profile.enchants == null) return;
+            EnchantData enchant = profile.enchants.getEnchant(Enchants.FROSTBITE);
+            if (enchant == null || !enchant.enabled) return;
+
+            // Rare (Ice Pick): break a small radius of frozen blocks around the mined block
+            if (FrostbiteStoneHandler.hasStone(enchant, "Rare")) {
+                triggerIcePick(player, block, enchant, profile);
+            }
+
+            // Epic (Cryo Atom): 5% chance to discover an atom when mining a frozen block
+            if (FrostbiteStoneHandler.hasStone(enchant, "Epic") && Utils.chance(5.0)) {
+                awardAtom(player, block);
+            }
         });
     }
 
@@ -124,11 +167,18 @@ public class FrostbiteEnchant implements Listener
      * @param centerBlock the block that was mined
      * @param player      the player who triggered the effect
      */
-    private void applyFreezingEffect(Block centerBlock, Player player)
+    private void applyFreezingEffect(Block centerBlock, Player player, EnchantData enchant)
     {
         EnchantPreference pref = getEnchantPref(player);
         World world = centerBlock.getWorld();
         int radius = enchantsConfig.getInt(ConfigPaths.Enchants.Frostbite.RADIUS, 1);
+
+        // Common (Cold Snap): +1 to freeze radius
+        if (FrostbiteStoneHandler.hasStone(enchant, "Common")) radius += 1;
+        // Legendary (Blizzard): 25% chance to instantly shatter all frozen blocks
+        if (FrostbiteStoneHandler.hasStone(enchant, "Legendary") && Utils.chance(25.0)) {
+            triggerShatter(player);
+        }
 
         List<Block> blocksToFreeze = new ArrayList<>();
         for (int x = -radius; x <= radius; x++) {
@@ -163,6 +213,29 @@ public class FrostbiteEnchant implements Listener
             @Override
             public void run()
             {
+                // Process up to 3 blocks per tick for a faster animation
+                int batchEnd = Math.min(index + 3, blocksToFreeze.size());
+                while (index < batchEnd) {
+                    Block block = blocksToFreeze.get(index);
+
+                    // Capture block type (e.g. COAL_ORE) for persistence/restoration,
+                    // and the drop material (e.g. COAL) for BreakListener metadata.
+                    Material originalBlockType = block.getType();
+                    Material dropMaterial      = getDropMaterial(block, player);
+                    block.setMetadata(FROSTBITE_METADATA_KEY,
+                            new FixedMetadataValue(Main.getInstance(), dropMaterial.name()));
+
+                    block.setType(Material.PACKED_ICE);
+                    FrostbiteBlockManager.getInstance().addFrozenBlock(block.getLocation(), originalBlockType);
+
+                    if (pref.particles) {
+                        Location loc = block.getLocation().add(0.5, 0.5, 0.5);
+                        world.spawnParticle(Particle.SNOWFLAKE, loc, 5, 0.2, 0.2, 0.2, 0.02);
+                    }
+
+                    index++;
+                }
+
                 if (index >= blocksToFreeze.size()) {
                     this.cancel();
 
@@ -193,27 +266,7 @@ public class FrostbiteEnchant implements Listener
                                 Utils.formatMessage(player, subtitle),
                                 5, 30, 10);
                     }
-                    return;
                 }
-
-                Block block = blocksToFreeze.get(index);
-
-                // Capture block type (e.g. COAL_ORE) for persistence/restoration,
-                // and the drop material (e.g. COAL) for BreakListener metadata.
-                Material originalBlockType = block.getType();
-                Material dropMaterial      = getDropMaterial(block, player);
-                block.setMetadata(FROSTBITE_METADATA_KEY,
-                        new FixedMetadataValue(Main.getInstance(), dropMaterial.name()));
-
-                block.setType(Material.PACKED_ICE);
-                FrostbiteBlockManager.getInstance().addFrozenBlock(block.getLocation(), originalBlockType);
-
-                if (pref.particles) {
-                    Location loc = block.getLocation().add(0.5, 0.5, 0.5);
-                    world.spawnParticle(Particle.SNOWFLAKE, loc, 5, 0.2, 0.2, 0.2, 0.02);
-                }
-
-                index++;
             }
         }.runTaskTimer(plugin, 0L, 1L);
     }
@@ -251,6 +304,180 @@ public class FrostbiteEnchant implements Listener
         }
 
         return true;
+    }
+
+    /**
+     * Rare (Ice Pick): breaks frozen blocks in a small radius around the mined block,
+     * awarding their original ore drops plus rolling for essence and atoms on each block.
+     * Also applies the Epic stone's extra 5% atom chance per block.
+     */
+    private void triggerIcePick(Player player, Block center, EnchantData enchant, PickaxeProfile pickaxeProfile)
+    {
+        int radius = 2;
+        List<Location> removed = new ArrayList<>();
+
+        PlayerDataCenter pdc = DataCenterRegistry.getInstance().getPlayerDataCenter();
+        org.benski.evolv3.models.player.PlayerProfile pp = pdc != null ? pdc.getLocal(player) : null;
+
+        FileConfiguration rollConfig = ConfigRegistry.getInstance().get(ConfigNames.DEFAULT);
+        double baseEssenceChance = rollConfig.getDouble(ConfigPaths.Default.Essence.DISCOVERY_CHANCE, 5.0);
+        double baseAtomChance    = rollConfig.getDouble(ConfigPaths.Default.Atoms.DISCOVERY_CHANCE, 1.0);
+        boolean hasEpic          = FrostbiteStoneHandler.hasStone(enchant, "Epic");
+        boolean essenceChanged   = false;
+
+        for (int x = -radius; x <= radius; x++) {
+            for (int y = -radius; y <= radius; y++) {
+                for (int z = -radius; z <= radius; z++) {
+                    if (x == 0 && y == 0 && z == 0) continue; // mined block handled by BreakListener
+                    Block block = center.getRelative(x, y, z);
+                    if (!block.hasMetadata(FROSTBITE_METADATA_KEY)) continue;
+
+                    List<org.bukkit.metadata.MetadataValue> meta = block.getMetadata(FROSTBITE_METADATA_KEY);
+                    if (meta.isEmpty()) continue;
+
+                    try {
+                        Material dropMat = Material.valueOf(meta.get(0).asString());
+                        if (pp != null && !dropMat.isAir() && dropMat != Material.PACKED_ICE) {
+                            pp.backpack.addItem(player, dropMat, 1, false);
+                        }
+                    } catch (IllegalArgumentException ignored) {}
+
+                    block.removeMetadata(FROSTBITE_METADATA_KEY, Main.getInstance());
+                    block.setType(Material.AIR);
+                    Location blockLoc = block.getLocation();
+                    center.getWorld().spawnParticle(Particle.SNOWFLAKE,
+                            blockLoc.clone().add(0.5, 0.5, 0.5), 6, 0.3, 0.3, 0.3, 0.05);
+                    removed.add(blockLoc);
+
+                    // Essence roll per broken block
+                    if (Utils.chance(baseEssenceChance)) {
+                        int min    = rollConfig.getInt(ConfigPaths.Default.Essence.DISCOVERY_MIN_AMOUNT, 1);
+                        int max    = rollConfig.getInt(ConfigPaths.Default.Essence.DISCOVERY_MAX_AMOUNT, 5);
+                        int amount = Utils.amount(min, max);
+                        if (pp != null) pp.essence += amount;
+                        if (pickaxeProfile != null) {
+                            pickaxeProfile.currentEssence += amount;
+                            essenceChanged = true;
+                        }
+                        Location animLoc     = blockLoc.clone().add(0.5, 0.5, 0.5);
+                        Location hologramLoc = blockLoc.clone().add(0.5, 1.5, 0.5);
+                        AnimationRegistry.getInstance().play("essence", animLoc, List.of(player), amount);
+                        if (pp != null && pp.preferences.essenceHologram
+                                && rollConfig.getBoolean(ConfigPaths.Default.Essence.HOLOGRAM_ENABLED, true)) {
+                            String text = rollConfig.getString(ConfigPaths.Default.Essence.HOLOGRAM_TEXT,
+                                    "&#B366D9🔥 &#FFFFFF&l+ %amount% &#B366D9Essence");
+                            text = text.replace("%amount%", Utils.formatNumber(amount));
+                            AnimationRegistry.getInstance().play("hologram", hologramLoc, List.of(player), text);
+                        }
+                    }
+
+                    // Atom roll per broken block (base chance)
+                    if (Utils.chance(baseAtomChance)) {
+                        awardAtom(player, block);
+                    }
+
+                    // Epic (Cryo Atom): extra 5% atom chance per ice-pick broken block
+                    if (hasEpic && Utils.chance(5.0)) {
+                        awardAtom(player, block);
+                    }
+                }
+            }
+        }
+
+        if (essenceChanged && pickaxeProfile != null) {
+            PickaxeManager.getInstance().checkEssence(pickaxeProfile, player);
+            pickaxeProfile.save(null);
+        }
+
+        if (!removed.isEmpty()) {
+            FrostbiteBlockManager.getInstance().removeFrozenBlocks(removed);
+            if (pp != null) BackpackListener.refresh(player);
+            player.getWorld().playSound(player.getLocation(), Sound.BLOCK_GLASS_BREAK, 1.2f, 0.8f);
+        }
+    }
+
+    /**
+     * Epic (Cryo Atom): awards atoms to the player when they mine a frozen block.
+     * Caller is responsible for the 5% chance roll.
+     */
+    private void awardAtom(Player player, Block block)
+    {
+        FileConfiguration config = ConfigRegistry.getInstance().get(ConfigNames.DEFAULT);
+        int min    = config.getInt(ConfigPaths.Default.Atoms.DISCOVERY_MIN_AMOUNT, 1);
+        int max    = config.getInt(ConfigPaths.Default.Atoms.DISCOVERY_MAX_AMOUNT, 3);
+        int amount = Utils.amount(min, max);
+
+        PickaxeDataCenter pickaxeDC = DataCenterRegistry.getInstance().getPickaxeDataCenter();
+        if (pickaxeDC != null) {
+            pickaxeDC.get(player, pickaxeProfile -> {
+                if (pickaxeProfile != null) {
+                    pickaxeProfile.evolutionAtoms += amount;
+                    PickaxeManager.getInstance().checkAtoms(pickaxeProfile, player);
+                    pickaxeProfile.save(null);
+                    EfficiencyStoneHandler.getInstance().onAtomPickup(player);
+                }
+            });
+        }
+
+        Location animLoc     = block.getLocation().clone().add(0.5, 0.5, 0.5);
+        Location hologramLoc = block.getLocation().clone().add(0.5, 1.5, 0.5);
+        AnimationRegistry.getInstance().play("atom", animLoc, List.of(player), amount);
+
+        PlayerDataCenter pdc = DataCenterRegistry.getInstance().getPlayerDataCenter();
+        org.benski.evolv3.models.player.PlayerProfile pp = pdc != null ? pdc.getLocal(player) : null;
+        boolean atomHologramOn = pp == null || pp.preferences.atomHologram;
+
+        if (atomHologramOn && config.getBoolean(ConfigPaths.Default.Atoms.HOLOGRAM_ENABLED, true)) {
+            String text = config.getString(ConfigPaths.Default.Atoms.HOLOGRAM_TEXT,
+                    "&#FFEE00⚛ &#FFFFFF&l+ %amount% &#FFEE00Atoms");
+            text = text.replace("%amount%", Utils.formatNumber(amount));
+            AnimationRegistry.getInstance().play("hologram", hologramLoc, List.of(player), text);
+        }
+    }
+
+    /**
+     * Uncommon (Shatter): breaks all currently frozen blocks, awarding their drops to the player.
+     */
+    private void triggerShatter(Player player)
+    {
+        Map<String, Material> frozen = FrostbiteBlockManager.getInstance().getLiveCache();
+        if (frozen.isEmpty()) return;
+
+        PlayerDataCenter pdc = DataCenterRegistry.getInstance().getPlayerDataCenter();
+        if (pdc == null) return;
+        PlayerProfile pp = pdc.getLocal(player);
+        if (pp == null) return;
+
+        List<String> keys = new ArrayList<>(frozen.keySet());
+        List<Location> removed = new ArrayList<>();
+
+        for (String key : keys) {
+            Location loc = FrostbiteBlockManager.parseKey(key);
+            if (loc == null) continue;
+            Block block = loc.getBlock();
+            if (!block.hasMetadata(FROSTBITE_METADATA_KEY)) continue;
+
+            List<org.bukkit.metadata.MetadataValue> meta = block.getMetadata(FROSTBITE_METADATA_KEY);
+            if (meta.isEmpty()) continue;
+
+            try {
+                Material dropMat = Material.valueOf(meta.get(0).asString());
+                if (!dropMat.isAir() && dropMat != Material.PACKED_ICE) {
+                    pp.backpack.addItem(player, dropMat, 1, false);
+                }
+            } catch (IllegalArgumentException ignored) {}
+
+            block.removeMetadata(FROSTBITE_METADATA_KEY, Main.getInstance());
+            block.setType(Material.AIR);
+            loc.getWorld().spawnParticle(Particle.SNOWFLAKE, loc.clone().add(0.5, 0.5, 0.5), 8, 0.3, 0.3, 0.3, 0.05);
+            removed.add(loc);
+        }
+
+        if (!removed.isEmpty()) {
+            FrostbiteBlockManager.getInstance().removeFrozenBlocks(removed);
+            player.getWorld().playSound(player.getLocation(), Sound.BLOCK_GLASS_BREAK, 1.5f, 0.7f);
+            BackpackListener.refresh(player);
+        }
     }
 
     /**

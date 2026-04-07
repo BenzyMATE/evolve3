@@ -34,4 +34,9 @@ public final class ConfigNames
      * Ranks configuration file containing prison and staff rank definitions.
      */
     public static final String RANKS = "ranks";
+
+    /**
+     * Evolution Stones configuration file containing stone item and socket menu strings.
+     */
+    public static final String STONES = "stones";
 }

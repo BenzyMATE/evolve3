@@ -7,10 +7,11 @@ import org.benski.evolv3.core.abstracts.BaseMenu;
 import org.benski.evolv3.enchants.FortuneEnchant;
 import org.benski.evolv3.core.constants.ConfigNames;
 import org.benski.evolv3.core.constants.ConfigPaths;
-import org.benski.evolv3.animations.EvolutionAnimationD;
 import org.benski.evolv3.core.helpers.ItemStackExtensions;
 import org.benski.evolv3.core.managers.EnchantAnimationConfig;
 import org.benski.evolv3.core.managers.EnchantSelectionManager;
+import org.benski.evolv3.core.managers.EvolutionSelectionManager;
+import org.benski.evolv3.core.managers.StoneEffectRegistry;
 import org.benski.evolv3.core.types.MenuType;
 import org.benski.evolv3.core.types.RarityConfig;
 import org.benski.evolv3.enums.EvolutionTier;
@@ -35,12 +36,18 @@ import org.bukkit.inventory.meta.Damageable;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import org.benski.evolv3.core.constants.Enchants;
+
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 import static org.benski.evolv3.core.helpers.Utils.formatMessage;
 
@@ -52,6 +59,93 @@ public class PickaxeMenu extends BaseMenu
 {
     private static final MenuType MENU_TYPE = MenuType.register("pickaxe");
     private static final LegacyComponentSerializer LEGACY = LegacyComponentSerializer.legacySection();
+
+    // -------------------------------------------------------------------------
+    // Stone chance bonus data
+    // -------------------------------------------------------------------------
+
+    /**
+     * Describes how a specific stone rarity affects an enchant's displayed trigger chance.
+     *
+     * @param rarity   the rarity name that triggers this bonus (e.g. "Common")
+     * @param delta    the amount to add, or the override value when {@code override} is true
+     * @param override if true, sets the chance to {@code delta} and stops further processing
+     */
+    private record StoneBonus(String rarity, double delta, boolean override) {}
+
+    /** Result of {@link #resolveStoneChance}: adjusted chance and colored diamond indicator string. */
+    private record StoneChanceResult(double chance, String indicator) {}
+
+    /**
+     * Maps enchant internal name → ordered list of stone bonuses that affect displayed chance.
+     * Override entries are listed before additives so sequential processing handles precedence correctly.
+     */
+    private static final Map<String, List<StoneBonus>> STONE_CHANCE_BONUSES;
+    static {
+        Map<String, List<StoneBonus>> m = new HashMap<>();
+        m.put(Enchants.UNBREAKING,     List.of(new StoneBonus("Common",    5.0,   false)));
+        m.put(Enchants.ALCHEMY,        List.of(new StoneBonus("Legendary", 100.0, true),
+                                               new StoneBonus("Uncommon",   10.0, false)));
+        m.put(Enchants.AUTO_SELL,      List.of(new StoneBonus("Uncommon",   5.0,  false)));
+        m.put(Enchants.DRILL,          List.of(new StoneBonus("Rare",       5.0,  false)));
+        m.put(Enchants.FROSTBITE,      List.of(new StoneBonus("Uncommon",   3.0,  false)));
+        m.put(Enchants.FURNACE,        List.of(new StoneBonus("Legendary", 100.0, true)));
+        m.put(Enchants.LAZER,          List.of(new StoneBonus("Common",     2.0,  false)));
+        m.put(Enchants.JACKHAMMER,     List.of(new StoneBonus("Common",     1.0,  false),
+                                               new StoneBonus("Uncommon",   2.0,  false)));
+        m.put(Enchants.MERCHANT,       List.of(new StoneBonus("Common",     2.0,  false)));
+        m.put(Enchants.RADIOACTIVE,    List.of(new StoneBonus("Common",     1.0,  false),
+                                               new StoneBonus("Legendary",  5.0,  false)));
+        m.put(Enchants.NUCLEAR_SHOWER, List.of(new StoneBonus("Uncommon",   2.0,  false)));
+        m.put(Enchants.THOR,           List.of(new StoneBonus("Common",     2.0,  false)));
+        m.put(Enchants.VORTEX,         List.of(new StoneBonus("Common",     2.0,  false),
+                                               new StoneBonus("Uncommon",   3.0,  false)));
+        STONE_CHANCE_BONUSES = Collections.unmodifiableMap(m);
+    }
+
+    /**
+     * Computes the stone-adjusted chance and a colored diamond indicator for an enchant.
+     *
+     * <p>Bonuses are processed in order. An override entry sets the chance to a fixed value
+     * and halts further processing. Additive entries are all applied.
+     * The indicator appends a colored ◆ for every matching socketed rarity.</p>
+     *
+     * @param enchant   the enchant whose sockets are inspected
+     * @param baseChance the base trigger chance before stone adjustments
+     * @return adjusted chance and indicator string (empty string if no stones matched)
+     */
+    private static StoneChanceResult resolveStoneChance(EnchantData enchant, double baseChance) {
+        List<StoneBonus> bonuses = STONE_CHANCE_BONUSES.get(enchant.name);
+        if (bonuses == null) return new StoneChanceResult(baseChance, "");
+
+        double chance = baseChance;
+        Set<String> matched = new LinkedHashSet<>();
+
+        for (StoneBonus bonus : bonuses) {
+            if (enchant.hasStone(bonus.rarity())) {
+                matched.add(bonus.rarity());
+                if (bonus.override()) {
+                    chance = bonus.delta();
+                    break; // Override stops further processing
+                } else {
+                    chance += bonus.delta();
+                }
+            }
+        }
+
+        if (matched.isEmpty()) return new StoneChanceResult(baseChance, "");
+
+        StringBuilder indicator = new StringBuilder(" ");
+        for (String s : enchant.socketStones) {
+            if (s != null && matched.contains(s)) {
+                RarityConfig rc = EnchantAnimationConfig.getRarityByName(s);
+                if (rc != null) {
+                    indicator.append("&#").append(String.format("%06X", rc.textColor().value())).append("◆");
+                }
+            }
+        }
+        return new StoneChanceResult(chance, indicator.toString());
+    }
 
     // -------------------------------------------------------------------------
     // Slot constants
@@ -72,7 +166,7 @@ public class PickaxeMenu extends BaseMenu
 
     private final PickaxeDataCenter pickaxeDataCenter;
     /** Per-player animation frame counter so concurrent viewers don't share state. */
-    private final Map<UUID, Integer> animationFrames = new HashMap<>();
+    private final Map<UUID, Integer> animationFrames = new ConcurrentHashMap<>();
 
     public PickaxeMenu(JavaPlugin plugin) {
         super(plugin);
@@ -97,6 +191,14 @@ public class PickaxeMenu extends BaseMenu
     @Override
     protected boolean isDynamicTitle() {
         return true;
+    }
+
+    @Override
+    protected boolean isDynamicTitle(Player player) {
+        PlayerDataCenter pdc = DataCenterRegistry.getInstance().getPlayerDataCenter();
+        if (pdc == null) return false;
+        PlayerProfile profile = pdc.getLocal(player);
+        return profile != null && profile.preferences.pickaxeMenuAnimation;
     }
 
     @Override
@@ -190,7 +292,9 @@ public class PickaxeMenu extends BaseMenu
                     if (i < sortedEnchants.size()) {
                         EnchantData enchant = sortedEnchants.get(i);
                         String displayName = EnchantAnimationConfig.getDisplayName(enchant.name);
-                        if (event.isRightClick()) {
+                        if (event.isShiftClick() && event.isRightClick()) {
+                            handleEnchantSocketOpen(player, displayName);
+                        } else if (event.isRightClick()) {
                             handleEnchantToggle(player, displayName);
                         } else {
                             handleEnchantSlotClick(player, displayName);
@@ -297,11 +401,56 @@ public class PickaxeMenu extends BaseMenu
         int    level    = enchant.level;
         int    maxLevel = enchant.maxLevel;
         double chance   = enchant.getCurrentChance();
+
+        StoneChanceResult stoneChance = resolveStoneChance(enchant, chance);
+        chance = stoneChance.chance();
+        String stoneChanceIndicator = stoneChance.indicator();
         int    cost     = EnchantAnimationConfig.getEnchantCost(displayName) * level;
         double speedPerLevel = ConfigRegistry.getInstance().get(ConfigNames.ENCHANTS)
                 .getDouble(ConfigPaths.Enchants.Efficiency.SPEED_PER_LEVEL, 0.08);
         double speedBonus = level * speedPerLevel * 100;
+        String stoneSpeedIndicator = "";
+        if (enchant.name.equals(Enchants.EFFICIENCY)) {
+            boolean hasLegendary = enchant.hasStone("Legendary");
+            boolean hasCommon    = enchant.hasStone("Common");
+            if (hasLegendary || hasCommon) {
+                double adj = speedPerLevel;
+                if (hasLegendary) adj *= 2.0;
+                speedBonus = level * adj * 100;
+                if (hasCommon) speedBonus += 100.0;
+                StringBuilder indicator = new StringBuilder(" ");
+                for (String s : enchant.socketStones) {
+                    if ("Legendary".equals(s) || "Common".equals(s)) {
+                        RarityConfig rc = EnchantAnimationConfig.getRarityByName(s);
+                        if (rc != null) {
+                            indicator.append("&#").append(String.format("%06X", rc.textColor().value())).append("◆");
+                        }
+                    }
+                }
+                stoneSpeedIndicator = indicator.toString();
+            }
+        }
         int fortuneDrops = FortuneEnchant.getDropAmount(level);
+        String stoneDropsIndicator = "";
+        if (displayName.equalsIgnoreCase(org.benski.evolv3.core.constants.Enchants.FORTUNE)) {
+            boolean hasCommon = false, hasLegendary = false;
+            for (String s : enchant.socketStones) {
+                if ("Common".equals(s))    hasCommon    = true;
+                if ("Legendary".equals(s)) hasLegendary = true;
+            }
+            if (hasCommon || hasLegendary) {
+                if (hasCommon)    fortuneDrops += 1;
+                if (hasLegendary) fortuneDrops *= 2;
+                StringBuilder indicator = new StringBuilder(" ");
+                for (String s : enchant.socketStones) {
+                    if ("Common".equals(s) || "Legendary".equals(s)) {
+                        RarityConfig rc = EnchantAnimationConfig.getRarityByName(s);
+                        if (rc != null) indicator.append("&#").append(String.format("%06X", rc.textColor().value())).append("◆");
+                    }
+                }
+                stoneDropsIndicator = indicator.toString();
+            }
+        }
 
         // Read lore template from config and substitute all runtime tokens
         List<String> rawLore = EnchantAnimationConfig.getEnchantLore(displayName);
@@ -309,9 +458,60 @@ public class PickaxeMenu extends BaseMenu
         boolean isMax = enchant.isMaxLevel();
         String maxDisplay = ConfigRegistry.getInstance().get(ConfigNames.ENCHANTS)
                 .getString(ConfigPaths.Enchants.MAX_ENCHANT, "&6&lMAX");
+        FileConfiguration menusConfig = ConfigRegistry.getInstance().get(ConfigNames.MENUS);
+        String stonesHeader     = menusConfig.getString(ConfigPaths.Menus.PickaxeMenu.STONES_HEADER,     " &#FFFFFF&lStones");
+        String stonesFilledLine = menusConfig.getString(ConfigPaths.Menus.PickaxeMenu.STONES_FILLED_LINE," &8| &#888888Stone {index}: &#{hex}{rarity} {enchant} Stone");
+        String stonesEmptyLine  = menusConfig.getString(ConfigPaths.Menus.PickaxeMenu.STONES_EMPTY_LINE, " &8| &#444444Stone {index}: &#333333Empty");
+        String stonesActionLine = menusConfig.getString(ConfigPaths.Menus.PickaxeMenu.STONES_ACTION_LINE," &8| &aShift+Right-Click &#AAAAAAto manage stones.");
         for (String line : rawLore) {
             // Skip cost line when at max level
             if (isMax && line.contains("{cost}")) {
+                continue;
+            }
+            // Expand {stones} token into the stone socket block
+            if (line.equals("{stones}")) {
+                lore.add(deserialize(formatMessage(player, stonesHeader)));
+                String internalEnchant = displayName.toLowerCase();
+                for (int si = 0; si < EnchantData.SOCKET_COUNT; si++) {
+                    String stoneRarity = enchant.socketStones[si];
+                    if (stoneRarity != null) {
+                        RarityConfig stoneRarConfig = EnchantAnimationConfig.getRarityByName(stoneRarity);
+                        if (stoneRarConfig != null) {
+                            String sHex      = String.format("%06X", stoneRarConfig.textColor().value());
+                            String effectText = StoneEffectRegistry.getEffect(internalEnchant, stoneRarity);
+                            // Word-wrap effect at ~30 chars per line (always finishes the current word)
+                            String[] words = effectText.split(" ");
+                            StringBuilder chunk = new StringBuilder();
+                            boolean firstChunk = true;
+                            for (String word : words) {
+                                if (!chunk.isEmpty() && chunk.length() + word.length() + 1 > 30) {
+                                    String template = firstChunk ? stonesFilledLine : " &8| &#{hex}{effect}";
+                                    lore.add(deserialize(formatMessage(player, template
+                                            .replace("{hex}", sHex).replace("{rarity}", stoneRarity)
+                                            .replace("{enchant}", displayName)
+                                            .replace("{effect}", chunk.toString().trim()))));
+                                    firstChunk = false;
+                                    chunk = new StringBuilder();
+                                }
+                                chunk.append(word).append(" ");
+                            }
+                            if (!chunk.isEmpty()) {
+                                String template = firstChunk ? stonesFilledLine : " &8| &#{hex}{effect}";
+                                lore.add(deserialize(formatMessage(player, template
+                                        .replace("{hex}", sHex).replace("{rarity}", stoneRarity)
+                                        .replace("{enchant}", displayName)
+                                        .replace("{effect}", chunk.toString().trim()))));
+                            }
+                        }
+                    } else {
+                        lore.add(deserialize(formatMessage(player, stonesEmptyLine)));
+                    }
+                }
+                continue;
+            }
+            // Expand {stones_action} token into the manage stones action line
+            if (line.equals("{stones_action}")) {
+                lore.add(deserialize(formatMessage(player, stonesActionLine)));
                 continue;
             }
             // Blank lines must be Component.empty() to render as a blank lore line reliably.
@@ -328,20 +528,35 @@ public class PickaxeMenu extends BaseMenu
                     .replace("{level}",       levelDisplay)
                     .replace("{maxLevel}",    String.valueOf(maxLevel))
                     .replace("{cost}",        String.valueOf(cost))
+                    .replace("{chance}%",      String.format("%.1f", chance) + "%" + stoneChanceIndicator)
                     .replace("{chance}",      String.format("%.1f", chance))
-                    .replace("{speed}",       String.format("%.0f%%", speedBonus))
-                    .replace("{drops}",       String.valueOf(fortuneDrops));
+                    .replace("{speed}",       String.format("%.0f%%", speedBonus) + stoneSpeedIndicator)
+                    .replace("{drops}",       String.valueOf(fortuneDrops) + "x" + stoneDropsIndicator);
             lore.add(deserialize(formatMessage(player, processed)));
         }
+
+
+        // Build stone socket icons — only filled sockets
+        StringBuilder stoneIconsBuilder = new StringBuilder();
+        for (String stoneRarity : enchant.socketStones) {
+            if (stoneRarity != null) {
+                RarityConfig stoneRarConfig = EnchantAnimationConfig.getRarityByName(stoneRarity);
+                String sHex = stoneRarConfig != null
+                        ? String.format("%06X", stoneRarConfig.textColor().value())
+                        : "FFFFFF";
+                stoneIconsBuilder.append("&#").append(sHex).append("◆");
+            }
+        }
+        String stoneIcons = stoneIconsBuilder.length() > 0 ? stoneIconsBuilder + " " : "";
 
         // Skull icon from config texture URL, or material fallback
         ItemStack item = EnchantAnimationConfig.createEnchantItem(displayName);
         ItemMeta meta = item.getItemMeta();
         if (meta == null) return item;
         if (enchant.enabled) {
-            meta.displayName(deserialize(formatMessage(player, "&#00FF88✔ " + rarityColor + "&l" + displayName)));
+            meta.displayName(deserialize(formatMessage(player, stoneIcons + "&#00FF88✔ " + rarityColor + "&l" + displayName)));
         } else {
-            meta.displayName(deserialize(formatMessage(player, "&#FF5555✖ &#FF5555&l" + displayName)));
+            meta.displayName(deserialize(formatMessage(player, stoneIcons + "&#FF5555✖ &#FF5555&l" + displayName)));
         }
         meta.lore(lore);
         item.setItemMeta(meta);
@@ -409,6 +624,21 @@ public class PickaxeMenu extends BaseMenu
     }
 
     /**
+     * Handles a shift+left-click on an enchant grid slot.
+     * Opens the stone socket panel for the clicked enchant.
+     *
+     * @param player      the player who shift-clicked
+     * @param displayName the enchant's display name
+     */
+    private void handleEnchantSocketOpen(Player player, String displayName) {
+        StoneSocketMenu socketMenu = (StoneSocketMenu) MenuRegistry.getInstance().get("stone_socket");
+        if (socketMenu != null) {
+            closeMenu(player);
+            socketMenu.openForEnchant(player, displayName);
+        }
+    }
+
+    /**
      * Handles a right-click on an enchant grid slot, toggling the enchant on or off.
      *
      * @param player      the player who clicked
@@ -455,7 +685,7 @@ public class PickaxeMenu extends BaseMenu
     private void handleRepair(Player player)
     {
         ItemStack held = player.getInventory().getItemInMainHand();
-        if (held.getType() == Material.AIR || !held.getType().name().contains("PICKAXE")) {
+        if (held.getType() == Material.AIR || !org.benski.evolv3.core.helpers.Utils.isPickaxe(held.getType())) {
             FileConfiguration messages = ConfigRegistry.getInstance().get(ConfigNames.MESSAGES);
             String msg = messages.getString(ConfigPaths.Messages.Pickaxe.NO_PICKAXE,
                     "%evolv3_prefix% &cYou must be holding a pickaxe to repair it.");
@@ -563,6 +793,13 @@ public class PickaxeMenu extends BaseMenu
             return;
         }
 
+        if (EvolutionSelectionManager.getInstance().hasActiveEvolution(player)) {
+            String msg = messages.getString(ConfigPaths.Messages.Pickaxe.ENCHANT_SELECTION_ALREADY_ACTIVE,
+                    "&cAn evolution is already in progress!");
+            player.sendMessage(formatMessage(player, msg));
+            return;
+        }
+
         if (profile.enchantRolls <= 0) {
             String msg = messages.getString(ConfigPaths.Messages.Pickaxe.ENCHANT_NO_SPINS,
                     "%evolv3_prefix% &cYou need at least 1 enchant spin to use this.");
@@ -622,10 +859,11 @@ public class PickaxeMenu extends BaseMenu
         final EvolutionTier finalCurrent = current;
         final EvolutionTier finalNext    = next;
         final RarityConfig  finalStone   = stone;
+        final String        pickaxeKey   = profile.key;
 
-        new EvolutionAnimationD(plugin, player, finalCurrent, finalNext, finalStone, () ->
-                manager.applyEvolutionResult(player, profile, playerProfile, finalNext, finalStone)
-        ).start();
+        EvolutionSelectionManager.getInstance().startEvolution(
+                player, pickaxeKey, finalCurrent, finalNext, finalStone,
+                () -> manager.applyEvolutionResult(player, profile, playerProfile, finalNext, finalStone));
     }
 
     // -------------------------------------------------------------------------

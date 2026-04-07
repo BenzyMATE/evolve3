@@ -675,6 +675,11 @@ public final class ConfigPaths
             public static final String ENCHANT_LOCKED_LORE = "Pickaxe Menu.LockedEnchant.Lore";
             public static final String STORAGE_ACTION_LINE = "Pickaxe Menu.StorageAction";
             public static final String REPAIR_ACTION_LINE  = "Pickaxe Menu.RepairAction";
+
+            public static final String STONES_HEADER      = "Pickaxe Menu.Stones.Header";
+            public static final String STONES_FILLED_LINE = "Pickaxe Menu.Stones.FilledLine";
+            public static final String STONES_EMPTY_LINE  = "Pickaxe Menu.Stones.EmptyLine";
+            public static final String STONES_ACTION_LINE = "Pickaxe Menu.Stones.ActionLine";
         }
 
         /**
@@ -694,9 +699,29 @@ public final class ConfigPaths
             public static final String MESSAGES_MATERIAL   = "Preferences Menu.Messages.Material";
             public static final String MESSAGES_NAME       = "Preferences Menu.Messages.Name";
             public static final String MESSAGES_LORE       = "Preferences Menu.Messages.Lore";
-            public static final String CLOSE_MATERIAL      = "Preferences Menu.Close.Material";
-            public static final String CLOSE_NAME          = "Preferences Menu.Close.Name";
-            public static final String CLOSE_LORE          = "Preferences Menu.Close.Lore";
+            public static final String EXPERIMENTAL_MATERIAL = "Preferences Menu.Experimental.Material";
+            public static final String EXPERIMENTAL_NAME     = "Preferences Menu.Experimental.Name";
+            public static final String EXPERIMENTAL_LORE     = "Preferences Menu.Experimental.Lore";
+            public static final String CLOSE_MATERIAL        = "Preferences Menu.Close.Material";
+            public static final String CLOSE_NAME            = "Preferences Menu.Close.Name";
+            public static final String CLOSE_LORE            = "Preferences Menu.Close.Lore";
+        }
+
+        /**
+         * Experimental preferences sub-menu item paths.
+         */
+        public static final class ExperimentalMenu
+        {
+            private ExperimentalMenu() {}
+
+            public static final String TITLE                       = "Experimental Menu.Title";
+            public static final String BACK_MATERIAL               = "Experimental Menu.Back.Material";
+            public static final String BACK_NAME                   = "Experimental Menu.Back.Name";
+            public static final String BACK_LORE                   = "Experimental Menu.Back.Lore";
+            public static final String PICKAXE_ANIM_ENABLED_MAT    = "Experimental Menu.PickaxeAnimation.EnabledMaterial";
+            public static final String PICKAXE_ANIM_DISABLED_MAT   = "Experimental Menu.PickaxeAnimation.DisabledMaterial";
+            public static final String PICKAXE_ANIM_NAME           = "Experimental Menu.PickaxeAnimation.Name";
+            public static final String PICKAXE_ANIM_LORE           = "Experimental Menu.PickaxeAnimation.Lore";
         }
 
         /**
@@ -964,7 +989,8 @@ public final class ConfigPaths
             public static final String HOLOGRAM_ENABLED         = "Furnace.Hologram.Enabled";
             public static final String HOLOGRAM_DEFAULT_ENABLED = "Furnace.Hologram.DefaultEnabled";
             public static final String HOLOGRAM_MESSAGE         = "Furnace.Hologram.Message";
-            public static final String RECIPES = "Furnace.Recipes";
+            public static final String RECIPES                = "Furnace.Recipes";
+            public static final String ALCHEMICAL_FORGE_CHAIN = "Furnace.Stones.AlchemicalForge";
         }
 
         /**
@@ -999,8 +1025,9 @@ public final class ConfigPaths
             public static final String SLOTS_MIN        = "Scavenger.SlotsMin";
             public static final String SLOTS_MAX        = "Scavenger.SlotsMax";
             public static final String MAX_TOTAL_SLOTS  = "Scavenger.MaxTotalSlots";
-            public static final String HOLOGRAM_ENABLED = "Scavenger.Hologram.Enabled";
-            public static final String HOLOGRAM_MESSAGE = "Scavenger.Hologram.Message";
+            public static final String HOLOGRAM_ENABLED  = "Scavenger.Hologram.Enabled";
+            public static final String HOLOGRAM_MESSAGE  = "Scavenger.Hologram.Message";
+            public static final String MIXED_BAG_MESSAGE = "Scavenger.MixedBagMessage";
         }
 
         /**
@@ -1266,6 +1293,51 @@ public final class ConfigPaths
             public static final String SET_STAFF_CLEARED          = "Messages.SetStaff.Cleared";
             public static final String SET_STAFF_PLAYER_NOTIFIED  = "Messages.SetStaff.PlayerNotified";
             public static final String SET_STAFF_PLAYER_CLEARED   = "Messages.SetStaff.PlayerCleared";
+        }
+    }
+
+    /**
+     * Paths for the stones configuration file (stones.yml).
+     * Tokens: {hex}, {rarity}, {enchant}, {effect}, {index}
+     */
+    public static final class Stones
+    {
+        private Stones() {}
+
+        /**
+         * Evolution Stone item display strings.
+         */
+        public static final class Item
+        {
+            private Item() {}
+
+            public static final String NAME          = "Item.Name";
+            /** Rarity + "Evolution Stone" line shown as first lore entry. */
+            public static final String RARITY_LINE   = "Item.RarityLine";
+            public static final String BOUND_TO      = "Item.BoundTo";
+            public static final String EFFECT_HEADER = "Item.EffectHeader";
+            public static final String EFFECT_LINE   = "Item.EffectLine";
+            /** String list — each entry is one apply-hint line. */
+            public static final String APPLY_HINT    = "Item.ApplyHint";
+        }
+
+        /**
+         * Socket Menu display strings for the StoneSocketMenu.
+         */
+        public static final class SocketMenu
+        {
+            private SocketMenu() {}
+
+            public static final String FILLED_NAME          = "Socket Menu.Filled Stone.Name";
+            public static final String FILLED_RARITY_LINE   = "Socket Menu.Filled Stone.RarityLine";
+            public static final String FILLED_EFFECT_HEADER = "Socket Menu.Filled Stone.EffectHeader";
+            public static final String FILLED_EFFECT_LINE   = "Socket Menu.Filled Stone.EffectLine";
+            public static final String FILLED_REMOVE_HINT   = "Socket Menu.Filled Stone.RemoveHint";
+
+            public static final String EMPTY_NAME         = "Socket Menu.Empty Socket.Name";
+            public static final String EMPTY_HOW_TO_HEADER = "Socket Menu.Empty Socket.HowToHeader";
+            /** String list — each entry is one how-to line. */
+            public static final String EMPTY_HOW_TO_LINES = "Socket Menu.Empty Socket.HowToLines";
         }
     }
 

@@ -5,8 +5,10 @@ import org.benski.evolv3.animations.HologramAnimation;
 import org.benski.evolv3.core.constants.ConfigNames;
 import org.benski.evolv3.core.constants.ConfigPaths;
 import org.benski.evolv3.core.constants.Enchants;
+import org.benski.evolv3.core.helpers.AoEDropResolver;
 import org.benski.evolv3.core.helpers.ItemStackExtensions;
 import org.benski.evolv3.core.helpers.Utils;
+import org.benski.evolv3.core.managers.PickaxeManager;
 import org.benski.evolv3.core.managers.StorageRegistryManager;
 import org.benski.evolv3.core.managers.WorldGuardManager;
 import org.benski.evolv3.datacenters.PickaxeDataCenter;
@@ -14,6 +16,7 @@ import org.benski.evolv3.datacenters.PlayerDataCenter;
 import org.benski.evolv3.listeners.BackpackListener;
 import org.benski.evolv3.models.player.EnchantPreference;
 import org.benski.evolv3.models.pickaxe.EnchantData;
+import org.benski.evolv3.models.pickaxe.PickaxeProfile;
 import org.benski.evolv3.models.player.PlayerProfile;
 import org.benski.evolv3.registry.AnimationRegistry;
 import org.benski.evolv3.registry.ConfigRegistry;
@@ -92,7 +95,6 @@ public class ScavengerEnchant implements Listener
         if (playerDC == null) return;
         PlayerProfile playerProfile = playerDC.getLocal(player);
         if (playerProfile == null) return;
-        if (playerProfile.backpack.isFull()) return;
 
         PickaxeDataCenter dataCenter = DataCenterRegistry.getInstance().getPickaxeDataCenter();
         if (dataCenter == null) return;
@@ -105,12 +107,35 @@ public class ScavengerEnchant implements Listener
             double triggerChance = enchant.getCurrentChance();
             if (!Utils.chance(triggerChance)) return;
 
+            // Rare (Prospector): 10% chance to award atoms instead of slots
+            if (ScavengerStoneHandler.hasStone(enchant, "Rare") && Utils.chance(10.0)) {
+                int atoms = Utils.amount(1, 2);
+                profile.evolutionAtoms += atoms;
+                PickaxeManager.getInstance().checkAtoms(profile, player);
+                profile.save(null);
+                return;
+            }
+
+            if (playerProfile.backpack.isFull()) return;
             int tierCap = getTierCap(player);
             if (playerProfile.backpack.getMaxSize() >= tierCap) return;
 
-            int slotsMin   = enchantsConfig.getInt(ConfigPaths.Enchants.Scavenger.SLOTS_MIN, 1);
-            int slotsMax   = enchantsConfig.getInt(ConfigPaths.Enchants.Scavenger.SLOTS_MAX, 3);
+            int slotsMin = enchantsConfig.getInt(ConfigPaths.Enchants.Scavenger.SLOTS_MIN, 1);
+            int slotsMax = enchantsConfig.getInt(ConfigPaths.Enchants.Scavenger.SLOTS_MAX, 3);
+
+            // Common (Extra Pocket): +1 slotsMin
+            if (ScavengerStoneHandler.hasStone(enchant, "Common")) slotsMin += 1;
+
             int slotsFound = Utils.amount(slotsMin, slotsMax);
+
+            // Epic (Double Haul): double slots if window is active, then activate/refresh
+            if (ScavengerStoneHandler.isDoubleHaulActive(player.getUniqueId())) slotsFound *= 2;
+            if (ScavengerStoneHandler.hasStone(enchant, "Epic")) {
+                ScavengerStoneHandler.activateDoubleHaul(player.getUniqueId());
+            }
+
+            // Legendary (Compounding): always 2x slots
+            if (ScavengerStoneHandler.hasStone(enchant, "Legendary")) slotsFound *= 2;
 
             // Cap so the backpack never exceeds the tier maximum
             slotsFound = Math.min(slotsFound, tierCap - playerProfile.backpack.getMaxSize());
@@ -118,6 +143,21 @@ public class ScavengerEnchant implements Listener
             playerProfile.backpack.setMaxSize(playerProfile.backpack.getMaxSize() + slotsFound);
             playerProfile.save(null);
             BackpackListener.refresh(player);
+
+            // Uncommon (Mixed Bag): 50% chance to also award 1-5 essence
+            if (ScavengerStoneHandler.hasStone(enchant, "Uncommon") && Utils.chance(50.0)) {
+                int essence = Utils.amount(1, 5);
+                playerProfile.addEssence(essence);
+                String essenceText = enchantsConfig.getString(
+                        ConfigPaths.Enchants.Scavenger.MIXED_BAG_MESSAGE, "&#AA00FF+%essence% Essence!");
+                if (essenceText != null && !essenceText.isEmpty()) {
+                    Location hologramLoc = event.getBlock().getLocation().add(0.5, 1.8, 0.5);
+                    AnimationRegistry.getInstance().play(
+                            new HologramAnimation(plugin,
+                                    essenceText.replace("%essence%", String.valueOf(essence))),
+                            hologramLoc, List.of(player));
+                }
+            }
 
             playEffects(event.getBlock(), player, slotsFound);
         });
@@ -128,7 +168,7 @@ public class ScavengerEnchant implements Listener
      * Shares the same logic as the event-driven handler but works with already-resolved profiles.
      */
     public void tryTriggerForAoE(Player player, Block block,
-                                 org.benski.evolv3.models.pickaxe.PickaxeProfile pickaxeProfile,
+                                 PickaxeProfile pickaxeProfile,
                                  PlayerProfile playerProfile)
     {
         if (pickaxeProfile == null || pickaxeProfile.enchants == null) return;
@@ -137,19 +177,101 @@ public class ScavengerEnchant implements Listener
         if (enchant == null || !enchant.enabled || enchant.level <= 0) return;
         if (!Utils.chance(enchant.getCurrentChance())) return;
 
+        // Rare (Prospector): 10% chance to award atoms instead of slots
+        if (ScavengerStoneHandler.hasStone(enchant, "Rare") && Utils.chance(10.0)) {
+            int atoms = Utils.amount(1, 2);
+            pickaxeProfile.evolutionAtoms += atoms;
+            PickaxeManager.getInstance().checkAtoms(pickaxeProfile, player);
+            pickaxeProfile.save(null);
+            return;
+        }
+
+        if (playerProfile.backpack.isFull()) return;
         int tierCap = getTierCap(player);
         if (playerProfile.backpack.getMaxSize() >= tierCap) return;
 
-        int slotsMin   = enchantsConfig.getInt(ConfigPaths.Enchants.Scavenger.SLOTS_MIN, 1);
-        int slotsMax   = enchantsConfig.getInt(ConfigPaths.Enchants.Scavenger.SLOTS_MAX, 3);
+        int slotsMin = enchantsConfig.getInt(ConfigPaths.Enchants.Scavenger.SLOTS_MIN, 1);
+        int slotsMax = enchantsConfig.getInt(ConfigPaths.Enchants.Scavenger.SLOTS_MAX, 3);
+
+        // Common (Extra Pocket): +1 slotsMin
+        if (ScavengerStoneHandler.hasStone(enchant, "Common")) slotsMin += 1;
+
         int slotsFound = Utils.amount(slotsMin, slotsMax);
+
+        // Epic (Double Haul): double slots if window is active, then activate/refresh
+        if (ScavengerStoneHandler.isDoubleHaulActive(player.getUniqueId())) slotsFound *= 2;
+        if (ScavengerStoneHandler.hasStone(enchant, "Epic")) {
+            ScavengerStoneHandler.activateDoubleHaul(player.getUniqueId());
+        }
+
+        // Legendary (Compounding): always 2x slots
+        if (ScavengerStoneHandler.hasStone(enchant, "Legendary")) slotsFound *= 2;
+
         slotsFound = Math.min(slotsFound, tierCap - playerProfile.backpack.getMaxSize());
 
         playerProfile.backpack.setMaxSize(playerProfile.backpack.getMaxSize() + slotsFound);
         playerProfile.save(null);
-        org.benski.evolv3.listeners.BackpackListener.refresh(player);
+        BackpackListener.refresh(player);
+
+        // Uncommon (Mixed Bag): 50% chance to also award 1-5 essence
+        if (ScavengerStoneHandler.hasStone(enchant, "Uncommon") && Utils.chance(50.0)) {
+            int essence = Utils.amount(1, 5);
+            playerProfile.addEssence(essence);
+            String essenceText = enchantsConfig.getString(
+                    ConfigPaths.Enchants.Scavenger.MIXED_BAG_MESSAGE, "&#AA00FF+%essence% Essence!");
+            if (essenceText != null && !essenceText.isEmpty()) {
+                Location hologramLoc = block.getLocation().add(0.5, 1.8, 0.5);
+                AnimationRegistry.getInstance().play(
+                        new HologramAnimation(plugin,
+                                essenceText.replace("%essence%", String.valueOf(essence))),
+                        hologramLoc, List.of(player));
+            }
+        }
 
         playEffects(block, player, slotsFound);
+    }
+
+    /**
+     * Silent variant for AoE accumulation. Applies all logic and awards slots but plays no effects.
+     *
+     * @return slots awarded this block, or 0 if not triggered / already at cap
+     */
+    public int tryTriggerForAoESilent(Player player, Block block,
+                                      PickaxeProfile pickaxeProfile, PlayerProfile playerProfile)
+    {
+        if (pickaxeProfile == null || pickaxeProfile.enchants == null) return 0;
+
+        EnchantData enchant = pickaxeProfile.enchants.getEnchant(Enchants.SCAVENGER);
+        if (enchant == null || !enchant.enabled || enchant.level <= 0) return 0;
+        if (!Utils.chance(enchant.getCurrentChance())) return 0;
+
+        // Rare (Prospector): 10% chance to award atoms — accumulate via outer acc buffer
+        if (ScavengerStoneHandler.hasStone(enchant, "Rare") && Utils.chance(10.0)) {
+            int atoms = Utils.amount(1, 2);
+            pickaxeProfile.evolutionAtoms += atoms;
+            AoEDropResolver.addAccumulatedAtoms(player.getUniqueId(), atoms);
+            pickaxeProfile.save(null);
+            return 0;
+        }
+
+        if (playerProfile.backpack.isFull()) return 0;
+        int tierCap = getTierCap(player);
+        if (playerProfile.backpack.getMaxSize() >= tierCap) return 0;
+
+        int slotsMin = enchantsConfig.getInt(ConfigPaths.Enchants.Scavenger.SLOTS_MIN, 1);
+        int slotsMax = enchantsConfig.getInt(ConfigPaths.Enchants.Scavenger.SLOTS_MAX, 3);
+        if (ScavengerStoneHandler.hasStone(enchant, "Common")) slotsMin += 1;
+
+        int slotsFound = Utils.amount(slotsMin, slotsMax);
+        if (ScavengerStoneHandler.isDoubleHaulActive(player.getUniqueId())) slotsFound *= 2;
+        if (ScavengerStoneHandler.hasStone(enchant, "Epic")) ScavengerStoneHandler.activateDoubleHaul(player.getUniqueId());
+        if (ScavengerStoneHandler.hasStone(enchant, "Legendary")) slotsFound *= 2;
+        slotsFound = Math.min(slotsFound, tierCap - playerProfile.backpack.getMaxSize());
+
+        playerProfile.backpack.setMaxSize(playerProfile.backpack.getMaxSize() + slotsFound);
+        playerProfile.save(null);
+        BackpackListener.refresh(player);
+        return slotsFound;
     }
 
     /**

@@ -1,5 +1,6 @@
 package org.benski.evolv3.enchants;
 
+import lombok.Getter;
 import org.benski.evolv3.animations.ExplosionAnimation;
 import org.benski.evolv3.animations.HologramAnimation;
 import org.benski.evolv3.core.constants.ConfigNames;
@@ -34,6 +35,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * Listener for the Explosive custom enchantment.
@@ -46,11 +48,67 @@ import java.util.List;
  */
 public class ExplosiveEnchant implements Listener
 {
+    @lombok.Getter
+    private static ExplosiveEnchant instance;
+
     private final JavaPlugin plugin;
 
     public ExplosiveEnchant(JavaPlugin plugin)
     {
+        instance = this;
         this.plugin = plugin;
+    }
+
+    /**
+     * Triggers a radius-1 explosion for the Jackhammer Epic stone (Blast Combo).
+     * Breaks nearby blocks in a sphere, adding drops to the backpack with no stone recursion.
+     */
+    public void triggerBlastCombo(Player player, Block origin,
+                                  PickaxeProfile pickaxeProfile, PlayerProfile playerProfile)
+    {
+        if (!player.isOnline()) return;
+        Backpack backpack = playerProfile.backpack;
+        if (backpack.isFull()) return;
+
+        int fortuneAmount = resolveFortune(pickaxeProfile);
+        int broken = 0;
+
+        outer:
+        for (int x = -2; x <= 2; x++) {
+            for (int y = -2; y <= 2; y++) {
+                for (int z = -2; z <= 2; z++) {
+                    if (x * x + y * y + z * z > 4) continue;
+                    if (x == 0 && y == 0 && z == 0) continue;
+                    int remaining = backpack.getMaxSize() - backpack.getTotalItems();
+                    if (remaining <= 0) break outer;
+
+                    Block block = origin.getRelative(x, y, z);
+                    if (!AoEDropResolver.isBreakable(block)) continue;
+                    if (!WorldGuardManager.getInstance().isWithinMineRegion(block.getLocation())) continue;
+
+                    Material mat = AoEDropResolver.resolve(
+                            block, player.getInventory().getItemInMainHand(), plugin, pickaxeProfile);
+                    if (mat.isAir()) continue;
+                    block.setType(Material.AIR);
+
+                    int dropCount = Math.min(fortuneAmount > 0 ? fortuneAmount : 1, remaining);
+                    backpack.addItem(player, mat, dropCount, false);
+                    PickaxeManager.getInstance().addStatistics(player, mat, playerProfile);
+                    AoEDropResolver.rollSideEffects(player, block, pickaxeProfile, playerProfile);
+                    broken++;
+                }
+            }
+        }
+
+        if (broken > 0) {
+            BackpackListener.refresh(player);
+            playerProfile.save(null);
+        }
+
+        AnimationRegistry.getInstance().play(
+                new ExplosionAnimation(plugin, new java.util.ArrayList<>(), 2),
+                origin.getLocation().add(0.5, 0.5, 0.5),
+                java.util.List.of(player));
     }
 
     @EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
@@ -73,10 +131,20 @@ public class ExplosiveEnchant implements Listener
 
             EnchantData explosive = pickaxeProfile.enchants.getEnchant(Enchants.EXPLOSIVE);
             if (explosive == null || !explosive.enabled || explosive.level <= 0) return;
-            if (!Utils.chance(explosive.getCurrentChance())) return;
+
+            // Uncommon (Instability): apply accumulated miss-streak bonus to proc chance
+            double procChance = explosive.getCurrentChance();
+            boolean hasUncommon = ExplosiveStoneHandler.hasStone(explosive, "Uncommon");
+            if (hasUncommon) procChance += ExplosiveStoneHandler.getMissBonus(player.getUniqueId());
+
+            if (!Utils.chance(procChance)) {
+                if (hasUncommon) ExplosiveStoneHandler.incrementMiss(player.getUniqueId());
+                return;
+            }
+            if (hasUncommon) ExplosiveStoneHandler.resetMiss(player.getUniqueId());
 
             Block origin = event.getBlock();
-            triggerExplosion(player, origin, pickaxeProfile, explosive.level);
+            triggerExplosion(player, origin, pickaxeProfile, explosive, 0);
         });
     }
 
@@ -84,7 +152,12 @@ public class ExplosiveEnchant implements Listener
     // Explosion logic
     // -------------------------------------------------------------------------
 
-    private void triggerExplosion(Player player, Block origin, PickaxeProfile pickaxeProfile, int enchantLevel)
+    /**
+     * @param reDepth 0 = primary explosion (stone effects applied);
+     *                1+ = secondary cluster blast (stones skipped, radius pre-reduced)
+     */
+    private void triggerExplosion(Player player, Block origin, PickaxeProfile pickaxeProfile,
+                                  EnchantData explosive, int reDepth)
     {
         if (!player.isOnline()) return;
 
@@ -100,7 +173,26 @@ public class ExplosiveEnchant implements Listener
         int maxRadius = config.getInt(ConfigPaths.Enchants.Explosive.MAX_RADIUS, 2);
 
         // Scale radius 1 → maxRadius based on level.
-        int radius = Math.max(1, (int) Math.ceil((double) enchantLevel / maxLevel * maxRadius));
+        int radius = Math.max(1, (int) Math.ceil((double) explosive.level / maxLevel * maxRadius));
+
+        if (reDepth == 0) {
+            // Common (Crater): +1 to explosion radius
+            if (ExplosiveStoneHandler.hasStone(explosive, "Common")) radius += 1;
+
+            // Epic (Resonance): apply stacked bonus from previous procs, then advance stack
+            if (ExplosiveStoneHandler.hasStone(explosive, "Epic")) {
+                radius += ExplosiveStoneHandler.consumeResonance(player.getUniqueId());
+            }
+
+            // Legendary (Supernova): every 5th proc doubles the radius
+            if (ExplosiveStoneHandler.hasStone(explosive, "Legendary")
+                    && ExplosiveStoneHandler.incrementAndCheckSupernova(player.getUniqueId())) {
+                radius *= 2;
+            }
+        } else {
+            // Cluster blasts are smaller — reduce radius by 1 (minimum 1)
+            radius = Math.max(1, radius - 1);
+        }
 
         int fortuneAmount = resolveFortune(pickaxeProfile);
         Backpack backpack = playerProfile.backpack;
@@ -109,6 +201,8 @@ public class ExplosiveEnchant implements Listener
 
         List<Material> materials = new ArrayList<>();
         int broken = 0;
+
+        if (reDepth == 0) AoEDropResolver.startAccumulation(player.getUniqueId());
 
         int radiusSq = radius * radius;
         outer:
@@ -145,6 +239,20 @@ public class ExplosiveEnchant implements Listener
             playerProfile.save(null);
         }
 
+        // Rare (Cluster Bomb): fire 2 additional smaller blasts at random nearby positions
+        if (reDepth == 0 && ExplosiveStoneHandler.hasStone(explosive, "Rare")) {
+            ThreadLocalRandom rng = ThreadLocalRandom.current();
+            for (int c = 0; c < 2; c++) {
+                double angle = rng.nextDouble() * Math.PI * 2;
+                int cx = (int) Math.round(Math.cos(angle) * 3);
+                int cz = (int) Math.round(Math.sin(angle) * 3);
+                Block clusterOrigin = origin.getRelative(cx, 0, cz);
+                if (WorldGuardManager.getInstance().isWithinMineRegion(clusterOrigin.getLocation())) {
+                    triggerExplosion(player, clusterOrigin, pickaxeProfile, explosive, 1);
+                }
+            }
+        }
+
         // Always play animation (at least the origin block material is shown).
         materials.add(0, origin.getType());
         EnchantPreferenceResult pref = getEnchantPref(player, config);
@@ -156,6 +264,7 @@ public class ExplosiveEnchant implements Listener
         }
 
         if (broken > 0) {
+            if (reDepth == 0) AoEDropResolver.flushAccumulation(player, origin, pickaxeProfile);
             showNotification(player, origin, config, pref, broken);
         }
     }

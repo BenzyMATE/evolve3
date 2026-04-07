@@ -6,9 +6,12 @@ import org.benski.evolv3.core.constants.ConfigNames;
 import org.benski.evolv3.core.constants.ConfigPaths;
 import org.benski.evolv3.core.helpers.ItemStackExtensions;
 import org.benski.evolv3.core.helpers.Utils;
+import org.benski.evolv3.core.managers.EnchantAnimationConfig;
 import org.benski.evolv3.core.managers.MongoManager;
+import org.benski.evolv3.core.types.RarityConfig;
 import org.benski.evolv3.datacenters.PickaxeDataCenter;
 import org.benski.evolv3.datacenters.PlayerDataCenter;
+import org.benski.evolv3.items.EvolutionStone;
 import org.benski.evolv3.models.player.PlayerProfile;
 import org.benski.evolv3.registry.ConfigRegistry;
 import org.benski.evolv3.registry.DataCenterRegistry;
@@ -61,7 +64,7 @@ public class Evolv3Command extends BaseCommand
     @Override
     public @Nullable String getUsage()
     {
-        return "/evolve <help|reload|info|resetpickaxes|resetprofile>";
+        return "/evolve <help|reload|info|resetpickaxes|resetprofile|stone>";
     }
 
     /** {@inheritDoc} */
@@ -96,6 +99,8 @@ public class Evolv3Command extends BaseCommand
             case "backpack" -> handleBackpack(sender, args);
             case "resetpickaxes" -> handleResetPickaxes(sender, args);
             case "resetprofile" -> handleResetProfile(sender, args);
+            case "stone" -> handleGiveStone(sender, args);
+            case "setbackpack" -> handleSetBackpack(sender, args);
             default -> {
                 sendError(sender, "Unknown subcommand: " + args[0]);
                 sendInfo(sender, "Use /evolve help for available commands.");
@@ -281,6 +286,82 @@ public class Evolv3Command extends BaseCommand
     }
 
     /**
+     * Gives an Evolution Stone to the sender or a target player.
+     * Usage: /evolve stone <rarity> [enchant] [player]
+     */
+    private void handleGiveStone(CommandSender sender, String[] args)
+    {
+        if (args.length < 2) {
+            sendInfo(sender, "Usage: /evolve stone <Common|Uncommon|Rare|Epic|Legendary> [enchant] [player]");
+            return;
+        }
+
+        boolean giveAll = args[1].equalsIgnoreCase("All");
+
+        String rarityArg = args[1].substring(0, 1).toUpperCase() + args[1].substring(1).toLowerCase();
+        RarityConfig rarity = giveAll ? null : EnchantAnimationConfig.getRarityByName(rarityArg);
+        if (!giveAll && rarity == null) {
+            sendError(sender, "Unknown rarity: " + args[1] + " — use Common, Uncommon, Rare, Epic, Legendary, or All.");
+            return;
+        }
+
+        List<String> allEnchants = EnchantAnimationConfig.getEnchantOrder();
+
+        // Optional enchant arg (args[2]) and optional player arg (last arg if it matches an online player)
+        String enchantName = null;
+        Player target = null;
+
+        if (args.length >= 3) {
+            // Check if last arg is a player name
+            Player possiblePlayer = Bukkit.getPlayer(args[args.length - 1]);
+            int enchantEndIndex = (possiblePlayer != null && args.length >= 4) ? args.length - 1 : args.length;
+
+            if (possiblePlayer != null && enchantEndIndex == 2) {
+                // /evolve stone <rarity> <player> — no enchant specified
+                target = possiblePlayer;
+            } else {
+                String enchantArg = String.join(" ", java.util.Arrays.copyOfRange(args, 2, enchantEndIndex));
+                final String search = enchantArg.toLowerCase();
+                enchantName = allEnchants.stream()
+                        .filter(e -> e.toLowerCase().equals(search))
+                        .findFirst().orElse(null);
+                if (enchantName == null) {
+                    sendError(sender, "Unknown enchant: " + enchantArg);
+                    return;
+                }
+                if (possiblePlayer != null) target = possiblePlayer;
+            }
+        }
+
+        if (enchantName == null) {
+            enchantName = allEnchants.get(java.util.concurrent.ThreadLocalRandom.current().nextInt(allEnchants.size()));
+        }
+
+        if (target == null) {
+            if (!requirePlayer(sender)) return;
+            target = (Player) sender;
+        }
+
+        final Player finalTarget = target;
+        final String finalEnchant = enchantName;
+
+        if (giveAll) {
+            List<String> rarityNames = List.of("Common", "Uncommon", "Rare", "Epic", "Legendary");
+            for (String name : rarityNames) {
+                RarityConfig rc = EnchantAnimationConfig.getRarityByName(name);
+                if (rc == null) continue;
+                var overflow = finalTarget.getInventory().addItem(EvolutionStone.create(rc, finalEnchant));
+                overflow.values().forEach(item -> finalTarget.getWorld().dropItemNaturally(finalTarget.getLocation(), item));
+            }
+            sendSuccess(sender, "Given " + finalTarget.getName() + " all 5 Evolution Stones (" + finalEnchant + ").");
+        } else {
+            var overflow = finalTarget.getInventory().addItem(EvolutionStone.create(rarity, finalEnchant));
+            overflow.values().forEach(item -> finalTarget.getWorld().dropItemNaturally(finalTarget.getLocation(), item));
+            sendSuccess(sender, "Given " + finalTarget.getName() + " a " + rarity.displayName() + " Evolution Stone (" + finalEnchant + ").");
+        }
+    }
+
+    /**
      * Deletes the specified player's profile from MongoDB and cache.
      * If the admin is a player holding a registered pickaxe, that pickaxe profile
      * is also deleted and its ID cleared from the item.
@@ -352,6 +433,54 @@ public class Evolv3Command extends BaseCommand
     }
 
     /**
+     * Sets the backpack size limit for the specified player.
+     * Usage: /evolve setbackpack <player> <size>
+     */
+    private void handleSetBackpack(CommandSender sender, String[] args)
+    {
+        if (args.length < 3) {
+            sendInfo(sender, "Usage: /evolve setbackpack <player> <size>");
+            return;
+        }
+
+        Player target = Bukkit.getPlayer(args[1]);
+        if (target == null) {
+            sendError(sender, "Player not found or not online: " + args[1]);
+            return;
+        }
+
+        int size;
+        try {
+            size = Integer.parseInt(args[2]);
+        } catch (NumberFormatException e) {
+            sendError(sender, "Invalid size: " + args[2] + " — must be a whole number.");
+            return;
+        }
+
+        if (size < 1) {
+            sendError(sender, "Size must be at least 1.");
+            return;
+        }
+
+        PlayerDataCenter playerDC = DataCenterRegistry.getInstance().getPlayerDataCenter();
+        if (playerDC == null) {
+            sendError(sender, "Player data centre unavailable.");
+            return;
+        }
+
+        PlayerProfile profile = playerDC.getLocal(target);
+        if (profile == null) {
+            sendError(sender, "Could not load profile for " + target.getName() + ".");
+            return;
+        }
+
+        profile.backpack.setMaxSize(size);
+        profile.save(null);
+
+        sendSuccess(sender, "Set " + target.getName() + "'s backpack limit to " + size + " items.");
+    }
+
+    /**
      * Formats a message for the sender.
      *
      * @param sender  The command sender
@@ -373,16 +502,33 @@ public class Evolv3Command extends BaseCommand
         List<String> suggestions = new ArrayList<>();
 
         if (args.length == 1) {
-            suggestions = Arrays.asList("help", "reload", "info", "backpack", "resetpickaxes", "resetprofile");
+            suggestions = Arrays.asList("help", "reload", "info", "backpack", "resetpickaxes", "resetprofile", "stone", "setbackpack");
+        } else if (args.length == 2 && args[0].equalsIgnoreCase("stone")) {
+            suggestions = Arrays.asList("Common", "Uncommon", "Rare", "Epic", "Legendary", "All");
+        } else if (args.length == 3 && args[0].equalsIgnoreCase("stone")) {
+            // Only show enchants that have stone handlers implemented
+            java.util.Set<String> implemented = java.util.Set.of(
+                    "efficiency", "unbreaking", "alchemy", "autosell", "cascade", "drill", "explosive", "extraction", "fortune", "frostbite", "furnace", "merchant", "jackhammer", "lazer", "nuclearshower", "radioactive", "scavenger", "thor", "vortex"
+            );
+            suggestions = EnchantAnimationConfig.getEnchantOrder().stream()
+                    .filter(display -> implemented.stream()
+                            .anyMatch(internal -> display.equalsIgnoreCase(
+                                    EnchantAnimationConfig.getDisplayName(internal))))
+                    .collect(java.util.stream.Collectors.toCollection(ArrayList::new));
+        } else if (args.length == 4 && args[0].equalsIgnoreCase("stone")) {
+            suggestions = Bukkit.getOnlinePlayers().stream().map(Player::getName).toList();
         } else if (args.length == 2 && args[0].equalsIgnoreCase("reload")) {
             suggestions = Arrays.asList("default", "messages", "enchants", "all");
         } else if (args.length == 2 && args[0].equalsIgnoreCase("backpack")) {
             suggestions = List.of("model");
         } else if (args.length == 2 && (args[0].equalsIgnoreCase("resetpickaxes")
-                || args[0].equalsIgnoreCase("resetprofile"))) {
+                || args[0].equalsIgnoreCase("resetprofile")
+                || args[0].equalsIgnoreCase("setbackpack"))) {
             suggestions = Bukkit.getOnlinePlayers().stream()
                     .map(Player::getName)
                     .toList();
+        } else if (args.length == 3 && args[0].equalsIgnoreCase("setbackpack")) {
+            suggestions = Arrays.asList("100", "200", "500", "1000");
         } else if (args.length == 3 && args[0].equalsIgnoreCase("backpack") && args[1].equalsIgnoreCase("model")) {
             suggestions = Arrays.asList("1", "2", "3", "4", "5");
         } else if (args.length == 4 && args[0].equalsIgnoreCase("backpack") && args[1].equalsIgnoreCase("model")) {

@@ -19,6 +19,7 @@ import org.benski.evolv3.models.pickaxe.PickaxeProfile;
 import org.benski.evolv3.models.player.EnchantPreference;
 import org.benski.evolv3.models.player.PlayerProfile;
 import org.benski.evolv3.registry.AnimationRegistry;
+import org.benski.evolv3.registry.ConfigRegistry;
 import org.benski.evolv3.registry.DataCenterRegistry;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -31,11 +32,12 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitRunnable;
 
-import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * Listener for the Thor custom enchantment.
@@ -44,11 +46,10 @@ import java.util.List;
  * position. The bolt scans from the top of the mine region downward to the
  * bottom, breaking every solid block in the 1×1 column and adding their drops
  * to the player's backpack. Air gaps (already-mined sections) are skipped so
- * the bolt passes through holes and continues downward — meaning the enchant
- * works even when the player is at the very bottom of the mine.</p>
+ * the bolt passes through holes and continues downward.</p>
  *
- * <p>Fortune is applied to every block broken. Frostbite-frozen blocks are
- * resolved to their original material before being collected.</p>
+ * <p>Rare (Arctic Strike) stone: places Sculk around the impact point.
+ * When a player mines that Sculk they receive one random reward.</p>
  */
 public class ThorEnchant implements Listener
 {
@@ -58,6 +59,10 @@ public class ThorEnchant implements Listener
     {
         this.plugin = plugin;
     }
+
+    // -------------------------------------------------------------------------
+    // Primary event handler — Thor column strike
+    // -------------------------------------------------------------------------
 
     @EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
     public void onBlockBreak(BlockBreakEvent event)
@@ -70,6 +75,7 @@ public class ThorEnchant implements Listener
 
         String blockName = event.getBlock().getType().name();
         if (blockName.endsWith("_LOG") || blockName.endsWith("_STEM")) return;
+        if (event.getBlock().getType() == Material.SCULK) return; // sculk handled separately
 
         PickaxeDataCenter pickaxeDC = DataCenterRegistry.getInstance().getPickaxeDataCenter();
         if (pickaxeDC == null) return;
@@ -79,7 +85,11 @@ public class ThorEnchant implements Listener
 
             EnchantData thor = pickaxeProfile.enchants.getEnchant(Enchants.THOR);
             if (thor == null || !thor.enabled || thor.level <= 0) return;
-            if (!Utils.chance(thor.getCurrentChance())) return;
+
+            // Common (Conductor): +2% to Thor proc chance
+            double triggerChance = thor.getCurrentChance();
+            if (ThorStoneHandler.hasStone(thor, "Common")) triggerChance += 2.0;
+            if (!Utils.chance(triggerChance)) return;
 
             Block origin = event.getBlock();
 
@@ -87,16 +97,128 @@ public class ThorEnchant implements Listener
             new BukkitRunnable()
             {
                 @Override
-                public void run() { strikeThor(player, origin, pickaxeProfile); }
+                public void run() { strikeThor(player, origin, pickaxeProfile, thor, false); }
             }.runTaskLater(plugin, 1L);
+
+            // Uncommon (Double Strike): fire a second strike 4 ticks later
+            if (ThorStoneHandler.hasStone(thor, "Uncommon")) {
+                new BukkitRunnable()
+                {
+                    @Override
+                    public void run() { strikeThor(player, origin, pickaxeProfile, thor, true); }
+                }.runTaskLater(plugin, 4L);
+            }
+
+            // Legendary (Thunderstorm): 15% chance to scatter 10 strikes across the mine
+            if (ThorStoneHandler.hasStone(thor, "Legendary") && Utils.chance(15.0)) {
+                triggerThunderstorm(player, origin, pickaxeProfile, thor);
+            }
         });
+    }
+
+    // -------------------------------------------------------------------------
+    // Sculk reward — Rare (Arctic Strike) stone
+    // -------------------------------------------------------------------------
+
+    /**
+     * When Sculk placed by Arctic Strike is mined, award one random reward:
+     * a backpack slot, 1 essence, 1 atom, or 50 coins.
+     */
+    @EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
+    public void onSculkBreak(BlockBreakEvent event)
+    {
+        if (event.getBlock().getType() != Material.SCULK) return;
+        if (!WorldGuardManager.getInstance().isWithinMineRegion(event.getBlock().getLocation())) return;
+
+        Player player = event.getPlayer();
+        if (!Utils.isPickaxe(player.getInventory().getItemInMainHand().getType())) return;
+
+        // Suppress vanilla sculk drops — reward is applied manually.
+        event.setDropItems(false);
+        event.setExpToDrop(0);
+
+        PlayerDataCenter playerDC = DataCenterRegistry.getInstance().getPlayerDataCenter();
+        if (playerDC == null) return;
+        PlayerProfile playerProfile = playerDC.getLocal(player);
+        if (playerProfile == null) return;
+
+        Block block = event.getBlock();
+        int roll = ThreadLocalRandom.current().nextInt(4);
+
+        switch (roll) {
+            case 0 -> awardBackpackSlot(player, playerProfile, block);
+            case 1 -> {
+                playerProfile.addEssence(1);
+                playerProfile.save(null);
+                showSculkReward(player, block, "&#B366D9🔥 &#FFFFFF&l+1 &#B366D9Essence");
+            }
+            case 2 -> {
+                PickaxeDataCenter pickaxeDC = DataCenterRegistry.getInstance().getPickaxeDataCenter();
+                if (pickaxeDC != null) {
+                    pickaxeDC.get(player, pp -> {
+                        if (pp == null) return;
+                        pp.evolutionAtoms += 1;
+                        PickaxeManager.getInstance().checkAtoms(pp, player);
+                        pp.save(null);
+                        showSculkReward(player, block, "&#FFEE00⚛ &#FFFFFF&l+1 &#FFEE00Atom");
+                    });
+                }
+            }
+            case 3 -> {
+                playerProfile.addCoins(50);
+                playerProfile.save(null);
+                showSculkReward(player, block, "&#FFD700⛁ &#FFFFFF&l+50 &#FFD700Coins");
+            }
+        }
+    }
+
+    private void awardBackpackSlot(Player player, PlayerProfile playerProfile, Block block)
+    {
+        int tierCap = resolveTierCap(player);
+        if (playerProfile.backpack.getMaxSize() < tierCap) {
+            playerProfile.backpack.setMaxSize(playerProfile.backpack.getMaxSize() + 1);
+            BackpackListener.refresh(player);
+            playerProfile.save(null);
+            showSculkReward(player, block, "&#55FF55📦 &#FFFFFF&l+1 &#55FF55Slot");
+        } else {
+            // Already at tier cap — fall back to essence so the reward is never wasted.
+            playerProfile.addEssence(1);
+            playerProfile.save(null);
+            showSculkReward(player, block, "&#B366D9🔥 &#FFFFFF&l+1 &#B366D9Essence");
+        }
+    }
+
+    private int resolveTierCap(Player player)
+    {
+        int fallback = 500;
+        ItemStack offhand = player.getInventory().getItemInOffHand();
+        if (offhand.getType() == Material.AIR) return fallback;
+        ItemMeta meta = offhand.getItemMeta();
+        if (meta == null || !meta.hasCustomModelData()) return fallback;
+        int modelData = meta.getCustomModelData();
+        FileConfiguration defaultConfig = ConfigRegistry.getInstance().get(ConfigNames.DEFAULT);
+        String path = ConfigPaths.Default.Backpack.TIERS_PREFIX + modelData;
+        return defaultConfig.contains(path) ? defaultConfig.getInt(path, fallback) : fallback;
+    }
+
+    private void showSculkReward(Player player, Block block, String text)
+    {
+        Location loc = block.getLocation().add(0.5, 1.0, 0.5);
+        AnimationRegistry.getInstance().play(new HologramAnimation(plugin, text), loc, List.of(player));
     }
 
     // -------------------------------------------------------------------------
     // Thor logic
     // -------------------------------------------------------------------------
 
-    private void strikeThor(Player player, Block origin, PickaxeProfile pickaxeProfile)
+    /**
+     * Executes a single Thor column strike.
+     *
+     * @param isSubStrike {@code true} for secondary strikes (Double Strike, Thunderstorm);
+     *                    prevents chained Mjolnir procs and recursive Thunderstorms.
+     */
+    private void strikeThor(Player player, Block origin, PickaxeProfile pickaxeProfile,
+                            EnchantData thor, boolean isSubStrike)
     {
         if (!player.isOnline()) return;
 
@@ -109,9 +231,9 @@ public class ThorEnchant implements Listener
         FileConfiguration config = StorageRegistryManager.getInstance().getConfig(ConfigNames.ENCHANTS);
         int maxColumnHeight = config.getInt(ConfigPaths.Enchants.Thor.MAX_COLUMN_HEIGHT, 100);
 
-        World world    = origin.getWorld();
-        int   baseX    = origin.getX();
-        int   baseZ    = origin.getZ();
+        World world = origin.getWorld();
+        int baseX = origin.getX();
+        int baseZ = origin.getZ();
 
         // Scan upward to find the top of the mine region at this X/Z.
         Location scanLoc = origin.getLocation().clone();
@@ -135,30 +257,64 @@ public class ThorEnchant implements Listener
         Backpack backpack = playerProfile.backpack;
         if (backpack.isFull()) return;
 
-        List<Material> columnMats = new ArrayList<>();
+        // Epic (Mjolnir): every 10th proc hits a 3×3 column area (not on sub-strikes)
+        boolean isMjolnir = !isSubStrike
+                && ThorStoneHandler.hasStone(thor, "Epic")
+                && ThorStoneHandler.incrementAndCheckMjolnir(player.getUniqueId());
+
+        int[][] offsets = isMjolnir
+                ? new int[][]{{0,0},{1,0},{-1,0},{0,1},{0,-1},{1,1},{1,-1},{-1,1},{-1,-1}}
+                : new int[][]{{0, 0}};
+
         int broken = 0;
+        int iceOriginY = -1; // Y of first block hit in center column, for Arctic Strike anchor
 
-        // Walk from top to bottom, breaking solid blocks and skipping air.
-        for (int y = topY; y >= bottomY; y--) {
-            int remaining = backpack.getMaxSize() - backpack.getTotalItems();
-            if (remaining <= 0) break;
+        AoEDropResolver.startAccumulation(player.getUniqueId());
 
-            Block block = world.getBlockAt(baseX, y, baseZ);
-            if (!AoEDropResolver.isBreakable(block)) continue;
-            if (!WorldGuardManager.getInstance().isWithinMineRegion(block.getLocation())) continue;
+        for (int[] off : offsets) {
+            int colX = baseX + off[0];
+            int colZ = baseZ + off[1];
 
-            Material mat = AoEDropResolver.resolve(
-                    block, player.getInventory().getItemInMainHand(), plugin, pickaxeProfile);
-            if (mat.isAir()) continue;
+            for (int y = topY; y >= bottomY; y--) {
+                int remaining = backpack.getMaxSize() - backpack.getTotalItems();
+                if (remaining <= 0) break;
 
-            columnMats.add(mat);
-            block.setType(Material.AIR);
+                Block block = world.getBlockAt(colX, y, colZ);
+                if (!AoEDropResolver.isBreakable(block)) continue;
+                if (!WorldGuardManager.getInstance().isWithinMineRegion(block.getLocation())) continue;
 
-            int dropCount = Math.min(fortuneAmount > 0 ? fortuneAmount : 1, remaining);
-            backpack.addItem(player, mat, dropCount, false);
-            PickaxeManager.getInstance().addStatistics(player, mat, playerProfile);
-            AoEDropResolver.rollSideEffects(player, block, pickaxeProfile, playerProfile);
-            broken++;
+                Material mat = AoEDropResolver.resolve(
+                        block, player.getInventory().getItemInMainHand(), plugin, pickaxeProfile);
+                if (mat.isAir()) continue;
+
+                if (iceOriginY < 0 && off[0] == 0 && off[1] == 0) iceOriginY = y;
+
+                block.setType(Material.AIR);
+
+                int dropCount = Math.min(fortuneAmount > 0 ? fortuneAmount : 1, remaining);
+                backpack.addItem(player, mat, dropCount, false);
+                PickaxeManager.getInstance().addStatistics(player, mat, playerProfile);
+                AoEDropResolver.rollSideEffects(player, block, pickaxeProfile, playerProfile);
+                broken++;
+            }
+        }
+
+        // Rare (Arctic Strike): grow Sculk in a 3×3 ring around the center column, 5 levels deep.
+        // Mining the sculk gives a random reward (slot / essence / atom / coins).
+        if (ThorStoneHandler.hasStone(thor, "Rare")) {
+            int freezeY = iceOriginY >= 0 ? iceOriginY : origin.getY();
+            for (int dy = 0; dy >= -4; dy--) {
+                for (int fx = -1; fx <= 1; fx++) {
+                    for (int fz = -1; fz <= 1; fz++) {
+                        if (fx == 0 && fz == 0) continue;
+                        Block fb = world.getBlockAt(baseX + fx, freezeY + dy, baseZ + fz);
+                        if (WorldGuardManager.getInstance().isWithinMineRegion(fb.getLocation())
+                                && fb.getType().isSolid()) {
+                            fb.setType(Material.SCULK);
+                        }
+                    }
+                }
+            }
         }
 
         if (broken > 0) {
@@ -166,26 +322,60 @@ public class ThorEnchant implements Listener
             playerProfile.save(null);
         }
 
-        // Play the lightning animation descending from the top of the column.
         EnchantPreferenceResult pref = getEnchantPref(player, config);
         int columnHeight = topY - bottomY;
         Location strikeOrigin = new Location(world, baseX + 0.5, topY + 0.5, baseZ + 0.5);
 
-        // Strike a fake (no damage, no fire) lightning bolt at the top of the column.
-        // Visible to all nearby players — intentional, since Thor is a dramatic world event.
         world.strikeLightningEffect(strikeOrigin);
 
         ThorAnimation anim = new ThorAnimation(plugin, columnHeight, pref.sound, pref.particles);
         AnimationRegistry.getInstance().play(anim, strikeOrigin, List.of(player));
 
         if (broken > 0) {
+            AoEDropResolver.flushAccumulation(player, origin, pickaxeProfile);
             showNotification(player, origin, config, pref, broken);
         }
     }
 
     /**
-     * Shows the hologram and/or chat/title notification after Thor strikes.
+     * Legendary (Thunderstorm): scatters 10 sub-strikes at random X/Z positions within
+     * the mine bounds, staggered 2 ticks apart.
      */
+    private void triggerThunderstorm(Player player, Block origin,
+                                     PickaxeProfile pickaxeProfile, EnchantData thor)
+    {
+        int[] bounds = WorldGuardManager.getInstance().getMineRegionXZBounds(origin.getLocation());
+        int minX, minZ, maxX, maxZ;
+        if (bounds != null) {
+            minX = bounds[0]; minZ = bounds[1]; maxX = bounds[2]; maxZ = bounds[3];
+        } else {
+            minX = origin.getX() - 20; minZ = origin.getZ() - 20;
+            maxX = origin.getX() + 20; maxZ = origin.getZ() + 20;
+        }
+
+        ThreadLocalRandom rng = ThreadLocalRandom.current();
+        World world = origin.getWorld();
+        int originY = origin.getY();
+
+        for (int i = 0; i < 10; i++) {
+            int rx = rng.nextInt(minX, maxX + 1);
+            int rz = rng.nextInt(minZ, maxZ + 1);
+            Block stormBlock = world.getBlockAt(rx, originY, rz);
+            if (!WorldGuardManager.getInstance().isWithinMineRegion(stormBlock.getLocation())) continue;
+
+            final Block finalBlock = stormBlock;
+            new BukkitRunnable()
+            {
+                @Override
+                public void run()
+                {
+                    if (!player.isOnline()) return;
+                    strikeThor(player, finalBlock, pickaxeProfile, thor, true);
+                }
+            }.runTaskLater(plugin, 2L + i * 2L);
+        }
+    }
+
     private void showNotification(Player player, Block origin, FileConfiguration config,
                                   EnchantPreferenceResult pref, int broken)
     {

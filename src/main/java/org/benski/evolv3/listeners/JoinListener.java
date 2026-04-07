@@ -10,10 +10,25 @@ import org.benski.evolv3.core.helpers.SkinRenderer;
 import org.benski.evolv3.core.helpers.Utils;
 import org.benski.evolv3.core.managers.EnchantDropManager;
 import org.benski.evolv3.core.managers.EnchantSelectionManager;
+import org.benski.evolv3.core.managers.EvolutionSelectionManager;
 import org.benski.evolv3.core.managers.RankManager;
+import org.benski.evolv3.enchants.AutoSellStoneHandler;
+import org.benski.evolv3.enchants.EfficiencyStoneHandler;
+import org.benski.evolv3.enchants.FortuneStoneHandler;
+import org.benski.evolv3.enchants.FrostbiteStoneHandler;
+import org.benski.evolv3.enchants.FurnaceStoneHandler;
+import org.benski.evolv3.enchants.LazerStoneHandler;
+import org.benski.evolv3.enchants.MerchantStoneHandler;
+import org.benski.evolv3.enchants.ExplosiveStoneHandler;
+import org.benski.evolv3.enchants.ExtractionStoneHandler;
 import org.benski.evolv3.enchants.ExtractionEnchant;
 import org.benski.evolv3.enchants.FortuneEnchant;
 import org.benski.evolv3.enchants.RadioactiveEnchant;
+import org.benski.evolv3.enchants.RadioactiveStoneHandler;
+import org.benski.evolv3.enchants.ScavengerStoneHandler;
+import org.benski.evolv3.enchants.ThorStoneHandler;
+import org.benski.evolv3.enchants.VortexStoneHandler;
+import org.benski.evolv3.enchants.UnbreakingStoneHandler;
 import org.benski.evolv3.datacenters.ArmorDataCenter;
 import org.benski.evolv3.datacenters.PlayerDataCenter;
 import org.benski.evolv3.models.player.PlayerProfile;
@@ -71,6 +86,9 @@ public class JoinListener extends BaseListener
 
         // Restore any in-progress enchant selection (same options, pickaxe returned)
         EnchantSelectionManager.getInstance().handlePlayerJoin(player);
+
+        // Restore any in-progress evolution animation (same rarity, items delivered)
+        EvolutionSelectionManager.getInstance().handlePlayerJoin(player);
 
         // Apply rank permissions once the profile has had a tick to load from cache.
         // The profile is loaded synchronously from cache on the same tick for returning
@@ -142,6 +160,9 @@ public class JoinListener extends BaseListener
         // Save enchant animation state first, while the player is still technically online
         EnchantSelectionManager.getInstance().handlePlayerQuit(player);
 
+        // Save evolution animation state — must be called before profile unload
+        EvolutionSelectionManager.getInstance().handlePlayerQuit(player);
+
         ArmorDataCenter armorDataCenter = DataCenterRegistry.getInstance().getArmorDataCenter();
         PlayerDataCenter playerDataCenter = DataCenterRegistry.getInstance().getPlayerDataCenter();
 
@@ -161,5 +182,19 @@ public class JoinListener extends BaseListener
         ExtractionEnchant.popBonus(uuid);
         RadioactiveEnchant.popBonus(uuid);
         FortuneEnchant.popDropAmount(uuid);
+        EfficiencyStoneHandler.getInstance().cleanup(uuid);
+        RadioactiveStoneHandler.cleanup(uuid);
+        FortuneStoneHandler.cleanup(uuid);
+        FrostbiteStoneHandler.cleanup(uuid);
+        FurnaceStoneHandler.cleanup(uuid);
+        MerchantStoneHandler.cleanup(uuid);
+        LazerStoneHandler.cleanup(uuid);
+        UnbreakingStoneHandler.getInstance().cleanup(uuid);
+        AutoSellStoneHandler.getInstance().cleanup(uuid);
+        ExplosiveStoneHandler.cleanup(uuid);
+        ExtractionStoneHandler.cleanup(uuid);
+        ScavengerStoneHandler.cleanup(uuid);
+        ThorStoneHandler.cleanup(uuid);
+        VortexStoneHandler.cleanup(uuid);
     }
 }

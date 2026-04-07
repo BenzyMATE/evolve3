@@ -55,11 +55,26 @@ import java.util.List;
  */
 public class JackhammerEnchant implements Listener
 {
+    @lombok.Getter
+    private static JackhammerEnchant instance;
+
     private final JavaPlugin plugin;
 
     public JackhammerEnchant(JavaPlugin plugin)
     {
+        instance = this;
         this.plugin = plugin;
+    }
+
+    /**
+     * Triggers a Jackhammer layer break from an external source (e.g. Lazer Rare stone).
+     * Uses the player's own Jackhammer enchant data if available (so Jackhammer stones apply),
+     * otherwise falls back to a stone-free break.
+     */
+    public void triggerLayerBreak(Player player, Block origin, PickaxeProfile pickaxeProfile) {
+        EnchantData jh = pickaxeProfile.enchants != null
+                ? pickaxeProfile.enchants.getEnchant(Enchants.JACKHAMMER) : null;
+        smashLayer(player, origin, pickaxeProfile, jh);
     }
 
     @EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
@@ -82,7 +97,13 @@ public class JackhammerEnchant implements Listener
 
             EnchantData jackhammer = pickaxeProfile.enchants.getEnchant(Enchants.JACKHAMMER);
             if (jackhammer == null || !jackhammer.enabled || jackhammer.level <= 0) return;
-            if (!Utils.chance(jackhammer.getCurrentChance())) return;
+
+            double triggerChance = jackhammer.getCurrentChance();
+            // Common (Quick Draw): +1% to proc chance
+            if (JackhammerStoneHandler.hasStone(jackhammer, "Common")) triggerChance += 1.0;
+            // Uncommon (Sharp Eye): +2% to proc chance
+            if (JackhammerStoneHandler.hasStone(jackhammer, "Uncommon")) triggerChance += 2.0;
+            if (!Utils.chance(triggerChance)) return;
 
             Block origin = event.getBlock();
 
@@ -90,7 +111,7 @@ public class JackhammerEnchant implements Listener
             new BukkitRunnable()
             {
                 @Override
-                public void run() { smashLayer(player, origin, pickaxeProfile); }
+                public void run() { smashLayer(player, origin, pickaxeProfile, jackhammer); }
             }.runTaskLater(plugin, 1L);
         });
     }
@@ -99,7 +120,8 @@ public class JackhammerEnchant implements Listener
     // Jackhammer logic
     // -------------------------------------------------------------------------
 
-    private void smashLayer(Player player, Block origin, PickaxeProfile pickaxeProfile)
+    private void smashLayer(Player player, Block origin, PickaxeProfile pickaxeProfile,
+                             EnchantData jackhammer)
     {
         if (!player.isOnline()) return;
 
@@ -112,53 +134,73 @@ public class JackhammerEnchant implements Listener
         FileConfiguration config = StorageRegistryManager.getInstance().getConfig(ConfigNames.ENCHANTS);
         int maxScanRadius = config.getInt(ConfigPaths.Enchants.Jackhammer.MAX_SCAN_RADIUS, 100);
 
-        World world  = origin.getWorld();
+        World world   = origin.getWorld();
         int   targetY = origin.getY();
+
+        boolean hasLegendary = jackhammer != null && JackhammerStoneHandler.hasStone(jackhammer, "Legendary");
+        boolean hasRare      = jackhammer != null && JackhammerStoneHandler.hasStone(jackhammer, "Rare");
 
         // Determine XZ bounds from the WorldGuard mine region when available.
         int minX, minZ, maxX, maxZ;
-
         int[] bounds = WorldGuardManager.getInstance().getMineRegionXZBounds(origin.getLocation());
         if (bounds != null) {
-            minX = bounds[0];
-            minZ = bounds[1];
-            maxX = bounds[2];
-            maxZ = bounds[3];
+            minX = bounds[0]; minZ = bounds[1]; maxX = bounds[2]; maxZ = bounds[3];
         } else {
-            // Fallback: scan a square around the origin.
-            minX = origin.getX() - maxScanRadius;
-            minZ = origin.getZ() - maxScanRadius;
-            maxX = origin.getX() + maxScanRadius;
-            maxZ = origin.getZ() + maxScanRadius;
+            minX = origin.getX() - maxScanRadius; minZ = origin.getZ() - maxScanRadius;
+            maxX = origin.getX() + maxScanRadius; maxZ = origin.getZ() + maxScanRadius;
         }
 
-        int fortuneAmount = resolveFortune(pickaxeProfile);
-        Backpack backpack  = playerProfile.backpack;
+        // Compute animation radius and play immediately so it always fires regardless of backpack state.
+        int animRadius = computeAnimRadius(origin.getX(), origin.getZ(), minX, minZ, maxX, maxZ);
+        EnchantPreferenceResult pref = getEnchantPref(player, config);
+        Location originCenter = origin.getLocation().add(0.5, 0.5, 0.5);
+        JackhammerAnimation anim = new JackhammerAnimation(plugin, animRadius, pref.sound(), pref.particles());
+        AnimationRegistry.getInstance().play(anim, originCenter, List.of(player));
+
+        Backpack backpack = playerProfile.backpack;
         if (backpack.isFull()) return;
 
+        int fortuneAmount = resolveFortune(pickaxeProfile);
         int broken = 0;
 
+        // Legendary (Depth Charge): 30% chance to also break the layer below
+        int layerCount = 1;
+        if (hasLegendary && Utils.chance(30.0)) layerCount = 2;
+
+        AoEDropResolver.startAccumulation(player.getUniqueId());
+
         outer:
-        for (int x = minX; x <= maxX; x++) {
-            for (int z = minZ; z <= maxZ; z++) {
-                int remaining = backpack.getMaxSize() - backpack.getTotalItems();
-                if (remaining <= 0) break outer;
+        for (int layer = 0; layer < layerCount; layer++) {
+            int layerY = targetY - layer;
+            for (int x = minX; x <= maxX; x++) {
+                for (int z = minZ; z <= maxZ; z++) {
+                    int remaining = backpack.getMaxSize() - backpack.getTotalItems();
+                    if (remaining <= 0) break outer;
 
-                Block block = world.getBlockAt(x, targetY, z);
-                if (!AoEDropResolver.isBreakable(block)) continue;
-                if (!WorldGuardManager.getInstance().isWithinMineRegion(block.getLocation())) continue;
+                    Block block = world.getBlockAt(x, layerY, z);
+                    if (!AoEDropResolver.isBreakable(block)) continue;
+                    if (!WorldGuardManager.getInstance().isWithinMineRegion(block.getLocation())) continue;
 
-                Material mat = AoEDropResolver.resolve(
-                        block, player.getInventory().getItemInMainHand(), plugin, pickaxeProfile);
-                if (mat.isAir()) continue;
+                    Material mat = AoEDropResolver.resolve(
+                            block, player.getInventory().getItemInMainHand(), plugin, pickaxeProfile);
+                    if (mat.isAir()) continue;
 
-                block.setType(Material.AIR);
+                    block.setType(Material.AIR);
 
-                int dropCount = Math.min(fortuneAmount > 0 ? fortuneAmount : 1, remaining);
-                backpack.addItem(player, mat, dropCount, false);
-                PickaxeManager.getInstance().addStatistics(player, mat, playerProfile);
-                AoEDropResolver.rollSideEffects(player, block, pickaxeProfile, playerProfile);
-                broken++;
+                    // Rare (Dissolution Strike): 5% chance to convert block into atoms
+                    if (hasRare && Utils.chance(5.0)) {
+                        pickaxeProfile.evolutionAtoms += 1;
+                        AoEDropResolver.addAccumulatedAtoms(player.getUniqueId(), 1);
+                        broken++;
+                        continue;
+                    }
+
+                    int dropCount = Math.min(fortuneAmount > 0 ? fortuneAmount : 1, remaining);
+                    backpack.addItem(player, mat, dropCount, false);
+                    PickaxeManager.getInstance().addStatistics(player, mat, playerProfile);
+                    AoEDropResolver.rollSideEffects(player, block, pickaxeProfile, playerProfile);
+                    broken++;
+                }
             }
         }
 
@@ -167,16 +209,15 @@ public class JackhammerEnchant implements Listener
             playerProfile.save(null);
         }
 
-        // Compute animation ring radius: distance from origin to the farthest mine corner.
-        int animRadius = computeAnimRadius(origin.getX(), origin.getZ(), minX, minZ, maxX, maxZ);
-
-        EnchantPreferenceResult pref = getEnchantPref(player, config);
-        Location originCenter = origin.getLocation().add(0.5, 0.5, 0.5);
-
-        JackhammerAnimation anim = new JackhammerAnimation(plugin, animRadius, pref.sound, pref.particles);
-        AnimationRegistry.getInstance().play(anim, originCenter, List.of(player));
+        // Epic (Blast Combo): 50% chance to trigger an Explosive proc at the origin
+        if (jackhammer != null && JackhammerStoneHandler.hasStone(jackhammer, "Epic")
+                && Utils.chance(50.0)
+                && ExplosiveEnchant.getInstance() != null) {
+            ExplosiveEnchant.getInstance().triggerBlastCombo(player, origin, pickaxeProfile, playerProfile);
+        }
 
         if (broken > 0) {
+            AoEDropResolver.flushAccumulation(player, origin, pickaxeProfile);
             showNotification(player, origin, config, pref, broken);
         }
     }
@@ -196,17 +237,17 @@ public class JackhammerEnchant implements Listener
     {
         String brokenStr = String.valueOf(broken);
 
-        if (pref.hologram && config.getBoolean(ConfigPaths.Enchants.Jackhammer.HOLOGRAM_ENABLED, true)) {
+        if (pref.hologram() && config.getBoolean(ConfigPaths.Enchants.Jackhammer.HOLOGRAM_ENABLED, true)) {
             String hologramText = config.getString(
                             ConfigPaths.Enchants.Jackhammer.HOLOGRAM_MESSAGE,
                             "&#FFAA00&lJACKHAMMER &#CCCCCCSmashed %blocks% blocks!")
                     .replace("%blocks%", brokenStr);
-            Location hologramLoc = origin.getLocation().add(0.5, 1.5, 0.5);
+            Location hologramLoc = origin.getLocation().add(0.5, 2.5, 0.5);
             AnimationRegistry.getInstance().play(
                     new HologramAnimation(plugin, hologramText), hologramLoc, List.of(player));
         }
 
-        if (pref.message) {
+        if (pref.message()) {
             String message = StorageRegistryManager.getInstance()
                     .getConfig(ConfigNames.MESSAGES)
                     .getString(ConfigPaths.Messages.Enchants.JACKHAMMER_TRIGGERED,
@@ -215,7 +256,7 @@ public class JackhammerEnchant implements Listener
             player.sendMessage(Utils.formatMessage(player, message));
         }
 
-        if (pref.title) {
+        if (pref.title()) {
             var msgCfg = StorageRegistryManager.getInstance().getConfig(ConfigNames.MESSAGES);
             String title    = msgCfg.getString(ConfigPaths.Messages.Enchants.JACKHAMMER_TRIGGERED_TITLE,    "&#FFAA00&lJackhammer");
             String subtitle = msgCfg.getString(ConfigPaths.Messages.Enchants.JACKHAMMER_TRIGGERED_SUBTITLE, "&#CCCCCCSmashed %blocks% blocks!")

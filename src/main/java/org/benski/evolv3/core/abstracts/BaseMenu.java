@@ -87,6 +87,18 @@ public abstract class BaseMenu implements Menu, InventoryHolder, Listener
     }
 
     /**
+     * Determines whether this menu uses a dynamic title for a specific player.
+     * Override to gate the animation on a per-player preference.
+     * Defaults to {@link #isDynamicTitle()}.
+     *
+     * @param player the player opening the menu
+     * @return true if the title should update dynamically for this player
+     */
+    protected boolean isDynamicTitle(Player player) {
+        return isDynamicTitle();
+    }
+
+    /**
      * Gets the interval in ticks between title updates.
      * Only used when {@link #isDynamicTitle()} returns true.
      * Default is 20 ticks (1 second).
@@ -128,7 +140,7 @@ public abstract class BaseMenu implements Menu, InventoryHolder, Listener
 
         onOpen(player);
 
-        if (isDynamicTitle()) {
+        if (isDynamicTitle(player)) {
             startTitleUpdateTask(player);
         }
     }

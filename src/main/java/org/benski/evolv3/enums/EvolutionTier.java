@@ -8,7 +8,7 @@ import org.jetbrains.annotations.Nullable;
  * Represents the six evolution tiers a pickaxe can reach.
  *
  * <p>Each tier maps to a Minecraft pickaxe material and a colour-formatted display name.
- * The progression is linear: Wood → Stone → Iron → Gold → Diamond → Netherite.</p>
+ * The progression is linear: Wood → Stone → Copper → Iron → Diamond → Netherite.</p>
  *
  * <p>The {@code level} field matches the {@code evolution} integer stored on
  * {@link org.benski.evolv3.models.pickaxe.PickaxeProfile}, so tier lookup is always
@@ -17,9 +17,9 @@ import org.jetbrains.annotations.Nullable;
 public enum EvolutionTier
 {
     WOOD      (1, Material.WOODEN_PICKAXE,    "&#888888Wood"),
-    STONE     (2, Material.STONE_PICKAXE,    "&#AAAAAAStone"),
-    IRON      (3, Material.IRON_PICKAXE,     "&#CCCCCCIron"),
-    GOLD      (4, Material.GOLDEN_PICKAXE,   "&#FFD700Gold"),
+    STONE     (2, Material.STONE_PICKAXE,     "&#AAAAAAStone"),
+    COPPER    (3, Material.COPPER_PICKAXE,    "&#B87333Copper"),
+    IRON      (4, Material.IRON_PICKAXE,      "&#CCCCCCIron"),
     DIAMOND   (5, Material.DIAMOND_PICKAXE,  "&#00FFFFDiamond"),
     NETHERITE (6, Material.NETHERITE_PICKAXE, "&#9B59B6Netherite");
 

@@ -9,6 +9,7 @@ import org.benski.evolv3.core.constants.Enchants;
 import org.benski.evolv3.core.helpers.ItemStackExtensions;
 import org.benski.evolv3.core.helpers.Utils;
 import org.benski.evolv3.core.types.EnchantOption;
+import org.benski.evolv3.core.types.RarityConfig;
 import org.benski.evolv3.datacenters.ArmorDataCenter;
 import org.benski.evolv3.datacenters.PickaxeDataCenter;
 import org.benski.evolv3.registry.ConfigRegistry;
@@ -138,6 +139,21 @@ public class PickaxeManager
     }
 
     /**
+     * Adds XP directly to a player's pickaxe profile, bypassing block lookups.
+     * Used by stone effects that grant bonus XP on proc.
+     *
+     * @param player the player
+     * @param amount the XP amount to add
+     */
+    public void addXp(Player player, int amount) {
+        PickaxeDataCenter dc = DataCenterRegistry.getInstance().getPickaxeDataCenter();
+        PickaxeProfile profile = dc.getLocal(player);
+        if (profile == null) return;
+        profile.xp += amount;
+        checkLevel(profile, player);
+    }
+
+    /**
      * Gets the leggings XP multiplier for a player.
      *
      * @param player the player
@@ -196,77 +212,79 @@ public class PickaxeManager
             return;
         }
 
-        // Level up!
-        int oldLevel = profile.level;
-        profile.level++;
-        profile.xp -= profile.target;
+        while (profile.xp >= profile.target) {
+            // Level up!
+            int oldLevel = profile.level;
+            profile.level++;
+            profile.xp -= profile.target;
 
-        // Calculate new target with multiplier
-        double xpMultiplier = getDefaultConfig().getDouble(ConfigPaths.Default.Pickaxe.XP_MULTIPLIER, 1.15);
-        profile.target = Math.max(1, (int) (profile.target * xpMultiplier));
+            // Calculate new target with multiplier
+            double xpMultiplier = getDefaultConfig().getDouble(ConfigPaths.Default.Pickaxe.XP_MULTIPLIER, 1.15);
+            profile.target = Math.max(1, (int) (profile.target * xpMultiplier));
 
-        // Calculate essence reward with chestplate multiplier
-        int essenceReward = calculateEssenceReward(profile.level);
-        double chestplateMultiplier = getChestplateMultiplier(player);
-        essenceReward = (int) Math.round(essenceReward * chestplateMultiplier);
+            // Calculate essence reward with chestplate multiplier
+            int essenceReward = calculateEssenceReward(profile.level);
+            double chestplateMultiplier = getChestplateMultiplier(player);
+            essenceReward = (int) Math.round(essenceReward * chestplateMultiplier);
 
-        // Add essence to pickaxe
-        profile.currentEssence += essenceReward;
+            // Add essence to pickaxe
+            profile.currentEssence += essenceReward;
 
-        // Also add to player profile if provided
-        if (playerProfile != null) {
-            playerProfile.essence += essenceReward;
+            // Also add to player profile if provided
+            if (playerProfile != null) {
+                playerProfile.essence += essenceReward;
 
-            // Award XP to chestplate for essence collection
-            ArmorDataCenter armorDataCenter = DataCenterRegistry.getInstance().getArmorDataCenter();
-            ArmorProfile armorProfile = armorDataCenter.getLocal(player);
-            if (armorProfile != null) {
-                ArmorItem chestplate = armorProfile.getArmor(ArmorType.CHESTPLATE);
-                if (chestplate != null && chestplate.isEnabled()) {
-                    chestplate.addXp(essenceReward);
+                // Award XP to chestplate for essence collection
+                ArmorDataCenter armorDataCenter = DataCenterRegistry.getInstance().getArmorDataCenter();
+                ArmorProfile armorProfile = armorDataCenter.getLocal(player);
+                if (armorProfile != null) {
+                    ArmorItem chestplate = armorProfile.getArmor(ArmorType.CHESTPLATE);
+                    if (chestplate != null && chestplate.isEnabled()) {
+                        chestplate.addXp(essenceReward);
+                    }
                 }
             }
+
+            checkEssence(profile, player);
+
+            // Award atoms for this level-up
+            int atomReward = getDefaultConfig().getInt(ConfigPaths.Default.Atoms.LEVEL_UP_REWARD, 2);
+            profile.evolutionAtoms += atomReward;
+
+            // Check atom threshold for evolution
+            checkAtoms(profile, player);
+
+            // Play level up effects (client-side sound via Adventure key — not in server Sound registry)
+            player.playSound(net.kyori.adventure.sound.Sound.sound(
+                    net.kyori.adventure.key.Key.key("minecraft", "ui.toast.goal_complete"),
+                    net.kyori.adventure.sound.Sound.Source.MASTER,
+                    1.0f, 1.0f));
+
+            // Trigger scoreboard level-up flash animation
+            org.benski.evolv3.core.managers.EvolveScoreboardManager.getInstance()
+                    .triggerLevelUpAnimation(player, profile.level);
+
+            // Send level up message (multi-line, centered)
+            List<String> levelUpLines = getMessagesConfig().getStringList(ConfigPaths.Messages.Pickaxe.LEVEL_UP);
+            if (levelUpLines.isEmpty()) {
+                Main.getInstance().getLogger().warning(
+                        "Missing messages.yml key: " + ConfigPaths.Messages.Pickaxe.LEVEL_UP);
+                levelUpLines = List.of("Level up! Now level %level%.");
+            }
+            for (String line : levelUpLines) {
+                String processed = line
+                        .replace("%old_level%", String.valueOf(oldLevel))
+                        .replace("%level%", String.valueOf(profile.level))
+                        .replace("%essence%", String.valueOf(essenceReward))
+                        .replace("%atoms%", String.valueOf(atomReward));
+                player.sendMessage(Utils.formatMessage(player, processed));
+            }
+
+            // Refresh lore so the new level/stats are visible after each level-up
+            updateLore(player, null);
         }
 
-        checkEssence(profile, player);
-
-        // Award atoms for this level-up
-        int atomReward = getDefaultConfig().getInt(ConfigPaths.Default.Atoms.LEVEL_UP_REWARD, 2);
-        profile.evolutionAtoms += atomReward;
-
-        // Check atom threshold for evolution
-        checkAtoms(profile, player);
-
-        // Play level up effects (client-side sound via Adventure key — not in server Sound registry)
-        player.playSound(net.kyori.adventure.sound.Sound.sound(
-                net.kyori.adventure.key.Key.key("minecraft", "ui.toast.goal_complete"),
-                net.kyori.adventure.sound.Sound.Source.MASTER,
-                1.0f, 1.0f));
-
-        // Trigger scoreboard level-up flash animation
-        org.benski.evolv3.core.managers.EvolveScoreboardManager.getInstance()
-                .triggerLevelUpAnimation(player, profile.level);
-
-        // Send level up message (multi-line, centered)
-        List<String> levelUpLines = getMessagesConfig().getStringList(ConfigPaths.Messages.Pickaxe.LEVEL_UP);
-        if (levelUpLines.isEmpty()) {
-            Main.getInstance().getLogger().warning(
-                    "Missing messages.yml key: " + ConfigPaths.Messages.Pickaxe.LEVEL_UP);
-            levelUpLines = List.of("Level up! Now level %level%.");
-        }
-        for (String line : levelUpLines) {
-            String processed = line
-                    .replace("%old_level%", String.valueOf(oldLevel))
-                    .replace("%level%", String.valueOf(profile.level))
-                    .replace("%essence%", String.valueOf(essenceReward))
-                    .replace("%atoms%", String.valueOf(atomReward));
-            player.sendMessage(Utils.formatMessage(player, processed));
-        }
-
-        // Refresh lore immediately so the new level/stats are visible
-        updateLore(player, null);
-
-        // Save profile
+        // Save once after all level-ups are processed
         profile.save(null);
     }
 
@@ -286,14 +304,15 @@ public class PickaxeManager
             return;
         }
 
-        profile.enchantRolls++;
-        profile.currentEssence -= profile.targetEssence;
-
         double multiplier = getDefaultConfig().getDouble(ConfigPaths.Default.Pickaxe.ESSENCE_MULTIPLIER, 1.5);
         int    cap        = getDefaultConfig().getInt(ConfigPaths.Default.Pickaxe.ESSENCE_TARGET_CAP, 10000);
-        profile.targetEssence = Math.min(cap, Math.max(1, (int)(profile.targetEssence * multiplier)));
 
-        player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.5f);
+        while (profile.currentEssence >= profile.targetEssence) {
+            profile.enchantRolls++;
+            profile.currentEssence -= profile.targetEssence;
+            profile.targetEssence = Math.min(cap, Math.max(1, (int)(profile.targetEssence * multiplier)));
+            player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.5f);
+        }
     }
 
     /**
@@ -313,19 +332,21 @@ public class PickaxeManager
             return;
         }
 
-        profile.evolutionRolls++;
-        profile.evolutionAtoms -= profile.atomTarget;
-
-        // Scale the next atom target
         double multiplier = getDefaultConfig().getDouble(ConfigPaths.Default.Atoms.ATOM_TARGET_MULTIPLIER, 1.5);
-        profile.atomTarget = Math.max(1, (int) (profile.atomTarget * multiplier));
-
-        // Notify the player
-        player.playSound(player.getLocation(), Sound.UI_TOAST_CHALLENGE_COMPLETE, 1.0f, 1.0f);
-
         String msg = getMessagesConfig().getString(ConfigPaths.Messages.Pickaxe.EVOLVE_SUCCESS,
                 "%evolv3_prefix% &6&l[EVOLUTION ROLL] &eYou earned an evolution roll!");
-        player.sendMessage(Utils.formatMessage(player, msg));
+
+        while (profile.evolutionAtoms >= profile.atomTarget) {
+            profile.evolutionRolls++;
+            profile.evolutionAtoms -= profile.atomTarget;
+
+            // Scale the next atom target
+            profile.atomTarget = Math.max(1, (int) (profile.atomTarget * multiplier));
+
+            // Notify the player
+            player.playSound(player.getLocation(), Sound.UI_TOAST_CHALLENGE_COMPLETE, 1.0f, 1.0f);
+            player.sendMessage(Utils.formatMessage(player, msg));
+        }
     }
 
     // -------------------------------------------------------------------------
@@ -615,17 +636,17 @@ public class PickaxeManager
         return line
                 .replace("%evolv3_player_name%", ownerName)
                 .replace("%evolv3_pickaxe_level%", String.valueOf(profile.level))
-                .replace("%evolv3_pickaxe_xp%", String.valueOf(profile.xp))
-                .replace("%evolv3_pickaxe_target%", String.valueOf(profile.target))
+                .replace("%evolv3_pickaxe_xp%", Utils.formatNumber(profile.xp))
+                .replace("%evolv3_pickaxe_target%", Utils.formatNumber(profile.target))
                 .replace("%evolv3_pickaxe_percentage%", profile.getPercentage())
                 .replace("%evolv3_pickaxe_progressbar%", profile.getProgressBar())
                 .replace("%evolv3_pickaxe_durability_bar%", durabilityBar)
-                .replace("%evolv3_pickaxe_essence%", String.valueOf(profile.currentEssence))
-                .replace("%evolv3_pickaxe_target_essence%", String.valueOf(profile.targetEssence))
-                .replace("%evolv3_pickaxe_enchant_rolls%", String.valueOf(profile.enchantRolls))
-                .replace("%evolv3_pickaxe_evolution_atoms%", String.valueOf(profile.evolutionAtoms))
-                .replace("%evolv3_pickaxe_atom_target%", String.valueOf(profile.atomTarget))
-                .replace("%evolv3_pickaxe_evolution_rolls%", String.valueOf(profile.evolutionRolls));
+                .replace("%evolv3_pickaxe_essence%", Utils.formatNumber(profile.currentEssence))
+                .replace("%evolv3_pickaxe_target_essence%", Utils.formatNumber(profile.targetEssence))
+                .replace("%evolv3_pickaxe_enchant_rolls%", Utils.formatNumber(profile.enchantRolls))
+                .replace("%evolv3_pickaxe_evolution_atoms%", Utils.formatNumber(profile.evolutionAtoms))
+                .replace("%evolv3_pickaxe_atom_target%", Utils.formatNumber(profile.atomTarget))
+                .replace("%evolv3_pickaxe_evolution_rolls%", Utils.formatNumber(profile.evolutionRolls));
     }
 
     /**
@@ -687,7 +708,7 @@ public class PickaxeManager
 
         EnchantData efficiency = profile.enchants.getEnchant(Enchants.EFFICIENCY);
         if (efficiency != null && efficiency.level > 0) {
-            EfficiencyEnchant.applySpeedModifier(meta, efficiency.level);
+            EfficiencyEnchant.applySpeedModifier(meta, efficiency.level, efficiency);
         } else {
             EfficiencyEnchant.removeSpeedModifier(meta);
         }
@@ -779,8 +800,21 @@ public class PickaxeManager
                 levelDisplay = String.valueOf(enchant.level);
             }
 
-            // " &8| [rarity-color][Name] [level]"
-            String enchantLine = " &8| " + rarityColor + displayName + " " + levelDisplay;
+            // Build stone socket icons — only filled sockets
+            StringBuilder stoneIconsBuilder = new StringBuilder();
+            for (String stoneRarity : enchant.socketStones) {
+                if (stoneRarity != null) {
+                    RarityConfig stoneRarConfig = EnchantAnimationConfig.getRarityByName(stoneRarity);
+                    String sHex = stoneRarConfig != null
+                            ? String.format("%06X", stoneRarConfig.textColor().value())
+                            : "FFFFFF";
+                    stoneIconsBuilder.append("&#").append(sHex).append("◆");
+                }
+            }
+            String stoneIcons = stoneIconsBuilder.length() > 0 ? stoneIconsBuilder + " " : "";
+
+            // " &8| [stone icons][rarity-color][Name] [level]"
+            String enchantLine = " &8| " + stoneIcons + rarityColor + displayName + " " + levelDisplay;
             newLore.add(Utils.formatMessage(player, enchantLine));
         }
     }

@@ -61,8 +61,8 @@ public class NuclearShowerEnchant implements Listener
 {
     private final JavaPlugin plugin;
 
-    /** Ticks between each individual raindrop. Controls how fast the rain falls. */
-    private static final int RAIN_INTERVAL_TICKS = 2;
+    /** Ticks between each layer break. Higher = slower, more visible descent. */
+    private static final int RAIN_INTERVAL_TICKS = 5;
 
     /** Maximum column-height scan in each vertical direction from the origin. */
     private static final int MAX_COLUMN_SCAN = 200;
@@ -92,7 +92,11 @@ public class NuclearShowerEnchant implements Listener
 
             EnchantData shower = pickaxeProfile.enchants.getEnchant(Enchants.NUCLEAR_SHOWER);
             if (shower == null || !shower.enabled || shower.level <= 0) return;
-            if (!Utils.chance(shower.getCurrentChance())) return;
+
+            double triggerChance = shower.getCurrentChance();
+            // Uncommon (Unstable): +2% to proc chance
+            if (NuclearShowerStoneHandler.hasStone(shower, "Uncommon")) triggerChance += 2.0;
+            if (!Utils.chance(triggerChance)) return;
 
             Block origin = event.getBlock();
 
@@ -100,7 +104,7 @@ public class NuclearShowerEnchant implements Listener
             new BukkitRunnable()
             {
                 @Override
-                public void run() { triggerShower(player, origin, pickaxeProfile, shower.level); }
+                public void run() { triggerShower(player, origin, pickaxeProfile, shower.level, shower, 0); }
             }.runTaskLater(plugin, 1L);
         });
     }
@@ -109,7 +113,8 @@ public class NuclearShowerEnchant implements Listener
     // Nuclear Shower logic
     // -------------------------------------------------------------------------
 
-    private void triggerShower(Player player, Block origin, PickaxeProfile pickaxeProfile, int enchantLevel)
+    private void triggerShower(Player player, Block origin, PickaxeProfile pickaxeProfile, int enchantLevel,
+                               EnchantData shower, int dominoDepth)
     {
         if (!player.isOnline()) return;
 
@@ -121,21 +126,15 @@ public class NuclearShowerEnchant implements Listener
 
         FileConfiguration config = StorageRegistryManager.getInstance().getConfig(ConfigNames.ENCHANTS);
 
-        int maxLevel         = config.getInt(ConfigPaths.Enchants.NuclearShower.MAX_LEVEL,            100);
-        int maxStreams        = config.getInt(ConfigPaths.Enchants.NuclearShower.MAX_STREAMS,           150);
-        int maxDepthPerStream = config.getInt(ConfigPaths.Enchants.NuclearShower.MAX_DEPTH_PER_STREAM,  15);
-        int batchSize        = config.getInt(ConfigPaths.Enchants.NuclearShower.BATCH_SIZE,             10);
-        int maxScanRadius    = config.getInt(ConfigPaths.Enchants.NuclearShower.MAX_SCAN_RADIUS,        100);
+        int maxLevel      = config.getInt(ConfigPaths.Enchants.NuclearShower.MAX_LEVEL,   100);
+        int maxStreams     = config.getInt(ConfigPaths.Enchants.NuclearShower.MAX_STREAMS, 150);
+        int maxScanRadius = config.getInt(ConfigPaths.Enchants.NuclearShower.MAX_SCAN_RADIUS, 100);
 
         double levelFraction = (double)(enchantLevel - 1) / Math.max(1, maxLevel - 1);
 
         // Stream count scales from 10 at level 1 to maxStreams at max level.
-        int streamCount = 10 + (int) Math.round(levelFraction * (maxStreams - 10));
-        streamCount = Math.max(10, Math.min(streamCount, maxStreams));
-
-        // Depth per stream: how many blocks each acid column eats through vertically.
-        // Scales from 1 block at level 1 to maxDepthPerStream at max level.
-        final int depthPerStream = 1 + (int) Math.round(levelFraction * (maxDepthPerStream - 1));
+        final int streamCount = Math.max(10, Math.min(
+                10 + (int) Math.round(levelFraction * (maxStreams - 10)), maxStreams));
 
         World world = origin.getWorld();
 
@@ -172,76 +171,108 @@ public class NuclearShowerEnchant implements Listener
             maxX = origin.getX() + maxScanRadius;
             maxZ = origin.getZ() + maxScanRadius;
         }
+
+        // Common (Fallout Zone): expand dissolution radius by ±3 blocks
+        if (NuclearShowerStoneHandler.hasStone(shower, "Common")) {
+            minX -= 3; minZ -= 3; maxX += 3; maxZ += 3;
+        }
+
         final int finalMinX = minX;
         final int finalMinZ = minZ;
         final int finalMaxX = maxX;
         final int finalMaxZ = maxZ;
 
+        // Depth limit: max 2 layers below the broken block.
+        // Legendary (Meltdown) doubles this to 4.
+        final int depthLimit = NuclearShowerStoneHandler.hasStone(shower, "Legendary") ? 4 : 2;
+
+        final boolean hasRare  = NuclearShowerStoneHandler.hasStone(shower, "Rare");
+        final boolean hasEpic  = NuclearShowerStoneHandler.hasStone(shower, "Epic");
+
+        // Pre-generate fixed XZ stream positions — the same columns are used each layer
+        // so the rain visually falls straight down rather than scattering per layer.
+        ThreadLocalRandom rng = ThreadLocalRandom.current();
+        int xzWidth = Math.max(1, finalMaxX - finalMinX + 1);
+        int xzDepth = Math.max(1, finalMaxZ - finalMinZ + 1);
+        final int[] streamX = new int[streamCount];
+        final int[] streamZ = new int[streamCount];
+        for (int s = 0; s < streamCount; s++) {
+            streamX[s] = finalMinX + rng.nextInt(xzWidth);
+            streamZ[s] = finalMinZ + rng.nextInt(xzDepth);
+        }
+
         int fortuneAmount = resolveFortune(pickaxeProfile);
         EnchantPreferenceResult pref = getEnchantPref(player, config);
-        AtomicInteger streamsRemaining = new AtomicInteger(streamCount);
-        AtomicInteger totalBroken      = new AtomicInteger(0);
-        ThreadLocalRandom rng = ThreadLocalRandom.current();
+        AtomicInteger layersDone  = new AtomicInteger(0);
+        AtomicInteger totalBroken = new AtomicInteger(0);
 
-        // ---- Repeating task — fires batchSize stream columns per interval ----
-        // Each column scans from topY downward, breaking up to depthPerStream
-        // consecutive breakable blocks (acid eating through multiple layers).
+        AoEDropResolver.startAccumulation(player.getUniqueId());
+
+        // ---- Repeating task — one Y layer per interval, top → bottom ----------
+        // Each tick processes all stream XZ positions at the current Y layer,
+        // creating a visible acid wave descending through the mine.
         new BukkitRunnable()
         {
             @Override
             public void run()
             {
-                if (!player.isOnline() || streamsRemaining.get() <= 0) {
+                int done = layersDone.getAndIncrement();
+
+                if (!player.isOnline() || done >= depthLimit) {
                     cancel();
                     finish();
                     return;
                 }
 
-                int xzWidth = Math.max(1, finalMaxX - finalMinX + 1);
-                int xzDepth = Math.max(1, finalMaxZ - finalMinZ + 1);
+                int y = origin.getY() - done;
+                if (y < finalBottomY) {
+                    cancel();
+                    finish();
+                    return;
+                }
 
-                // Process batchSize columns this tick
-                int thisBatch = Math.min(batchSize, streamsRemaining.get());
-                for (int b = 0; b < thisBatch; b++) {
-                    streamsRemaining.decrementAndGet();
+                for (int s = 0; s < streamCount; s++) {
                     if (playerProfile.backpack.isFull()) break;
 
-                    int sx = finalMinX + rng.nextInt(xzWidth);
-                    int sz = finalMinZ + rng.nextInt(xzDepth);
+                    Block block = world.getBlockAt(streamX[s], y, streamZ[s]);
+                    if (!AoEDropResolver.isBreakable(block)) continue;
+                    if (!WorldGuardManager.getInstance().isWithinMineRegion(block.getLocation())) continue;
 
-                    // Eat through up to depthPerStream breakable blocks in this column
-                    int brokenInColumn = 0;
-                    for (int y = finalTopY; y >= finalBottomY && brokenInColumn < depthPerStream; y--) {
-                        Block block = world.getBlockAt(sx, y, sz);
-                        if (!AoEDropResolver.isBreakable(block)) continue;
-                        if (!WorldGuardManager.getInstance().isWithinMineRegion(block.getLocation())) continue;
+                    Material mat = AoEDropResolver.resolve(
+                            block, player.getInventory().getItemInMainHand(), plugin, pickaxeProfile);
 
-                        Material mat = AoEDropResolver.resolve(
-                                block, player.getInventory().getItemInMainHand(), plugin, pickaxeProfile);
+                    block.setType(Material.AIR);
 
-                        block.setType(Material.AIR);
-
-                        if (!mat.isAir()) {
-                            int remaining = playerProfile.backpack.getMaxSize() - playerProfile.backpack.getTotalItems();
-                            if (remaining > 0) {
-                                int dropCount = Math.min(fortuneAmount > 0 ? fortuneAmount : 1, remaining);
-                                playerProfile.backpack.addItem(player, mat, dropCount, false);
-                                PickaxeManager.getInstance().addStatistics(player, mat, playerProfile);
-                                AoEDropResolver.rollSideEffects(player, block, pickaxeProfile, playerProfile);
-                            }
+                    if (!mat.isAir()) {
+                        int remaining = playerProfile.backpack.getMaxSize() - playerProfile.backpack.getTotalItems();
+                        if (remaining > 0) {
+                            int dropCount = Math.min(fortuneAmount > 0 ? fortuneAmount : 1, remaining);
+                            playerProfile.backpack.addItem(player, mat, dropCount, false);
+                            PickaxeManager.getInstance().addStatistics(player, mat, playerProfile);
+                            AoEDropResolver.rollSideEffects(player, block, pickaxeProfile, playerProfile);
                         }
-
-                        totalBroken.incrementAndGet();
-                        brokenInColumn++;
                     }
+
+                    // Rare (Essence Fallout): 30% chance each dissolved block grants 1 essence
+                    if (hasRare && Utils.chance(30.0)) {
+                        playerProfile.addEssence(1);
+                    }
+
+                    // Epic (Domino): 2% chance to trigger another Nuclear Shower (max 1 cascade deep)
+                    if (hasEpic && dominoDepth == 0 && Utils.chance(2.0)) {
+                        final Block dominoOrigin = block;
+                        new org.bukkit.scheduler.BukkitRunnable() {
+                            @Override public void run() {
+                                if (player.isOnline())
+                                    triggerShower(player, dominoOrigin, pickaxeProfile, enchantLevel, shower, 1);
+                            }
+                        }.runTaskLater(plugin, 20L);
+                    }
+
+                    totalBroken.incrementAndGet();
                 }
 
                 BackpackListener.refresh(player);
-
-                if (streamsRemaining.get() <= 0) {
-                    cancel();
-                    finish();
-                }
             }
 
             private void finish()
@@ -249,6 +280,7 @@ public class NuclearShowerEnchant implements Listener
                 playerProfile.save(null);
                 int broken = totalBroken.get();
                 if (broken > 0) {
+                    AoEDropResolver.flushAccumulation(player, origin, pickaxeProfile);
                     showNotification(player, origin, config, pref, broken);
                 }
             }
@@ -259,12 +291,16 @@ public class NuclearShowerEnchant implements Listener
         int halfDepth  = (finalMaxZ - finalMinZ) / 2;
         int halfRadius = Math.max(1, Math.max(halfWidth, halfDepth));
 
+        // Cloud spawns 6 blocks above the mine ceiling so it's visibly above the top layer.
+        final int CLOUD_OFFSET = 6;
         double cloudX = (finalMinX + finalMaxX) / 2.0 + 0.5;
         double cloudZ = (finalMinZ + finalMaxZ) / 2.0 + 0.5;
-        Location cloudLoc = new Location(world, cloudX, finalTopY + 1.5, cloudZ);
+        Location cloudLoc = new Location(world, cloudX, finalTopY + CLOUD_OFFSET, cloudZ);
 
+        // Pass cloud-to-floor height so particles fall the full distance.
+        int animColumnHeight = columnHeight + CLOUD_OFFSET;
         NuclearShowerAnimation anim = new NuclearShowerAnimation(
-                plugin, halfRadius, columnHeight, pref.sound, pref.particles);
+                plugin, halfRadius, animColumnHeight, pref.sound(), pref.particles());
         AnimationRegistry.getInstance().play(anim, cloudLoc, List.of(player));
     }
 
@@ -273,7 +309,7 @@ public class NuclearShowerEnchant implements Listener
     {
         String brokenStr = String.valueOf(broken);
 
-        if (pref.hologram && config.getBoolean(ConfigPaths.Enchants.NuclearShower.HOLOGRAM_ENABLED, true)) {
+        if (pref.hologram() && config.getBoolean(ConfigPaths.Enchants.NuclearShower.HOLOGRAM_ENABLED, true)) {
             String hologramText = config.getString(
                             ConfigPaths.Enchants.NuclearShower.HOLOGRAM_MESSAGE,
                             "&#39FF14&lNUCLEAR SHOWER &#CCCCCCDissolved %blocks% blocks!")
@@ -283,7 +319,7 @@ public class NuclearShowerEnchant implements Listener
                     new HologramAnimation(plugin, hologramText), hologramLoc, List.of(player));
         }
 
-        if (pref.message) {
+        if (pref.message()) {
             String message = StorageRegistryManager.getInstance()
                     .getConfig(ConfigNames.MESSAGES)
                     .getString(ConfigPaths.Messages.Enchants.NUCLEAR_SHOWER_TRIGGERED,
@@ -292,7 +328,7 @@ public class NuclearShowerEnchant implements Listener
             player.sendMessage(Utils.formatMessage(player, message));
         }
 
-        if (pref.title) {
+        if (pref.title()) {
             var msgCfg = StorageRegistryManager.getInstance().getConfig(ConfigNames.MESSAGES);
             String title    = msgCfg.getString(ConfigPaths.Messages.Enchants.NUCLEAR_SHOWER_TRIGGERED_TITLE, "&#39FF14&lNuclear Shower");
             String subtitle = msgCfg.getString(ConfigPaths.Messages.Enchants.NUCLEAR_SHOWER_TRIGGERED_SUBTITLE, "&#CCCCCCDissolved %blocks% blocks!")

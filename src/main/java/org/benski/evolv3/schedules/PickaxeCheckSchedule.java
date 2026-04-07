@@ -2,6 +2,7 @@ package org.benski.evolv3.schedules;
 
 import lombok.experimental.ExtensionMethod;
 import org.benski.evolv3.core.abstracts.BaseSchedule;
+import org.benski.evolv3.core.helpers.Utils;
 import org.benski.evolv3.core.constants.ConfigPaths;
 import org.benski.evolv3.core.helpers.ItemStackExtensions;
 import org.benski.evolv3.core.helpers.PlayerExtensions;
@@ -10,7 +11,6 @@ import org.benski.evolv3.core.managers.PickaxeManager;
 import org.benski.evolv3.models.pickaxe.PickaxeProfile;
 import org.benski.evolv3.registry.DataCenterRegistry;
 import org.bukkit.Bukkit;
-import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -120,24 +120,8 @@ public class PickaxeCheckSchedule extends BaseSchedule
         pickaxeDataCenter.loadOrCreate(player, pickaxeId);
     }
 
-    /**
-     * Checks if an item is a pickaxe.
-     *
-     * @param item the item to check
-     * @return true if the item is a pickaxe
-     */
     private boolean isPickaxe(ItemStack item) {
-        if (item == null || item.getType() == Material.AIR) {
-            return false;
-        }
-
-        Material type = item.getType();
-        return type == Material.WOODEN_PICKAXE
-                || type == Material.STONE_PICKAXE
-                || type == Material.IRON_PICKAXE
-                || type == Material.GOLDEN_PICKAXE
-                || type == Material.DIAMOND_PICKAXE
-                || type == Material.NETHERITE_PICKAXE;
+        return item != null && Utils.isPickaxe(item.getType());
     }
 
     /**

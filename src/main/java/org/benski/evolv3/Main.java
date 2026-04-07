@@ -5,6 +5,7 @@ import org.benski.evolv3.animations.HologramAnimation;
 import org.benski.evolv3.core.constants.ConfigNames;
 import org.benski.evolv3.core.constants.ConfigPaths;
 import org.benski.evolv3.core.managers.EnchantSelectionManager;
+import org.benski.evolv3.core.managers.EvolutionSelectionManager;
 import org.benski.evolv3.core.managers.FrostbiteBlockManager;
 import org.benski.evolv3.core.managers.MongoManager;
 import org.benski.evolv3.core.managers.PickaxeManager;
@@ -46,6 +47,10 @@ public final class Main extends JavaPlugin
         this.registerEnchantCallbackProvider();
         // Load any enchant selections that were in-progress when the server last stopped
         EnchantSelectionManager.getInstance().loadPendingFromDatabase();
+        // Register the callback provider so evolution animations can be restored after a server restart
+        this.registerEvolutionCallbackProvider();
+        // Load any evolution animations that were in-progress when the server last stopped
+        EvolutionSelectionManager.getInstance().loadPendingFromDatabase();
         this.sendConsoleMessage("Evolv3 has been enabled successfully!");
     }
 
@@ -73,6 +78,7 @@ public final class Main extends JavaPlugin
         TaskManager.getInstance().cancelAllTasks();
 
         // Cleanup in reverse order of initialization
+        EvolutionSelectionManager.getInstance().cleanup();
         EnchantSelectionManager.getInstance().cleanup();
         ScheduleRegistry.getInstance().cleanup();
         PickupAnimationManager.getInstance().cleanup();
@@ -121,6 +127,27 @@ public final class Main extends JavaPlugin
                 PickaxeManager.getInstance().applyEnchantFromSelection(player, selected, profile);
             });
         });
+    }
+
+    /**
+     * Registers the evolution callback provider with {@link EvolutionSelectionManager} so that
+     * pending evolution animations can be restored after a server restart.
+     * Must be called after DataCenters are initialised (i.e. after {@link #useRegistry()}).
+     */
+    private void registerEvolutionCallbackProvider() {
+        EvolutionSelectionManager.getInstance().registerCallbackProvider(
+                (player, pickaxeKey, nextTier, winningRarity) -> () -> {
+                    var dc = DataCenterRegistry.getInstance().getPickaxeDataCenter();
+                    var playerDC = DataCenterRegistry.getInstance().getPlayerDataCenter();
+                    if (dc == null || playerDC == null) return;
+                    dc.get(player, profile -> {
+                        if (profile == null) return;
+                        var playerProfile = playerDC.getLocal(player);
+                        if (playerProfile == null) return;
+                        PickaxeManager.getInstance().applyEvolutionResult(
+                                player, profile, playerProfile, nextTier, winningRarity);
+                    });
+                });
     }
 
     /**

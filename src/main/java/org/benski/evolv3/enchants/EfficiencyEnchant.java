@@ -5,6 +5,7 @@ import org.benski.evolv3.core.constants.ConfigNames;
 import org.benski.evolv3.core.constants.ConfigPaths;
 import org.benski.evolv3.core.helpers.ItemStackExtensions;
 import org.benski.evolv3.core.managers.StorageRegistryManager;
+import org.benski.evolv3.models.pickaxe.EnchantData;
 import org.bukkit.NamespacedKey;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeModifier;
@@ -14,6 +15,7 @@ import org.bukkit.inventory.EquipmentSlotGroup;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Objects;
 import java.util.UUID;
@@ -53,8 +55,54 @@ public class EfficiencyEnchant implements Listener
     }
 
     /**
-     * Applies the efficiency speed modifier to an item's meta.
-     * Removes any existing efficiency modifier before applying the new one.
+     * Applies the efficiency speed modifier to an item's meta, accounting for any
+     * socketed Evolution Stones that modify the base calculation.
+     *
+     * <ul>
+     *   <li><b>Common</b>    stone: multiplies final speed bonus by 1.5 (+50%)</li>
+     *   <li><b>Legendary</b> stone: doubles {@code speedPerLevel} before multiplying by level</li>
+     * </ul>
+     *
+     * @param meta        the ItemMeta to modify
+     * @param level       the efficiency enchantment level
+     * @param enchantData the player's EnchantData (may be {@code null} — no stone effects applied)
+     * @return true if the modifier was applied successfully
+     */
+    public static boolean applySpeedModifier(ItemMeta meta, int level, @Nullable EnchantData enchantData)
+    {
+        if (meta == null || level <= 0) return false;
+
+        FileConfiguration config = StorageRegistryManager.getInstance().getConfig(ConfigNames.ENCHANTS);
+        double speedPerLevel = config.getDouble(ConfigPaths.Enchants.Efficiency.SPEED_PER_LEVEL, 0.08);
+
+        // Legendary: each level grants 2× the normal speed bonus
+        if (enchantData != null && enchantData.hasStone("Legendary")) {
+            speedPerLevel *= 2.0;
+        }
+
+        double speedBonus = level * speedPerLevel;
+
+        // Common: flat +1.0 bonus (displayed as +100%)
+        if (enchantData != null && enchantData.hasStone("Common")) {
+            speedBonus += 1.0;
+        }
+
+        removeSpeedModifier(meta);
+
+        meta.addAttributeModifier(
+                Attribute.BLOCK_BREAK_SPEED,
+                new AttributeModifier(
+                        Objects.requireNonNull(NamespacedKey.fromString(MODIFIER_KEY)),
+                        speedBonus,
+                        AttributeModifier.Operation.MULTIPLY_SCALAR_1,
+                        EquipmentSlotGroup.MAINHAND
+                )
+        );
+        return true;
+    }
+
+    /**
+     * Applies the efficiency speed modifier without stone effects.
      *
      * @param meta  the ItemMeta to modify
      * @param level the efficiency enchantment level
@@ -62,26 +110,7 @@ public class EfficiencyEnchant implements Listener
      */
     public static boolean applySpeedModifier(ItemMeta meta, int level)
     {
-        if (meta == null || level <= 0) {
-            return false;
-        }
-
-        FileConfiguration config = StorageRegistryManager.getInstance().getConfig(ConfigNames.ENCHANTS);
-        double speedPerLevel = config.getDouble(ConfigPaths.Enchants.Efficiency.SPEED_PER_LEVEL, 0.08);
-
-        double speedBonus = level * speedPerLevel;
-
-        removeSpeedModifier(meta);
-
-        AttributeModifier speedModifier = new AttributeModifier(
-                Objects.requireNonNull(NamespacedKey.fromString(MODIFIER_KEY)),
-                speedBonus,
-                AttributeModifier.Operation.MULTIPLY_SCALAR_1,
-                EquipmentSlotGroup.MAINHAND
-        );
-
-        meta.addAttributeModifier(Attribute.BLOCK_BREAK_SPEED, speedModifier);
-        return true;
+        return applySpeedModifier(meta, level, null);
     }
 
     /**

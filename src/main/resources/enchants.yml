@@ -67,7 +67,7 @@ SelectionPool:
 NoEnchants: "&cNone"
 
 # Display text when enchant is at max level
-MaxEnchant: "&6&lMAX"
+MaxEnchant: "&lMAX"
 
 # =====================================================
 # Enchant Definitions
@@ -117,8 +117,11 @@ Unbreaking:
     - ' &8| &#888888Cost: &#B366D9🔥 &#B366D9{cost}'
     - ' &8| &#888888Negate Chance: &#00FF88{chance}%'
     - ''
+    - '{stones}'
+    - ''
     - ' &8| &aLeft-Click &#AAAAAAto upgrade'
     - ' &8| &aRight-Click &#AAAAAAto toggle'
+    - '{stones_action}'
     - ''
 
 # =====================================================
@@ -148,8 +151,11 @@ Efficiency:
     - ' &8| &#888888Cost: &#B366D9🔥 &#B366D9{cost}'
     - ' &8| &#888888Break Speed: &#00FF88{speed}'
     - ''
+    - '{stones}'
+    - ''
     - ' &8| &aLeft-Click &#AAAAAAto upgrade'
     - ' &8| &aRight-Click &#AAAAAAto toggle'
+    - '{stones_action}'
     - ''
   # Speed multiplier per level (0.08 = 8% per level)
   # Level 1 = 8%, Level 50 = 400%, Level 100 = 800%
@@ -181,8 +187,11 @@ Furnace:
     - ' &8| &#888888Cost: &#B366D9🔥 &#B366D9{cost}'
     - ' &8| &#888888Chance: &#00FF88{chance}%'
     - ''
+    - '{stones}'
+    - ''
     - ' &8| &aLeft-Click &#AAAAAAto upgrade'
     - ' &8| &aRight-Click &#AAAAAAto toggle'
+    - '{stones_action}'
     - ''
   Hologram:
     Enabled: true
@@ -199,6 +208,21 @@ Furnace:
     CLAY_BALL: BRICK
     NETHERRACK: NETHER_BRICK
     ANCIENT_DEBRIS: NETHERITE_SCRAP
+  # Rare stone (Alchemical Forge) upgrade chain: smelt result -> next tier
+  # Applied on top of the normal smelt result when the 20% Rare stone chance fires.
+  # Add or modify entries freely — any Material name is valid.
+  Stones:
+    AlchemicalForge:
+      STONE: COAL
+      SMOOTH_STONE: COAL
+      COAL: IRON_INGOT
+      IRON_INGOT: GOLD_INGOT
+      COPPER_INGOT: IRON_INGOT
+      GOLD_INGOT: DIAMOND
+      DIAMOND: NETHERITE_SCRAP
+      GLASS: QUARTZ
+      BRICK: GOLD_INGOT
+      NETHER_BRICK: GOLD_INGOT
 
 # =====================================================
 # Frostbite Enchantment (Active)
@@ -226,8 +250,11 @@ Frostbite:
     - ' &8| &#888888Cost: &#B366D9🔥 &#B366D9{cost}'
     - ' &8| &#888888Chance: &#00FF88{chance}%'
     - ''
+    - '{stones}'
+    - ''
     - ' &8| &aLeft-Click &#AAAAAAto upgrade'
     - ' &8| &aRight-Click &#AAAAAAto toggle'
+    - '{stones_action}'
     - ''
   # Freeze radius (1 = 3×3×3, 2 = 5×5×5)
   Radius: 1
@@ -262,8 +289,11 @@ Alchemy:
     - ' &8| &#888888Cost: &#B366D9🔥 &#B366D9{cost}'
     - ' &8| &#888888Chance: &#00FF88{chance}%'
     - ''
+    - '{stones}'
+    - ''
     - ' &8| &aLeft-Click &#AAAAAAto upgrade'
     - ' &8| &aRight-Click &#AAAAAAto toggle'
+    - '{stones_action}'
     - ''
   Hologram:
     Enabled: true
@@ -306,8 +336,11 @@ Scavenger:
     - ' &8| &#888888Cost: &#B366D9🔥 &#B366D9{cost}'
     - ' &8| &#888888Chance: &#00FF88{chance}%'
     - ''
+    - '{stones}'
+    - ''
     - ' &8| &aLeft-Click &#AAAAAAto upgrade'
     - ' &8| &aRight-Click &#AAAAAAto toggle'
+    - '{stones_action}'
     - ''
   Hologram:
     Enabled: true
@@ -317,6 +350,8 @@ Scavenger:
   SlotsMax: 3
   # Hard cap on total backpack size gained through Scavenger
   MaxTotalSlots: 100000
+  # Hologram shown when Mixed Bag stone awards bonus essence (%essence% placeholder)
+  MixedBagMessage: "&#AA00FF+%essence% &#CCCCCCEssence!"
 
 # =====================================================
 # Merchant Enchantment (Active)
@@ -345,8 +380,11 @@ Merchant:
     - ' &8| &#888888Cost: &#B366D9🔥 &#B366D9{cost}'
     - ' &8| &#888888Chance: &#00FF88{chance}%'
     - ''
+    - '{stones}'
+    - ''
     - ' &8| &aLeft-Click &#AAAAAAto upgrade'
     - ' &8| &aRight-Click &#AAAAAAto toggle'
+    - '{stones_action}'
     - ''
   Hologram:
     Enabled: true
@@ -382,10 +420,13 @@ Fortune:
     - ' &#FFFFFF&lStatistics'
     - ' &8| &#888888Level: &#FFFFFF{level}&#888888/&#FFFFFF{maxLevel}'
     - ' &8| &#888888Cost: &#B366D9🔥 &#B366D9{cost}'
-    - ' &8| &#888888Blocks per Break: &#00FF88{drops}x'
+    - ' &8| &#888888Blocks per Break: &#00FF88{drops}'
+    - ''
+    - '{stones}'
     - ''
     - ' &8| &aLeft-Click &#AAAAAAto upgrade'
     - ' &8| &aRight-Click &#AAAAAAto toggle'
+    - '{stones_action}'
     - ''
 
 # =====================================================
@@ -419,8 +460,11 @@ AutoSell:
     - ' &8| &#888888Cost: &#B366D9🔥 &#B366D9{cost}'
     - ' &8| &#888888Chance: &#00FF88{chance}%'
     - ''
+    - '{stones}'
+    - ''
     - ' &8| &aLeft-Click &#AAAAAAto upgrade'
     - ' &8| &aRight-Click &#AAAAAAto toggle'
+    - '{stones_action}'
     - ''
 
 # =====================================================
@@ -451,8 +495,11 @@ Extraction:
     - ' &8| &#888888Cost: &#B366D9🔥 &#B366D9{cost}'
     - ' &8| &#888888Chance: &#00FF88{chance}%'
     - ''
+    - '{stones}'
+    - ''
     - ' &8| &aLeft-Click &#AAAAAAto upgrade'
     - ' &8| &aRight-Click &#AAAAAAto toggle'
+    - '{stones_action}'
     - ''
   Hologram:
     Enabled: true
@@ -490,8 +537,11 @@ Radioactive:
     - ' &8| &#888888Cost: &#B366D9🔥 &#B366D9{cost}'
     - ' &8| &#888888Chance Bonus: &#00FF88+{chance}%'
     - ''
+    - '{stones}'
+    - ''
     - ' &8| &aLeft-Click &#AAAAAAto upgrade'
     - ' &8| &aRight-Click &#AAAAAAto toggle'
+    - '{stones_action}'
     - ''
 
 # =====================================================
@@ -525,8 +575,11 @@ Drill:
     - ' &8| &#888888Cost: &#B366D9🔥 &#B366D9{cost}'
     - ' &8| &#888888Chance: &#00FF88{chance}%'
     - ''
+    - '{stones}'
+    - ''
     - ' &8| &aLeft-Click &#AAAAAAto upgrade'
     - ' &8| &aRight-Click &#AAAAAAto toggle'
+    - '{stones_action}'
     - ''
   Hologram:
     Enabled: true
@@ -556,8 +609,11 @@ Explosive:
     - ' &8| &#888888Cost: &#B366D9🔥 &#B366D9{cost}'
     - ' &8| &#888888Chance: &#00FF88{chance}%'
     - ''
+    - '{stones}'
+    - ''
     - ' &8| &aLeft-Click &#AAAAAAto upgrade'
     - ' &8| &aRight-Click &#AAAAAAto toggle'
+    - '{stones_action}'
     - ''
   Hologram:
     Enabled: true
@@ -587,8 +643,11 @@ Lazer:
     - ' &8| &#888888Cost: &#B366D9🔥 &#B366D9{cost}'
     - ' &8| &#888888Chance: &#00FF88{chance}%'
     - ''
+    - '{stones}'
+    - ''
     - ' &8| &aLeft-Click &#AAAAAAto upgrade'
     - ' &8| &aRight-Click &#AAAAAAto toggle'
+    - '{stones_action}'
     - ''
   Hologram:
     Enabled: true
@@ -626,8 +685,11 @@ Thor:
     - ' &8| &#888888Cost: &#B366D9🔥 &#B366D9{cost}'
     - ' &8| &#888888Chance: &#00FF88{chance}%'
     - ''
+    - '{stones}'
+    - ''
     - ' &8| &aLeft-Click &#AAAAAAto upgrade'
     - ' &8| &aRight-Click &#AAAAAAto toggle'
+    - '{stones_action}'
     - ''
   Hologram:
     Enabled: true
@@ -665,8 +727,11 @@ Vortex:
     - ' &8| &#888888Cost: &#B366D9🔥 &#B366D9{cost}'
     - ' &8| &#888888Chance: &#00FF88{chance}%'
     - ''
+    - '{stones}'
+    - ''
     - ' &8| &aLeft-Click &#AAAAAAto upgrade'
     - ' &8| &aRight-Click &#AAAAAAto toggle'
+    - '{stones_action}'
     - ''
   Hologram:
     Enabled: true
@@ -691,15 +756,15 @@ Cascade:
   Item: PLAYER_HEAD
   Texture: "REPLACE_ME"
   # Maximum number of chain links at max level (scales from 3 at level 1).
-  MaxChainLength: 16
+  MaxChainLength: 10
   # Blocks advanced between each chain-link centre.
-  StepDistance: 5
+  StepDistance: 4
   # Base sphere radius broken at each chain link.
   ExplosionRadius: 2
   # Extra radius added at max level (grows from ExplosionRadius → ExplosionRadius+MaxRadiusBonus).
-  MaxRadiusBonus: 3
+  MaxRadiusBonus: 1
   # Maximum simultaneous chains fired (scales from 1 at level 1 to MaxChains at max level).
-  MaxChains: 3
+  MaxChains: 2
   Lore:
     - ' {rarity}'
     - ''
@@ -713,8 +778,11 @@ Cascade:
     - ' &8| &#888888Cost: &#B366D9🔥 &#B366D9{cost}'
     - ' &8| &#888888Chance: &#00FF88{chance}%'
     - ''
+    - '{stones}'
+    - ''
     - ' &8| &aLeft-Click &#AAAAAAto upgrade'
     - ' &8| &aRight-Click &#AAAAAAto toggle'
+    - '{stones_action}'
     - ''
   Hologram:
     Enabled: true
@@ -753,8 +821,11 @@ Jackhammer:
     - ' &8| &#888888Cost: &#B366D9🔥 &#B366D9{cost}'
     - ' &8| &#888888Chance: &#00FF88{chance}%'
     - ''
+    - '{stones}'
+    - ''
     - ' &8| &aLeft-Click &#AAAAAAto upgrade'
     - ' &8| &aRight-Click &#AAAAAAto toggle'
+    - '{stones_action}'
     - ''
   Hologram:
     Enabled: true
@@ -800,8 +871,11 @@ NuclearShower:
     - ' &8| &#888888Cost: &#B366D9🔥 &#B366D9{cost}'
     - ' &8| &#888888Chance: &#00FF88{chance}%'
     - ''
+    - '{stones}'
+    - ''
     - ' &8| &aLeft-Click &#AAAAAAto upgrade'
     - ' &8| &aRight-Click &#AAAAAAto toggle'
+    - '{stones_action}'
     - ''
   Hologram:
     Enabled: true

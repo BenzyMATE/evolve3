@@ -32,15 +32,17 @@ public class PreferencesMenu extends BaseMenu
     private static final MenuType MENU_TYPE = MenuType.register("preferences");
     private static final LegacyComponentSerializer LEGACY = LegacyComponentSerializer.legacyAmpersand();
 
-    // 27-slot layout (3 rows × 9 cols)
+    // 36-slot layout (4 rows × 9 cols)
     // Row 0: full black border
-    // Row 1: [border][space][Animations][space][space][Animations2][space][space][border]
-    // Row 2: full black border, close button at centre
+    // Row 1: [border][space][Animations][space][Enchants][space][Messages][space][border]
+    // Row 2: [border][space][space][space][Experimental][space][space][space][border]
+    // Row 3: full black border, close button at centre
 
-    private static final int ANIMATIONS_SLOT = 11;
-    private static final int ENCHANTS_SLOT   = 13;
-    private static final int MESSAGES_SLOT   = 15;
-    private static final int CLOSE_SLOT      = 22;
+    private static final int ANIMATIONS_SLOT    = 11;
+    private static final int ENCHANTS_SLOT      = 13;
+    private static final int MESSAGES_SLOT      = 15;
+    private static final int EXPERIMENTAL_SLOT  = 22;
+    private static final int CLOSE_SLOT         = 31;
 
     public PreferencesMenu(JavaPlugin plugin) {
         super(plugin);
@@ -54,7 +56,7 @@ public class PreferencesMenu extends BaseMenu
 
     @Override
     protected int getMenuSize() {
-        return 27;
+        return 36;
     }
 
     @Override
@@ -67,8 +69,8 @@ public class PreferencesMenu extends BaseMenu
         // Background: black border, gray interior
         ItemStack black = pane(Material.BLACK_STAINED_GLASS_PANE);
         ItemStack gray  = pane(Material.GRAY_STAINED_GLASS_PANE);
-        for (int i = 0; i < 27; i++) {
-            inventory.setItem(i, isBorder(i, 27) ? black : gray);
+        for (int i = 0; i < 36; i++) {
+            inventory.setItem(i, isBorder(i, 36) ? black : gray);
         }
 
         FileConfiguration menus = ConfigRegistry.getInstance().get(ConfigNames.MENUS);
@@ -94,6 +96,13 @@ public class PreferencesMenu extends BaseMenu
                 menus.getStringList(ConfigPaths.Menus.PreferencesMenu.MESSAGES_LORE)
         ));
 
+        // Experimental category
+        inventory.setItem(EXPERIMENTAL_SLOT, buildItem(
+                mat(menus, ConfigPaths.Menus.PreferencesMenu.EXPERIMENTAL_MATERIAL, Material.COMMAND_BLOCK),
+                menus.getString(ConfigPaths.Menus.PreferencesMenu.EXPERIMENTAL_NAME, "&#FF8800⚗ Experimental"),
+                menus.getStringList(ConfigPaths.Menus.PreferencesMenu.EXPERIMENTAL_LORE)
+        ));
+
         // Close
         inventory.setItem(CLOSE_SLOT, buildItem(
                 mat(menus, ConfigPaths.Menus.PreferencesMenu.CLOSE_MATERIAL, Material.BARRIER),
@@ -105,11 +114,12 @@ public class PreferencesMenu extends BaseMenu
     @Override
     protected boolean handleClick(Player player, int slot, InventoryClickEvent event) {
         switch (slot) {
-            case ANIMATIONS_SLOT -> { var m = MenuRegistry.getInstance().get("preferences_animations"); if (m != null) m.openMenu(player); }
-            case ENCHANTS_SLOT   -> { var m = MenuRegistry.getInstance().get("preferences_enchants");   if (m != null) m.openMenu(player); }
-            case MESSAGES_SLOT   -> player.sendMessage(
+            case ANIMATIONS_SLOT    -> { var m = MenuRegistry.getInstance().get("preferences_animations");   if (m != null) m.openMenu(player); }
+            case ENCHANTS_SLOT      -> { var m = MenuRegistry.getInstance().get("preferences_enchants");     if (m != null) m.openMenu(player); }
+            case EXPERIMENTAL_SLOT  -> { var m = MenuRegistry.getInstance().get("preferences_experimental"); if (m != null) m.openMenu(player); }
+            case MESSAGES_SLOT      -> player.sendMessage(
                     formatMessage(player, "%evolv3_prefix% &#888888&oMessages preferences — coming soon."));
-            case CLOSE_SLOT      -> closeMenu(player);
+            case CLOSE_SLOT         -> closeMenu(player);
         }
         return true;
     }

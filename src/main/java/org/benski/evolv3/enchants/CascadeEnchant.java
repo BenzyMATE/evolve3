@@ -93,7 +93,7 @@ public class CascadeEnchant implements Listener
             if (!Utils.chance(cascade.getCurrentChance())) return;
 
             Block origin = event.getBlock();
-            triggerCascade(player, origin, pickaxeProfile, cascade.level);
+            triggerCascade(player, origin, pickaxeProfile, cascade, 0);
         });
     }
 
@@ -101,7 +101,12 @@ public class CascadeEnchant implements Listener
     // Cascade logic
     // -------------------------------------------------------------------------
 
-    private void triggerCascade(Player player, Block origin, PickaxeProfile pickaxeProfile, int enchantLevel)
+    /**
+     * @param reDepth how many times cascade has re-triggered (used by Legendary Infinite Loop
+     *                and Rare Aftershock to prevent uncontrolled recursion; cap is 2)
+     */
+    private void triggerCascade(Player player, Block origin, PickaxeProfile pickaxeProfile,
+                                 EnchantData cascade, int reDepth)
     {
         if (!player.isOnline()) return;
 
@@ -121,11 +126,21 @@ public class CascadeEnchant implements Listener
         int maxRadiusBonus = config.getInt(ConfigPaths.Enchants.Cascade.MAX_RADIUS_BONUS,    3);
         int maxChains      = config.getInt(ConfigPaths.Enchants.Cascade.MAX_CHAINS,          3);
 
-        double levelFraction = (double)(enchantLevel - 1) / Math.max(1, maxLevel - 1);
+        double levelFraction = (double)(cascade.level - 1) / Math.max(1, maxLevel - 1);
 
         // Chain length scales from 3 at level 1 to maxChainLen at max level.
         int chainLength = 3 + (int) Math.round(levelFraction * (maxChainLen - 3));
         chainLength = Math.max(3, Math.min(chainLength, maxChainLen));
+
+        // Common (Extension): +2 chain length
+        if (CascadeStoneHandler.hasStone(cascade, "Common")) {
+            chainLength += 2;
+        }
+
+        // Legendary (Infinite Loop): triple chain length, capped at 60
+        if (CascadeStoneHandler.hasStone(cascade, "Legendary")) {
+            chainLength = Math.min(chainLength * 3, 60);
+        }
 
         // Sphere radius grows with level: base at level 1, base+maxRadiusBonus at max level.
         int radius = baseRadius + (int) Math.round(levelFraction * maxRadiusBonus);
@@ -134,11 +149,22 @@ public class CascadeEnchant implements Listener
         int chainCount = 1 + (int) Math.round(levelFraction * (maxChains - 1));
         chainCount = Math.max(1, Math.min(chainCount, maxChains));
 
+        // Epic (Time Warp): all links fire at tick 0 simultaneously
+        boolean timeWarp = CascadeStoneHandler.hasStone(cascade, "Epic");
+        // Uncommon (Depth Seeker): bias chain direction downward
+        boolean depthSeeker = CascadeStoneHandler.hasStone(cascade, "Uncommon");
+        // Rare (Aftershock): second half-length cascade from last link (only on first trigger)
+        boolean aftershock = reDepth == 0 && CascadeStoneHandler.hasStone(cascade, "Rare");
+
         ThreadLocalRandom rng      = ThreadLocalRandom.current();
         World             world    = origin.getWorld();
         int fortuneAmount          = resolveFortune(pickaxeProfile);
         EnchantPreferenceResult pref = getEnchantPref(player, config);
         AtomicInteger totalBroken  = new AtomicInteger(0);
+
+        if (reDepth == 0) AoEDropResolver.startAccumulation(player.getUniqueId());
+
+        final int finalChainLength = chainLength;
 
         // Fire chainCount independent chains in different random directions.
         // Only the first chain triggers the notification so it isn't shown repeatedly.
@@ -146,8 +172,11 @@ public class CascadeEnchant implements Listener
             final boolean isFirstChain = (c == 0);
 
             // Pick an independent random direction for each chain.
-            double yaw   = rng.nextDouble() * Math.PI * 2;
-            double pitch = (rng.nextDouble() - 0.5) * 0.4;
+            double yaw = rng.nextDouble() * Math.PI * 2;
+            // Uncommon (Depth Seeker): always bias downward; otherwise random pitch
+            double pitch = depthSeeker
+                    ? -(rng.nextDouble() * 0.5 + 0.15)
+                    : (rng.nextDouble() - 0.5) * 0.4;
             Vector direction = new Vector(Math.cos(yaw), pitch, Math.sin(yaw)).normalize();
 
             // Pre-compute link centres with slight angular drift per step.
@@ -156,10 +185,14 @@ public class CascadeEnchant implements Listener
             Vector dir = direction.clone();
             stepCenters.add(cursor.clone());
 
-            for (int step = 1; step < chainLength; step++) {
+            for (int step = 1; step < finalChainLength; step++) {
+                // Uncommon (Depth Seeker): stronger downward drift per step
+                double yDrift = depthSeeker
+                        ? -(rng.nextDouble() * 0.12)
+                        : (rng.nextDouble() - 0.5) * 0.08;
                 dir.add(new Vector(
                         (rng.nextDouble() - 0.5) * 0.18,
-                        (rng.nextDouble() - 0.5) * 0.08,
+                        yDrift,
                         (rng.nextDouble() - 0.5) * 0.18
                 )).normalize();
                 cursor = cursor.clone().add(dir.clone().multiply(stepDistance));
@@ -171,10 +204,13 @@ public class CascadeEnchant implements Listener
 
             final int finalRadius = radius;
 
-            // Schedule each link — stagger chains so they don't all fire tick 0 together.
+            // Schedule each link.
+            // Epic (Time Warp): all at tick 0; otherwise stagger by STEP_DELAY_TICKS.
             for (int i = 0; i < stepCenters.size(); i++) {
                 final Location center = stepCenters.get(i);
                 final boolean isLast  = isFirstChain && (i == stepCenters.size() - 1);
+
+                long delay = timeWarp ? 0L : (long) i * STEP_DELAY_TICKS;
 
                 new BukkitRunnable()
                 {
@@ -187,15 +223,86 @@ public class CascadeEnchant implements Listener
                                                  pickaxeProfile, playerProfile, fortuneAmount);
                         totalBroken.addAndGet(broken);
 
-                        CascadeAnimation anim = new CascadeAnimation(plugin, pref.sound, pref.particles);
-                        AnimationRegistry.getInstance().play(anim, center, List.of(player));
+                        // Play directly (bypassing registry budget check) so particles
+                        // are never silently dropped when many chain links fire at once.
+                        new CascadeAnimation(plugin, pref.sound, pref.particles)
+                                .play(center, List.of(player));
 
-                        if (isLast && totalBroken.get() > 0) {
-                            showNotification(player, origin, config, pref, totalBroken.get());
+                        if (isLast) {
+                            if (totalBroken.get() > 0) {
+                                AoEDropResolver.flushAccumulation(player, origin, pickaxeProfile);
+                                showNotification(player, origin, config, pref, totalBroken.get());
+                            }
+                            // Rare (Aftershock): fire a second cascade at half length from last link
+                            if (aftershock) {
+                                Block lastBlock = world.getBlockAt(center.getBlockX(),
+                                        center.getBlockY(), center.getBlockZ());
+                                int afterLength = Math.max(2, finalChainLength / 2);
+                                EnchantData afterCascade = new EnchantData(
+                                        cascade.name, cascade.level, cascade.maxLevel, cascade.maxChance);
+                                // Don't carry Rare stone into aftershock to prevent chaining
+                                scheduleAftershot(player, lastBlock, pickaxeProfile, afterCascade, afterLength);
+                            }
                         }
                     }
-                }.runTaskLater(plugin, (long) i * STEP_DELAY_TICKS);
+                }.runTaskLater(plugin, delay);
             }
+        }
+    }
+
+    /**
+     * Fires a simplified secondary cascade for Rare (Aftershock), using a fixed chain length
+     * and no stone effects (to prevent recursive re-triggering).
+     */
+    private void scheduleAftershot(Player player, Block origin, PickaxeProfile pickaxeProfile,
+                                    EnchantData cascade, int length)
+    {
+        if (!player.isOnline()) return;
+        PlayerDataCenter playerDC = DataCenterRegistry.getInstance().getPlayerDataCenter();
+        if (playerDC == null) return;
+        PlayerProfile playerProfile = playerDC.getLocal(player);
+        if (playerProfile == null || playerProfile.backpack.isFull()) return;
+
+        FileConfiguration config = StorageRegistryManager.getInstance().getConfig(ConfigNames.ENCHANTS);
+        int stepDistance = config.getInt(ConfigPaths.Enchants.Cascade.STEP_DISTANCE, 5);
+        int baseRadius   = config.getInt(ConfigPaths.Enchants.Cascade.EXPLOSION_RADIUS, 2);
+
+        World world = origin.getWorld();
+        ThreadLocalRandom rng = ThreadLocalRandom.current();
+        int fortuneAmount = resolveFortune(pickaxeProfile);
+
+        double yaw = rng.nextDouble() * Math.PI * 2;
+        double pitch = (rng.nextDouble() - 0.5) * 0.4;
+        Vector dir = new Vector(Math.cos(yaw), pitch, Math.sin(yaw)).normalize();
+
+        List<Location> steps = new ArrayList<>();
+        Location cursor = origin.getLocation().add(0.5, 0.5, 0.5);
+        steps.add(cursor.clone());
+        for (int i = 1; i < length; i++) {
+            dir.add(new Vector(
+                    (rng.nextDouble() - 0.5) * 0.18,
+                    (rng.nextDouble() - 0.5) * 0.08,
+                    (rng.nextDouble() - 0.5) * 0.18
+            )).normalize();
+            cursor = cursor.clone().add(dir.clone().multiply(stepDistance));
+            if (!WorldGuardManager.getInstance().isWithinMineRegion(cursor)) break;
+            steps.add(cursor.clone());
+        }
+
+        EnchantPreferenceResult pref = getEnchantPref(player, config);
+
+        for (int i = 0; i < steps.size(); i++) {
+            final Location center = steps.get(i);
+            new BukkitRunnable() {
+                @Override
+                public void run() {
+                    if (!player.isOnline()) { cancel(); return; }
+                    detonateLink(player, world, center, baseRadius,
+                            pickaxeProfile, playerProfile, fortuneAmount);
+                    new CascadeAnimation(plugin, pref.sound, pref.particles)
+                            .play(center, List.of(player));
+                }
+            }.runTaskLater(plugin, (long) i * STEP_DELAY_TICKS);
         }
     }
 

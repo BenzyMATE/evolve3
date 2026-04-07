@@ -130,7 +130,7 @@ public class Utils
         return material == Material.WOODEN_PICKAXE
                 || material == Material.STONE_PICKAXE
                 || material == Material.IRON_PICKAXE
-                || material == Material.GOLDEN_PICKAXE
+                || material == Material.COPPER_PICKAXE
                 || material == Material.DIAMOND_PICKAXE
                 || material == Material.NETHERITE_PICKAXE;
     }
@@ -274,6 +274,31 @@ public class Utils
             }
         }
         return formatted.toString().trim();
+    }
+
+    /**
+     * Splits a string into lines of at most {@code maxWords} words each.
+     *
+     * @param text     the text to wrap
+     * @param maxWords maximum words per line
+     * @return list of wrapped lines
+     */
+    public static List<String> wrapWords(String text, int maxWords) {
+        List<String> lines = new ArrayList<>();
+        String[] words = text.split(" ");
+        StringBuilder chunk = new StringBuilder();
+        int count = 0;
+        for (String word : words) {
+            if (count == maxWords) {
+                lines.add(chunk.toString().trim());
+                chunk = new StringBuilder();
+                count = 0;
+            }
+            chunk.append(word).append(" ");
+            count++;
+        }
+        if (!chunk.isEmpty()) lines.add(chunk.toString().trim());
+        return lines;
     }
 
     /**

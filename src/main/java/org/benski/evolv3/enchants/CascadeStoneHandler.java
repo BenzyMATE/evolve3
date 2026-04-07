@@ -1,0 +1,27 @@
+package org.benski.evolv3.enchants;
+
+import org.benski.evolv3.models.pickaxe.EnchantData;
+
+/**
+ * Helper for Evolution Stones socketed into the Cascade enchant.
+ * All stone effects are resolved inline inside {@link CascadeEnchant}.
+ *
+ * <ul>
+ *   <li><b>Common</b>    (Extension)    — +2 blocks added to cascade chain length; inline</li>
+ *   <li><b>Uncommon</b>  (Depth Seeker) — Chain direction is biased downward; inline</li>
+ *   <li><b>Rare</b>      (Aftershock)   — Second half-length cascade fires from the last link; inline</li>
+ *   <li><b>Epic</b>      (Time Warp)    — All chain links break simultaneously in one tick; inline</li>
+ *   <li><b>Legendary</b> (Infinite Loop)— Chain length is tripled (capped at 60); inline</li>
+ * </ul>
+ */
+public final class CascadeStoneHandler
+{
+    private CascadeStoneHandler() {}
+
+    public static boolean hasStone(EnchantData enchant, String rarity) {
+        for (String stone : enchant.socketStones) {
+            if (rarity.equals(stone)) return true;
+        }
+        return false;
+    }
+}

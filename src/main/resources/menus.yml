@@ -99,6 +99,11 @@ Pickaxe Menu:
       - ''
   StorageAction: " &8| &aLeft-Click &#AAAAAAto open pickaxe storage"
   RepairAction: " &8| &#FFEE00Right-Click &#AAAAAAto repair &#777777(&#E8890A5 &#777777Ancient Resin)"
+  Stones:
+    Header: " &#FFFFFF&lStones"
+    FilledLine: " &8| &#{hex}{effect}"
+    EmptyLine: " &8| &#333333Empty Socket"
+    ActionLine: " &8| &aShift+Right-Click &#AAAAAAto manage stones."
   LockedEnchant:
     Name: "&8&l⬡ &#666666Locked Enchant"
     Lore:
@@ -218,11 +223,40 @@ Preferences Menu:
     Name: "&#888888✉ Messages"
     Lore:
       - ' &#777777&oComing soon...'
+  Experimental:
+    Material: COMMAND_BLOCK
+    Name: "&#FF8800⚗ Experimental"
+    Lore:
+      - ''
+      - ' &#FFFFFF&lDescription'
+      - ' &8| &#777777Toggle experimental features'
+      - ' &8| &#777777that may affect performance.'
+      - ''
+      - ' &8| &aLeft-Click &#AAAAAAto open'
+      - ''
   Close:
     Material: BARRIER
     Name: "&cClose"
     Lore:
       - ' &8| &aLeft-Click &7to close'
+
+# Experimental Menu
+Experimental Menu:
+  Title: "&8P &7» &8Experimental"
+  PickaxeAnimation:
+    EnabledMaterial: LIME_DYE
+    DisabledMaterial: RED_DYE
+    Name: "&#FF8800Pickaxe Menu Animation"
+    Lore:
+      - ''
+      - ' &#FFFFFF&lDescription'
+      - ' &8| &#777777Enables live lore refresh on'
+      - ' &8| &#777777the pickaxe menu every 2 seconds.'
+      - ' &8| &#888888&oMay cause visual flicker.'
+      - ''
+      - ' {status}'
+      - ' &8| &aLeft-Click &#AAAAAAto toggle'
+      - ''
 
 # Animations Menu
 Animations Menu:

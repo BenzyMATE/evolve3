@@ -62,6 +62,30 @@ public class LazerEnchant implements Listener
         new Vector( 0, 0, -1)
     };
 
+    /** Legendary (Hex Beam): 4 diagonals + up + down. Distinct from Epic's 4 cardinals. */
+    private static final Vector[] LEGENDARY_DIRECTIONS = {
+        new Vector( 1, 0,  1),  // NE diagonal
+        new Vector(-1, 0,  1),  // NW diagonal
+        new Vector( 1, 0, -1),  // SE diagonal
+        new Vector(-1, 0, -1),  // SW diagonal
+        new Vector( 0, 1,  0),  // Up
+        new Vector( 0,-1,  0),  // Down
+    };
+
+    /** Epic + Legendary combined: all 10 directions — 4 cardinals, 4 diagonals, up, down. */
+    private static final Vector[] STAR_DIRECTIONS = {
+        new Vector( 1, 0,  0),  // N
+        new Vector(-1, 0,  0),  // S
+        new Vector( 0, 0,  1),  // E
+        new Vector( 0, 0, -1),  // W
+        new Vector( 1, 0,  1),  // NE diagonal
+        new Vector(-1, 0,  1),  // NW diagonal
+        new Vector( 1, 0, -1),  // SE diagonal
+        new Vector(-1, 0, -1),  // SW diagonal
+        new Vector( 0, 1,  0),  // Up
+        new Vector( 0,-1,  0),  // Down
+    };
+
     public LazerEnchant(JavaPlugin plugin)
     {
         this.plugin = plugin;
@@ -87,10 +111,14 @@ public class LazerEnchant implements Listener
 
             EnchantData lazer = pickaxeProfile.enchants.getEnchant(Enchants.LAZER);
             if (lazer == null || !lazer.enabled || lazer.level <= 0) return;
-            if (!Utils.chance(lazer.getCurrentChance())) return;
+
+            double triggerChance = lazer.getCurrentChance();
+            // Common (Marksman): +2% to proc chance
+            if (LazerStoneHandler.hasStone(lazer, "Common")) triggerChance += 2.0;
+            if (!Utils.chance(triggerChance)) return;
 
             Block origin = event.getBlock();
-            fireLazer(player, origin, pickaxeProfile);
+            fireLazer(player, origin, pickaxeProfile, lazer);
         });
     }
 
@@ -98,7 +126,8 @@ public class LazerEnchant implements Listener
     // Lazer logic
     // -------------------------------------------------------------------------
 
-    private void fireLazer(Player player, Block origin, PickaxeProfile pickaxeProfile)
+    private void fireLazer(Player player, Block origin, PickaxeProfile pickaxeProfile,
+                            EnchantData lazer)
     {
         if (!player.isOnline()) return;
 
@@ -109,33 +138,106 @@ public class LazerEnchant implements Listener
         if (playerProfile == null) return;
 
         FileConfiguration config = StorageRegistryManager.getInstance().getConfig(ConfigNames.ENCHANTS);
-
-        int maxRange = config.getInt(ConfigPaths.Enchants.Lazer.MAX_RANGE, 50);
+        int maxRange      = config.getInt(ConfigPaths.Enchants.Lazer.MAX_RANGE, 50);
         int fortuneAmount = resolveFortune(pickaxeProfile);
 
-        // Pick a random cardinal direction.
-        Vector direction = CARDINAL_DIRECTIONS[ThreadLocalRandom.current().nextInt(CARDINAL_DIRECTIONS.length)];
+        // Determine active beam directions based on stones.
+        // Epic + Legendary together: 10-way star (4 cardinals + 4 diagonals + up + down).
+        // Legendary only (Hex Beam): 4 diagonals + up + down.
+        // Epic only (Quad Beam): 4 cardinal directions.
+        // Default: one random cardinal direction.
+        boolean hasEpic      = LazerStoneHandler.hasStone(lazer, "Epic");
+        boolean hasLegendary = LazerStoneHandler.hasStone(lazer, "Legendary");
+        Vector[] directions;
+        if (hasEpic && hasLegendary) {
+            directions = STAR_DIRECTIONS;
+        } else if (hasLegendary) {
+            directions = LEGENDARY_DIRECTIONS;
+        } else if (hasEpic) {
+            directions = CARDINAL_DIRECTIONS;
+        } else {
+            directions = new Vector[]{ CARDINAL_DIRECTIONS[ThreadLocalRandom.current().nextInt(4)] };
+        }
+
+        boolean hasUncommon = LazerStoneHandler.hasStone(lazer, "Uncommon");
 
         Backpack backpack = playerProfile.backpack;
         if (backpack.isFull()) return;
 
-        List<LazerAnimation.ShardBlock> shardBlocks = new ArrayList<>();
-        int broken = 0;
+        EnchantPreferenceResult pref = getEnchantPref(player, config);
+        Location beamOrigin = origin.getLocation().clone().add(0.5, 0.5, 0.5);
+        int totalBroken = 0;
 
-        // Scan along the beam, breaking blocks as we go.
-        for (int dist = 1; dist <= maxRange; dist++) {
+        AoEDropResolver.startAccumulation(player.getUniqueId());
+
+        for (Vector direction : directions) {
+            List<LazerAnimation.ShardBlock> shardBlocks = new ArrayList<>();
+            int broken = fireBeam(player, origin, direction, maxRange,
+                                  pickaxeProfile, playerProfile, fortuneAmount,
+                                  hasUncommon, true, shardBlocks);
+            totalBroken += broken;
+
+            // Play beam animation per direction so shards track correctly.
+            LazerAnimation anim = new LazerAnimation(plugin, direction, shardBlocks,
+                                                     pref.sound(), pref.particles());
+            AnimationRegistry.getInstance().play(anim, beamOrigin, List.of(player));
+        }
+
+        if (totalBroken > 0) {
+            BackpackListener.refresh(player);
+            playerProfile.save(null);
+        }
+
+        // Rare (Iron Fist): every 10th proc triggers a Jackhammer layer break at origin.
+        if (LazerStoneHandler.hasStone(lazer, "Rare")
+                && LazerStoneHandler.incrementAndCheckIronFist(player.getUniqueId())
+                && JackhammerEnchant.getInstance() != null) {
+            JackhammerEnchant.getInstance().triggerLayerBreak(player, origin, pickaxeProfile);
+        }
+
+        if (totalBroken > 0) {
+            AoEDropResolver.flushAccumulation(player, origin, pickaxeProfile);
+            showNotification(player, origin, config, pref, totalBroken);
+        }
+    }
+
+    /**
+     * Fires a single laser beam from {@code startPos} in {@code direction} for up to
+     * {@code maxSteps} blocks. Returns the number of blocks broken.
+     *
+     * @param allowRicochet whether the Uncommon (Reflect) stone may redirect this beam once
+     */
+    private int fireBeam(Player player, Block startPos, Vector direction, int maxSteps,
+                         PickaxeProfile pickaxeProfile, PlayerProfile playerProfile,
+                         int fortuneAmount, boolean hasUncommon, boolean allowRicochet,
+                         List<LazerAnimation.ShardBlock> shardBlocks)
+    {
+        int broken = 0;
+        Backpack backpack = playerProfile.backpack;
+
+        for (int step = 1; step <= maxSteps; step++) {
             int remaining = backpack.getMaxSize() - backpack.getTotalItems();
             if (remaining <= 0) break;
 
-            Block block = origin.getWorld().getBlockAt(
-                    origin.getX() + (int)(direction.getX() * dist),
-                    origin.getY(),
-                    origin.getZ() + (int)(direction.getZ() * dist)
-            );
+            Block block = startPos.getWorld().getBlockAt(
+                    startPos.getX() + (int)(direction.getX() * step),
+                    startPos.getY() + (int)(direction.getY() * step),
+                    startPos.getZ() + (int)(direction.getZ() * step));
 
             if (!AoEDropResolver.isBreakable(block)) {
-                // Stop the beam if it hits a protected or unbreakable block (but not air).
-                if (!block.getType().isAir()) break;
+                if (!block.getType().isAir()) {
+                    // Uncommon (Reflect): 25% chance to ricochet off the wall once.
+                    if (allowRicochet && hasUncommon && Utils.chance(25.0)) {
+                        Vector newDir = getPerpendicularDirection(direction);
+                        int remaining2 = maxSteps - step;
+                        if (remaining2 > 0) {
+                            broken += fireBeam(player, block, newDir, remaining2,
+                                               pickaxeProfile, playerProfile, fortuneAmount,
+                                               hasUncommon, false, shardBlocks);
+                        }
+                    }
+                    break;
+                }
                 continue;
             }
 
@@ -143,7 +245,8 @@ public class LazerEnchant implements Listener
 
             Material mat = AoEDropResolver.resolve(
                     block, player.getInventory().getItemInMainHand(), plugin, pickaxeProfile);
-            if (mat.isAir()) continue; // safety: block was already removed by another process
+            if (mat.isAir()) continue;
+
             shardBlocks.add(new LazerAnimation.ShardBlock(block.getLocation().clone(), mat));
             block.setType(Material.AIR);
 
@@ -154,21 +257,22 @@ public class LazerEnchant implements Listener
             broken++;
         }
 
-        if (broken > 0) {
-            BackpackListener.refresh(player);
-            playerProfile.save(null);
-        }
+        return broken;
+    }
 
-        // Retrieve enchant preferences (sound, particles, hologram, message).
-        EnchantPreferenceResult pref = getEnchantPref(player, config);
-
-        // Play the animation from the beam origin (the broken block's location).
-        Location beamOrigin = origin.getLocation().clone().add(0.5, 0.5, 0.5);
-        LazerAnimation anim = new LazerAnimation(plugin, direction, shardBlocks, pref.sound, pref.particles);
-        AnimationRegistry.getInstance().play(anim, beamOrigin, List.of(player));
-
-        if (broken > 0) {
-            showNotification(player, origin, config, pref, broken);
+    /**
+     * Returns a random direction perpendicular to {@code dir} in the horizontal plane
+     * (or any cardinal if {@code dir} is vertical).
+     */
+    private Vector getPerpendicularDirection(Vector dir)
+    {
+        ThreadLocalRandom rng = ThreadLocalRandom.current();
+        if (dir.getX() != 0) {
+            return rng.nextBoolean() ? new Vector(0, 0, 1) : new Vector(0, 0, -1);
+        } else if (dir.getZ() != 0) {
+            return rng.nextBoolean() ? new Vector(1, 0, 0) : new Vector(-1, 0, 0);
+        } else {
+            return CARDINAL_DIRECTIONS[rng.nextInt(4)];
         }
     }
 
@@ -180,7 +284,7 @@ public class LazerEnchant implements Listener
     {
         String brokenStr = String.valueOf(broken);
 
-        if (pref.hologram && config.getBoolean(ConfigPaths.Enchants.Lazer.HOLOGRAM_ENABLED, true)) {
+        if (pref.hologram() && config.getBoolean(ConfigPaths.Enchants.Lazer.HOLOGRAM_ENABLED, true)) {
             String hologramText = config.getString(
                             ConfigPaths.Enchants.Lazer.HOLOGRAM_MESSAGE,
                             "&#FF55CC&lLAZER &#CCCCCCVaporized %blocks% blocks!")
@@ -190,7 +294,7 @@ public class LazerEnchant implements Listener
                     new HologramAnimation(plugin, hologramText), hologramLoc, List.of(player));
         }
 
-        if (pref.message) {
+        if (pref.message()) {
             String message = StorageRegistryManager.getInstance()
                     .getConfig(ConfigNames.MESSAGES)
                     .getString(ConfigPaths.Messages.Enchants.LAZER_TRIGGERED,
@@ -199,7 +303,7 @@ public class LazerEnchant implements Listener
             player.sendMessage(Utils.formatMessage(player, message));
         }
 
-        if (pref.title) {
+        if (pref.title()) {
             var msgCfg = StorageRegistryManager.getInstance().getConfig(ConfigNames.MESSAGES);
             String title    = msgCfg.getString(ConfigPaths.Messages.Enchants.LAZER_TRIGGERED_TITLE,    "&#FF55CC&lLazer");
             String subtitle = msgCfg.getString(ConfigPaths.Messages.Enchants.LAZER_TRIGGERED_SUBTITLE, "&#CCCCCCVaporized %blocks% blocks!")
@@ -232,6 +336,7 @@ public class LazerEnchant implements Listener
         EnchantPreference pref = profile.preferences.getOrCreateEnchantPref(enchantName, defaultHolo);
 
         return new EnchantPreferenceResult(pref.hologram, pref.message, pref.sound, pref.particles, pref.title);
+
     }
 
     private record EnchantPreferenceResult(boolean hologram, boolean message,

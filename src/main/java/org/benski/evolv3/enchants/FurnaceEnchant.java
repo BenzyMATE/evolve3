@@ -10,9 +10,11 @@ import org.benski.evolv3.core.helpers.Utils;
 
 import static org.benski.evolv3.core.helpers.Utils.formatMaterialName;
 import org.benski.evolv3.core.managers.EnchantDropManager;
+import org.benski.evolv3.core.managers.PickaxeManager;
 import org.benski.evolv3.core.managers.StorageRegistryManager;
 import org.benski.evolv3.core.managers.WorldGuardManager;
 import org.benski.evolv3.datacenters.PickaxeDataCenter;
+import org.benski.evolv3.listeners.BackpackListener;
 import org.benski.evolv3.models.pickaxe.EnchantData;
 import org.benski.evolv3.datacenters.PlayerDataCenter;
 import org.benski.evolv3.models.player.EnchantPreference;
@@ -70,12 +72,18 @@ public class FurnaceEnchant implements Listener
      */
     private final Map<Material, Material> smeltingRecipes = new HashMap<>();
 
+    /**
+     * Rare stone (Alchemical Forge) upgrade chain: smelt result → next tier.
+     */
+    private final Map<Material, Material> alchemicalForgeChain = new HashMap<>();
+
     public FurnaceEnchant(JavaPlugin plugin)
     {
         instance = this;
         this.plugin = plugin;
         this.enchantsConfig = StorageRegistryManager.getInstance().getConfig(ConfigNames.ENCHANTS);
         loadSmeltingRecipes();
+        loadAlchemicalForgeChain();
     }
 
     /**
@@ -96,6 +104,28 @@ public class FurnaceEnchant implements Listener
                 smeltingRecipes.put(input, output);
             } catch (IllegalArgumentException e) {
                 plugin.getLogger().warning("Invalid smelting recipe: " + key + " -> " + recipesSection.getString(key));
+            }
+        }
+    }
+
+    /**
+     * Loads the Alchemical Forge (Rare stone) upgrade chain from configuration.
+     */
+    private void loadAlchemicalForgeChain()
+    {
+        alchemicalForgeChain.clear();
+        ConfigurationSection section = enchantsConfig.getConfigurationSection(ConfigPaths.Enchants.Furnace.ALCHEMICAL_FORGE_CHAIN);
+        if (section == null) {
+            return;
+        }
+
+        for (String key : section.getKeys(false)) {
+            try {
+                Material input  = Material.valueOf(key.toUpperCase());
+                Material output = Material.valueOf(section.getString(key).toUpperCase());
+                alchemicalForgeChain.put(input, output);
+            } catch (IllegalArgumentException e) {
+                plugin.getLogger().warning("Invalid Alchemical Forge chain entry: " + key + " -> " + section.getString(key));
             }
         }
     }
@@ -142,20 +172,58 @@ public class FurnaceEnchant implements Listener
                 return;
             }
 
-            double triggerChance = enchant.getCurrentChance();
-            if (!Utils.chance(triggerChance)) {
-                return;
+            // Legendary (Universal Smelt): always activates regardless of trigger chance
+            boolean hasLegendary = FurnaceStoneHandler.hasStone(enchant, "Legendary");
+            if (!hasLegendary) {
+                double triggerChance = enchant.getCurrentChance();
+                if (!Utils.chance(triggerChance)) {
+                    return;
+                }
             }
 
             Block block = event.getBlock();
             Material materialToSmelt = getMaterialToSmelt(player, block);
 
             Material smeltResult = smeltingRecipes.get(materialToSmelt);
+
+            // Legendary also smelts blocks with no recipe (no material upgrade, proc still fires)
+            if (smeltResult == null && hasLegendary) {
+                smeltResult = materialToSmelt;
+            }
+
             if (smeltResult == null) {
                 return;
             }
 
+            // Rare (Alchemical Forge): 20% chance to upgrade the smelt result to the next tier
+            if (FurnaceStoneHandler.hasStone(enchant, "Rare") && Utils.chance(20.0)) {
+                Material chainResult = alchemicalForgeChain.get(smeltResult);
+                if (chainResult != null) smeltResult = chainResult;
+            }
+
             EnchantDropManager.set(player.getUniqueId(), smeltResult);
+
+            // Common (Hot Batch): 20% chance to double the smelted output
+            if (FurnaceStoneHandler.hasStone(enchant, "Common") && Utils.chance(20.0)) {
+                FurnaceStoneHandler.setDoubleSmelt(player.getUniqueId());
+            }
+
+            // Uncommon (Forge XP): bonus pickaxe XP equal to 10% of the block's base XP value
+            if (FurnaceStoneHandler.hasStone(enchant, "Uncommon")) {
+                String xpPath = org.benski.evolv3.core.constants.ConfigPaths.Default.BLOCK_DEFAULTS
+                        + "." + block.getType().name() + ".XP";
+                int blockXp = org.benski.evolv3.registry.ConfigRegistry.getInstance()
+                        .get(org.benski.evolv3.core.constants.ConfigNames.DEFAULT).getInt(xpPath, 0);
+                int bonus = (int) Math.max(1, blockXp * 0.10);
+                profile.xp += bonus;
+                PickaxeManager.getInstance().checkLevel(profile, player);
+                profile.save(null);
+            }
+
+            // Epic (Fire Chain): break 5 random nearby blocks, smelt and deliver their drops
+            if (FurnaceStoneHandler.hasStone(enchant, "Epic")) {
+                applyFireChain(player, block, hasLegendary);
+            }
 
             playSmeltEffects(block, player, materialToSmelt, smeltResult);
         });
@@ -258,6 +326,75 @@ public class FurnaceEnchant implements Listener
     }
 
     /**
+     * Epic (Fire Chain): picks up to 5 random breakable blocks within a radius-3 sphere,
+     * breaks them, smelts their drops, and delivers the results to the player's backpack.
+     * If Legendary is also active, blocks without a smelt recipe use their own drop material.
+     */
+    private void applyFireChain(Player player, Block center, boolean hasLegendary)
+    {
+        PlayerDataCenter pdc = DataCenterRegistry.getInstance().getPlayerDataCenter();
+        org.benski.evolv3.models.player.PlayerProfile pp = pdc != null ? pdc.getLocal(player) : null;
+        if (pp == null) return;
+
+        // Collect all candidate blocks in a radius-3 sphere (excluding center)
+        java.util.List<Block> candidates = new java.util.ArrayList<>();
+        int radius = 3;
+        for (int x = -radius; x <= radius; x++) {
+            for (int y = -radius; y <= radius; y++) {
+                for (int z = -radius; z <= radius; z++) {
+                    if (x == 0 && y == 0 && z == 0) continue;
+                    Block nearby = center.getRelative(x, y, z);
+                    if (nearby.getType().isAir()) continue;
+                    if (nearby.getType() == Material.BEDROCK) continue;
+                    if (!WorldGuardManager.getInstance().isWithinMineRegion(nearby.getLocation())) continue;
+                    candidates.add(nearby);
+                }
+            }
+        }
+
+        // Shuffle and take up to 5
+        java.util.Collections.shuffle(candidates);
+        int count = Math.min(5, candidates.size());
+
+        for (int i = 0; i < count; i++) {
+            Block target = candidates.get(i);
+            // Compute the block's own natural drop — do NOT consult EnchantDropManager,
+            // which holds the main block's already-smelted result and would double-smelt.
+            Material dropMat = target.hasMetadata(FrostbiteEnchant.FROSTBITE_METADATA_KEY)
+                    ? parseFrostbiteMeta(target)
+                    : target.getDrops(player.getInventory().getItemInMainHand()).stream()
+                            .filter(d -> d != null && !d.getType().isAir())
+                            .findFirst()
+                            .map(ItemStack::getType)
+                            .orElse(target.getType());
+            Material smeltMat = smeltingRecipes.get(dropMat);
+            if (smeltMat == null && hasLegendary) smeltMat = dropMat;
+            if (smeltMat == null) continue;
+
+            // Break the block visually and deliver smelted drop
+            target.getWorld().spawnParticle(Particle.FLAME,
+                    target.getLocation().add(0.5, 0.5, 0.5), 8, 0.3, 0.3, 0.3, 0.05);
+            target.setType(Material.AIR);
+            pp.backpack.addItem(player, smeltMat, 1, false);
+        }
+
+        if (count > 0) {
+            BackpackListener.refresh(player);
+            player.playSound(player.getLocation(), Sound.BLOCK_FIRE_EXTINGUISH, 0.8f, 1.2f);
+        }
+    }
+
+    /** Reads the original drop material stored by Frostbite, falling back to the block type. */
+    private static Material parseFrostbiteMeta(Block block) {
+        try {
+            return Material.valueOf(
+                    block.getMetadata(FrostbiteEnchant.FROSTBITE_METADATA_KEY).get(0).asString());
+        } catch (IllegalArgumentException | IndexOutOfBoundsException ignored) {
+            return block.getType();
+        }
+    }
+
+    /**
      * Gets the smelting result for a material.
      *
      * @param input the input material
@@ -266,5 +403,15 @@ public class FurnaceEnchant implements Listener
     public Material getSmeltResult(Material input)
     {
         return smeltingRecipes.get(input);
+    }
+
+    /**
+     * Returns the Alchemical Forge chain result for the given smelted material,
+     * or null if no chain entry exists.
+     * Used by AoEDropResolver to apply the Rare stone in the AoE resolve path.
+     */
+    public Material getAlchemicalForgeResult(Material input)
+    {
+        return alchemicalForgeChain.get(input);
     }
 }

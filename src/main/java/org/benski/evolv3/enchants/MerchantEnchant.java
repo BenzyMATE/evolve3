@@ -16,6 +16,7 @@ import org.benski.evolv3.models.pickaxe.EnchantData;
 import org.benski.evolv3.models.player.PlayerProfile;
 import org.benski.evolv3.registry.AnimationRegistry;
 import org.benski.evolv3.registry.DataCenterRegistry;
+import org.benski.evolv3.registry.ConfigRegistry;
 import org.bukkit.Location;
 import org.bukkit.Particle;
 import org.bukkit.Sound;
@@ -99,16 +100,45 @@ public class MerchantEnchant implements Listener
             if (enchant == null || !enchant.enabled || enchant.level <= 0) return;
 
             double triggerChance = enchant.getCurrentChance();
+            // Common (Street Eye): +2% to proc chance
+            if (MerchantStoneHandler.hasStone(enchant, "Common")) triggerChance += 2.0;
             if (!Utils.chance(triggerChance)) return;
 
             int coinsMin   = enchantsConfig.getInt(ConfigPaths.Enchants.Merchant.COINS_MIN, 1);
             int coinsMax   = enchantsConfig.getInt(ConfigPaths.Enchants.Merchant.COINS_MAX, 50);
-            int coinsFound = Utils.amount(coinsMin, coinsMax);
+            double coinsFound = Utils.amount(coinsMin, coinsMax);
 
-            playerProfile.addCoins(coinsFound);
+            // Uncommon (Valuation): scale coin payout with ore rarity (block XP tier)
+            if (MerchantStoneHandler.hasStone(enchant, "Uncommon")) {
+                String xpPath = ConfigPaths.Default.BLOCK_DEFAULTS + "." + event.getBlock().getType().name() + ".XP";
+                int blockXp = ConfigRegistry.getInstance().get(ConfigNames.DEFAULT).getInt(xpPath, 0);
+                if      (blockXp >= 26) coinsFound *= 2.0;
+                else if (blockXp >= 11) coinsFound *= 1.5;
+                else if (blockXp >= 1)  coinsFound *= 1.2;
+            }
+
+            // Rare (Golden Window): 1.5× if window active, then activate/refresh window
+            if (MerchantStoneHandler.hasStone(enchant, "Rare")) {
+                if (MerchantStoneHandler.isGoldenWindowActive(player.getUniqueId())) {
+                    coinsFound *= 1.5;
+                }
+                MerchantStoneHandler.activateGoldenWindow(player.getUniqueId());
+            }
+
+            // Legendary (Tycoon): triple all coin payouts
+            if (MerchantStoneHandler.hasStone(enchant, "Legendary")) coinsFound *= 3.0;
+
+            int finalCoins = (int) Math.max(1, coinsFound);
+            playerProfile.addCoins(finalCoins);
+
+            // Epic (Trade Secret): 10% of coin earnings mirrored as essence
+            if (MerchantStoneHandler.hasStone(enchant, "Epic")) {
+                int essenceBonus = (int) Math.max(1, finalCoins * 0.10);
+                playerProfile.addEssence(essenceBonus);
+            }
+
             playerProfile.save(null);
-
-            playEffects(event.getBlock(), player, coinsFound);
+            playEffects(event.getBlock(), player, finalCoins);
         });
     }
 
@@ -124,16 +154,92 @@ public class MerchantEnchant implements Listener
 
         EnchantData enchant = pickaxeProfile.enchants.getEnchant(Enchants.MERCHANT);
         if (enchant == null || !enchant.enabled || enchant.level <= 0) return;
-        if (!Utils.chance(enchant.getCurrentChance())) return;
+
+        double triggerChance = enchant.getCurrentChance();
+        // Common (Street Eye): +2% to proc chance
+        if (MerchantStoneHandler.hasStone(enchant, "Common")) triggerChance += 2.0;
+        if (!Utils.chance(triggerChance)) return;
 
         int coinsMin   = enchantsConfig.getInt(ConfigPaths.Enchants.Merchant.COINS_MIN, 1);
         int coinsMax   = enchantsConfig.getInt(ConfigPaths.Enchants.Merchant.COINS_MAX, 50);
-        int coinsFound = Utils.amount(coinsMin, coinsMax);
+        double coinsFound = Utils.amount(coinsMin, coinsMax);
 
-        playerProfile.addCoins(coinsFound);
+        // Uncommon (Valuation): scale coin payout with ore rarity (block XP tier)
+        if (MerchantStoneHandler.hasStone(enchant, "Uncommon")) {
+            String xpPath = ConfigPaths.Default.BLOCK_DEFAULTS + "." + block.getType().name() + ".XP";
+            int blockXp = ConfigRegistry.getInstance().get(ConfigNames.DEFAULT).getInt(xpPath, 0);
+            if      (blockXp >= 26) coinsFound *= 2.0;
+            else if (blockXp >= 11) coinsFound *= 1.5;
+            else if (blockXp >= 1)  coinsFound *= 1.2;
+        }
+
+        // Rare (Golden Window): 1.5× if window active, then activate/refresh window
+        if (MerchantStoneHandler.hasStone(enchant, "Rare")) {
+            if (MerchantStoneHandler.isGoldenWindowActive(player.getUniqueId())) {
+                coinsFound *= 1.5;
+            }
+            MerchantStoneHandler.activateGoldenWindow(player.getUniqueId());
+        }
+
+        // Legendary (Tycoon): triple all coin payouts
+        if (MerchantStoneHandler.hasStone(enchant, "Legendary")) coinsFound *= 3.0;
+
+        int finalCoins = (int) Math.max(1, coinsFound);
+        playerProfile.addCoins(finalCoins);
+
+        // Epic (Trade Secret): 10% of coin earnings mirrored as essence
+        if (MerchantStoneHandler.hasStone(enchant, "Epic")) {
+            int essenceBonus = (int) Math.max(1, finalCoins * 0.10);
+            playerProfile.addEssence(essenceBonus);
+        }
+
         playerProfile.save(null);
+        playEffects(block, player, finalCoins);
+    }
 
-        playEffects(block, player, coinsFound);
+    /**
+     * Silent variant for AoE accumulation. Applies all logic and awards coins but plays no effects.
+     *
+     * @return coins awarded this block, or 0 if not triggered
+     */
+    public int tryTriggerForAoESilent(Player player, Block block,
+                                      org.benski.evolv3.models.pickaxe.PickaxeProfile pickaxeProfile,
+                                      org.benski.evolv3.models.player.PlayerProfile playerProfile)
+    {
+        if (pickaxeProfile == null || pickaxeProfile.enchants == null) return 0;
+
+        EnchantData enchant = pickaxeProfile.enchants.getEnchant(Enchants.MERCHANT);
+        if (enchant == null || !enchant.enabled || enchant.level <= 0) return 0;
+
+        double triggerChance = enchant.getCurrentChance();
+        if (MerchantStoneHandler.hasStone(enchant, "Common")) triggerChance += 2.0;
+        if (!Utils.chance(triggerChance)) return 0;
+
+        int coinsMin   = enchantsConfig.getInt(ConfigPaths.Enchants.Merchant.COINS_MIN, 1);
+        int coinsMax   = enchantsConfig.getInt(ConfigPaths.Enchants.Merchant.COINS_MAX, 50);
+        double coinsFound = Utils.amount(coinsMin, coinsMax);
+
+        if (MerchantStoneHandler.hasStone(enchant, "Uncommon")) {
+            String xpPath = ConfigPaths.Default.BLOCK_DEFAULTS + "." + block.getType().name() + ".XP";
+            int blockXp = ConfigRegistry.getInstance().get(ConfigNames.DEFAULT).getInt(xpPath, 0);
+            if      (blockXp >= 26) coinsFound *= 2.0;
+            else if (blockXp >= 11) coinsFound *= 1.5;
+            else if (blockXp >= 1)  coinsFound *= 1.2;
+        }
+        if (MerchantStoneHandler.hasStone(enchant, "Rare")) {
+            if (MerchantStoneHandler.isGoldenWindowActive(player.getUniqueId())) coinsFound *= 1.5;
+            MerchantStoneHandler.activateGoldenWindow(player.getUniqueId());
+        }
+        if (MerchantStoneHandler.hasStone(enchant, "Legendary")) coinsFound *= 3.0;
+
+        int finalCoins = (int) Math.max(1, coinsFound);
+        playerProfile.addCoins(finalCoins);
+
+        if (MerchantStoneHandler.hasStone(enchant, "Epic")) {
+            playerProfile.addEssence((int) Math.max(1, finalCoins * 0.10));
+        }
+
+        return finalCoins;
     }
 
     /**

@@ -1,0 +1,27 @@
+package org.benski.evolv3.enchants;
+
+import org.benski.evolv3.models.pickaxe.EnchantData;
+
+/**
+ * Helper for Evolution Stones socketed into the Drill enchant.
+ * All stone effects are resolved inline inside {@link DrillEnchant}.
+ *
+ * <ul>
+ *   <li><b>Common</b>    (Deep Reach)      — +1 to tunnel depth; inline</li>
+ *   <li><b>Uncommon</b>  (Broad Bore)      — drill always mines 3×2 instead of 2×2; inline</li>
+ *   <li><b>Rare</b>      (Tuned Head)      — +5% to proc chance; inline</li>
+ *   <li><b>Epic</b>      (Parallel Strike) — fires a second drill 3 blocks to the side; inline</li>
+ *   <li><b>Legendary</b> (Overcharge)      — +5 to tunnel depth; inline</li>
+ * </ul>
+ */
+public final class DrillStoneHandler
+{
+    private DrillStoneHandler() {}
+
+    public static boolean hasStone(EnchantData enchant, String rarity) {
+        for (String stone : enchant.socketStones) {
+            if (rarity.equals(stone)) return true;
+        }
+        return false;
+    }
+}

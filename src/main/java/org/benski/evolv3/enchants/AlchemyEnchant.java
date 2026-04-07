@@ -143,7 +143,15 @@ public class AlchemyEnchant implements Listener
             }
 
             double triggerChance = enchant.getCurrentChance();
-            if (!Utils.chance(triggerChance)) {
+
+            // Uncommon (Overflow): +10% to trigger chance
+            if (AlchemyStoneHandler.hasStone(enchant, "Uncommon")) {
+                triggerChance += 10.0;
+            }
+
+            // Legendary (Philosopher's Touch): always proc regardless of chance
+            boolean legendary = AlchemyStoneHandler.hasStone(enchant, "Legendary");
+            if (!legendary && !Utils.chance(triggerChance)) {
                 return;
             }
 
@@ -153,6 +161,23 @@ public class AlchemyEnchant implements Listener
             Material upgradeResult = upgradeRecipes.get(materialToUpgrade);
             if (upgradeResult == null) {
                 return;
+            }
+
+            // Common (Amplifier): 15% chance to advance one extra tier
+            if (AlchemyStoneHandler.hasStone(enchant, "Common") && Utils.chance(15.0)) {
+                Material tier2 = upgradeRecipes.get(upgradeResult);
+                if (tier2 != null) upgradeResult = tier2;
+            }
+
+            // Rare (Shortcut): 20% chance to skip one tier (advance one more)
+            if (AlchemyStoneHandler.hasStone(enchant, "Rare") && Utils.chance(20.0)) {
+                Material tier2 = upgradeRecipes.get(upgradeResult);
+                if (tier2 != null) upgradeResult = tier2;
+            }
+
+            // Epic (Transcend): 30% chance to trace chain to within 2 tiers of the max
+            if (AlchemyStoneHandler.hasStone(enchant, "Epic") && Utils.chance(30.0)) {
+                upgradeResult = getWithinTwosOfMax(upgradeResult);
             }
 
             EnchantDropManager.set(player.getUniqueId(), upgradeResult);
@@ -257,5 +282,30 @@ public class AlchemyEnchant implements Listener
     public Material getUpgradeResult(Material input)
     {
         return upgradeRecipes.get(input);
+    }
+
+    /**
+     * Traces the upgrade chain from {@code start} to find the result that is at most
+     * 2 tiers below the end of the chain (Epic Transcend stone effect).
+     * Guards against circular recipes with a 20-step limit.
+     *
+     * @param start the current upgrade result
+     * @return a material within 2 tiers of the chain's maximum
+     */
+    private Material getWithinTwosOfMax(Material start) {
+        // Build the chain from start to the end
+        java.util.List<Material> chain = new java.util.ArrayList<>();
+        chain.add(start);
+        Material current = start;
+        int guard = 0;
+        while (guard++ < 20) {
+            Material next = upgradeRecipes.get(current);
+            if (next == null || chain.contains(next)) break;
+            chain.add(next);
+            current = next;
+        }
+        // Target = max(0, chain.size() - 2) index
+        int targetIndex = Math.max(0, chain.size() - 2);
+        return chain.get(targetIndex);
     }
 }

@@ -1,11 +1,11 @@
 package org.benski.evolv3.commands;
 
 import lombok.experimental.ExtensionMethod;
-import org.benski.evolv3.animations.EvolutionAnimationD;
 import org.benski.evolv3.core.abstracts.BaseCommand;
 import org.benski.evolv3.core.helpers.ItemStackExtensions;
 import org.benski.evolv3.core.managers.EnchantAnimationConfig;
 import org.benski.evolv3.core.managers.EnchantSelectionManager;
+import org.benski.evolv3.core.managers.EvolutionSelectionManager;
 import org.benski.evolv3.core.managers.PickaxeManager;
 import org.benski.evolv3.core.types.RarityConfig;
 import org.benski.evolv3.datacenters.PickaxeDataCenter;
@@ -101,9 +101,9 @@ public class TestCommand extends BaseCommand
             return true;
         }
 
-        String arg = args[0];
+        String arg = args[0].toLowerCase();
 
-        switch (arg.toLowerCase()) {
+        switch (arg) {
             case "menu":
                 menuRegistry.get("example_config").openMenu(player);
                 sendInfo(player, "Opening profile menu...");
@@ -177,10 +177,10 @@ public class TestCommand extends BaseCommand
                     }
 
                     EvolutionTier finalTo = to;
-                    new EvolutionAnimationD(plugin, player, from, finalTo, stone, () ->
-                            PickaxeManager.getInstance().applyEvolutionResult(
-                                    player, profile, playerProfile, finalTo, stone)
-                    ).start();
+                    EvolutionSelectionManager.getInstance().startEvolution(
+                            player, profile.key, from, finalTo, stone,
+                            () -> PickaxeManager.getInstance().applyEvolutionResult(
+                                    player, profile, playerProfile, finalTo, stone));
                 });
                 break;
             }
@@ -198,16 +198,9 @@ public class TestCommand extends BaseCommand
     @Override
     public @Nullable List<String> getTabCompletion(@NotNull CommandSender sender, @NotNull Command command, @NotNull String alias, @NotNull String[] args) {
         if (args.length == 1) {
-            List<String> completions = new ArrayList<>();
-            completions.add("test");
-            completions.add("info");
-            completions.add("menu");
-            completions.add("cache");
-            completions.add("explosive");
-            completions.add("enchant");
-            completions.add("evolve");
+            List<String> completions = new ArrayList<>(List.of("test", "info", "menu", "cache", "explosive", "enchant", "evolve"));
             String input = args[0].toLowerCase();
-            completions.removeIf(s -> !s.toLowerCase().startsWith(input));
+            completions.removeIf(s -> !s.startsWith(input));
             return completions;
         }
         return null;

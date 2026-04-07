@@ -2,10 +2,15 @@ package org.benski.evolv3.core.helpers;
 
 import org.benski.evolv3.core.constants.Enchants;
 import org.benski.evolv3.core.managers.FrostbiteBlockManager;
+import org.benski.evolv3.core.managers.PickaxeManager;
+import org.benski.evolv3.registry.AnimationRegistry;
+import org.bukkit.Location;
 import org.benski.evolv3.enchants.AlchemyEnchant;
+import org.benski.evolv3.enchants.AlchemyStoneHandler;
 import org.benski.evolv3.enchants.ExtractionEnchant;
 import org.benski.evolv3.enchants.FrostbiteEnchant;
 import org.benski.evolv3.enchants.FurnaceEnchant;
+import org.benski.evolv3.enchants.FurnaceStoneHandler;
 import org.benski.evolv3.enchants.MerchantEnchant;
 import org.benski.evolv3.enchants.RadioactiveEnchant;
 import org.benski.evolv3.enchants.ScavengerEnchant;
@@ -97,9 +102,9 @@ public final class AoEDropResolver
     }
 
     /**
-     * Rolls per-block side-effect enchants (Scavenger, Merchant) for a block broken by an AoE
-     * enchant. Call this once per block, after the drop material has been resolved and the block
-     * set to AIR, but before moving on to the next block.
+     * Rolls per-block side-effect enchants (Scavenger, Merchant, Extraction, Radioactive) for a
+     * block broken by an AoE enchant. When accumulation is active for this player, Extraction and
+     * Radioactive are collected silently; otherwise individual holograms are shown per-block.
      *
      * @param player         the player who triggered the AoE enchant
      * @param block          the block that was just broken (already AIR at this point)
@@ -109,22 +114,120 @@ public final class AoEDropResolver
     public static void rollSideEffects(Player player, Block block,
                                        PickaxeProfile pickaxeProfile, PlayerProfile playerProfile)
     {
-        ScavengerEnchant scavenger = ScavengerEnchant.getInstance();
-        if (scavenger != null) scavenger.tryTriggerForAoE(player, block, pickaxeProfile, playerProfile);
+        int[] acc = accumulation.get(player.getUniqueId());
+        if (acc != null) {
+            // Accumulating mode: collect all rewards silently, show one combined hologram at the end
+            ExtractionEnchant extraction = ExtractionEnchant.getInstance();
+            if (extraction != null)
+                acc[0] += extraction.tryTriggerForAoESilent(player, block, pickaxeProfile, playerProfile);
 
-        MerchantEnchant merchant = MerchantEnchant.getInstance();
-        if (merchant != null) merchant.tryTriggerForAoE(player, block, pickaxeProfile, playerProfile);
+            RadioactiveEnchant radioactive = RadioactiveEnchant.getInstance();
+            if (radioactive != null)
+                acc[1] += radioactive.tryTriggerForAoESilent(player, block, pickaxeProfile, playerProfile);
 
-        ExtractionEnchant extraction = ExtractionEnchant.getInstance();
-        if (extraction != null) extraction.tryTriggerForAoE(player, block, pickaxeProfile, playerProfile);
+            MerchantEnchant merchant = MerchantEnchant.getInstance();
+            if (merchant != null)
+                acc[2] += merchant.tryTriggerForAoESilent(player, block, pickaxeProfile, playerProfile);
 
-        RadioactiveEnchant radioactive = RadioactiveEnchant.getInstance();
-        if (radioactive != null) radioactive.tryTriggerForAoE(player, block, pickaxeProfile, playerProfile);
+            ScavengerEnchant scavenger = ScavengerEnchant.getInstance();
+            if (scavenger != null)
+                acc[3] += scavenger.tryTriggerForAoESilent(player, block, pickaxeProfile, playerProfile);
+        } else {
+            // Normal mode: individual holograms per find
+            ExtractionEnchant extraction = ExtractionEnchant.getInstance();
+            if (extraction != null) extraction.tryTriggerForAoE(player, block, pickaxeProfile, playerProfile);
+
+            RadioactiveEnchant radioactive = RadioactiveEnchant.getInstance();
+            if (radioactive != null) radioactive.tryTriggerForAoE(player, block, pickaxeProfile, playerProfile);
+
+            MerchantEnchant merchant = MerchantEnchant.getInstance();
+            if (merchant != null) merchant.tryTriggerForAoE(player, block, pickaxeProfile, playerProfile);
+
+            ScavengerEnchant scavenger = ScavengerEnchant.getInstance();
+            if (scavenger != null) scavenger.tryTriggerForAoE(player, block, pickaxeProfile, playerProfile);
+        }
+    }
+
+    /**
+     * Starts essence/atom accumulation for this player's upcoming AoE proc.
+     * While active, {@link #rollSideEffects} silently collects essence and atoms
+     * instead of showing per-block holograms.
+     */
+    public static void startAccumulation(java.util.UUID uuid) {
+        accumulation.put(uuid, new int[]{0, 0, 0, 0}); // [essence, atoms, coins, slots]
+    }
+
+    /**
+     * Adds atoms from non-rollSideEffects sources (e.g. Jackhammer Rare dissolution)
+     * to the current accumulation buffer. No-op if accumulation is not active.
+     */
+    public static void addAccumulatedAtoms(java.util.UUID uuid, int count) {
+        int[] acc = accumulation.get(uuid);
+        if (acc != null) acc[1] += count;
+    }
+
+    /**
+     * Ends accumulation, calls {@code checkAtoms} if atoms were found, and shows one
+     * combined essence/atom hologram centred on {@code origin}.
+     */
+    public static void flushAccumulation(Player player, Block origin, PickaxeProfile pickaxeProfile) {
+        int[] acc = accumulation.remove(player.getUniqueId());
+        if (acc == null) return;
+        int totalEssence = acc[0];
+        int totalAtoms   = acc[1];
+        int totalCoins   = acc[2];
+        int totalSlots   = acc[3];
+
+        if (totalAtoms > 0 && pickaxeProfile != null) {
+            PickaxeManager.getInstance().checkAtoms(pickaxeProfile, player);
+        }
+
+        Location loc = origin.getLocation().add(0.5, 1.5, 0.5);
+
+        // Stack hologram heights so multiple don't overlap
+        double holoY = 1.0;
+
+        if (totalSlots > 0) {
+            AnimationRegistry.getInstance().play("hologram",
+                    origin.getLocation().add(0.5, holoY, 0.5),
+                    java.util.List.of(player),
+                    "&#55FF55📦 &#FFFFFF&l+" + Utils.formatNumber(totalSlots) + " &#55FF55Slots");
+            holoY += 0.8;
+        }
+
+        if (totalCoins > 0) {
+            AnimationRegistry.getInstance().play("hologram",
+                    origin.getLocation().add(0.5, holoY, 0.5),
+                    java.util.List.of(player),
+                    "&#FFD700⛁ &#FFFFFF&l+" + Utils.formatNumber(totalCoins) + " &#FFD700Coins");
+            holoY += 0.8;
+        }
+
+        if (totalAtoms > 0) {
+            AnimationRegistry.getInstance().play("atom", loc, java.util.List.of(player), totalAtoms);
+            AnimationRegistry.getInstance().play("hologram",
+                    origin.getLocation().add(0.5, holoY, 0.5),
+                    java.util.List.of(player),
+                    "&#FFEE00⚛ &#FFFFFF&l+" + Utils.formatNumber(totalAtoms) + " &#FFEE00Atoms");
+            holoY += 0.8;
+        }
+
+        if (totalEssence > 0) {
+            AnimationRegistry.getInstance().play("essence", loc, java.util.List.of(player), totalEssence);
+            AnimationRegistry.getInstance().play("hologram",
+                    origin.getLocation().add(0.5, holoY, 0.5),
+                    java.util.List.of(player),
+                    "&#B366D9🔥 &#FFFFFF&l+" + Utils.formatNumber(totalEssence) + " &#B366D9Essence");
+        }
     }
 
     // -------------------------------------------------------------------------
     // Internal helpers
     // -------------------------------------------------------------------------
+
+    /** Per-player accumulation context: [0]=essence, [1]=atoms. */
+    private static final java.util.Map<java.util.UUID, int[]> accumulation =
+            new java.util.concurrent.ConcurrentHashMap<>();
 
     private static Material resolveBaseDrop(Block block, ItemStack tool, JavaPlugin plugin)
     {
@@ -149,7 +252,14 @@ public final class AoEDropResolver
         if (pickaxeProfile == null || pickaxeProfile.enchants == null) return mat;
         EnchantData data = pickaxeProfile.enchants.getEnchant(Enchants.ALCHEMY);
         if (data == null || !data.enabled || data.level <= 0) return mat;
-        if (!Utils.chance(data.getCurrentChance())) return mat;
+
+        double chance = data.getCurrentChance();
+        // Uncommon (Overflow): +10% to trigger chance
+        if (AlchemyStoneHandler.hasStone(data, "Uncommon")) chance += 10.0;
+        // Legendary (Philosopher's Touch): always triggers
+        boolean legendary = AlchemyStoneHandler.hasStone(data, "Legendary");
+        if (!legendary && !Utils.chance(chance)) return mat;
+
         AlchemyEnchant alchemy = AlchemyEnchant.getInstance();
         if (alchemy == null) return mat;
         Material upgraded = alchemy.getUpgradeResult(mat);
@@ -161,10 +271,24 @@ public final class AoEDropResolver
         if (pickaxeProfile == null || pickaxeProfile.enchants == null) return mat;
         EnchantData data = pickaxeProfile.enchants.getEnchant(Enchants.FURNACE);
         if (data == null || !data.enabled || data.level <= 0) return mat;
-        if (!Utils.chance(data.getCurrentChance())) return mat;
+
+        // Legendary (Universal Smelt): always activates
+        boolean legendary = FurnaceStoneHandler.hasStone(data, "Legendary");
+        if (!legendary && !Utils.chance(data.getCurrentChance())) return mat;
+
         FurnaceEnchant furnace = FurnaceEnchant.getInstance();
         if (furnace == null) return mat;
         Material smelted = furnace.getSmeltResult(mat);
-        return smelted != null ? smelted : mat;
+        if (smelted == null && legendary) smelted = mat; // Legendary smelts any block type as-is
+
+        if (smelted == null) return mat;
+
+        // Rare (Alchemical Forge): 20% chance to further upgrade smelted result via chain
+        if (FurnaceStoneHandler.hasStone(data, "Rare") && Utils.chance(20.0)) {
+            Material chained = furnace.getAlchemicalForgeResult(smelted);
+            if (chained != null) smelted = chained;
+        }
+
+        return smelted;
     }
 }

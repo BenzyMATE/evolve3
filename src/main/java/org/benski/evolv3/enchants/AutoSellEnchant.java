@@ -93,13 +93,29 @@ public class AutoSellEnchant implements Listener
             EnchantData enchant = profile.enchants.getEnchant(Enchants.AUTO_SELL);
             if (enchant == null || !enchant.enabled || enchant.level <= 0) return;
 
-            if (!Utils.chance(enchant.getCurrentChance())) return;
+            double triggerChance = enchant.getCurrentChance();
 
-            sellBackpack(player, playerProfile, event.getBlock());
+            // Uncommon (Rapid Sale): +5% to proc chance
+            if (AutoSellStoneHandler.hasStone(enchant, "Uncommon")) {
+                triggerChance += 5.0;
+            }
+
+            // Legendary (Full Liquidation): sell when backpack is full, bypassing proc chance
+            boolean hasLegendary = AutoSellStoneHandler.hasStone(enchant, "Legendary");
+            boolean backpackFull = playerProfile.backpack.isFull();
+
+            if (!Utils.chance(triggerChance) && !(hasLegendary && backpackFull)) return;
+
+            // Epic (Gold Rush): activate 15s 1.5x coin multiplier on each proc
+            if (AutoSellStoneHandler.hasStone(enchant, "Epic")) {
+                AutoSellStoneHandler.getInstance().activateGoldRush(player.getUniqueId());
+            }
+
+            sellBackpack(player, playerProfile, enchant, event.getBlock());
         });
     }
 
-    private void sellBackpack(Player player, PlayerProfile playerProfile, Block block)
+    private void sellBackpack(Player player, PlayerProfile playerProfile, EnchantData enchant, Block block)
     {
         Backpack backpack = playerProfile.backpack;
         List<BackpackItem> items = backpack.getItems();
@@ -117,9 +133,25 @@ public class AutoSellEnchant implements Listener
             item.markForDeletion();
         }
 
+        // Common (Commission): +10% coin value
+        if (AutoSellStoneHandler.hasStone(enchant, "Common")) {
+            multiplier *= 1.10;
+        }
+
+        // Epic (Gold Rush): 1.5x multiplier while active
+        if (AutoSellStoneHandler.getInstance().isGoldRushActive(player.getUniqueId())) {
+            multiplier *= AutoSellStoneHandler.GOLD_RUSH_MULTIPLIER;
+        }
+
         double finalValue = totalValue * multiplier;
         backpack.removeMarkedItems();
         playerProfile.addCoins(finalValue);
+
+        // Rare (Side Income): 10% of earnings also awarded as essence
+        if (AutoSellStoneHandler.hasStone(enchant, "Rare")) {
+            playerProfile.addEssence((int)(finalValue * 0.10));
+        }
+
         playerProfile.save(null);
 
         playEffects(block, player, finalValue, totalItems);

@@ -83,6 +83,9 @@ public class Backpack extends MongoSubDoc
 
     public boolean addItem(Player player, Material material, int amount, boolean evolveItem)
     {
+        if (material == null || material.isAir() || material == Material.PACKED_ICE) {
+            return false;
+        }
         if (totalItems >= maxSize) {
             return false;
         }

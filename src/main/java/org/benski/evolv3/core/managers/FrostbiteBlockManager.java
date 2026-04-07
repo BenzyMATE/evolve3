@@ -11,10 +11,12 @@ import org.bukkit.plugin.java.JavaPlugin;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Persists Frostbite-frozen block locations and their original materials
@@ -31,6 +33,9 @@ public class FrostbiteBlockManager
     private JavaPlugin plugin;
     private File dataFile;
     private FileConfiguration data;
+
+    /** Live in-memory cache: location key → original block material. Cleared on restore. */
+    private final Map<String, Material> liveCache = new ConcurrentHashMap<>();
 
     private FrostbiteBlockManager() {}
 
@@ -72,6 +77,7 @@ public class FrostbiteBlockManager
         blocks.add(entry);
         data.set("blocks", blocks);
         save();
+        liveCache.put(locKey(loc), original);
     }
 
     /**
@@ -90,7 +96,59 @@ public class FrostbiteBlockManager
         if (removed) {
             data.set("blocks", blocks);
             save();
+            liveCache.remove(locKey(loc));
         }
+    }
+
+    /**
+     * Removes multiple frozen blocks in a single save pass (used by Shatter).
+     *
+     * @param locations the locations to remove
+     */
+    public void removeFrozenBlocks(List<Location> locations) {
+        List<Map<String, Object>> blocks = getMutableBlockList();
+        for (Location loc : locations) {
+            blocks.removeIf(e ->
+                    Objects.equals(e.get("world"), loc.getWorld().getName())
+                    && toInt(e.get("x")) == loc.getBlockX()
+                    && toInt(e.get("y")) == loc.getBlockY()
+                    && toInt(e.get("z")) == loc.getBlockZ()
+            );
+            liveCache.remove(locKey(loc));
+        }
+        data.set("blocks", blocks);
+        save();
+    }
+
+    /**
+     * Returns an unmodifiable view of the live frozen block cache.
+     * Keys are {@code "world,x,y,z"} strings; values are original block materials.
+     */
+    public Map<String, Material> getLiveCache() {
+        return Collections.unmodifiableMap(liveCache);
+    }
+
+    /**
+     * Parses a live-cache key back into a {@link Location}.
+     * Returns {@code null} if the key is malformed or the world is not loaded.
+     */
+    public static Location parseKey(String key) {
+        String[] parts = key.split(",", 4);
+        if (parts.length < 4) return null;
+        World world = Bukkit.getWorld(parts[0]);
+        if (world == null) return null;
+        try {
+            int x = Integer.parseInt(parts[1]);
+            int y = Integer.parseInt(parts[2]);
+            int z = Integer.parseInt(parts[3]);
+            return new Location(world, x, y, z);
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+
+    private static String locKey(Location loc) {
+        return loc.getWorld().getName() + "," + loc.getBlockX() + "," + loc.getBlockY() + "," + loc.getBlockZ();
     }
 
     // -------------------------------------------------------------------------
@@ -121,6 +179,7 @@ public class FrostbiteBlockManager
 
         data.set("blocks", null);
         save();
+        liveCache.clear();
 
         if (count > 0) {
             plugin.getLogger().info("Restored " + count + " Frostbite-frozen block(s) from last session.");

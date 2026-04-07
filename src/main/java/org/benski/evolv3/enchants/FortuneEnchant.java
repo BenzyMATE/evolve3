@@ -18,6 +18,7 @@ import org.bukkit.inventory.ItemStack;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * Listener for the Fortune custom enchantment.
@@ -41,7 +42,9 @@ import java.util.concurrent.ConcurrentHashMap;
 public class FortuneEnchant implements Listener
 {
     /** Pending fortune drop amount per player, consumed by BreakListener at HIGHEST priority. */
-    private static final Map<UUID, Integer> pendingDropAmount = new ConcurrentHashMap<>();
+    private static final Map<UUID, Integer> pendingDropAmount     = new ConcurrentHashMap<>();
+    /** Rare (Gem Seeker): 20% chance per block break to find essence. */
+    private static final Map<UUID, Boolean> pendingGemSeeker = new ConcurrentHashMap<>();
 
     /**
      * Returns and removes the pending fortune drop amount for a player.
@@ -54,6 +57,12 @@ public class FortuneEnchant implements Listener
     {
         Integer amount = pendingDropAmount.remove(uuid);
         return amount != null ? amount : -1;
+    }
+
+    public static boolean popGemSeeker(UUID uuid)
+    {
+        Boolean flag = pendingGemSeeker.remove(uuid);
+        return flag != null && flag;
     }
 
     /**
@@ -94,7 +103,33 @@ public class FortuneEnchant implements Listener
             EnchantData enchant = profile.enchants.getEnchant(Enchants.FORTUNE);
             if (enchant == null || !enchant.enabled || enchant.level <= 0) return;
 
-            pendingDropAmount.put(player.getUniqueId(), getDropAmount(enchant.level));
+            UUID uuid = player.getUniqueId();
+            int drop = getDropAmount(enchant.level);
+
+            // Common (Raised Cap): +1 to the drop amount at all levels
+            if (FortuneStoneHandler.hasStone(enchant, "Common")) drop += 1;
+
+            // Uncommon (Stack): every 20 Fortune procs grants +1 bonus block
+            if (FortuneStoneHandler.hasStone(enchant, "Uncommon")
+                    && FortuneStoneHandler.incrementAndCheckStack(uuid)) {
+                drop += 1;
+            }
+
+            // Epic (Wild Strike): 10% chance to triple the drop multiplier for this block
+            if (FortuneStoneHandler.hasStone(enchant, "Epic")
+                    && ThreadLocalRandom.current().nextInt(100) < 10) {
+                drop *= 3;
+            }
+
+            // Legendary (Double Down): doubles the entire Fortune drop multiplier
+            if (FortuneStoneHandler.hasStone(enchant, "Legendary")) drop *= 2;
+
+            pendingDropAmount.put(uuid, drop);
+
+            // Rare (Gem Seeker): 20% chance per block break to find essence — resolved in BreakListener
+            if (FortuneStoneHandler.hasStone(enchant, "Rare")) {
+                pendingGemSeeker.put(uuid, true);
+            }
         });
     }
 }

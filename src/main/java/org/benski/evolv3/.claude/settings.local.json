@@ -21,7 +21,19 @@
       "Bash(export JAVA_HOME=\"/c/Program Files/Java/jdk-21\" && export PATH=\"$JAVA_HOME/bin:$PATH\" && \"/c/Program Files/JetBrains/IntelliJ IDEA Community Edition 2024.2.2/plugins/maven/lib/maven3/bin/mvn\" -f \"/c/Users/benje/IdeaProjects/Evolv3/pom.xml\" compile 2>&1)",
       "Bash(cmd.exe:*)",
       "Bash(\"/c/Users/benje/AppData/Local/Programs/IntelliJ IDEA Community Edition/plugins/maven/lib/maven3/bin/mvn\" compile:*)",
-      "Bash(\"C:/Users/benje/AppData/Local/Programs/IntelliJ IDEA Community Edition/plugins/maven/lib/maven3/bin/mvn\" compile:*)"
+      "Bash(\"C:/Users/benje/AppData/Local/Programs/IntelliJ IDEA Community Edition/plugins/maven/lib/maven3/bin/mvn\" compile:*)",
+      "Bash(npx:*)",
+      "mcp__ruflo__swarm_init",
+      "Read(//c/Users/benje/IdeaProjects/Evolv3/**)",
+      "Bash(\"/c/Program Files/JetBrains/IntelliJ IDEA Community Edition 2024.2.2/plugins/maven/lib/maven3/bin/mvn\" package -q)",
+      "Bash(\"/c/Program Files/JetBrains/IntelliJ IDEA Community Edition 2024.2.2/plugins/maven/lib/maven3/bin/mvn\" package)",
+      "WebFetch(domain:github.com)",
+      "Bash(gh run:*)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "WebFetch(domain:repo.papermc.io)",
+      "Bash(\"/c/Program Files/JetBrains/IntelliJ IDEA Community Edition 2024.2.2/plugins/maven/lib/maven3/bin/mvn\" clean compile -q)",
+      "Bash(node -e \":*)",
+      "Bash(\"/c/Program Files/JetBrains/IntelliJ IDEA Community Edition 2024.2.2/plugins/maven/lib/maven3/bin/mvn\" package -q -f /c/Users/benje/IdeaProjects/Evolv3/pom.xml)"
     ]
   },
   "enableAllProjectMcpServers": true,

@@ -47,6 +47,10 @@ public class PlayerPreferences extends MongoSubDoc
     public boolean atomHologram  = true;
     public boolean atomGlow      = true;
 
+    // ── Experimental toggles ─────────────────────────────────────────────
+    /** Live lore refresh on the pickaxe menu. Off by default (experimental). */
+    public boolean pickaxeMenuAnimation = false;
+
     // ── Per-enchant notification / effect toggles ─────────────────────────
     /** Key = enchant display name (e.g. "Furnace"). Created on first access with defaults. */
     public Map<String, EnchantPreference> enchantPrefs = new HashMap<>();
@@ -115,6 +119,7 @@ public class PlayerPreferences extends MongoSubDoc
         doc.put("atomParticles",    atomParticles);
         doc.put("atomHologram",     atomHologram);
         doc.put("atomGlow",         atomGlow);
+        doc.put("pickaxeMenuAnimation", pickaxeMenuAnimation);
         Document enchantPrefsDoc = new Document();
         for (Map.Entry<String, EnchantPreference> entry : enchantPrefs.entrySet()) {
             enchantPrefsDoc.put(entry.getKey(), entry.getValue().toDocument());
@@ -166,7 +171,8 @@ public class PlayerPreferences extends MongoSubDoc
         this.atomSound        = getBoolOrDefault(document, "atomSound",        true);
         this.atomParticles    = getBoolOrDefault(document, "atomParticles",    true);
         this.atomHologram     = getBoolOrDefault(document, "atomHologram",     true);
-        this.atomGlow         = getBoolOrDefault(document, "atomGlow",         true);
+        this.atomGlow              = getBoolOrDefault(document, "atomGlow",              true);
+        this.pickaxeMenuAnimation  = getBoolOrDefault(document, "pickaxeMenuAnimation",  false);
         Document enchantPrefsDoc = document.get("enchantPrefs", Document.class);
         if (enchantPrefsDoc != null) {
             for (String key : enchantPrefsDoc.keySet()) {

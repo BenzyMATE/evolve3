@@ -56,6 +56,9 @@ public class RadioactiveEnchant implements Listener
     /** Pending bonus chance per player, consumed by BreakListener at HIGHEST priority. */
     private static final Map<UUID, Double> pendingBonus = new ConcurrentHashMap<>();
 
+    /** Pending atom amount multiplier — set by Rare/Epic stones, consumed by BreakListener. */
+    private static final Map<UUID, Integer> pendingAmountMultiplier = new ConcurrentHashMap<>();
+
     public RadioactiveEnchant()
     {
         instance = this;
@@ -72,6 +75,19 @@ public class RadioactiveEnchant implements Listener
     {
         Double bonus = pendingBonus.remove(uuid);
         return bonus != null ? bonus : 0.0;
+    }
+
+    /**
+     * Returns and removes the pending atom amount multiplier for a player.
+     * Called by {@code BreakListener} inside {@code checkAtomDiscovery}.
+     *
+     * @param uuid the player's UUID
+     * @return the multiplier (1 if no stone effect is pending)
+     */
+    public static int popAmountMultiplier(UUID uuid)
+    {
+        Integer mult = pendingAmountMultiplier.remove(uuid);
+        return mult != null ? mult : 1;
     }
 
     @EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
@@ -109,7 +125,28 @@ public class RadioactiveEnchant implements Listener
                     .getDouble(ConfigPaths.Enchants.Radioactive.MAX_LEVEL, 100.0);
 
             double bonus = (enchant.level / maxLevel) * maxChance;
+
+            // Common (Irradiated): +1% to atom discovery chance
+            if (RadioactiveStoneHandler.hasStone(enchant, "Common")) bonus += 1.0;
+
+            // Legendary (Permanent Irradiation): +5% to atom discovery chance
+            if (RadioactiveStoneHandler.hasStone(enchant, "Legendary")) bonus += 5.0;
+
+            // Uncommon (Pinpoint): every 5th proc guarantees an atom discovery
+            if (RadioactiveStoneHandler.hasStone(enchant, "Uncommon")
+                    && RadioactiveStoneHandler.incrementAndCheckPinpoint(player.getUniqueId())) {
+                bonus += 100.0;
+            }
+
             pendingBonus.put(player.getUniqueId(), bonus);
+
+            // Epic (Enriched): always double atom amount
+            // Rare (Double Exposure): 20% chance to double atom amount
+            if (RadioactiveStoneHandler.hasStone(enchant, "Epic")) {
+                pendingAmountMultiplier.put(player.getUniqueId(), 2);
+            } else if (RadioactiveStoneHandler.hasStone(enchant, "Rare") && Utils.chance(20.0)) {
+                pendingAmountMultiplier.put(player.getUniqueId(), 2);
+            }
         });
     }
 
@@ -141,6 +178,17 @@ public class RadioactiveEnchant implements Listener
         int max    = defaultCfg.getInt(ConfigPaths.Default.Atoms.DISCOVERY_MAX_AMOUNT, 3);
         int amount = Utils.amount(min, max);
 
+        // Epic (Enriched): always double; Rare (Double Exposure): 20% chance to double
+        EnchantData enchantData = pickaxeProfile.enchants != null
+                ? pickaxeProfile.enchants.getEnchant(Enchants.RADIOACTIVE) : null;
+        if (enchantData != null) {
+            if (RadioactiveStoneHandler.hasStone(enchantData, "Epic")) {
+                amount *= 2;
+            } else if (RadioactiveStoneHandler.hasStone(enchantData, "Rare") && Utils.chance(20.0)) {
+                amount *= 2;
+            }
+        }
+
         pickaxeProfile.evolutionAtoms += amount;
         PickaxeManager.getInstance().checkAtoms(pickaxeProfile, player);
 
@@ -155,5 +203,51 @@ public class RadioactiveEnchant implements Listener
             text = text.replace("%amount%", Utils.formatNumber(amount));
             AnimationRegistry.getInstance().play("hologram", hologramLoc, List.of(player), text);
         }
+    }
+
+    /**
+     * Silent variant for large AoE enchants (e.g. Jackhammer).
+     * Awards atoms with no animations or holograms.
+     *
+     * @return atoms awarded this block, or 0 if not triggered
+     */
+    public int tryTriggerForAoESilent(Player player, Block block,
+                                      PickaxeProfile pickaxeProfile, PlayerProfile playerProfile)
+    {
+        FileConfiguration defaultCfg = ConfigRegistry.getInstance().get(ConfigNames.DEFAULT);
+        double baseChance = defaultCfg.getDouble(ConfigPaths.Default.Atoms.DISCOVERY_CHANCE, 1.0);
+
+        double radioactiveBonus = 0.0;
+        if (pickaxeProfile != null && pickaxeProfile.enchants != null) {
+            EnchantData enchant = pickaxeProfile.enchants.getEnchant(Enchants.RADIOACTIVE);
+            if (enchant != null && enchant.enabled && enchant.level > 0) {
+                FileConfiguration enchantsCfg = StorageRegistryManager.getInstance()
+                        .getConfig(ConfigNames.ENCHANTS);
+                double maxChance = enchantsCfg.getDouble(ConfigPaths.Enchants.Radioactive.MAX_CHANCE, 7.5);
+                double maxLevel  = enchantsCfg.getDouble(ConfigPaths.Enchants.Radioactive.MAX_LEVEL, 100.0);
+                radioactiveBonus = (enchant.level / maxLevel) * maxChance;
+            }
+        }
+
+        if (!Utils.chance(baseChance + radioactiveBonus)) return 0;
+
+        int min    = defaultCfg.getInt(ConfigPaths.Default.Atoms.DISCOVERY_MIN_AMOUNT, 1);
+        int max    = defaultCfg.getInt(ConfigPaths.Default.Atoms.DISCOVERY_MAX_AMOUNT, 3);
+        int amount = Utils.amount(min, max);
+
+        // Epic (Enriched): always double; Rare (Double Exposure): 20% chance to double
+        EnchantData enchantData = pickaxeProfile.enchants != null
+                ? pickaxeProfile.enchants.getEnchant(Enchants.RADIOACTIVE) : null;
+        if (enchantData != null) {
+            if (RadioactiveStoneHandler.hasStone(enchantData, "Epic")) {
+                amount *= 2;
+            } else if (RadioactiveStoneHandler.hasStone(enchantData, "Rare") && Utils.chance(20.0)) {
+                amount *= 2;
+            }
+        }
+
+        // Only accumulate — caller is responsible for calling checkAtoms once after the full AoE pass
+        pickaxeProfile.evolutionAtoms += amount;
+        return amount;
     }
 }
