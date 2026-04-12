@@ -257,7 +257,19 @@ public class StorageRegistryManager
     }
 
     /**
-     * Delete a config file.
+     * Removes a config from the in-memory cache without touching the file on disk.
+     * Use this during plugin shutdown to release memory while preserving saved data.
+     *
+     * @param name The name of the config (without .yml extension)
+     */
+    public void unloadConfig(String name)
+    {
+        configCache.remove(name);
+    }
+
+    /**
+     * Delete a config file from disk and remove it from the cache.
+     * Only use this when you intentionally want to destroy the file.
      *
      * @param name The name of the config (without .yml extension)
      * @return true if deletion was successful

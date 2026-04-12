@@ -52,7 +52,7 @@ public class ConfigRegistry implements Registry<FileConfiguration>
      */
     @Override
     public void cleanup() {
-        configs.forEach(storageManager::deleteConfig);
+        configs.forEach(storageManager::unloadConfig);
     }
 
 }
