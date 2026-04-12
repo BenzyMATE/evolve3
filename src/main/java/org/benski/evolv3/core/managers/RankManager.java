@@ -5,6 +5,7 @@ import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import net.matrixcreations.libraries.MatrixColorAPI;
 import org.benski.evolv3.core.constants.ConfigNames;
 import org.benski.evolv3.core.constants.ConfigPaths;
+import org.benski.evolv3.core.managers.BorderManager;
 import org.benski.evolv3.core.managers.EvolveScoreboardManager;
 import org.benski.evolv3.datacenters.PlayerDataCenter;
 import org.benski.evolv3.models.player.PlayerProfile;
@@ -146,6 +147,7 @@ public final class RankManager
         profile.rank = nextRank;
         applyPermissions(player, profile);
         profile.save(null);
+        BorderManager.getInstance().updatePlayerBorder(player, nextRank);
         EvolveScoreboardManager.getInstance().resetRankAnimation(player);
 
         String prefix = MatrixColorAPI.process(getRankPrefix(cfg, nextRank));
@@ -184,6 +186,9 @@ public final class RankManager
         profile.rank = rankId;
         applyPermissions(target, profile);
         profile.save(null);
+        if (target.isOnline()) {
+            BorderManager.getInstance().updatePlayerBorder(target, rankId);
+        }
 
         String prefix = MatrixColorAPI.process(getRankPrefix(cfg, rankId));
 

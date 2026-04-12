@@ -53,3 +53,7 @@ commands:
   test:
     description: Test command
     usage: /<command>
+  border:
+    description: Manage prison zone visual borders
+    usage: /<command> <wand|set|remove|list|reload>
+    permission: evolv3.admin

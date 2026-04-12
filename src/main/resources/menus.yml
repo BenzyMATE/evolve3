@@ -195,257 +195,276 @@ Pickaxe Limit Menu:
 
 # Preferences Menu
 Preferences Menu:
-  Title: "&8Preferences"
+  Title: "&#888888⚙ &f&lPreferences"
   Animations:
-    Material: FIREWORK_ROCKET
-    Name: "&#00FFFFAnimations"
+    Material: COMPARATOR
+    Name: "&#00FFFF⚡ &f&lAnimations"
     Lore:
       - ''
-      - ' &#FFFFFF&lDescription'
-      - ' &8| &#777777Configure pickup effects,'
-      - ' &8| &#777777atom visuals, and enchant speed.'
+      - ' &#FFFFFF&lVisual Effects & Animations'
+      - ' &8| &#AAAAAA Pickup animation style'
+      - ' &8| &#AAAAAA Atom & Essence FX toggles'
+      - ' &8| &#AAAAAA Enchant roll speed'
       - ''
-      - ' &8| &aLeft-Click &#AAAAAAto open'
+      - ' &#AAAAAA▸ Left-Click to open'
       - ''
   Enchants:
     Material: ENCHANTING_TABLE
-    Name: "&#00FFFFEnchants"
+    Name: "&#FFEE00✦ &f&lEnchant Notifications"
     Lore:
       - ''
-      - ' &#FFFFFF&lDescription'
-      - ' &8| &#777777Configure per-enchant notifications,'
-      - ' &8| &#777777sounds, and visual effects.'
+      - ' &#FFFFFF&lPer-Enchant Feedback'
+      - ' &8| &#AAAAAA Chat messages on proc'
+      - ' &8| &#AAAAAA Title popups on proc'
+      - ' &8| &#AAAAAA Sounds on proc'
       - ''
-      - ' &8| &aLeft-Click &#AAAAAAto open'
+      - ' &#AAAAAA▸ Left-Click to open'
       - ''
   Messages:
     Material: PAPER
-    Name: "&#888888✉ Messages"
+    Name: "&#555555✉ &7Messages"
     Lore:
-      - ' &#777777&oComing soon...'
+      - ''
+      - ' &#555555&oNot yet available.'
+      - ''
   Experimental:
-    Material: COMMAND_BLOCK
-    Name: "&#FF8800⚗ Experimental"
+    Material: NETHER_STAR
+    Name: "&#FF8800⚗ &f&lExperimental"
     Lore:
       - ''
-      - ' &#FFFFFF&lDescription'
-      - ' &8| &#777777Toggle experimental features'
-      - ' &8| &#777777that may affect performance.'
+      - ' &#FFFFFF&lBeta Features'
+      - ' &8| &#AAAAAA Experimental toggles that'
+      - ' &8| &#AAAAAA may have visual side effects.'
       - ''
-      - ' &8| &aLeft-Click &#AAAAAAto open'
+      - ' &#AAAAAA▸ Left-Click to open'
       - ''
   Close:
     Material: BARRIER
-    Name: "&cClose"
+    Name: "&#FF5555✕ &f&lClose"
     Lore:
-      - ' &8| &aLeft-Click &7to close'
+      - ''
+      - ' &#AAAAAA▸ Left-Click to close'
+      - ''
 
 # Experimental Menu
 Experimental Menu:
-  Title: "&8P &7» &8Experimental"
+  Title: "&#888888⚙ &f&lPreferences &8— &#FF8800Experimental"
   PickaxeAnimation:
     EnabledMaterial: LIME_DYE
-    DisabledMaterial: RED_DYE
-    Name: "&#FF8800Pickaxe Menu Animation"
+    DisabledMaterial: GRAY_DYE
+    Name: "&#FF8800Menu Title Animation"
     Lore:
       - ''
-      - ' &#FFFFFF&lDescription'
-      - ' &8| &#777777Enables live lore refresh on'
-      - ' &8| &#777777the pickaxe menu every 2 seconds.'
-      - ' &8| &#888888&oMay cause visual flicker.'
+      - ' &#FFFFFF&lPickaxe Menu Title'
+      - ' &8| &#AAAAAA Cycles through progress icons'
+      - ' &8| &#AAAAAA in the Pickaxe Menu title bar.'
+      - ' &8| &#555555&oMay cause visual flicker.'
       - ''
       - ' {status}'
-      - ' &8| &aLeft-Click &#AAAAAAto toggle'
+      - ''
+      - ' &#AAAAAA▸ Left-Click to toggle'
       - ''
 
 # Animations Menu
 Animations Menu:
-  Title: "&8P &7» &8Animations"
+  Title: "&#888888⚙ &f&lPreferences &8— &#00FFFFAnimations"
   Back:
-    Material: RED_STAINED_GLASS_PANE
-    Name: "&#AAAAAA← Back"
+    Material: ARROW
+    Name: "&#AAAAAA← &f&lBack"
     Lore:
-      - ' &8| &aLeft-Click &7to go back'
+      - ''
+      - ' &#AAAAAA▸ Left-Click to return'
+      - ''
   PickupAnimation:
     Label:
       Material: COMPARATOR
-      Name: "&#00FFFF⬡ Pickup Animation"
+      Name: "&#00FFFF⬡ &f&lPickup Animation"
       Lore:
         - ''
-        - ' &#FFFFFF&lDescription'
-        - ' &8| &#777777Controls which animation'
-        - ' &8| &#777777plays when you mine a block.'
+        - ' &#FFFFFF&lPickup Animation'
+        - ' &8| &#AAAAAA The effect that plays when'
+        - ' &8| &#AAAAAA a block enters your backpack.'
         - ''
-    # Material shown when option is not selected; SelectedMaterial when it is
     Material: ENDER_PEARL
     SelectedMaterial: ENDER_EYE
-    # {status} is replaced with the selected/unselected indicator at render time
     Default:
       Name: "Default"
       Lore:
-        - ' &8| &#777777Block floats up and dissolves into your backpack.'
+        - ' &8| &#AAAAAA Block floats up and dissolves'
+        - ' &8| &#AAAAAA into your backpack.'
         - ''
-        - '{status}'
+        - ' {status}'
+        - ''
+        - ' &#AAAAAA▸ Left-Click to select'
         - ''
     Simple:
       Name: "Simple"
       Lore:
-        - ' &8| &#777777Items fade out and teleport to your hand.'
+        - ' &8| &#AAAAAA Items fade out and jump'
+        - ' &8| &#AAAAAA directly into your backpack.'
         - ''
-        - '{status}'
+        - ' {status}'
+        - ''
+        - ' &#AAAAAA▸ Left-Click to select'
         - ''
     Disabled:
       Name: "Disabled"
       Lore:
-        - ' &8| &#777777Items are added straight to your backpack.'
+        - ' &8| &#AAAAAA No animation — blocks go'
+        - ' &8| &#AAAAAA straight into your backpack.'
         - ''
-        - '{status}'
+        - ' {status}'
+        - ''
+        - ' &#AAAAAA▸ Left-Click to select'
         - ''
   EnchantSpeed:
     Label:
       Material: CLOCK
-      Name: "&#FFEE00⏱ Enchant Speed"
+      Name: "&#FFEE00⏱ &f&lEnchant Roll Speed"
       Lore:
         - ''
-        - ' &#FFFFFF&lDescription'
-        - ' &8| &#777777How fast the enchant roll'
-        - ' &8| &#777777animation plays.'
+        - ' &#FFFFFF&lEnchant Roll Speed'
+        - ' &8| &#AAAAAA How fast the selection'
+        - ' &8| &#AAAAAA animation plays.'
         - ''
-    # Material shown when option is not selected; SelectedMaterial when it is
-    # {status} is replaced with the selected/unselected indicator at render time
     Material: ENDER_PEARL
     SelectedMaterial: ENDER_EYE
     OptionLore:
-      - '{status}'
+      - ' {status}'
+      - ''
+      - ' &#AAAAAA▸ Left-Click to select'
       - ''
   AtomFX:
     Label:
       Material: GOLD_NUGGET
-      Name: "&#FFEE00⚛ Atom FX"
+      Name: "&#FFEE00⚛ &f&lAtom FX"
       Lore:
         - ''
-        - ' &#FFFFFF&lDescription'
-        - ' &8| &#777777Toggle parts of the'
-        - ' &8| &#777777Atom discovery effect.'
+        - ' &#FFFFFF&lAtom Discovery Effects'
+        - ' &8| &#AAAAAA Toggle each part of the'
+        - ' &8| &#AAAAAA atom pickup animation.'
         - ''
-    # EnabledMaterial / DisabledMaterial apply to all toggles in this section
-    # {status} is replaced with the enabled/disabled indicator at render time
     EnabledMaterial: LIME_DYE
-    DisabledMaterial: RED_DYE
+    DisabledMaterial: GRAY_DYE
     Sound:
-      Name: "Sound"
+      Name: "Atom Sound"
       Lore:
-        - ' &8| &#777777Arrival and discovery sounds.'
+        - ' &8| &#AAAAAA Discovery and arrival sounds.'
         - ''
         - ' {status}'
         - ''
-        - ' &8| &aLeft-Click &#AAAAAAto toggle'
+        - ' &#AAAAAA▸ Left-Click to toggle'
         - ''
     Particles:
-      Name: "Particles"
+      Name: "Atom Particles"
       Lore:
-        - ' &8| &#777777The flying orb particles.'
+        - ' &8| &#AAAAAA Flying orb trail particles.'
         - ''
         - ' {status}'
         - ''
-        - ' &8| &aLeft-Click &#AAAAAAto toggle'
+        - ' &#AAAAAA▸ Left-Click to toggle'
         - ''
     Hologram:
-      Name: "Hologram"
+      Name: "Atom Hologram"
       Lore:
-        - ' &8| &#777777Floating +Atoms text.'
+        - ' &8| &#AAAAAA Floating &#FFEE00+Atoms &#AAAAAAAAtext.'
         - ''
         - ' {status}'
-        - ' &8| &aLeft-Click &#AAAAAAto toggle'
+        - ''
+        - ' &#AAAAAA▸ Left-Click to toggle'
         - ''
     Glow:
-      Name: "Glow"
+      Name: "Atom Glow"
       Lore:
-        - ' &8| &#777777Brief glow when received.'
+        - ' &8| &#AAAAAA Brief glow on discovery.'
         - ''
-        - '{status}'
+        - ' {status}'
         - ''
-        - ' &8| &aLeft-Click &#AAAAAAto toggle'
+        - ' &#AAAAAA▸ Left-Click to toggle'
         - ''
   EssenceFX:
     Label:
       Material: BLAZE_POWDER
-      Name: "&#B366D9🔥 Essence FX"
+      Name: "&#B366D9🔥 &f&lEssence FX"
       Lore:
         - ''
-        - ' &#FFFFFF&lDescription'
-        - ' &8| &#777777Toggle parts of the'
-        - ' &8| &#777777Essence discovery effect.'
+        - ' &#FFFFFF&lEssence Discovery Effects'
+        - ' &8| &#AAAAAA Toggle each part of the'
+        - ' &8| &#AAAAAA essence pickup animation.'
         - ''
-    # EnabledMaterial / DisabledMaterial apply to all toggles in this section
-    # {status} is replaced with the enabled/disabled indicator at render time
     EnabledMaterial: LIME_DYE
-    DisabledMaterial: RED_DYE
+    DisabledMaterial: GRAY_DYE
     Sound:
-      Name: "Sound"
+      Name: "Essence Sound"
       Lore:
-        - ' &8| &#777777Arrival and discovery sounds.'
+        - ' &8| &#AAAAAA Discovery and arrival sounds.'
         - ''
         - ' {status}'
         - ''
-        - ' &8| &aLeft-Click &#AAAAAAto toggle'
+        - ' &#AAAAAA▸ Left-Click to toggle'
         - ''
     Particles:
-      Name: "Particles"
+      Name: "Essence Particles"
       Lore:
-        - ' &8| &#777777The flying orb particles.'
+        - ' &8| &#AAAAAA Flying orb trail particles.'
         - ''
         - ' {status}'
         - ''
-        - ' &8| &aLeft-Click &#AAAAAAto toggle'
+        - ' &#AAAAAA▸ Left-Click to toggle'
         - ''
     Hologram:
-      Name: "Hologram"
+      Name: "Essence Hologram"
       Lore:
-        - ' &8| &#777777Floating +Essence text.'
+        - ' &8| &#AAAAAA Floating &#B366D9+Essence &#AAAAAAAAtext.'
         - ''
         - ' {status}'
         - ''
-        - ' &8| &aLeft-Click &#AAAAAAto toggle'
+        - ' &#AAAAAA▸ Left-Click to toggle'
         - ''
     Glow:
-      Name: "Glow"
+      Name: "Essence Glow"
       Lore:
-        - ' &8| &#777777Brief glow when received.'
+        - ' &8| &#AAAAAA Brief glow on discovery.'
         - ''
         - ' {status}'
         - ''
-        - ' &8| &aLeft-Click &#AAAAAAto toggle'
+        - ' &#AAAAAA▸ Left-Click to toggle'
         - ''
 
 # Enchants Preferences Menu
 Enchants Menu:
-  Title: "&8P &7» &8Enchants"
+  Title: "&#888888⚙ &f&lPreferences &8— &#FFEE00Enchants"
   Back:
-    Material: RED_STAINED_GLASS_PANE
-    Name: "&#AAAAAA← Back"
+    Material: ARROW
+    Name: "&#AAAAAA← &f&lBack"
     Lore:
-      - ' &8| &aLeft-Click &7to go back'
+      - ''
+      - ' &#AAAAAA▸ Left-Click to return'
+      - ''
   Prev:
     Material: ARROW
-    Name: "&#AAAAAA← Previous"
+    Name: "&#AAAAAA← &f&lPrevious Page"
     Lore:
-      - ' &8| &aLeft-Click &#AAAAAAto previous page'
+      - ''
+      - ' &#AAAAAA▸ Left-Click for previous page'
+      - ''
   Next:
     Material: ARROW
-    Name: "&#AAAAAA→ Next"
+    Name: "&#AAAAAA→ &f&lNext Page"
     Lore:
-      - ' &8| &aLeft-Click &#AAAAAAto next page'
+      - ''
+      - ' &#AAAAAA▸ Left-Click for next page'
+      - ''
   PageInfo:
     Material: PAPER
-    Name: "&#888888Page {page} of {total}"
+    Name: "&#888888Page {page} &7of &#888888{total}"
   EnchantItem:
     Lore:
       - ''
       - ' &#FFFFFF&lRarity'
       - ' &8| {rarity}'
       - ''
-      - ' &8| &aLeft-Click &#AAAAAAto configure'
+      - ' &#AAAAAA▸ Left-Click to configure'
       - ''
 
 # Armor Menu

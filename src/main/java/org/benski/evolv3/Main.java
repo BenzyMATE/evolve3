@@ -6,6 +6,7 @@ import org.benski.evolv3.core.constants.ConfigNames;
 import org.benski.evolv3.core.constants.ConfigPaths;
 import org.benski.evolv3.core.managers.EnchantSelectionManager;
 import org.benski.evolv3.core.managers.EvolutionSelectionManager;
+import org.benski.evolv3.core.managers.BorderManager;
 import org.benski.evolv3.core.managers.FrostbiteBlockManager;
 import org.benski.evolv3.core.managers.MongoManager;
 import org.benski.evolv3.core.managers.PickaxeManager;
@@ -43,6 +44,8 @@ public final class Main extends JavaPlugin
         this.useRegistry();
         this.useMongo();
         this.useHooks();
+        // Load zone borders from borders.yml
+        BorderManager.getInstance().loadFromConfig();
         // Register the callback provider so enchant selections can be restored after a server restart
         this.registerEnchantCallbackProvider();
         // Load any enchant selections that were in-progress when the server last stopped

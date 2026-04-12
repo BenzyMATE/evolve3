@@ -39,4 +39,9 @@ public final class ConfigNames
      * Evolution Stones configuration file containing stone item and socket menu strings.
      */
     public static final String STONES = "stones";
+
+    /**
+     * Prison zone borders configuration file.
+     */
+    public static final String BORDERS = "borders";
 }

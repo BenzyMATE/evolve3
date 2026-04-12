@@ -26,7 +26,8 @@ public class ConfigRegistry implements Registry<FileConfiguration>
             "menus",
             "enchants",
             "ranks",
-            "stones"
+            "stones",
+            "borders"
     );
 
     /**

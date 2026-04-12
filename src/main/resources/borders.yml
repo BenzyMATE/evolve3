@@ -1,0 +1,17 @@
+# =====================================================
+# Evolv3 - Prison Zone Border Walls
+# =====================================================
+# Use /border wand then /border set <rankId> in-game.
+#
+# Each wall is keyed by the rank ID required to cross it.
+#   B1 → blocks players below rank B1 from entering the B zone
+#   C1 → blocks players below rank C1 from entering the C zone
+#
+# A wall is a line segment defined by two XZ points (spanning all Y heights).
+# Players who move across the wall line are pushed back until they rank up.
+#
+# x1 / z1 : First endpoint of the wall
+# x2 / z2 : Second endpoint of the wall
+# =====================================================
+
+borders: {}
