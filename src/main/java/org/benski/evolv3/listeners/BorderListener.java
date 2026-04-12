@@ -139,8 +139,8 @@ public class BorderListener extends BaseListener
 
     private void tickParticles()
     {
-        Map<String, BorderWall> walls = BorderManager.getInstance().getAllBorders();
-        if (walls.isEmpty()) return;
+        Map<String, List<BorderWall>> allBorders = BorderManager.getInstance().getAllBorders();
+        if (allBorders.isEmpty()) return;
 
         FileConfiguration ranksCfg = ConfigRegistry.getInstance().get(ConfigNames.RANKS);
         if (ranksCfg == null) return;
@@ -162,11 +162,13 @@ public class BorderListener extends BaseListener
             double py = player.getY();
             double pz = player.getZ();
 
-            for (Map.Entry<String, BorderWall> entry : walls.entrySet()) {
-                int wallIndex = order.indexOf(entry.getKey());
-                if (wallIndex == -1 || playerIndex >= wallIndex) continue;
+            for (Map.Entry<String, List<BorderWall>> entry : allBorders.entrySet()) {
+                int wallRankIndex = order.indexOf(entry.getKey());
+                if (wallRankIndex == -1 || playerIndex >= wallRankIndex) continue;
 
-                renderWallParticles(player, entry.getValue(), px, py, pz);
+                for (BorderWall wall : entry.getValue()) {
+                    renderWallParticles(player, wall, px, py, pz);
+                }
             }
         }
     }
@@ -304,7 +306,7 @@ public class BorderListener extends BaseListener
     {
         Component subtitle = Component.text("Reach rank ")
                 .color(TextColor.color(0xAAAAAA))
-                .append(Component.text(wall.wallId())
+                .append(Component.text(wall.rankId())
                         .color(TextColor.color(0xFFD700))
                         .decorate(TextDecoration.BOLD))
                 .append(Component.text(" to enter this zone")

@@ -121,10 +121,17 @@ public class BorderCommand extends BaseCommand
             return;
         }
 
-        BorderManager.getInstance().setBorder(rankId,
+        int slot = BorderManager.getInstance().addBorder(rankId,
                 p1.getX(), p1.getZ(), p2.getX(), p2.getZ());
 
-        sendSuccess(player, "Border wall set for rank §e" + rankId + "§a ("
+        if (slot == -1) {
+            int max = BorderManager.getInstance().getMaxBordersPerRank();
+            sendError(player, "Rank §e" + rankId + "§c already has " + max + " border wall(s) (max). "
+                    + "Remove one first with §e/border remove " + rankId + " <slot>§c.");
+            return;
+        }
+
+        sendSuccess(player, "Border wall [slot " + slot + "] set for rank §e" + rankId + "§a ("
                 + "§e(" + (int) p1.getX() + ", " + (int) p1.getZ() + ")§a → "
                 + "§e(" + (int) p2.getX() + ", " + (int) p2.getZ() + ")§a).");
     }
@@ -132,21 +139,40 @@ public class BorderCommand extends BaseCommand
     private void handleRemove(Player player, String[] args)
     {
         if (args.length < 2) {
-            sendError(player, "Usage: /border remove <rankId>");
+            sendError(player, "Usage: /border remove <rankId> [slot]");
             return;
         }
 
         String rankId = args[1].toUpperCase(Locale.ROOT);
-        if (BorderManager.getInstance().removeBorder(rankId)) {
-            sendSuccess(player, "Border wall for rank §e" + rankId + "§a removed.");
+
+        if (args.length >= 3) {
+            // Remove a specific slot
+            int slot;
+            try {
+                slot = Integer.parseInt(args[2]);
+            } catch (NumberFormatException e) {
+                sendError(player, "Slot must be a number (e.g. /border remove B1 1)");
+                return;
+            }
+
+            if (BorderManager.getInstance().removeBorder(rankId, slot)) {
+                sendSuccess(player, "Border wall [slot " + slot + "] for rank §e" + rankId + "§a removed.");
+            } else {
+                sendError(player, "No border wall at slot " + slot + " for rank: " + rankId);
+            }
         } else {
-            sendError(player, "No border wall exists for rank: " + rankId);
+            // Remove all walls for this rank
+            if (BorderManager.getInstance().removeBorder(rankId)) {
+                sendSuccess(player, "All border walls for rank §e" + rankId + "§a removed.");
+            } else {
+                sendError(player, "No border walls exist for rank: " + rankId);
+            }
         }
     }
 
     private void handleList(Player player)
     {
-        Map<String, BorderManager.BorderWall> all = BorderManager.getInstance().getAllBorders();
+        Map<String, List<BorderManager.BorderWall>> all = BorderManager.getInstance().getAllBorders();
         if (all.isEmpty()) {
             sendInfo(player, "No border walls configured.");
             return;
@@ -155,10 +181,12 @@ public class BorderCommand extends BaseCommand
         player.sendMessage(Component.text("── Zone Border Walls ──")
                 .color(NamedTextColor.GOLD).decorate(TextDecoration.BOLD));
 
-        for (BorderManager.BorderWall w : all.values()) {
-            player.sendMessage(Component.text("  §e" + w.wallId()
-                    + " §7| (§f" + (int) w.x1() + ", " + (int) w.z1()
-                    + "§7) → (§f" + (int) w.x2() + ", " + (int) w.z2() + "§7)"));
+        for (Map.Entry<String, List<BorderManager.BorderWall>> entry : all.entrySet()) {
+            for (BorderManager.BorderWall w : entry.getValue()) {
+                player.sendMessage(Component.text("  §e" + w.rankId() + " §7[slot " + w.slot() + "]"
+                        + " §7| (§f" + (int) w.x1() + ", " + (int) w.z1()
+                        + "§7) → (§f" + (int) w.x2() + ", " + (int) w.z2() + "§7)"));
+            }
         }
     }
 
