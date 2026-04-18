@@ -1,0 +1,2 @@
+- [Use mvn package not compile](feedback_mvn_package.md) — always run `mvn package` to verify builds, not `mvn compile`
+- [Maven CLI setup](feedback_mvn_setup.md) — Maven/Java paths for running builds from CLI on this machine

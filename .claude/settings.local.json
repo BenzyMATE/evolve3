@@ -67,9 +67,5 @@
     ],
     "deny": [],
     "ask": []
-  },
-  "enableAllProjectMcpServers": true,
-  "enabledMcpjsonServers": [
-    "game-asset-generator"
-  ]
+  }
 }
