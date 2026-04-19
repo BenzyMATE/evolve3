@@ -18,16 +18,13 @@ import org.bukkit.Color;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Particle;
+import org.bukkit.block.data.BlockData;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
-import org.bukkit.event.block.Action;
-import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
-import org.bukkit.inventory.EquipmentSlot;
-import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.time.Duration;
@@ -35,8 +32,8 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Handles wand interactions for border-wall selection, enforces zone movement
- * restrictions, and renders a particle wall so players can see where borders are.
+ * Enforces zone movement restrictions and renders a particle wall so
+ * players can see where borders are.
  *
  * <p>Wall particles are rendered every 20 ticks for each player who hasn't
  * unlocked the wall and is within {@link #PERP_TRIGGER_DIST} blocks of it.</p>
@@ -50,15 +47,18 @@ public class BorderListener extends BaseListener
             .color(TextColor.color(0xFF5555))
             .decorate(TextDecoration.BOLD);
 
-    // Wall particle appearance
-    private static final Particle.DustOptions WALL_DUST =
+    // Wall particle — barrier block icon
+    private static final BlockData BARRIER_DATA = Material.BARRIER.createBlockData();
+
+    // Impact burst particle appearance (kept as red dust for the flashy effect)
+    private static final Particle.DustOptions IMPACT_DUST =
             new Particle.DustOptions(Color.fromRGB(255, 50, 50), 1.4f);
 
     /** Perpendicular distance from wall at which the wall becomes visible */
-    private static final double PERP_TRIGGER_DIST = 18.0;
+    private static final double PERP_TRIGGER_DIST = 100.0;
 
     /** Once the wall is visible, show this many blocks along the wall in each direction */
-    private static final double ALONG_WALL_RANGE = 50.0;
+    private static final double ALONG_WALL_RANGE = 120.0;
 
     /** Horizontal spacing between particle columns (blocks) */
     private static final double PARTICLE_SPACING = 0.9;
@@ -70,36 +70,6 @@ public class BorderListener extends BaseListener
     {
         super(plugin);
         Bukkit.getScheduler().runTaskTimer(plugin, this::tickParticles, 20L, 20L);
-    }
-
-    // -------------------------------------------------------------------------
-    // Wand — left-click = point 1, right-click = point 2
-    // -------------------------------------------------------------------------
-
-    @EventHandler
-    public void onWandInteract(PlayerInteractEvent event)
-    {
-        if (event.getHand() != EquipmentSlot.HAND) return;
-
-        Player player = event.getPlayer();
-        ItemStack held = player.getInventory().getItemInMainHand();
-        if (!isWand(held)) return;
-
-        event.setCancelled(true);
-
-        Location clicked = event.getClickedBlock() != null
-                ? event.getClickedBlock().getLocation()
-                : player.getLocation();
-
-        if (event.getAction() == Action.LEFT_CLICK_BLOCK || event.getAction() == Action.LEFT_CLICK_AIR) {
-            BorderManager.getInstance().setPoint1(player.getUniqueId(), clicked);
-            player.sendMessage(Component.text("§aPoint 1 set at §e"
-                    + clicked.getBlockX() + ", " + clicked.getBlockY() + ", " + clicked.getBlockZ()));
-        } else {
-            BorderManager.getInstance().setPoint2(player.getUniqueId(), clicked);
-            player.sendMessage(Component.text("§aPoint 2 set at §e"
-                    + clicked.getBlockX() + ", " + clicked.getBlockY() + ", " + clicked.getBlockZ()));
-        }
     }
 
     // -------------------------------------------------------------------------
@@ -202,9 +172,8 @@ public class BorderListener extends BaseListener
             // Only render columns that are within ALONG_WALL_RANGE of the player
             if ((wx - px) * (wx - px) + (wz - pz) * (wz - pz) > rangeSq) continue;
 
-            for (double y = py - 0.5; y <= py + 3.5; y += PARTICLE_Y_STEP) {
-                player.spawnParticle(Particle.DUST, wx, y, wz,
-                        1, 0.0, 0.0, 0.0, 0.0, WALL_DUST);
+            for (double y = wall.minY(); y <= wall.maxY(); y += PARTICLE_Y_STEP) {
+                player.spawnParticle(Particle.BLOCK_MARKER, wx, y, wz, 1, 0, 0, 0, 0, BARRIER_DATA, true);
             }
         }
     }
@@ -234,7 +203,7 @@ public class BorderListener extends BaseListener
 
         // 1. Burst at the impact point
         player.spawnParticle(Particle.DUST, ix, py + 1.0, iz,
-                25, 0.4, 0.7, 0.4, 0.0, WALL_DUST);
+                25, 0.4, 0.7, 0.4, 0.0, IMPACT_DUST, true);
 
         // 2. Trail from impact point toward the player (8 points)
         for (int i = 1; i <= 8; i++) {
@@ -243,7 +212,7 @@ public class BorderListener extends BaseListener
             double cy = py + 0.5 + Math.random() * 1.5;
             double cz = iz + t * (pz - iz) + (Math.random() - 0.5) * 0.5;
             player.spawnParticle(Particle.DUST, cx, cy, cz,
-                    2, 0.05, 0.05, 0.05, 0.0, WALL_DUST);
+                    2, 0.05, 0.05, 0.05, 0.0, IMPACT_DUST, true);
         }
 
         // 3. Swirling ring curling around the player
@@ -257,7 +226,7 @@ public class BorderListener extends BaseListener
                     px + Math.cos(angle) * r,
                     ry,
                     pz + Math.sin(angle) * r,
-                    1, 0.0, 0.0, 0.0, 0.0, WALL_DUST);
+                    1, 0.0, 0.0, 0.0, 0.0, IMPACT_DUST, true);
         }
     }
 
@@ -316,16 +285,6 @@ public class BorderListener extends BaseListener
                 BLOCKED_TITLE, subtitle,
                 Title.Times.times(Duration.ofMillis(150), Duration.ofMillis(1800), Duration.ofMillis(400))
         ));
-    }
-
-    private boolean isWand(ItemStack item)
-    {
-        if (item == null || item.getType() != Material.GOLDEN_AXE) return false;
-        if (!item.hasItemMeta()) return false;
-        var name = item.getItemMeta().displayName();
-        if (name == null) return false;
-        return net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer
-                .plainText().serialize(name).equals("Border Wand");
     }
 
     private PlayerProfile getProfile(Player player)

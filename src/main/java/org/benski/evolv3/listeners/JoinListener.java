@@ -9,6 +9,7 @@ import org.benski.evolv3.core.constants.ConfigPaths;
 import org.benski.evolv3.core.helpers.SkinRenderer;
 import org.benski.evolv3.core.helpers.Utils;
 import org.benski.evolv3.core.managers.EnchantDropManager;
+import org.benski.evolv3.registry.ListenerRegistry;
 import org.benski.evolv3.core.managers.EnchantSelectionManager;
 import org.benski.evolv3.core.managers.EvolutionSelectionManager;
 import org.benski.evolv3.core.managers.RankManager;
@@ -178,6 +179,14 @@ public class JoinListener extends BaseListener
         // These are normally consumed during block breaks but may linger if the player
         // disconnects mid-event or if a break was cancelled after NORMAL priority wrote them.
         java.util.UUID uuid = player.getUniqueId();
+
+        // Clear any in-progress BreakContext captured at NORMAL priority but not yet
+        // consumed at HIGHEST (player disconnected between the two event passes).
+        var breakListener = ListenerRegistry.getInstance().get("break");
+        if (breakListener instanceof BreakListener bl) {
+            bl.clearPendingBreak(uuid);
+        }
+
         EnchantDropManager.pop(uuid);
         ExtractionEnchant.popBonus(uuid);
         RadioactiveEnchant.popBonus(uuid);

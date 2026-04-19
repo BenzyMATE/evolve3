@@ -52,7 +52,9 @@ public class FrostbiteBlockManager
      */
     public void initialize(JavaPlugin plugin) {
         this.plugin = plugin;
-        dataFile = new File(plugin.getDataFolder(), "frozen_blocks.yml");
+        File localDataDir = new File(plugin.getDataFolder(), "localdata");
+        if (!localDataDir.exists()) localDataDir.mkdirs();
+        dataFile = new File(localDataDir, "frozen_blocks.yml");
         data = YamlConfiguration.loadConfiguration(dataFile);
         restoreAll();
     }

@@ -1,0 +1,32 @@
+# =============================================================================
+# Launch Pad Configuration
+# =============================================================================
+# Register launch pads via /launchpad set <forward> <upward>, then right-click
+# pressure plates to mark them. Each pad stores its own power settings.
+
+# Cooldown in milliseconds between launches per player
+cooldown-ms: 2000
+
+# Cloud trail settings (shown while the player is airborne)
+cloud-trail:
+  enabled: true
+  duration-ticks: 40
+  particle-count: 3
+
+# Ambient cloud particles that float around registered pads
+ambient-particles:
+  tick-interval: 10
+  particle-count: 2
+
+# Fall damage protection duration after launch (in ticks)
+no-fall-damage-ticks: 80
+
+# Registered pads are stored below (managed by commands, do not edit manually)
+# pads:
+#   pad0:
+#     world: world
+#     x: 100
+#     y: 64
+#     z: 200
+#     forward-power: 2.0
+#     upward-power: 1.2

@@ -5,6 +5,7 @@ import org.benski.evolv3.core.abstracts.BaseCommand;
 import org.benski.evolv3.core.constants.ConfigNames;
 import org.benski.evolv3.core.constants.ConfigPaths;
 import org.benski.evolv3.core.helpers.ItemStackExtensions;
+import org.benski.evolv3.core.helpers.Messageable;
 import org.benski.evolv3.core.helpers.Utils;
 import org.benski.evolv3.core.managers.EnchantAnimationConfig;
 import org.benski.evolv3.core.managers.MongoManager;
@@ -31,59 +32,69 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 /**
  * Main admin command for the Evolv3 plugin.
- * Provides configuration management, help, and testing utilities.
- * Usage: /evolv3 <subcommand> [args]
+ * All admin subcommands are consolidated here: mine, border, beam, launchpad, rank, etc.
+ *
+ * <p>Usage: /evolve (or /e) &lt;subcommand&gt; [args]</p>
  */
 public class Evolv3Command extends BaseCommand
 {
+    /** Delegated subcommands — each receives shifted args. */
+    private final Map<String, BaseCommand> delegates = new LinkedHashMap<>();
+
+    /** Rank subcommands: set, staff, addperm, removeperm, listperms. */
+    private BaseCommand setRankCommand;
+    private BaseCommand setStaffCommand;
+    private BaseCommand rankPermCommand;
+
+    private static final List<String> RANK_SUBS = List.of(
+            "set", "staff", "addperm", "removeperm", "listperms");
+
     public Evolv3Command(JavaPlugin plugin)
     {
         super(plugin);
     }
 
-    /** {@inheritDoc} */
     @Override
-    public String getCommandName()
+    public void initialize()
     {
-        return "evolve";
+        // Instantiate delegated commands
+        delegates.put("mine", new MineCommand(plugin));
+        delegates.put("border", new BorderCommand(plugin));
+        delegates.put("beam", new BeamCommand(plugin));
+        delegates.put("launchpad", new LaunchPadCommand(plugin));
+
+        // Rank commands
+        setRankCommand = new SetRankCommand(plugin);
+        setStaffCommand = new SetStaffCommand(plugin);
+        rankPermCommand = new RankPermCommand(plugin);
+
+        // Initialize each delegate
+        delegates.values().forEach(BaseCommand::initialize);
+        setRankCommand.initialize();
+        setStaffCommand.initialize();
+        rankPermCommand.initialize();
     }
 
-    /** {@inheritDoc} */
-    @Override
-    public @Nullable String getDescription()
-    {
-        return "Main admin command for the Evolv3 plugin";
-    }
+    @Override public String getCommandName() { return "evolve"; }
+    @Override public @Nullable String getDescription() { return "Main admin command for the Evolv3 plugin"; }
+    @Override public @Nullable String getUsage() { return "/e <help|reload|info|mine|border|beam|launchpad|rank|...>"; }
+    @Override public @Nullable String getPermission() { return "evolv3.admin"; }
+    @Override public @Nullable List<String> getAliases() { return List.of("e"); }
 
-    /** {@inheritDoc} */
-    @Override
-    public @Nullable String getUsage()
-    {
-        return "/evolve <help|reload|info|resetpickaxes|resetprofile|stone>";
-    }
+    // =========================================================================
+    // Execute
+    // =========================================================================
 
-    /** {@inheritDoc} */
     @Override
-    public @Nullable String getPermission()
-    {
-        return "evolv3.admin";
-    }
-
-    /** {@inheritDoc} */
-    @Override
-    public @Nullable List<String> getAliases()
-    {
-        return List.of("e");
-    }
-
-    /** {@inheritDoc} */
-    @Override
-    public boolean execute(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args)
+    public boolean execute(@NotNull CommandSender sender, @NotNull Command command,
+                           @NotNull String label, @NotNull String[] args)
     {
         if (args.length == 0) {
             showHelp(sender);
@@ -92,29 +103,115 @@ public class Evolv3Command extends BaseCommand
 
         String subCommand = args[0].toLowerCase();
 
+        // Delegated subcommands (mine, border, beam, launchpad)
+        BaseCommand delegate = delegates.get(subCommand);
+        if (delegate != null)
+        {
+            String[] shifted = Arrays.copyOfRange(args, 1, args.length);
+            return delegate.execute(sender, command, label, shifted);
+        }
+
+        // Built-in subcommands
         switch (subCommand) {
-            case "help" -> showHelp(sender);
-            case "reload" -> handleReload(sender, args);
-            case "info" -> showInfo(sender);
-            case "backpack" -> handleBackpack(sender, args);
-            case "resetpickaxes" -> handleResetPickaxes(sender, args);
-            case "resetprofile" -> handleResetProfile(sender, args);
-            case "stone" -> handleGiveStone(sender, args);
-            case "setbackpack" -> handleSetBackpack(sender, args);
+            case "help"           -> showHelp(sender);
+            case "reload"         -> handleReload(sender, args);
+            case "info"           -> showInfo(sender);
+            case "rank"           -> handleRank(sender, command, label, args);
+            case "backpack"       -> handleBackpack(sender, args);
+            case "resetpickaxes"  -> handleResetPickaxes(sender, args);
+            case "resetprofile"   -> handleResetProfile(sender, args);
+            case "stone"          -> handleGiveStone(sender, args);
+            case "setbackpack"    -> handleSetBackpack(sender, args);
             default -> {
-                sendError(sender, "Unknown subcommand: " + args[0]);
-                sendInfo(sender, "Use /evolve help for available commands.");
+                sendError(sender, "Unknown subcommand: &#FFFFFF" + args[0]);
+                sendInfo(sender, "Use &#FFFFFF/e help &#CCCCCCfor available commands.");
             }
         }
 
         return true;
     }
 
+    // =========================================================================
+    // Rank routing — /e rank <set|staff|addperm|removeperm|listperms> ...
+    // =========================================================================
+
+    private void handleRank(CommandSender sender, Command command, String label, String[] args)
+    {
+        if (args.length < 2)
+        {
+            Messageable.sendRaw(sender, "");
+            Messageable.sendRaw(sender, "  &#00FFFF&l👑 Rank Commands");
+            Messageable.sendRaw(sender, "  &#444444&m                                    ");
+            Messageable.sendRaw(sender, "");
+            Messageable.sendRaw(sender, "  &#888888/e rank set <player> <rank> &#444444» &#CCCCCCSet prison rank");
+            Messageable.sendRaw(sender, "  &#888888/e rank staff <player> <rank|clear> &#444444» &#CCCCCCSet staff rank");
+            Messageable.sendRaw(sender, "  &#888888/e rank addperm <rank> <permission> &#444444» &#CCCCCCAdd permission");
+            Messageable.sendRaw(sender, "  &#888888/e rank removeperm <rank> <permission> &#444444» &#CCCCCCRemove permission");
+            Messageable.sendRaw(sender, "  &#888888/e rank listperms <rank> &#444444» &#CCCCCCList permissions");
+            Messageable.sendRaw(sender, "");
+            return;
+        }
+
+        String rankSub = args[1].toLowerCase();
+
+        switch (rankSub)
+        {
+            case "set" ->
+            {
+                // /e rank set <player> <rank> -> SetRankCommand expects [player, rank]
+                String[] shifted = Arrays.copyOfRange(args, 2, args.length);
+                setRankCommand.execute(sender, command, label, shifted);
+            }
+            case "staff" ->
+            {
+                // /e rank staff <player> <rank|clear> -> SetStaffCommand expects [player, rank]
+                String[] shifted = Arrays.copyOfRange(args, 2, args.length);
+                setStaffCommand.execute(sender, command, label, shifted);
+            }
+            case "addperm" ->
+            {
+                // /e rank addperm <rank> <perm> -> RankPermCommand expects [add, rank, perm]
+                String[] rpArgs = buildRankPermArgs("add", args);
+                rankPermCommand.execute(sender, command, label, rpArgs);
+            }
+            case "removeperm" ->
+            {
+                // /e rank removeperm <rank> <perm> -> RankPermCommand expects [remove, rank, perm]
+                String[] rpArgs = buildRankPermArgs("remove", args);
+                rankPermCommand.execute(sender, command, label, rpArgs);
+            }
+            case "listperms" ->
+            {
+                // /e rank listperms <rank> -> RankPermCommand expects [list, rank]
+                String[] rpArgs = buildRankPermArgs("list", args);
+                rankPermCommand.execute(sender, command, label, rpArgs);
+            }
+            default -> {
+                sendError(sender, "Unknown rank subcommand: &#FFFFFF" + rankSub);
+                sendInfo(sender, "Use &#FFFFFF/e rank &#CCCCCCfor available options.");
+            }
+        }
+    }
+
     /**
-     * Shows help information.
-     *
-     * @param sender The command sender
+     * Builds args for RankPermCommand: prepends the action (add/remove/list)
+     * and appends args[2..] (rank, permission, etc.).
      */
+    private String[] buildRankPermArgs(String action, String[] args)
+    {
+        // args = [rank, <sub>, <rank>, <perm>?]
+        // We want: [action, <rank>, <perm>?]
+        String[] remaining = Arrays.copyOfRange(args, 2, args.length);
+        String[] result = new String[remaining.length + 1];
+        result[0] = action;
+        System.arraycopy(remaining, 0, result, 1, remaining.length);
+        return result;
+    }
+
+    // =========================================================================
+    // Help
+    // =========================================================================
+
     private void showHelp(CommandSender sender)
     {
         FileConfiguration messages = ConfigRegistry.getInstance().get(ConfigNames.MESSAGES);
@@ -123,47 +220,25 @@ public class Evolv3Command extends BaseCommand
         }
     }
 
-    /**
-     * Handles the reload subcommand.
-     *
-     * @param sender The command sender
-     * @param args   The command arguments
-     */
+    // =========================================================================
+    // Existing subcommands (unchanged logic)
+    // =========================================================================
+
     private void handleReload(CommandSender sender, String[] args)
     {
-        if (args.length == 1) {
-            ConfigRegistry.getInstance().cleanup();
-            ConfigRegistry.getInstance().initialize();
+        ConfigRegistry.getInstance().cleanup();
+        ConfigRegistry.getInstance().initialize();
 
-            // Read from the newly loaded config, not the stale reference
-            FileConfiguration messagesConfig = ConfigRegistry.getInstance().get(ConfigNames.MESSAGES);
-            String successMsg = messagesConfig.getString(ConfigPaths.Messages.General.RELOAD_SUCCESS,
-                    "&aConfiguration reloaded successfully!");
-            sender.sendMessage(formatMessage(sender, successMsg));
-        } else {
-            String configName = args[1];
-
-            ConfigRegistry.getInstance().cleanup();
-            ConfigRegistry.getInstance().initialize();
-
-            FileConfiguration messagesConfig = ConfigRegistry.getInstance().get(ConfigNames.MESSAGES);
-            String successMsg = messagesConfig.getString(ConfigPaths.Messages.General.RELOAD_SUCCESS,
-                    "&aConfiguration reloaded successfully!");
-            sender.sendMessage(formatMessage(sender, successMsg.replace("%config%", configName)));
-        }
+        FileConfiguration messagesConfig = ConfigRegistry.getInstance().get(ConfigNames.MESSAGES);
+        String successMsg = messagesConfig.getString(ConfigPaths.Messages.General.RELOAD_SUCCESS,
+                "&aConfiguration reloaded successfully!");
+        sender.sendMessage(formatMessage(sender, successMsg));
     }
 
-    /**
-     * Handles the backpack subcommand.
-     * Usage: /evolv3 backpack model <number> [player]
-     *
-     * @param sender The command sender
-     * @param args   The command arguments
-     */
     private void handleBackpack(CommandSender sender, String[] args)
     {
         if (args.length < 3 || !args[1].equalsIgnoreCase("model")) {
-            sendInfo(sender, "Usage: /evolve backpack model <number> [player]");
+            sendInfo(sender, "Usage: &#FFFFFF/e backpack model <number> [player]");
             return;
         }
 
@@ -171,7 +246,7 @@ public class Evolv3Command extends BaseCommand
         try {
             modelData = Integer.parseInt(args[2]);
         } catch (NumberFormatException e) {
-            sendError(sender, "Invalid number: " + args[2]);
+            sendError(sender, "Invalid number: &#FFFFFF" + args[2]);
             return;
         }
 
@@ -179,13 +254,11 @@ public class Evolv3Command extends BaseCommand
         if (args.length >= 4) {
             target = Bukkit.getPlayer(args[3]);
             if (target == null) {
-                sendError(sender, "Player not found: " + args[3]);
+                sendError(sender, "Player not found: &#FFFFFF" + args[3]);
                 return;
             }
         } else {
-            if (!requirePlayer(sender)) {
-                return;
-            }
+            if (!requirePlayer(sender)) return;
             target = (Player) sender;
         }
 
@@ -194,7 +267,7 @@ public class Evolv3Command extends BaseCommand
 
         if (offHand.getType() != Material.STICK || !offHand.hasItemMeta()
                 || !offHand.getItemMeta().getPersistentDataContainer().has(backpackKey, PersistentDataType.BYTE)) {
-            sendError(sender, target.getName() + " does not have a backpack item in their offhand.");
+            sendError(sender, "&#FFFFFF" + target.getName() + " &cdoes not have a backpack in their offhand.");
             return;
         }
 
@@ -202,14 +275,9 @@ public class Evolv3Command extends BaseCommand
         meta.setCustomModelData(modelData);
         offHand.setItemMeta(meta);
 
-        sendSuccess(sender, "Set " + target.getName() + "'s backpack model data to " + modelData + ".");
+        sendSuccess(sender, "Set &#FFFFFF" + target.getName() + "&#00FFFF's backpack model to &#FFFFFF" + modelData + "&#00FFFF.");
     }
 
-    /**
-     * Shows plugin information.
-     *
-     * @param sender The command sender
-     */
     private void showInfo(CommandSender sender)
     {
         FileConfiguration messages = ConfigRegistry.getInstance().get(ConfigNames.MESSAGES);
@@ -219,24 +287,16 @@ public class Evolv3Command extends BaseCommand
         }
     }
 
-    /**
-     * Removes all pickaxe profiles for the specified player.
-     * Clears stored slots, deletes pickaxe documents from MongoDB, and removes them from cache.
-     * Also clears the ID from any pickaxe the target is currently holding.
-     *
-     * @param sender The command sender
-     * @param args   The command arguments (args[1] = target player name)
-     */
     private void handleResetPickaxes(CommandSender sender, String[] args)
     {
         if (args.length < 2) {
-            sendInfo(sender, "Usage: /evolve resetpickaxes <player>");
+            sendInfo(sender, "Usage: &#FFFFFF/e resetpickaxes <player>");
             return;
         }
 
         Player target = Bukkit.getPlayer(args[1]);
         if (target == null) {
-            sendError(sender, "Player not found or not online: " + args[1]);
+            sendError(sender, "Player not found or not online: &#FFFFFF" + args[1]);
             return;
         }
 
@@ -246,21 +306,17 @@ public class Evolv3Command extends BaseCommand
 
         PlayerProfile profile = playerDC.getLocal(target);
         if (profile == null) {
-            sendError(sender, target.getName() + "'s profile is not loaded.");
+            sendError(sender, "&#FFFFFF" + target.getName() + "&c's profile is not loaded.");
             return;
         }
 
-        // Collect pickaxe IDs from all stored slots
         List<String> pickaxeIds = new ArrayList<>();
         for (String entry : profile.storedPickaxes) {
             if (entry == null || entry.isEmpty()) continue;
             String[] parts = entry.split(":", 2);
-            if (!parts[0].isEmpty()) {
-                pickaxeIds.add(parts[0]);
-            }
+            if (!parts[0].isEmpty()) pickaxeIds.add(parts[0]);
         }
 
-        // Also handle any currently held registered pickaxe
         ItemStack heldItem = target.getInventory().getItemInMainHand();
         String heldId = ItemStackExtensions.getData(heldItem, "id");
         if (heldId != null && !heldId.isEmpty()) {
@@ -269,30 +325,25 @@ public class Evolv3Command extends BaseCommand
             target.getInventory().setItemInMainHand(heldItem);
         }
 
-        // Delete from MongoDB and remove from cache
         for (String id : pickaxeIds) {
             mongo.deleteAsync("Pickaxes", "id", id);
             pickaxeDC.getAll().remove(id);
         }
 
-        // Clear stored slot entries and reset pickaxe slot limit
         for (int i = 0; i < profile.storedPickaxes.size(); i++) {
             profile.storedPickaxes.set(i, "");
         }
         profile.pickaxeLimit = 0;
         profile.save(null);
 
-        sendSuccess(sender, "Removed " + pickaxeIds.size() + " pickaxe(s) from " + target.getName() + " and reset their slot limit.");
+        sendSuccess(sender, "Removed &#FFFFFF" + pickaxeIds.size() + " &#00FFFFpickaxe(s) from &#FFFFFF"
+                + target.getName() + " &#00FFFFand reset their slot limit.");
     }
 
-    /**
-     * Gives an Evolution Stone to the sender or a target player.
-     * Usage: /evolve stone <rarity> [enchant] [player]
-     */
     private void handleGiveStone(CommandSender sender, String[] args)
     {
         if (args.length < 2) {
-            sendInfo(sender, "Usage: /evolve stone <Common|Uncommon|Rare|Epic|Legendary> [enchant] [player]");
+            sendInfo(sender, "Usage: &#FFFFFF/e stone <Common|Uncommon|Rare|Epic|Legendary> [enchant] [player]");
             return;
         }
 
@@ -301,32 +352,29 @@ public class Evolv3Command extends BaseCommand
         String rarityArg = args[1].substring(0, 1).toUpperCase() + args[1].substring(1).toLowerCase();
         RarityConfig rarity = giveAll ? null : EnchantAnimationConfig.getRarityByName(rarityArg);
         if (!giveAll && rarity == null) {
-            sendError(sender, "Unknown rarity: " + args[1] + " — use Common, Uncommon, Rare, Epic, Legendary, or All.");
+            sendError(sender, "Unknown rarity: &#FFFFFF" + args[1]
+                    + " &c— use Common, Uncommon, Rare, Epic, Legendary, or All.");
             return;
         }
 
         List<String> allEnchants = EnchantAnimationConfig.getEnchantOrder();
-
-        // Optional enchant arg (args[2]) and optional player arg (last arg if it matches an online player)
         String enchantName = null;
         Player target = null;
 
         if (args.length >= 3) {
-            // Check if last arg is a player name
             Player possiblePlayer = Bukkit.getPlayer(args[args.length - 1]);
             int enchantEndIndex = (possiblePlayer != null && args.length >= 4) ? args.length - 1 : args.length;
 
             if (possiblePlayer != null && enchantEndIndex == 2) {
-                // /evolve stone <rarity> <player> — no enchant specified
                 target = possiblePlayer;
             } else {
-                String enchantArg = String.join(" ", java.util.Arrays.copyOfRange(args, 2, enchantEndIndex));
+                String enchantArg = String.join(" ", Arrays.copyOfRange(args, 2, enchantEndIndex));
                 final String search = enchantArg.toLowerCase();
                 enchantName = allEnchants.stream()
                         .filter(e -> e.toLowerCase().equals(search))
                         .findFirst().orElse(null);
                 if (enchantName == null) {
-                    sendError(sender, "Unknown enchant: " + enchantArg);
+                    sendError(sender, "Unknown enchant: &#FFFFFF" + enchantArg);
                     return;
                 }
                 if (possiblePlayer != null) target = possiblePlayer;
@@ -353,32 +401,27 @@ public class Evolv3Command extends BaseCommand
                 var overflow = finalTarget.getInventory().addItem(EvolutionStone.create(rc, finalEnchant));
                 overflow.values().forEach(item -> finalTarget.getWorld().dropItemNaturally(finalTarget.getLocation(), item));
             }
-            sendSuccess(sender, "Given " + finalTarget.getName() + " all 5 Evolution Stones (" + finalEnchant + ").");
+            sendSuccess(sender, "Given &#FFFFFF" + finalTarget.getName()
+                    + " &#00FFFFall 5 Evolution Stones &#888888(" + finalEnchant + ")&#00FFFF.");
         } else {
             var overflow = finalTarget.getInventory().addItem(EvolutionStone.create(rarity, finalEnchant));
             overflow.values().forEach(item -> finalTarget.getWorld().dropItemNaturally(finalTarget.getLocation(), item));
-            sendSuccess(sender, "Given " + finalTarget.getName() + " a " + rarity.displayName() + " Evolution Stone (" + finalEnchant + ").");
+            sendSuccess(sender, "Given &#FFFFFF" + finalTarget.getName()
+                    + " &#00FFFFa &#FFFFFF" + rarity.displayName() + " &#00FFFFEvolution Stone &#888888("
+                    + finalEnchant + ")&#00FFFF.");
         }
     }
 
-    /**
-     * Deletes the specified player's profile from MongoDB and cache.
-     * If the admin is a player holding a registered pickaxe, that pickaxe profile
-     * is also deleted and its ID cleared from the item.
-     *
-     * @param sender The command sender
-     * @param args   The command arguments (args[1] = target player name)
-     */
     private void handleResetProfile(CommandSender sender, String[] args)
     {
         if (args.length < 2) {
-            sendInfo(sender, "Usage: /evolve resetprofile <player>");
+            sendInfo(sender, "Usage: &#FFFFFF/e resetprofile <player>");
             return;
         }
 
         Player target = Bukkit.getPlayer(args[1]);
         if (target == null) {
-            sendError(sender, "Player not found or not online: " + args[1]);
+            sendError(sender, "Player not found or not online: &#FFFFFF" + args[1]);
             return;
         }
 
@@ -386,11 +429,9 @@ public class Evolv3Command extends BaseCommand
         PickaxeDataCenter pickaxeDC = DataCenterRegistry.getInstance().getPickaxeDataCenter();
         MongoManager mongo = MongoManager.getInstance();
 
-        // Collect and delete all pickaxes owned by this player
         UUID targetUuid = target.getUniqueId();
         List<String> pickaxeIds = new ArrayList<>();
 
-        // Pickaxes from stored slots (if profile is still in cache)
         PlayerProfile profile = playerDC.getLocal(target);
         if (profile != null) {
             for (String entry : profile.storedPickaxes) {
@@ -400,14 +441,12 @@ public class Evolv3Command extends BaseCommand
             }
         }
 
-        // Any pickaxe cached in PickaxeDataCenter that belongs to this player
         pickaxeDC.getAll().values().stream()
                 .filter(p -> targetUuid.equals(p.ownerUuid))
                 .map(p -> p.key)
                 .filter(k -> k != null && !k.isEmpty())
                 .forEach(k -> { if (!pickaxeIds.contains(k)) pickaxeIds.add(k); });
 
-        // Clear ID from any pickaxe the player is currently holding
         for (int i = 0; i < target.getInventory().getContents().length; i++) {
             ItemStack item = target.getInventory().getContents()[i];
             if (item == null || !item.getType().name().contains("PICKAXE")) continue;
@@ -423,29 +462,24 @@ public class Evolv3Command extends BaseCommand
             pickaxeDC.getAll().remove(id);
         }
 
-        // Delete the target player's profile
         String playerId = targetUuid.toString();
         mongo.deleteAsync("Players", "id", playerId);
         playerDC.getAll().remove(playerId);
 
-        sendSuccess(sender, "Reset " + target.getName() + "'s profile and deleted "
-                + pickaxeIds.size() + " pickaxe(s).");
+        sendSuccess(sender, "Reset &#FFFFFF" + target.getName()
+                + "&#00FFFF's profile and deleted &#FFFFFF" + pickaxeIds.size() + " &#00FFFFpickaxe(s).");
     }
 
-    /**
-     * Sets the backpack size limit for the specified player.
-     * Usage: /evolve setbackpack <player> <size>
-     */
     private void handleSetBackpack(CommandSender sender, String[] args)
     {
         if (args.length < 3) {
-            sendInfo(sender, "Usage: /evolve setbackpack <player> <size>");
+            sendInfo(sender, "Usage: &#FFFFFF/e setbackpack <player> <size>");
             return;
         }
 
         Player target = Bukkit.getPlayer(args[1]);
         if (target == null) {
-            sendError(sender, "Player not found or not online: " + args[1]);
+            sendError(sender, "Player not found or not online: &#FFFFFF" + args[1]);
             return;
         }
 
@@ -453,12 +487,12 @@ public class Evolv3Command extends BaseCommand
         try {
             size = Integer.parseInt(args[2]);
         } catch (NumberFormatException e) {
-            sendError(sender, "Invalid size: " + args[2] + " — must be a whole number.");
+            sendError(sender, "Invalid size: &#FFFFFF" + args[2] + " &c— must be a whole number.");
             return;
         }
 
         if (size < 1) {
-            sendError(sender, "Size must be at least 1.");
+            sendError(sender, "Size must be at least &#FFFFFF1&c.");
             return;
         }
 
@@ -470,23 +504,21 @@ public class Evolv3Command extends BaseCommand
 
         PlayerProfile profile = playerDC.getLocal(target);
         if (profile == null) {
-            sendError(sender, "Could not load profile for " + target.getName() + ".");
+            sendError(sender, "Could not load profile for &#FFFFFF" + target.getName() + "&c.");
             return;
         }
 
         profile.backpack.setMaxSize(size);
         profile.save(null);
 
-        sendSuccess(sender, "Set " + target.getName() + "'s backpack limit to " + size + " items.");
+        sendSuccess(sender, "Set &#FFFFFF" + target.getName()
+                + "&#00FFFF's backpack limit to &#FFFFFF" + size + " &#00FFFFitems.");
     }
 
-    /**
-     * Formats a message for the sender.
-     *
-     * @param sender  The command sender
-     * @param message The message to format
-     * @return The formatted message
-     */
+    // =========================================================================
+    // Helpers
+    // =========================================================================
+
     private String formatMessage(CommandSender sender, String message)
     {
         if (sender instanceof Player player) {
@@ -495,51 +527,151 @@ public class Evolv3Command extends BaseCommand
         return message.replace("&", "§");
     }
 
-    /** {@inheritDoc} */
-    @Override
-    public @Nullable List<String> getTabCompletion(@NotNull CommandSender sender, @NotNull Command command, @NotNull String alias, @NotNull String[] args)
-    {
-        List<String> suggestions = new ArrayList<>();
+    // =========================================================================
+    // Tab Completion
+    // =========================================================================
 
-        if (args.length == 1) {
-            suggestions = Arrays.asList("help", "reload", "info", "backpack", "resetpickaxes", "resetprofile", "stone", "setbackpack");
-        } else if (args.length == 2 && args[0].equalsIgnoreCase("stone")) {
-            suggestions = Arrays.asList("Common", "Uncommon", "Rare", "Epic", "Legendary", "All");
-        } else if (args.length == 3 && args[0].equalsIgnoreCase("stone")) {
-            // Only show enchants that have stone handlers implemented
+    private static final List<String> TOP_LEVEL = List.of(
+            "help", "reload", "info",
+            "mine", "border", "beam", "launchpad",
+            "rank",
+            "backpack", "resetpickaxes", "resetprofile", "stone", "setbackpack");
+
+    @Override
+    public @Nullable List<String> getTabCompletion(@NotNull CommandSender sender, @NotNull Command command,
+                                                    @NotNull String alias, @NotNull String[] args)
+    {
+        if (args.length == 1)
+        {
+            String current = args[0].toLowerCase();
+            return TOP_LEVEL.stream()
+                    .filter(s -> s.startsWith(current))
+                    .toList();
+        }
+
+        String sub = args[0].toLowerCase();
+
+        // Delegated commands — shift args and delegate
+        BaseCommand delegate = delegates.get(sub);
+        if (delegate != null)
+        {
+            String[] shifted = Arrays.copyOfRange(args, 1, args.length);
+            List<String> result = delegate.getTabCompletion(sender, command, alias, shifted);
+            return result != null ? result : List.of();
+        }
+
+        // Rank sub-routing
+        if ("rank".equals(sub))
+        {
+            return tabCompleteRank(sender, command, alias, args);
+        }
+
+        // Built-in subcommand completions
+        if (args.length == 2 && "stone".equals(sub)) {
+            return filterPrefix(List.of("Common", "Uncommon", "Rare", "Epic", "Legendary", "All"), args[1]);
+        }
+        if (args.length == 3 && "stone".equals(sub)) {
             java.util.Set<String> implemented = java.util.Set.of(
-                    "efficiency", "unbreaking", "alchemy", "autosell", "cascade", "drill", "explosive", "extraction", "fortune", "frostbite", "furnace", "merchant", "jackhammer", "lazer", "nuclearshower", "radioactive", "scavenger", "thor", "vortex"
+                    "efficiency", "unbreaking", "alchemy", "autosell", "cascade", "drill", "explosive",
+                    "extraction", "fortune", "frostbite", "furnace", "merchant", "jackhammer", "lazer",
+                    "nuclearshower", "radioactive", "scavenger", "thor", "vortex"
             );
-            suggestions = EnchantAnimationConfig.getEnchantOrder().stream()
+            return EnchantAnimationConfig.getEnchantOrder().stream()
                     .filter(display -> implemented.stream()
                             .anyMatch(internal -> display.equalsIgnoreCase(
                                     EnchantAnimationConfig.getDisplayName(internal))))
                     .collect(java.util.stream.Collectors.toCollection(ArrayList::new));
-        } else if (args.length == 4 && args[0].equalsIgnoreCase("stone")) {
-            suggestions = Bukkit.getOnlinePlayers().stream().map(Player::getName).toList();
-        } else if (args.length == 2 && args[0].equalsIgnoreCase("reload")) {
-            suggestions = Arrays.asList("default", "messages", "enchants", "all");
-        } else if (args.length == 2 && args[0].equalsIgnoreCase("backpack")) {
-            suggestions = List.of("model");
-        } else if (args.length == 2 && (args[0].equalsIgnoreCase("resetpickaxes")
-                || args[0].equalsIgnoreCase("resetprofile")
-                || args[0].equalsIgnoreCase("setbackpack"))) {
-            suggestions = Bukkit.getOnlinePlayers().stream()
-                    .map(Player::getName)
-                    .toList();
-        } else if (args.length == 3 && args[0].equalsIgnoreCase("setbackpack")) {
-            suggestions = Arrays.asList("100", "200", "500", "1000");
-        } else if (args.length == 3 && args[0].equalsIgnoreCase("backpack") && args[1].equalsIgnoreCase("model")) {
-            suggestions = Arrays.asList("1", "2", "3", "4", "5");
-        } else if (args.length == 4 && args[0].equalsIgnoreCase("backpack") && args[1].equalsIgnoreCase("model")) {
-            suggestions = Bukkit.getOnlinePlayers().stream()
-                    .map(Player::getName)
-                    .toList();
+        }
+        if (args.length == 4 && "stone".equals(sub)) {
+            return Bukkit.getOnlinePlayers().stream().map(Player::getName).toList();
+        }
+        if (args.length == 2 && "reload".equals(sub)) {
+            return filterPrefix(List.of("default", "messages", "enchants", "all"), args[1]);
+        }
+        if (args.length == 2 && "backpack".equals(sub)) {
+            return List.of("model");
+        }
+        if (args.length == 2 && ("resetpickaxes".equals(sub) || "resetprofile".equals(sub) || "setbackpack".equals(sub))) {
+            return Bukkit.getOnlinePlayers().stream().map(Player::getName)
+                    .filter(n -> n.toLowerCase().startsWith(args[1].toLowerCase())).toList();
+        }
+        if (args.length == 3 && "setbackpack".equals(sub)) {
+            return filterPrefix(List.of("100", "200", "500", "1000"), args[2]);
+        }
+        if (args.length == 3 && "backpack".equals(sub) && args[1].equalsIgnoreCase("model")) {
+            return filterPrefix(List.of("1", "2", "3", "4", "5"), args[2]);
+        }
+        if (args.length == 4 && "backpack".equals(sub) && args[1].equalsIgnoreCase("model")) {
+            return Bukkit.getOnlinePlayers().stream().map(Player::getName)
+                    .filter(n -> n.toLowerCase().startsWith(args[3].toLowerCase())).toList();
         }
 
-        String current = args[args.length - 1].toLowerCase();
-        return suggestions.stream()
-                .filter(s -> s.toLowerCase().startsWith(current))
+        return List.of();
+    }
+
+    /**
+     * Tab completion for /e rank <sub> ...
+     */
+    private List<String> tabCompleteRank(CommandSender sender, Command command, String alias, String[] args)
+    {
+        // /e rank <tab> — show rank sub-options
+        if (args.length == 2)
+        {
+            return filterPrefix(RANK_SUBS, args[1]);
+        }
+
+        String rankSub = args[1].toLowerCase();
+
+        switch (rankSub)
+        {
+            case "set" ->
+            {
+                // Delegate to SetRankCommand with shifted args
+                String[] shifted = Arrays.copyOfRange(args, 2, args.length);
+                List<String> result = setRankCommand.getTabCompletion(sender, command, alias, shifted);
+                return result != null ? result : List.of();
+            }
+            case "staff" ->
+            {
+                String[] shifted = Arrays.copyOfRange(args, 2, args.length);
+                List<String> result = setStaffCommand.getTabCompletion(sender, command, alias, shifted);
+                return result != null ? result : List.of();
+            }
+            case "addperm", "removeperm", "listperms" ->
+            {
+                // Map to RankPermCommand: addperm->add, removeperm->remove, listperms->list
+                String action = rankSub.replace("perm", "").replace("perms", "").replace("s", "");
+                if (rankSub.equals("addperm")) action = "add";
+                else if (rankSub.equals("removeperm")) action = "remove";
+                else action = "list";
+
+                // Build args as RankPermCommand would see them: [action, rank?, perm?]
+                String[] rpArgs = new String[args.length - 1]; // -2 for "rank" + sub, +1 for action
+                rpArgs[0] = action;
+                System.arraycopy(args, 2, rpArgs, 1, args.length - 2);
+
+                List<String> result = rankPermCommand.getTabCompletion(sender, command, alias, rpArgs);
+                return result != null ? result : List.of();
+            }
+        }
+
+        return List.of();
+    }
+
+    private static List<String> filterPrefix(List<String> options, String prefix)
+    {
+        String lc = prefix.toLowerCase();
+        return options.stream()
+                .filter(o -> o.toLowerCase().startsWith(lc))
                 .toList();
+    }
+
+    @Override
+    public void cleanup()
+    {
+        delegates.values().forEach(BaseCommand::cleanup);
+        setRankCommand.cleanup();
+        setStaffCommand.cleanup();
+        rankPermCommand.cleanup();
     }
 }

@@ -9,6 +9,7 @@ import org.benski.evolv3.core.helpers.AoEDropResolver;
 import org.benski.evolv3.core.helpers.Utils;
 import org.benski.evolv3.core.managers.PickaxeManager;
 import org.benski.evolv3.core.managers.StorageRegistryManager;
+import org.benski.evolv3.core.managers.MineManager;
 import org.benski.evolv3.core.managers.WorldGuardManager;
 import org.benski.evolv3.datacenters.PickaxeDataCenter;
 import org.benski.evolv3.datacenters.PlayerDataCenter;
@@ -152,6 +153,7 @@ public class DrillEnchant implements Listener
             if (!mat.isAir()) {
                 int remaining = playerProfile.backpack.getMaxSize() - playerProfile.backpack.getTotalItems();
                 if (remaining > 0) {
+                    MineManager.getInstance().trackBlockAtLocation(origin.getLocation());
                     origin.setType(Material.AIR);
                     playerProfile.backpack.addItem(player, mat,
                             Math.min(fortuneAmount > 0 ? fortuneAmount : 1, remaining), false);
@@ -219,6 +221,7 @@ public class DrillEnchant implements Listener
                     block, player.getInventory().getItemInMainHand(), plugin, pickaxeProfile);
             if (mat.isAir()) continue;
             levelMats.add(mat);
+            MineManager.getInstance().trackBlockAtLocation(block.getLocation());
             block.setType(Material.AIR);
 
             int dropCount = Math.min(fortuneAmount > 0 ? fortuneAmount : 1, remaining);

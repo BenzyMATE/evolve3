@@ -137,6 +137,19 @@ public final class ConfigPaths
         public static final String NOT_IN_MINE_REGION_MESSAGE = "NotInMineRegionMessage";
 
         /**
+         * Animation budget configuration paths.
+         */
+        public static final class Animations
+        {
+            private Animations() {}
+
+            /** Maximum number of animations that may be active concurrently. */
+            public static final String MAX_CONCURRENT   = "Animations.MaxConcurrentAnimations";
+            /** Maximum sum of resource costs across all active animations. */
+            public static final String MAX_RESOURCE_COST = "Animations.MaxResourceCost";
+        }
+
+        /**
          * Player configuration paths.
          */
         public static final class Player
@@ -394,6 +407,99 @@ public final class ConfigPaths
             private Skin() {}
 
             public static final String PLAYER_NOT_FOUND = "skin.player-not-found";
+        }
+
+        /**
+         * Mine-related messages.
+         */
+        public static final class Mine
+        {
+            private Mine() {}
+
+            public static final String RESET_BROADCAST     = "mine.reset-broadcast";
+            public static final String RESET_WARNING       = "mine.reset-warning";
+            public static final String MINE_CREATED        = "mine.mine-created";
+            public static final String MINE_REMOVED        = "mine.mine-removed";
+            public static final String MINE_NOT_FOUND      = "mine.mine-not-found";
+            public static final String CONTENTS_ADDED      = "mine.contents-added";
+            public static final String CONTENTS_REMOVED    = "mine.contents-removed";
+            public static final String CAVE_ENTRY          = "mine.cave-entry";
+            public static final String CAVE_ENTRY_SUBTITLE = "mine.cave-entry-subtitle";
+            public static final String CAVE_EXIT           = "mine.cave-exit";
+            public static final String CAVE_EXIT_SUBTITLE  = "mine.cave-exit-subtitle";
+            public static final String CAVE_LOOTED         = "mine.cave-looted";
+            public static final String CAVE_LOOTED_SUBTITLE = "mine.cave-looted-subtitle";
+            public static final String CAVE_DISCOVERED_BROADCAST = "mine.cave-discovered-broadcast";
+            public static final String SPAWN_SET           = "mine.spawn-set";
+            public static final String RESETTING           = "mine.resetting";
+            public static final String RELOADED            = "mine.reloaded";
+            public static final String ALREADY_EXISTS      = "mine.already-exists";
+            public static final String NO_SELECTION        = "mine.no-selection";
+            public static final String SETTING_UPDATED     = "mine.setting-updated";
+            public static final String INVALID_MATERIAL    = "mine.invalid-material";
+            public static final String NOT_IN_COMPOSITION  = "mine.not-in-composition";
+            public static final String NO_MINES            = "mine.no-mines";
+        }
+
+        /**
+         * Border-related messages.
+         */
+        public static final class Border
+        {
+            private Border() {}
+
+            public static final String WALL_SET            = "border.wall-set";
+            public static final String WALL_REMOVED        = "border.wall-removed";
+            public static final String ALL_REMOVED         = "border.all-removed";
+            public static final String MAX_REACHED         = "border.max-reached";
+            public static final String UNKNOWN_RANK        = "border.unknown-rank";
+            public static final String NO_BORDER_AT_SLOT   = "border.no-border-at-slot";
+            public static final String NO_BORDERS_FOR_RANK = "border.no-borders-for-rank";
+            public static final String NO_BORDERS          = "border.no-borders";
+            public static final String RELOADED            = "border.reloaded";
+            public static final String NO_SELECTION        = "border.no-selection";
+            public static final String NO_WORLDEDIT        = "border.no-worldedit";
+        }
+
+        /**
+         * Beam-related messages.
+         */
+        public static final class Beam
+        {
+            private Beam() {}
+
+            public static final String CREATED          = "beam.created";
+            public static final String REMOVED          = "beam.removed";
+            public static final String NOT_FOUND        = "beam.not-found";
+            public static final String UNKNOWN_COLOUR   = "beam.unknown-colour";
+            public static final String NO_BEAMS         = "beam.no-beams";
+            public static final String RELOADED         = "beam.reloaded";
+            public static final String NO_SELECTION     = "beam.no-selection";
+            public static final String NO_WORLDEDIT     = "beam.no-worldedit";
+            public static final String AVAILABLE_COLOURS = "beam.available-colours";
+        }
+
+        /**
+         * Launch pad-related messages.
+         */
+        public static final class LaunchPad
+        {
+            private LaunchPad() {}
+
+            public static final String SET_MODE           = "launchpad.set-mode";
+            public static final String SET_POWER          = "launchpad.set-power";
+            public static final String REMOVE_MODE        = "launchpad.remove-mode";
+            public static final String CANCEL_HINT        = "launchpad.cancel-hint";
+            public static final String CANCELLED          = "launchpad.cancelled";
+            public static final String NOT_IN_MODE        = "launchpad.not-in-mode";
+            public static final String PAD_CREATED        = "launchpad.pad-created";
+            public static final String PAD_REMOVED        = "launchpad.pad-removed";
+            public static final String ALREADY_EXISTS     = "launchpad.already-exists";
+            public static final String NOT_PRESSURE_PLATE = "launchpad.not-pressure-plate";
+            public static final String NO_PAD_AT_LOCATION = "launchpad.no-pad-at-location";
+            public static final String CREATE_FAILED      = "launchpad.create-failed";
+            public static final String NO_PADS            = "launchpad.no-pads";
+            public static final String RELOADED           = "launchpad.reloaded";
         }
 
         /**

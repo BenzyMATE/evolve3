@@ -9,6 +9,7 @@ import org.benski.evolv3.core.helpers.AoEDropResolver;
 import org.benski.evolv3.core.helpers.Utils;
 import org.benski.evolv3.core.managers.PickaxeManager;
 import org.benski.evolv3.core.managers.StorageRegistryManager;
+import org.benski.evolv3.core.managers.MineManager;
 import org.benski.evolv3.core.managers.WorldGuardManager;
 import org.benski.evolv3.datacenters.PickaxeDataCenter;
 import org.benski.evolv3.datacenters.PlayerDataCenter;
@@ -241,6 +242,7 @@ public class NuclearShowerEnchant implements Listener
                     Material mat = AoEDropResolver.resolve(
                             block, player.getInventory().getItemInMainHand(), plugin, pickaxeProfile);
 
+                    MineManager.getInstance().trackBlockAtLocation(block.getLocation());
                     block.setType(Material.AIR);
 
                     if (!mat.isAir()) {

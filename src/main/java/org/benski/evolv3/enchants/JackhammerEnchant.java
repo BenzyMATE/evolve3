@@ -9,6 +9,7 @@ import org.benski.evolv3.core.helpers.AoEDropResolver;
 import org.benski.evolv3.core.helpers.Utils;
 import org.benski.evolv3.core.managers.PickaxeManager;
 import org.benski.evolv3.core.managers.StorageRegistryManager;
+import org.benski.evolv3.core.managers.MineManager;
 import org.benski.evolv3.core.managers.WorldGuardManager;
 import org.benski.evolv3.datacenters.PickaxeDataCenter;
 import org.benski.evolv3.datacenters.PlayerDataCenter;
@@ -185,6 +186,7 @@ public class JackhammerEnchant implements Listener
                             block, player.getInventory().getItemInMainHand(), plugin, pickaxeProfile);
                     if (mat.isAir()) continue;
 
+                    MineManager.getInstance().trackBlockAtLocation(block.getLocation());
                     block.setType(Material.AIR);
 
                     // Rare (Dissolution Strike): 5% chance to convert block into atoms

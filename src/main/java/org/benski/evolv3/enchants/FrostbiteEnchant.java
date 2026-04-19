@@ -11,6 +11,7 @@ import org.benski.evolv3.core.helpers.Utils;
 import org.benski.evolv3.core.managers.FrostbiteBlockManager;
 import org.benski.evolv3.core.managers.PickaxeManager;
 import org.benski.evolv3.core.managers.StorageRegistryManager;
+import org.benski.evolv3.core.managers.MineManager;
 import org.benski.evolv3.core.managers.WorldGuardManager;
 import org.benski.evolv3.datacenters.PlayerDataCenter;
 import org.benski.evolv3.datacenters.PickaxeDataCenter;
@@ -343,6 +344,7 @@ public class FrostbiteEnchant implements Listener
                     } catch (IllegalArgumentException ignored) {}
 
                     block.removeMetadata(FROSTBITE_METADATA_KEY, Main.getInstance());
+                    MineManager.getInstance().trackBlockAtLocation(block.getLocation());
                     block.setType(Material.AIR);
                     Location blockLoc = block.getLocation();
                     center.getWorld().spawnParticle(Particle.SNOWFLAKE,
@@ -468,6 +470,7 @@ public class FrostbiteEnchant implements Listener
             } catch (IllegalArgumentException ignored) {}
 
             block.removeMetadata(FROSTBITE_METADATA_KEY, Main.getInstance());
+            MineManager.getInstance().trackBlockAtLocation(block.getLocation());
             block.setType(Material.AIR);
             loc.getWorld().spawnParticle(Particle.SNOWFLAKE, loc.clone().add(0.5, 0.5, 0.5), 8, 0.3, 0.3, 0.3, 0.05);
             removed.add(loc);

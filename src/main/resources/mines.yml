@@ -1,0 +1,66 @@
+# =============================================================================
+# Mine Configuration
+# =============================================================================
+# Mines are cuboid regions that fill with configurable block compositions,
+# reset on a timer or when a percentage threshold is mined, and optionally
+# generate cave structures in the surrounding walls.
+
+# ---- Global Defaults ----
+# These apply to every mine unless overridden per-mine.
+
+defaults:
+  # How often the mine auto-resets (in minutes). Set to 0 to disable timed resets.
+  reset-interval: 5
+
+  # The mine auto-resets when this percentage of blocks have been mined.
+  # Set to 0 to disable percentage-based resets.
+  reset-percentage: 90
+
+  # Warning (in seconds before reset) — broadcasts to players inside the mine.
+  reset-warning: 10
+
+  # Whether to teleport players to the mine spawn point on reset.
+  teleport-on-reset: true
+
+  # Number of cave schematics to paste into the surrounding walls per reset.
+  # Set to 0 to disable cave generation entirely.
+  cave-count: 4
+
+  # Minimum distance (in blocks) between cave entrances.
+  cave-min-distance: 20
+
+  # Placeholder items placed inside cave chests.
+  # Each entry: material (Bukkit Material name) and amount.
+  cave-rewards:
+    - material: DIAMOND
+      amount: 1
+    - material: GOLD_INGOT
+      amount: 3
+    - material: EMERALD
+      amount: 2
+
+  # Whether to display a floating TextDisplay hologram above each mine.
+  hologram-enabled: true
+
+  # Y offset above the mine's top surface for the hologram.
+  hologram-offset-y: 14
+
+  # Scale multiplier for the hologram text (1.0 = default tiny, 4.0 = large).
+  hologram-scale: 4.0
+
+  # Default block composition — material name → weight (relative chance).
+  # Weights do NOT need to sum to 100; they are relative.
+  contents:
+    STONE: 60
+    COAL_ORE: 20
+    IRON_ORE: 10
+    GOLD_ORE: 5
+    DIAMOND_ORE: 3
+    EMERALD_ORE: 2
+
+# ---- Messages ----
+# Mine messages are now stored in messages.yml under the "mine:" section.
+
+# ---- Per-Mine Definitions ----
+# Mine data is stored in localdata/mines-data.yml (not here).
+# This keeps mine definitions safe when deleting this config to reset defaults.

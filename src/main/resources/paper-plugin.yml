@@ -22,8 +22,8 @@ dependencies:
 commands:
   evolv3:
     description: Main admin command for Evolv3
-    usage: /<command> <help|reload|info>
-    aliases: [ev3, e3]
+    usage: /<command> <help|reload|info|mine|border|beam|launchpad|rank|...>
+    aliases: [ev3, e3, e]
     permission: evolv3.admin
   pickaxe:
     description: Opens the pickaxe management menu
@@ -53,7 +53,3 @@ commands:
   test:
     description: Test command
     usage: /<command>
-  border:
-    description: Manage prison zone visual borders
-    usage: /<command> <wand|set|remove|list|reload>
-    permission: evolv3.admin

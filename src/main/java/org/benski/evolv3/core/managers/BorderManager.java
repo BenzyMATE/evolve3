@@ -4,7 +4,6 @@ import lombok.Getter;
 import org.benski.evolv3.core.constants.ConfigNames;
 import org.benski.evolv3.core.constants.ConfigPaths;
 import org.benski.evolv3.registry.ConfigRegistry;
-import org.bukkit.Location;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
@@ -42,10 +41,6 @@ public final class BorderManager
     /** rankId → ordered list of walls (slot 1 = index 0, slot 2 = index 1, …) */
     private final Map<String, List<BorderWall>> borders = new HashMap<>();
 
-    /** Per-player wand selection points */
-    private final Map<UUID, Location> point1 = new HashMap<>();
-    private final Map<UUID, Location> point2 = new HashMap<>();
-
     /** Throttle: last time the BLOCKED title was sent, millis */
     private final Map<UUID, Long> lastTitleMs = new HashMap<>();
 
@@ -64,8 +59,11 @@ public final class BorderManager
      * @param z1     Z coordinate of the first endpoint
      * @param x2     X coordinate of the second endpoint
      * @param z2     Z coordinate of the second endpoint
+     * @param minY   bottom Y coordinate of the wall
+     * @param maxY   top Y coordinate of the wall
      */
-    public record BorderWall(String rankId, int slot, double x1, double z1, double x2, double z2)
+    public record BorderWall(String rankId, int slot, double x1, double z1, double x2, double z2,
+                             double minY, double maxY)
     {
         /**
          * Returns true if the movement segment (fx,fz)→(tx,tz) crosses this wall.
@@ -119,7 +117,9 @@ public final class BorderManager
                 double z1 = cfg.getDouble(path + ".z1");
                 double x2 = cfg.getDouble(path + ".x2");
                 double z2 = cfg.getDouble(path + ".z2");
-                walls.add(new BorderWall(rankId, slot, x1, z1, x2, z2));
+                double minY = cfg.getDouble(path + ".minY", 0);
+                double maxY = cfg.getDouble(path + ".maxY", 256);
+                walls.add(new BorderWall(rankId, slot, x1, z1, x2, z2, minY, maxY));
             }
 
             // Keep list in slot order
@@ -146,10 +146,12 @@ public final class BorderManager
                 cfg.set(path + ".z1", w.z1());
                 cfg.set(path + ".x2", w.x2());
                 cfg.set(path + ".z2", w.z2());
+                cfg.set(path + ".minY", w.minY());
+                cfg.set(path + ".maxY", w.maxY());
             }
         }
 
-        StorageRegistryManager.getInstance().saveConfig(ConfigNames.BORDERS);
+        ConfigRegistry.getInstance().save(ConfigNames.BORDERS);
     }
 
     // -------------------------------------------------------------------------
@@ -172,7 +174,8 @@ public final class BorderManager
      * @return the 1-based slot number used, or {@code -1} if the rank is already at its limit
      */
     public int addBorder(@NotNull String rankId,
-                         double x1, double z1, double x2, double z2)
+                         double x1, double z1, double x2, double z2,
+                         double minY, double maxY)
     {
         int max = getMaxBordersPerRank();
         List<BorderWall> walls = borders.computeIfAbsent(rankId, k -> new ArrayList<>());
@@ -187,7 +190,7 @@ public final class BorderManager
             else break;
         }
 
-        walls.add(new BorderWall(rankId, slot, x1, z1, x2, z2));
+        walls.add(new BorderWall(rankId, slot, x1, z1, x2, z2, minY, maxY));
         walls.sort((a, b) -> Integer.compare(a.slot(), b.slot()));
         saveToConfig();
         return slot;
@@ -314,30 +317,17 @@ public final class BorderManager
     }
 
     // -------------------------------------------------------------------------
-    // Wand point tracking
-    // -------------------------------------------------------------------------
-
-    public void setPoint1(@NotNull UUID uuid, @NotNull Location loc) { point1.put(uuid, loc.clone()); }
-    public void setPoint2(@NotNull UUID uuid, @NotNull Location loc) { point2.put(uuid, loc.clone()); }
-    public @Nullable Location getPoint1(@NotNull UUID uuid) { return point1.get(uuid); }
-    public @Nullable Location getPoint2(@NotNull UUID uuid) { return point2.get(uuid); }
-
-    // -------------------------------------------------------------------------
     // Cleanup
     // -------------------------------------------------------------------------
 
     public void cleanupPlayer(@NotNull UUID uuid)
     {
-        point1.remove(uuid);
-        point2.remove(uuid);
         lastTitleMs.remove(uuid);
     }
 
     public void cleanup()
     {
         borders.clear();
-        point1.clear();
-        point2.clear();
         lastTitleMs.clear();
     }
 }

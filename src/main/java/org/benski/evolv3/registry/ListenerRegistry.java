@@ -6,7 +6,10 @@ import org.benski.evolv3.core.abstracts.BaseListener;
 import org.benski.evolv3.core.interfaces.Registry;
 import org.benski.evolv3.core.managers.ListenerRegistryManager;
 import org.benski.evolv3.listeners.BackpackListener;
+import org.benski.evolv3.listeners.BeamListener;
 import org.benski.evolv3.listeners.BorderListener;
+import org.benski.evolv3.listeners.LaunchPadListener;
+import org.benski.evolv3.listeners.MineListener;
 import org.benski.evolv3.listeners.EnchantListener;
 import org.benski.evolv3.listeners.BreakListener;
 import org.benski.evolv3.listeners.FurnaceListener;
@@ -41,7 +44,10 @@ public class ListenerRegistry implements Registry<BaseListener>
             PickaxeOwnershipListener.class,
             ScoreboardListener.class,
             RankChatListener.class,
-            BorderListener.class
+            BorderListener.class,
+            BeamListener.class,
+            LaunchPadListener.class,
+            MineListener.class
     );
 
     /**

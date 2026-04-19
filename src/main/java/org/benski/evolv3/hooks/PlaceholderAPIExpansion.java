@@ -6,6 +6,7 @@ import org.benski.evolv3.core.constants.ConfigNames;
 import org.benski.evolv3.core.constants.ConfigPaths;
 import org.benski.evolv3.core.helpers.Utils;
 import org.benski.evolv3.core.managers.EnchantAnimationConfig;
+import org.benski.evolv3.core.managers.MineManager;
 import org.benski.evolv3.core.managers.RankManager;
 import org.benski.evolv3.core.managers.StorageRegistryManager;
 import org.benski.evolv3.datacenters.PickaxeDataCenter;
@@ -60,6 +61,16 @@ import org.jetbrains.annotations.Nullable;
  *   <li>%evolv3_enchant_[name]_chance%</li>
  *   <li>%evolv3_enchant_[name]_enabled%</li>
  * </ul>
+ * <p>Mine placeholders:</p>
+ * <ul>
+ *   <li>%evolv3_mine_[name]_percentage%</li>
+ *   <li>%evolv3_mine_[name]_players%</li>
+ *   <li>%evolv3_mine_[name]_blocks_total%</li>
+ *   <li>%evolv3_mine_[name]_blocks_mined%</li>
+ *   <li>%evolv3_mine_[name]_blocks_remaining%</li>
+ *   <li>%evolv3_mine_[name]_reset_interval%</li>
+ *   <li>%evolv3_mine_[name]_caves%</li>
+ * </ul>
  */
 public class PlaceholderAPIExpansion extends PlaceholderExpansion
 {
@@ -112,6 +123,10 @@ public class PlaceholderAPIExpansion extends PlaceholderExpansion
 
         if (params.startsWith("rank")) {
             return handleRankPlaceholder(player, params);
+        }
+
+        if (params.startsWith("mine_")) {
+            return handleMinePlaceholder(params.substring(5));
         }
 
         return null;
@@ -288,6 +303,40 @@ public class PlaceholderAPIExpansion extends PlaceholderExpansion
             case "rank_staff"    -> pp.staffRank != null && !pp.staffRank.isEmpty()
                                       ? rm.getStaffPrefix(pp.staffRank) : "";
             case "rank_staff_id" -> pp.staffRank != null ? pp.staffRank : "";
+            default -> null;
+        };
+    }
+
+    /**
+     * Handles mine-related placeholders.
+     *
+     * <p>Format: {@code mine_<name>_<property>}</p>
+     * <p>The mine name may contain underscores — the property is always the last segment.</p>
+     *
+     * @param param the placeholder after "mine_" (e.g. "a_percentage")
+     * @return the value, or null if unrecognised
+     */
+    private String handleMinePlaceholder(String param)
+    {
+        int lastUnderscore = param.lastIndexOf('_');
+        if (lastUnderscore == -1) return null;
+
+        String mineName = param.substring(0, lastUnderscore);
+        String property = param.substring(lastUnderscore + 1);
+
+        MineManager.Mine mine = MineManager.getInstance().getMine(mineName);
+        if (mine == null) return null;
+
+        return switch (property)
+        {
+            case "percentage"       -> String.format("%.2f%%", MineManager.getInstance().getRemainingPercentage(mineName));
+            case "players"          -> String.valueOf(MineManager.getInstance().getPlayerCount(mineName));
+            case "total"            -> String.valueOf(mine.totalBlocks());
+            case "mined"            -> String.valueOf(MineManager.getInstance().getMinedCount(mineName));
+            case "remaining"        -> String.valueOf(mine.totalBlocks() - MineManager.getInstance().getMinedCount(mineName));
+            case "interval"         -> String.valueOf(mine.resetInterval());
+            case "caves"            -> String.valueOf(mine.caveCount());
+            case "name"             -> mine.name();
             default -> null;
         };
     }

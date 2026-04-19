@@ -12,6 +12,7 @@ import static org.benski.evolv3.core.helpers.Utils.formatMaterialName;
 import org.benski.evolv3.core.managers.EnchantDropManager;
 import org.benski.evolv3.core.managers.PickaxeManager;
 import org.benski.evolv3.core.managers.StorageRegistryManager;
+import org.benski.evolv3.core.managers.MineManager;
 import org.benski.evolv3.core.managers.WorldGuardManager;
 import org.benski.evolv3.datacenters.PickaxeDataCenter;
 import org.benski.evolv3.listeners.BackpackListener;
@@ -374,6 +375,7 @@ public class FurnaceEnchant implements Listener
             // Break the block visually and deliver smelted drop
             target.getWorld().spawnParticle(Particle.FLAME,
                     target.getLocation().add(0.5, 0.5, 0.5), 8, 0.3, 0.3, 0.3, 0.05);
+            MineManager.getInstance().trackBlockAtLocation(target.getLocation());
             target.setType(Material.AIR);
             pp.backpack.addItem(player, smeltMat, 1, false);
         }

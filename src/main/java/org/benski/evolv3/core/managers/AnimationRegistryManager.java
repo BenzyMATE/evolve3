@@ -32,6 +32,15 @@ public class AnimationRegistryManager
 {
     private final JavaPlugin plugin;
     private final Map<String, Class<? extends BaseAnimation>> animationClasses = new HashMap<>();
+
+    /**
+     * Constructors pre-scanned at registration time, keyed by lowercase identifier.
+     * Avoids calling {@link Class#getConstructors()} on every animation creation in the
+     * hot path (which allocates a new array and performs security checks each call).
+     */
+    @SuppressWarnings("unchecked")
+    private final Map<String, Constructor<? extends BaseAnimation>[]> cachedConstructors = new HashMap<>();
+
     private final List<BaseAnimation> activeAnimations = new ArrayList<>();
     /** Animations added while a tick is in progress, flushed after the iterator finishes. */
     private final List<BaseAnimation> pendingAdditions = new ArrayList<>();
@@ -50,13 +59,20 @@ public class AnimationRegistryManager
     /**
      * Registers an animation class.
      *
+     * <p>Constructors are scanned and cached here so that {@link #create} never
+     * calls {@link Class#getConstructors()} at runtime — eliminating the
+     * per-call array allocation and security-check overhead in the hot path.</p>
+     *
      * @param animationClass the animation class to register
      */
+    @SuppressWarnings("unchecked")
     public void registerAnimation(Class<? extends BaseAnimation> animationClass) {
         String identifier = animationClass.getSimpleName()
                 .replace("Animation", "")
                 .toLowerCase();
         animationClasses.put(identifier, animationClass);
+        cachedConstructors.put(identifier,
+                (Constructor<? extends BaseAnimation>[]) animationClass.getConstructors());
     }
 
     /**
@@ -103,15 +119,16 @@ public class AnimationRegistryManager
 
     /**
      * Creates an animation by identifier with optional parameters.
-     * Scans for a matching constructor based on the provided arguments.
+     * Uses pre-cached constructors scanned at registration time — no runtime
+     * reflection overhead beyond the {@code newInstance} call itself.
      *
      * @param identifier the animation identifier (e.g., "essence", "hologram")
      * @param args optional constructor arguments (after the plugin parameter)
      * @return the created animation, or null if creation failed
      */
     public BaseAnimation create(String identifier, Object... args) {
-        Class<? extends BaseAnimation> animationClass = animationClasses.get(identifier.toLowerCase());
-        if (animationClass == null) {
+        Constructor<? extends BaseAnimation>[] constructors = cachedConstructors.get(identifier.toLowerCase());
+        if (constructors == null) {
             plugin.getLogger().warning("Animation not found: " + identifier);
             return null;
         }
@@ -123,12 +140,20 @@ public class AnimationRegistryManager
                 paramTypes[i + 1] = toPrimitiveType(args[i].getClass());
             }
 
-            Constructor<? extends BaseAnimation> constructor = findConstructor(animationClass, paramTypes);
+            Constructor<? extends BaseAnimation> constructor = findConstructor(constructors, paramTypes);
 
             if (constructor == null) {
                 if (args.length == 0) {
-                    constructor = animationClass.getConstructor(JavaPlugin.class);
-                } else {
+                    // Fall back to the plugin-only constructor from the cached array
+                    for (Constructor<? extends BaseAnimation> c : constructors) {
+                        if (c.getParameterCount() == 1
+                                && c.getParameterTypes()[0] == JavaPlugin.class) {
+                            constructor = c;
+                            break;
+                        }
+                    }
+                }
+                if (constructor == null) {
                     plugin.getLogger().warning("No matching constructor for " + identifier + " with " + args.length + " args");
                     return null;
                 }
@@ -273,6 +298,7 @@ public class AnimationRegistryManager
         }
         stopAll();
         animationClasses.clear();
+        cachedConstructors.clear();
     }
 
     public int getActiveAnimationCount() {
@@ -299,9 +325,9 @@ public class AnimationRegistryManager
         this.maxResourceCost = max;
     }
 
-    @SuppressWarnings("unchecked")
-    private Constructor<? extends BaseAnimation> findConstructor(Class<? extends BaseAnimation> clazz, Class<?>[] paramTypes) {
-        for (Constructor<?> constructor : clazz.getConstructors()) {
+    private Constructor<? extends BaseAnimation> findConstructor(
+            Constructor<? extends BaseAnimation>[] constructors, Class<?>[] paramTypes) {
+        for (Constructor<? extends BaseAnimation> constructor : constructors) {
             Class<?>[] constructorParams = constructor.getParameterTypes();
             if (constructorParams.length != paramTypes.length) continue;
 
@@ -313,9 +339,7 @@ public class AnimationRegistryManager
                 }
             }
 
-            if (matches) {
-                return (Constructor<? extends BaseAnimation>) constructor;
-            }
+            if (matches) return constructor;
         }
         return null;
     }

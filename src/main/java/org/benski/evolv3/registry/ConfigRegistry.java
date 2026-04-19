@@ -21,13 +21,18 @@ public class ConfigRegistry implements Registry<FileConfiguration>
      * Register configs.
      */
     private final List<String> configs = List.of(
+            // User-editable configs (plugin root)
             "default",
             "messages",
             "menus",
             "enchants",
             "ranks",
             "stones",
-            "borders"
+            "mines",
+            // Runtime local data (localdata/ subdirectory)
+            "localdata/borders",
+            "localdata/beams",
+            "localdata/launchpads"
     );
 
     /**
@@ -45,6 +50,15 @@ public class ConfigRegistry implements Registry<FileConfiguration>
     @Override
     public FileConfiguration get(String id) {
         return storageManager.getConfig(id);
+    }
+
+    /**
+     * Saves a config file to disk.
+     *
+     * @param id the config name (without .yml extension)
+     */
+    public void save(String id) {
+        storageManager.saveConfig(id);
     }
 
     /**

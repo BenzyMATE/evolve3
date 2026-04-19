@@ -6,7 +6,12 @@ import org.benski.evolv3.core.constants.ConfigNames;
 import org.benski.evolv3.core.constants.ConfigPaths;
 import org.benski.evolv3.core.managers.EnchantSelectionManager;
 import org.benski.evolv3.core.managers.EvolutionSelectionManager;
+import org.benski.evolv3.core.managers.BeamManager;
 import org.benski.evolv3.core.managers.BorderManager;
+import org.benski.evolv3.core.managers.CaveManager;
+import org.benski.evolv3.core.managers.LaunchPadManager;
+import org.benski.evolv3.core.managers.MineHologramManager;
+import org.benski.evolv3.core.managers.MineManager;
 import org.benski.evolv3.core.managers.FrostbiteBlockManager;
 import org.benski.evolv3.core.managers.MongoManager;
 import org.benski.evolv3.core.managers.PickaxeManager;
@@ -14,6 +19,7 @@ import org.benski.evolv3.core.managers.PickupAnimationManager;
 import org.benski.evolv3.core.managers.TaskManager;
 import org.benski.evolv3.core.managers.WorldGuardManager;
 import org.benski.evolv3.datacenters.ArmorDataCenter;
+import org.benski.evolv3.datacenters.PickaxeDataCenter;
 import org.benski.evolv3.datacenters.PlayerDataCenter;
 import org.benski.evolv3.core.helpers.Utils;
 import org.benski.evolv3.hooks.PlaceholderAPIExpansion;
@@ -46,6 +52,15 @@ public final class Main extends JavaPlugin
         this.useHooks();
         // Load zone borders from borders.yml
         BorderManager.getInstance().loadFromConfig();
+        // Load levitation beams from beams.yml
+        BeamManager.getInstance().loadFromConfig();
+        // Load launch pads from launchpads.yml
+        LaunchPadManager.getInstance().loadFromConfig();
+        // Extract cave schematic if not present
+        this.extractSchematic("cave.schem");
+        // Load mines from mines.yml and cave data
+        CaveManager.getInstance().loadCaveData();
+        MineManager.getInstance().loadFromConfig();
         // Register the callback provider so enchant selections can be restored after a server restart
         this.registerEnchantCallbackProvider();
         // Load any enchant selections that were in-progress when the server last stopped
@@ -76,6 +91,15 @@ public final class Main extends JavaPlugin
         if (playerDataCenter != null) {
             playerDataCenter.saveAll();
         }
+
+        // Save all pickaxe profiles before shutdown
+        PickaxeDataCenter pickaxeDataCenter = DataCenterRegistry.getInstance().getPickaxeDataCenter();
+        if (pickaxeDataCenter != null) {
+            pickaxeDataCenter.saveAll();
+        }
+
+        // Remove mine holograms before tasks are cancelled
+        MineHologramManager.getInstance().cleanup();
 
         // Cancel all scheduled tasks first
         TaskManager.getInstance().cancelAllTasks();
@@ -171,6 +195,42 @@ public final class Main extends JavaPlugin
         if (Bukkit.getPluginManager().getPlugin("PlaceholderAPI") != null) {
             new PlaceholderAPIExpansion(this).register();
             getLogger().info("PlaceholderAPI expansion registered.");
+        }
+    }
+
+    /**
+     * Extracts a schematic from the plugin jar's resources/schematics/ directory
+     * into the plugin data folder (plugins/Evolv3/schematics/) if it doesn't already exist.
+     *
+     * @param fileName the schematic file name (e.g. "cave.schem")
+     */
+    private void extractSchematic(String fileName)
+    {
+        java.io.File schematicsDir = new java.io.File(getDataFolder(), "schematics");
+        if (!schematicsDir.exists()) schematicsDir.mkdirs();
+
+        java.io.File target = new java.io.File(schematicsDir, fileName);
+        if (target.exists()) return;
+
+        // Try both casings — JAR resources are case-sensitive and the folder
+        // may be stored as "schematics/" or "Schematics/" depending on the build OS.
+        java.io.InputStream stream = getResource("schematics/" + fileName);
+        if (stream == null) stream = getResource("Schematics/" + fileName);
+
+        if (stream == null)
+        {
+            getLogger().warning("Schematic resource not found in JAR: " + fileName);
+            return;
+        }
+
+        try (java.io.InputStream in = stream)
+        {
+            java.nio.file.Files.copy(in, target.toPath());
+            getLogger().info("Extracted schematic: " + fileName);
+        }
+        catch (java.io.IOException e)
+        {
+            getLogger().warning("Failed to extract schematic " + fileName + ": " + e.getMessage());
         }
     }
 

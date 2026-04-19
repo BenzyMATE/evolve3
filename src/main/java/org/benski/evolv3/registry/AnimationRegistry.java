@@ -20,8 +20,11 @@ import org.benski.evolv3.animations.pickup.DissolvePickupAnimation;
 import org.benski.evolv3.animations.pickup.TeleportPickupAnimation;
 import org.benski.evolv3.core.abstracts.BaseAnimation;
 import org.benski.evolv3.core.interfaces.Registry;
+import org.benski.evolv3.core.constants.ConfigNames;
+import org.benski.evolv3.core.constants.ConfigPaths;
 import org.benski.evolv3.core.managers.AnimationRegistryManager;
 import org.bukkit.Location;
+import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
 
 import java.util.Collection;
@@ -72,6 +75,15 @@ public class AnimationRegistry implements Registry<BaseAnimation>
         EnchantAnimationConfig.load();
         animations.forEach(manager::registerAnimation);
         manager.initialize();
+
+        // Apply budget limits from config (avoids hardcoded values in the manager)
+        FileConfiguration cfg = ConfigRegistry.getInstance().get(ConfigNames.DEFAULT);
+        if (cfg != null) {
+            manager.setMaxConcurrentAnimations(
+                    cfg.getInt(ConfigPaths.Default.Animations.MAX_CONCURRENT, 100));
+            manager.setMaxResourceCost(
+                    cfg.getInt(ConfigPaths.Default.Animations.MAX_RESOURCE_COST, 500));
+        }
     }
 
     @Override

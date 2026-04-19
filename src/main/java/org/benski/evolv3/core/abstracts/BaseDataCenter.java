@@ -10,6 +10,8 @@ import org.bukkit.entity.Player;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 import java.util.logging.Logger;
 
@@ -19,6 +21,14 @@ public abstract class BaseDataCenter<T extends MongoCollection> implements DataC
     protected final MongoManager mongoManager = MongoManager.getInstance();
     protected final StorageRegistryManager storageManager = StorageRegistryManager.getInstance();
     private final Logger logger = Main.getInstance().getLogger();
+
+    /**
+     * IDs currently being loaded from the database (async in-flight).
+     * Guards against the TOCTOU race in {@link #loadOrCreate} where two rapid
+     * join events could both pass the {@code exists()} cache check before either
+     * async callback returns, causing a duplicate create.
+     */
+    private final Set<String> inFlight = ConcurrentHashMap.newKeySet();
 
     /**
      * {@inheritDoc}
@@ -82,18 +92,28 @@ public abstract class BaseDataCenter<T extends MongoCollection> implements DataC
 
     /**
      * {@inheritDoc}
+     *
+     * <p>A set of in-flight IDs prevents a TOCTOU race where two rapid join
+     * events both pass the {@link #exists} cache check before either async
+     * callback returns, which would trigger two database creates for the same
+     * profile.</p>
      */
     @Override
     public void loadOrCreate(Player player, String id) {
-        if (exists(id)) {
-            return;
-        }
+        if (exists(id)) return;
+
+        // If a load is already in-flight for this ID, do not start another.
+        if (!inFlight.add(id)) return;
 
         existsInDatabase(id, exists -> {
-            if (exists) {
-                loadIntoCache(player, id);
-            } else {
-                createNewProfile(player, id);
+            try {
+                if (exists) {
+                    loadIntoCache(player, id);
+                } else {
+                    createNewProfile(player, id);
+                }
+            } finally {
+                inFlight.remove(id);
             }
         });
     }
