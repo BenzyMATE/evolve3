@@ -48,6 +48,10 @@ defaults:
   # Scale multiplier for the hologram text (1.0 = default tiny, 4.0 = large).
   hologram-scale: 4.0
 
+  # Default icon displayed before the mine name in the hologram title.
+  # Can be overridden per-mine with /mine hologram icon <name> <icon>.
+  hologram-icon: "⛏"
+
   # Default block composition — material name → weight (relative chance).
   # Weights do NOT need to sum to 100; they are relative.
   contents:

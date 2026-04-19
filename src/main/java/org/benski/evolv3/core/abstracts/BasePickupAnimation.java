@@ -24,6 +24,9 @@ public abstract class BasePickupAnimation extends BaseAnimation
     protected PreferenceType.PickupAnimation style       = PreferenceType.PickupAnimation.NORMAL;
     protected PreferenceType.DropCategory   dropCategory = PreferenceType.DropCategory.NORMAL;
 
+    /** When >= 0, overrides the config-based XP lookup for the hologram text. */
+    protected int xpOverride = -1;
+
     /** Whether to apply a coloured glow outline to the floating item display. */
     protected boolean prefGlow      = true;
     /** Whether to spawn category-specific particles during the float/dissolve phases. */
@@ -76,6 +79,14 @@ public abstract class BasePickupAnimation extends BaseAnimation
     /** Controls whether category-specific particles spawn during the float/dissolve phases. */
     public void setPrefParticles(boolean prefParticles) {
         this.prefParticles = prefParticles;
+    }
+
+    /**
+     * Overrides the XP value shown in the animation hologram.
+     * When set to a value >= 0, skips the config-based block XP lookup.
+     */
+    public void setXpOverride(int xp) {
+        this.xpOverride = xp;
     }
 
     /**

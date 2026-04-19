@@ -10,6 +10,8 @@ import org.benski.evolv3.listeners.BeamListener;
 import org.benski.evolv3.listeners.BorderListener;
 import org.benski.evolv3.listeners.LaunchPadListener;
 import org.benski.evolv3.listeners.MineListener;
+import org.benski.evolv3.listeners.SpawnerListener;
+import org.benski.evolv3.listeners.OmnitoolListener;
 import org.benski.evolv3.listeners.EnchantListener;
 import org.benski.evolv3.listeners.BreakListener;
 import org.benski.evolv3.listeners.FurnaceListener;
@@ -47,7 +49,9 @@ public class ListenerRegistry implements Registry<BaseListener>
             BorderListener.class,
             BeamListener.class,
             LaunchPadListener.class,
-            MineListener.class
+            MineListener.class,
+            SpawnerListener.class,
+            OmnitoolListener.class
     );
 
     /**

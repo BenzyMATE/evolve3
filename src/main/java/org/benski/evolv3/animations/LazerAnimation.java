@@ -49,7 +49,7 @@ public class LazerAnimation extends BaseAnimation
     private static final double GRAVITY         = 0.05;
     private static final float  SHARD_SCALE     = 0.28f;
     private static final double FADE_START      = 0.65;
-    private static final int    SHARDS_PER_BLOCK = 3;
+    private static final int    SHARDS_PER_BLOCK = 2;
 
     private static final Particle.DustOptions BEAM_DUST =
             new Particle.DustOptions(Color.fromRGB(0, 210, 255), 1.3f);
@@ -138,27 +138,31 @@ public class LazerAnimation extends BaseAnimation
         // Spawn any shards scheduled for this tick.
         spawnScheduledShards(tick);
 
-        // Physics update — move, rotate, and optionally shrink every live shard.
+        // Physics update — advance positions every tick for accurate trajectories;
+        // send packets only every 2 ticks (client interpolates via teleportDuration=2).
         float scale = SHARD_SCALE;
         if (progress > FADE_START) {
             float fade = (float) ((progress - FADE_START) / (1.0 - FADE_START));
             scale = SHARD_SCALE * (1.0f - fade);
         }
 
+        boolean sendPacket = (tick % 2 == 0);
         for (FlyingBlock fb : flyingBlocks) {
             if (fb.display.isDead()) continue;
 
             fb.velocity.setY(fb.velocity.getY() - GRAVITY);
             fb.position.add(fb.velocity);
-            fb.display.teleport(fb.position);
-
             fb.rotation += fb.rotSpeed;
-            fb.display.setTransformation(new Transformation(
-                    new Vector3f(-scale / 2, -scale / 2, -scale / 2),
-                    new AxisAngle4f(fb.rotation, fb.rotAxis.x, fb.rotAxis.y, fb.rotAxis.z),
-                    new Vector3f(scale, scale, scale),
-                    new AxisAngle4f(0, 0, 0, 1)
-            ));
+
+            if (sendPacket) {
+                fb.display.teleport(fb.position);
+                fb.display.setTransformation(new Transformation(
+                        new Vector3f(-scale / 2, -scale / 2, -scale / 2),
+                        new AxisAngle4f(fb.rotation, fb.rotAxis.x, fb.rotAxis.y, fb.rotAxis.z),
+                        new Vector3f(scale, scale, scale),
+                        new AxisAngle4f(0, 0, 0, 1)
+                ));
+            }
         }
     }
 
@@ -274,6 +278,10 @@ public class LazerAnimation extends BaseAnimation
                     ));
                     entity.setPersistent(false);
                     entity.setVisibleByDefault(false);
+                    // Client interpolates between updates so we can send every 2 ticks.
+                    entity.setTeleportDuration(2);
+                    entity.setInterpolationDelay(0);
+                    entity.setInterpolationDuration(2);
 
                     Collection<Player> vw = getViewers();
                     if (vw != null) {

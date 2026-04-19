@@ -449,6 +449,7 @@ public class DissolvePickupAnimation extends BasePickupAnimation
     }
 
     private int totalXp() {
+        if (xpOverride >= 0) return xpOverride;
         if (blockMaterial == null) return 0;
         String xpPath = ConfigPaths.Default.BLOCK_DEFAULTS + "." + blockMaterial.name() + ".XP";
         return ConfigRegistry.getInstance().get(ConfigNames.DEFAULT).getInt(xpPath, 0);

@@ -12,11 +12,14 @@ import org.benski.evolv3.core.managers.CaveManager;
 import org.benski.evolv3.core.managers.LaunchPadManager;
 import org.benski.evolv3.core.managers.MineHologramManager;
 import org.benski.evolv3.core.managers.MineManager;
+import org.benski.evolv3.core.managers.SpawnerHologramManager;
+import org.benski.evolv3.core.managers.SpawnerManager;
 import org.benski.evolv3.core.managers.FrostbiteBlockManager;
 import org.benski.evolv3.core.managers.MongoManager;
 import org.benski.evolv3.core.managers.PickaxeManager;
 import org.benski.evolv3.core.managers.PickupAnimationManager;
 import org.benski.evolv3.core.managers.TaskManager;
+import org.benski.evolv3.core.managers.OmnitoolManager;
 import org.benski.evolv3.core.managers.WorldGuardManager;
 import org.benski.evolv3.datacenters.ArmorDataCenter;
 import org.benski.evolv3.datacenters.PickaxeDataCenter;
@@ -61,6 +64,9 @@ public final class Main extends JavaPlugin
         // Load mines from mines.yml and cave data
         CaveManager.getInstance().loadCaveData();
         MineManager.getInstance().loadFromConfig();
+        // Load custom spawners
+        SpawnerManager.getInstance().initialize();
+        SpawnerHologramManager.getInstance().initialize();
         // Register the callback provider so enchant selections can be restored after a server restart
         this.registerEnchantCallbackProvider();
         // Load any enchant selections that were in-progress when the server last stopped
@@ -98,8 +104,13 @@ public final class Main extends JavaPlugin
             pickaxeDataCenter.saveAll();
         }
 
-        // Remove mine holograms before tasks are cancelled
+        // Revert any active omnitool players before shutting down
+        OmnitoolManager.getInstance().cleanup();
+
+        // Remove mine and spawner holograms before tasks are cancelled
         MineHologramManager.getInstance().cleanup();
+        SpawnerHologramManager.getInstance().cleanup();
+        SpawnerManager.getInstance().cleanup();
 
         // Cancel all scheduled tasks first
         TaskManager.getInstance().cancelAllTasks();

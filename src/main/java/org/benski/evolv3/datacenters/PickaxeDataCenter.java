@@ -5,6 +5,7 @@ import org.benski.evolv3.core.abstracts.BaseDataCenter;
 import org.benski.evolv3.core.constants.ConfigNames;
 import org.benski.evolv3.core.constants.ConfigPaths;
 import org.benski.evolv3.core.helpers.ItemStackExtensions;
+import org.benski.evolv3.core.managers.OmnitoolManager;
 import org.benski.evolv3.models.pickaxe.PickaxeProfile;
 import org.benski.evolv3.registry.ConfigRegistry;
 import org.bukkit.entity.Player;
@@ -51,14 +52,7 @@ public class PickaxeDataCenter extends BaseDataCenter<PickaxeProfile>
     @Override
     public void get(@NotNull Player player, Consumer<PickaxeProfile> callback)
     {
-        String pickaxeId = player.getInventory().getItemInMainHand().getData("id");
-        if (pickaxeId == null || pickaxeId.isEmpty())
-        {
-            callback.accept(null);
-            return;
-        }
-
-        callback.accept(data.get(pickaxeId));
+        callback.accept(getLocal(player));
     }
 
     @Override
@@ -67,7 +61,12 @@ public class PickaxeDataCenter extends BaseDataCenter<PickaxeProfile>
         String pickaxeId = player.getInventory().getItemInMainHand().getData("id");
         if (pickaxeId == null || pickaxeId.isEmpty())
         {
-            return null;
+            // In omnitool mode the real pickaxe is stored away — look it up there
+            ItemStack stored = OmnitoolManager.getInstance().getStoredPickaxe(player);
+            if (stored != null) {
+                pickaxeId = stored.getData("id");
+            }
+            if (pickaxeId == null || pickaxeId.isEmpty()) return null;
         }
 
         return data.get(pickaxeId);

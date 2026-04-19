@@ -117,6 +117,10 @@ public class DrillAnimation extends BaseAnimation
                 ));
                 entity.setPersistent(false);
                 entity.setVisibleByDefault(false);
+                // Client interpolates between updates so we can send every 2 ticks.
+                entity.setTeleportDuration(2);
+                entity.setInterpolationDelay(0);
+                entity.setInterpolationDuration(2);
 
                 Collection<Player> vw = getViewers();
                 if (vw != null) {
@@ -142,20 +146,24 @@ public class DrillAnimation extends BaseAnimation
             scale = SHARD_SCALE * (1.0f - fade);
         }
 
+        // Advance physics every tick; send packets every 2 ticks (client interpolates).
+        boolean sendPacket = (getCurrentTick() % 2 == 0);
         for (FlyingBlock fb : shards) {
             if (fb.display.isDead()) continue;
 
             fb.velocity.setY(fb.velocity.getY() - GRAVITY);
             fb.position.add(fb.velocity);
-            fb.display.teleport(fb.position);
-
             fb.rotation += fb.rotSpeed;
-            fb.display.setTransformation(new Transformation(
-                    new Vector3f(-scale / 2, -scale / 2, -scale / 2),
-                    new AxisAngle4f(fb.rotation, fb.rotAxis.x, fb.rotAxis.y, fb.rotAxis.z),
-                    new Vector3f(scale, scale, scale),
-                    new AxisAngle4f(0, 0, 0, 1)
-            ));
+
+            if (sendPacket) {
+                fb.display.teleport(fb.position);
+                fb.display.setTransformation(new Transformation(
+                        new Vector3f(-scale / 2, -scale / 2, -scale / 2),
+                        new AxisAngle4f(fb.rotation, fb.rotAxis.x, fb.rotAxis.y, fb.rotAxis.z),
+                        new Vector3f(scale, scale, scale),
+                        new AxisAngle4f(0, 0, 0, 1)
+                ));
+            }
         }
     }
 

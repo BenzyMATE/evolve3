@@ -44,6 +44,9 @@ public class VortexAnimation extends BaseAnimation
     private static final int    MAX_SHARDS = 35;
     private static final float  SHARD_SCALE = 0.28f;
 
+    private static final Particle.DustOptions DARK_PURPLE =
+            new Particle.DustOptions(Color.fromRGB(60, 0, 80), 1.5f);
+
     /** How quickly the pull force ramps up over the animation. */
     private static final double PULL_BASE  = 0.04;
     private static final double PULL_RAMP  = 0.16;
@@ -128,6 +131,11 @@ public class VortexAnimation extends BaseAnimation
                 ));
                 entity.setPersistent(false);
                 entity.setVisibleByDefault(false);
+                // Client interpolates between updates so we can send every 2 ticks.
+                entity.setTeleportDuration(2);
+                entity.setInterpolationDelay(0);
+                entity.setInterpolationDuration(2);
+
                 Collection<Player> vw = getViewers();
                 if (vw != null) {
                     for (Player viewer : vw) viewer.showEntity(plugin, entity);
@@ -158,9 +166,8 @@ public class VortexAnimation extends BaseAnimation
             // Dense dark core — squid ink with a slight spread.
             targetPlayer.spawnParticle(Particle.SQUID_INK, center, 4, 0.12, 0.12, 0.12, 0.02);
 
-            // Dark purple dust accent.
-            Particle.DustOptions darkPurple = new Particle.DustOptions(Color.fromRGB(60, 0, 80), 1.5f);
-            targetPlayer.spawnParticle(Particle.DUST, center, 2, 0.2, 0.2, 0.2, 0, darkPurple);
+            // Dark purple dust accent (static field avoids per-tick allocation).
+            targetPlayer.spawnParticle(Particle.DUST, center, 2, 0.2, 0.2, 0.2, 0, DARK_PURPLE);
 
             // Orbiting smoke ring that spirals inward over time.
             double orbitRadius = 1.8 * (1.0 - progress * 0.55);
@@ -179,6 +186,10 @@ public class VortexAnimation extends BaseAnimation
         // 2. Pull block shards towards the centre with a spiral trajectory
         // ------------------------------------------------------------------
         double pullStrength = PULL_BASE + PULL_RAMP * progress;
+
+        // Physics runs every tick for accurate positions/absorption; packets sent
+        // every 2 ticks only — client interpolates via teleportDuration=2.
+        boolean sendPacket = (getCurrentTick() % 2 == 0);
 
         Iterator<FlyingBlock> it = shards.iterator();
         while (it.hasNext()) {
@@ -220,26 +231,26 @@ public class VortexAnimation extends BaseAnimation
 
             fb.position.add(fb.velocity);
 
-            // Guard against NaN/Infinity in position before teleporting —
-            // should not happen after the fixes above, but prevents a log-flood
-            // if any future edge case slips through.
+            // Guard against NaN/Infinity in position before teleporting.
             Location dest = fb.position;
             if (!Double.isFinite(dest.getX()) || !Double.isFinite(dest.getY()) || !Double.isFinite(dest.getZ())) {
                 fb.display.remove();
                 it.remove();
                 continue;
             }
-            fb.display.teleport(dest);
 
-            // Shrink the block display as it approaches — gives a "sucked in" look.
-            float scale = SHARD_SCALE * (float) Math.min(1.0, dist / 1.5);
-            if (scale > 0.01f) {
-                fb.display.setTransformation(new Transformation(
-                        new Vector3f(-scale / 2, -scale / 2, -scale / 2),
-                        new AxisAngle4f(0, 0, 0, 1),
-                        new Vector3f(scale, scale, scale),
-                        new AxisAngle4f(0, 0, 0, 1)
-                ));
+            if (sendPacket) {
+                fb.display.teleport(dest);
+                // Shrink the block display as it approaches — gives a "sucked in" look.
+                float scale = SHARD_SCALE * (float) Math.min(1.0, dist / 1.5);
+                if (scale > 0.01f) {
+                    fb.display.setTransformation(new Transformation(
+                            new Vector3f(-scale / 2, -scale / 2, -scale / 2),
+                            new AxisAngle4f(0, 0, 0, 1),
+                            new Vector3f(scale, scale, scale),
+                            new AxisAngle4f(0, 0, 0, 1)
+                    ));
+                }
             }
         }
     }

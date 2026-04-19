@@ -1,9 +1,9 @@
 package org.benski.evolv3.animations;
 
 import org.benski.evolv3.core.abstracts.BaseAnimation;
-import org.benski.evolv3.core.helpers.Utils;
 import org.benski.evolv3.core.constants.ConfigNames;
 import org.benski.evolv3.core.constants.ConfigPaths;
+import org.benski.evolv3.core.helpers.Utils;
 import org.benski.evolv3.datacenters.PlayerDataCenter;
 import org.benski.evolv3.models.player.PlayerPreferences;
 import org.benski.evolv3.models.player.PlayerProfile;
@@ -42,31 +42,31 @@ import java.util.concurrent.ThreadLocalRandom;
  * (ambient), {@link Particle#FLASH} (one-off at collapse). Intentionally restrained
  * — roughly the same count per tick as the essence animation, but structured.</p>
  */
-public class AtomAnimation extends BaseAnimation
-{
+public class AtomAnimation extends BaseAnimation {
     private static final int DEFAULT_DURATION = 105;
 
     private static final int ORBITAL_START = 8;
-    private static final int ORBITAL_END   = 83;
-    private static final int COLLAPSE_END  = 88;
-    // Launch: 88–104
+    private static final int ORBITAL_END = 83;
+    private static final int COLLAPSE_END = 88;
 
-    /** Pure gold dust — the sole particle color for visual cohesion. */
     private static final Particle.DustOptions GOLD =
             new Particle.DustOptions(Color.fromRGB(255, 238, 0), 1.3f);
 
-    /** Angular speed (radians/tick) for each of the three orbital rings. */
+    /**
+     * Angular speed (radians/tick) for each of the three orbital rings.
+     */
     private static final double[] RING_SPEEDS = {0.10, 0.15, 0.08};
 
     private final int atomAmount;
-    private Player   targetPlayer;
+    private Player targetPlayer;
     private Location centerLocation;
 
-    /** Per-ring angle accumulators — advanced every tick for smooth continuous motion. */
+    /**
+     * Per-ring angle accumulators — advanced every tick for smooth continuous motion.
+     */
     private final double[] ringAngles = new double[3];
 
-    // Resolved from player preferences in onStart
-    private boolean prefSound     = true;
+    private boolean prefSound = true;
     private boolean prefParticles = true;
 
     /**
@@ -107,24 +107,21 @@ public class AtomAnimation extends BaseAnimation
         }
         if (targetPlayer == null || !targetPlayer.isOnline()) return;
 
-        // Load player preferences
         PlayerDataCenter pdc = DataCenterRegistry.getInstance().getPlayerDataCenter();
         if (pdc != null) {
             PlayerProfile profile = pdc.getLocal(targetPlayer);
             if (profile != null) {
                 PlayerPreferences prefs = profile.preferences;
-                prefSound     = prefs.atomSound;
+                prefSound = prefs.atomSound;
                 prefParticles = prefs.atomParticles;
             }
         }
 
-        // Stagger ring start angles evenly so they read as three distinct objects
         ringAngles[0] = 0;
         ringAngles[1] = Math.PI * 2.0 / 3.0;
         ringAngles[2] = Math.PI * 4.0 / 3.0;
 
         if (!prefSound) return;
-        // Eerie open: ender ambient layered with a crystalline chime
         targetPlayer.playSound(centerLocation, Sound.ENTITY_ENDER_DRAGON_AMBIENT, 0.4f, 1.6f);
         targetPlayer.playSound(centerLocation, Sound.BLOCK_AMETHYST_CLUSTER_BREAK, 0.6f, 0.8f);
     }
@@ -166,8 +163,8 @@ public class AtomAnimation extends BaseAnimation
     // -------------------------------------------------------------------------
 
     private void tickGroundRing(int tick) {
-        double radius = ((double)(tick + 1) / ORBITAL_START) * 1.8;
-        int    points = 12;
+        double radius = ((double) (tick + 1) / ORBITAL_START) * 1.8;
+        int points = 12;
         for (int i = 0; i < points; i++) {
             double angle = (2 * Math.PI / points) * i;
             Location pos = centerLocation.clone().add(
@@ -262,15 +259,15 @@ public class AtomAnimation extends BaseAnimation
     // -------------------------------------------------------------------------
 
     private void tickLaunch(int localTick) {
-        int    duration = DEFAULT_DURATION - COLLAPSE_END; // 17
-        double t        = (double) localTick / duration;
-        double eased    = t * t; // quadratic ease-in
+        int duration = DEFAULT_DURATION - COLLAPSE_END; // 17
+        double t = (double) localTick / duration;
+        double eased = t * t; // quadratic ease-in
 
         Location start = centerLocation.clone().add(0, 3.0, 0);
-        Location end   = targetPlayer.getEyeLocation()
+        Location end = targetPlayer.getEyeLocation()
                 .add(targetPlayer.getLocation().getDirection().multiply(-0.5).setY(-0.3));
 
-        Vector pos     = start.toVector().multiply(1 - eased).add(end.toVector().multiply(eased));
+        Vector pos = start.toVector().multiply(1 - eased).add(end.toVector().multiply(eased));
         Location current = pos.toLocation(targetPlayer.getWorld());
 
         targetPlayer.spawnParticle(Particle.DUST, current, 1, 0, 0, 0, 0, GOLD);
@@ -292,16 +289,18 @@ public class AtomAnimation extends BaseAnimation
      */
     private Location orbitalPoint(int ring, double angle, double radius, double height) {
         return switch (ring) {
-            case 0  -> centerLocation.clone().add(
+            case 0 -> centerLocation.clone().add(
                     Math.cos(angle) * radius, height, Math.sin(angle) * radius);
-            case 1  -> centerLocation.clone().add(
+            case 1 -> centerLocation.clone().add(
                     Math.cos(angle) * radius, height + Math.sin(angle) * radius, 0);
             default -> centerLocation.clone().add(
                     0, height + Math.cos(angle) * radius, Math.sin(angle) * radius);
         };
     }
 
-    /** Shows the floating hologram at the discovery block. */
+    /**
+     * Shows the floating hologram at the discovery block.
+     */
     private void showHologram() {
         FileConfiguration config = ConfigRegistry.getInstance().get(ConfigNames.DEFAULT);
         if (!config.getBoolean(ConfigPaths.Default.Atoms.HOLOGRAM_ENABLED, true)) return;

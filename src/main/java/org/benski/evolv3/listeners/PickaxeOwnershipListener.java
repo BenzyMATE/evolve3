@@ -9,6 +9,7 @@ import org.benski.evolv3.core.constants.ConfigNames;
 import org.benski.evolv3.core.constants.ConfigPaths;
 import org.benski.evolv3.core.helpers.ItemStackExtensions;
 import org.benski.evolv3.core.helpers.Utils;
+import org.benski.evolv3.core.managers.OmnitoolManager;
 import org.benski.evolv3.datacenters.PlayerDataCenter;
 import org.benski.evolv3.core.managers.PickaxeManager;
 import org.benski.evolv3.models.pickaxe.PickaxeProfile;
@@ -134,11 +135,41 @@ public class PickaxeOwnershipListener extends BaseListener
     @EventHandler(priority = EventPriority.LOWEST)
     public void onPickaxeDrop(PlayerDropItemEvent event)
     {
-        String pickaxeId = event.getItemDrop().getItemStack().getData("id");
-        if (pickaxeId == null || pickaxeId.isEmpty()) return;
-
+        ItemStack dropped = event.getItemDrop().getItemStack();
         Player player = event.getPlayer();
         UUID playerUuid = player.getUniqueId();
+
+        // Check if this is an omnitool item (axe/sword form of a pickaxe)
+        boolean isOmnitool = dropped.getItemMeta() != null
+                && dropped.getItemMeta().getPersistentDataContainer()
+                          .has(OmnitoolManager.OMNITOOL_ITEM_KEY, org.bukkit.persistence.PersistentDataType.STRING);
+
+        if (isOmnitool) {
+            // Same two-step confirmation as a pickaxe drop, but no ownership release needed
+            if (confirmedDropPlayers.remove(playerUuid)) {
+                dropConfirmationExpiry.remove(playerUuid);
+                return; // allow the drop on second press
+            }
+            event.setCancelled(true);
+            dropConfirmationExpiry.put(playerUuid, System.currentTimeMillis() + 5_000);
+            confirmedDropPlayers.add(playerUuid);
+            FileConfiguration messages = ConfigRegistry.getInstance().get(ConfigNames.MESSAGES);
+            List<String> promptLines = messages.getStringList(ConfigPaths.Messages.Pickaxe.DROP_CONFIRMATION);
+            for (String line : promptLines) {
+                player.sendMessage(Utils.formatMessage(player, line));
+            }
+            Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                Long expiry = dropConfirmationExpiry.get(playerUuid);
+                if (expiry != null && System.currentTimeMillis() >= expiry) {
+                    dropConfirmationExpiry.remove(playerUuid);
+                    confirmedDropPlayers.remove(playerUuid);
+                }
+            }, DROP_CONFIRM_TICKS);
+            return;
+        }
+
+        String pickaxeId = dropped.getData("id");
+        if (pickaxeId == null || pickaxeId.isEmpty()) return;
 
         // Second press: player confirmed — release ownership and let the drop through
         if (confirmedDropPlayers.remove(playerUuid)) {

@@ -29,6 +29,7 @@ public class ConfigRegistry implements Registry<FileConfiguration>
             "ranks",
             "stones",
             "mines",
+            "spawners",
             // Runtime local data (localdata/ subdirectory)
             "localdata/borders",
             "localdata/beams",

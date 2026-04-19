@@ -439,6 +439,15 @@ public final class ConfigPaths
             public static final String INVALID_MATERIAL    = "mine.invalid-material";
             public static final String NOT_IN_COMPOSITION  = "mine.not-in-composition";
             public static final String NO_MINES            = "mine.no-mines";
+            public static final String HOLOGRAM_POS_SET       = "mine.hologram-pos-set";
+            public static final String HOLOGRAM_POS_RESET     = "mine.hologram-pos-reset";
+            public static final String HOLOGRAM_SCALE_SET     = "mine.hologram-scale-set";
+            public static final String HOLOGRAM_BILLBOARD_SET = "mine.hologram-billboard-set";
+            public static final String HOLOGRAM_FACING_SET    = "mine.hologram-facing-set";
+            public static final String HOLOGRAM_COLOR_SET     = "mine.hologram-color-set";
+            public static final String HOLOGRAM_COLOR_RESET   = "mine.hologram-color-reset";
+            public static final String HOLOGRAM_ARROW_SET     = "mine.hologram-arrow-set";
+            public static final String HOLOGRAM_ICON_SET      = "mine.hologram-icon-set";
         }
 
         /**

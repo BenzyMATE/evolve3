@@ -46,7 +46,7 @@ Scoreboard:
     - " &8| &#888888Rank: %evolv3_rank%"
     - " &8| &#888888Backpack: &#FFFFFF%evolv3_player_backpack_items%&#888888/&#FFFFFF%evolv3_player_backpack_size%"
     - "%evolv3_pickaxe_blank%"
-    - " &#CCCCCCPickaxe &8(&#00FFFF&lEvo %evolv3_pickaxe_evolution%&8)"
+    - " &#CCCCCC%evolv3_tool_label% &8(&#00FFFF&lEvo %evolv3_pickaxe_evolution%&8)"
     - " &8| &#888888Level: &#FFFFFF%evolv3_pickaxe_level%      &#00FF88%evolv3_pickaxe_percentage%"
     - " &8| %evolv3_pickaxe_progressbar% &7&7 "
     - ""
@@ -146,6 +146,19 @@ Pickaxe:
   Hologram:
     Enabled: true
     Text: '&#00FFFF+ %xp% &#FFFFFF&lXP'
+
+# =====================================================
+# Omnitool Configuration
+# =====================================================
+Omnitool:
+  # XP added to the pickaxe per mob kill (sword form)
+  MobKillXp: 5
+  # XP added to the pickaxe per log broken (axe form)
+  LogBreakXp: 5
+  # Display name applied when in axe form (supports PlaceholderAPI & hex colours)
+  AxeName: '&#00FFFF🔨 &#FFFFFF&l%evolv3_player_name% &#00FFFFAxe'
+  # Display name applied when in sword form (supports PlaceholderAPI & hex colours)
+  SwordName: '&#00FFFF🗡 &#FFFFFF&l%evolv3_player_name% &#00FFFFSword'
 
 # =====================================================
 # Player Configuration

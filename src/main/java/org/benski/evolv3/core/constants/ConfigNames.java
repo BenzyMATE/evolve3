@@ -62,4 +62,9 @@ public final class ConfigNames
      * Mines configuration file.
      */
     public static final String MINES = "mines";
+
+    /**
+     * Spawners configuration file containing spawner defaults and hologram settings.
+     */
+    public static final String SPAWNERS = "spawners";
 }

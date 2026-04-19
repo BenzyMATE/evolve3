@@ -90,7 +90,9 @@ public class TeleportPickupAnimation extends BasePickupAnimation
 
             Location spawnLoc = origin.clone();
             final int xpAmount;
-            if (blockMaterial != null) {
+            if (xpOverride >= 0) {
+                xpAmount = xpOverride;
+            } else if (blockMaterial != null) {
                 String xpPath = ConfigPaths.Default.BLOCK_DEFAULTS + "." + blockMaterial.name() + ".XP";
                 xpAmount = ConfigRegistry.getInstance().get(ConfigNames.DEFAULT).getInt(xpPath, 0);
             } else {

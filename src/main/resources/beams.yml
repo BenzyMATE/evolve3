@@ -29,9 +29,9 @@
 pull-speed: 0.45
 
 # Horizontal spacing between particle columns (blocks)
-particle-density: 0.8
+particle-density: 2.0
 
 # Ticks between each particle render cycle (20 ticks = 1 second)
-particle-tick: 5
+particle-tick: 8
 
 beams: {}

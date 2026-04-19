@@ -9,6 +9,7 @@ import org.bukkit.configuration.file.FileConfiguration;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -39,9 +40,8 @@ public final class BeamManager
             "blue",   Color.fromRGB(50, 220, 255)
     );
 
-    /** beamName → beam data */
     private final GridManager gridManager = new GridManager(16);
-private final Map<String, Beam> beams = new HashMap<>();
+    private final Map<String, Beam> beams = new HashMap<>();
 
     private BeamManager() {}
 
@@ -115,6 +115,7 @@ private final Map<String, Beam> beams = new HashMap<>();
     public void loadFromConfig()
     {
         beams.clear();
+        gridManager.clear();
         FileConfiguration cfg = ConfigRegistry.getInstance().get(ConfigNames.BEAMS);
         if (cfg == null) return;
 
@@ -131,7 +132,9 @@ private final Map<String, Beam> beams = new HashMap<>();
             double x2 = cfg.getDouble(path + ".x2");
             double y2 = cfg.getDouble(path + ".y2");
             double z2 = cfg.getDouble(path + ".z2");
-            beams.put(name, new Beam(name, color, x1, y1, z1, x2, y2, z2));
+            Beam beam = new Beam(name, color, x1, y1, z1, x2, y2, z2);
+            beams.put(name, beam);
+            gridManager.addBeam(beam);
         }
     }
 
@@ -168,13 +171,7 @@ private final Map<String, Beam> beams = new HashMap<>();
      */
     public void setBeam(@NotNull String name, @NotNull String color,
                         int bx1, int by1, int bz1,
-                        int bx2, int by2, int bz2) {
-        Bukkit.getScheduler().runTaskLater(this, () -> {
-            // Actual beam setup logic (with spatial partitioning)
-            beams.put(name, new Beam(name, color.toLowerCase(Locale.ROOT),
-                    minX, minY, minZ, maxX, maxY, maxZ));
-            saveToConfig();
-        }, 0);
+                        int bx2, int by2, int bz2)
     {
         // Expand to include full blocks: min stays, max gets +1
         double minX = Math.min(bx1, bx2);
@@ -184,8 +181,13 @@ private final Map<String, Beam> beams = new HashMap<>();
         double maxY = Math.max(by1, by2) + 1.0;
         double maxZ = Math.max(bz1, bz2) + 1.0;
 
-        beams.put(name, new Beam(name, color.toLowerCase(Locale.ROOT),
-                minX, minY, minZ, maxX, maxY, maxZ));
+        Beam oldBeam = beams.get(name);
+        if (oldBeam != null) gridManager.removeBeam(oldBeam);
+
+        Beam newBeam = new Beam(name, color.toLowerCase(Locale.ROOT),
+                minX, minY, minZ, maxX, maxY, maxZ);
+        beams.put(name, newBeam);
+        gridManager.addBeam(newBeam);
         saveToConfig();
     }
 
@@ -196,7 +198,9 @@ private final Map<String, Beam> beams = new HashMap<>();
      */
     public boolean removeBeam(@NotNull String name)
     {
-        if (beams.remove(name) == null) return false;
+        Beam removed = beams.remove(name);
+        if (removed == null) return false;
+        gridManager.removeBeam(removed);
         saveToConfig();
         return true;
     }
@@ -218,7 +222,7 @@ private final Map<String, Beam> beams = new HashMap<>();
     /** Returns the first beam that contains the given location, or null if none. */
     public @Nullable Beam getBeamAt(double x, double y, double z)
     {
-        for (Beam beam : beams.values())
+        for (Beam beam : gridManager.getBeamsAt(x, y, z))
         {
             if (beam.contains(x, y, z)) return beam;
         }

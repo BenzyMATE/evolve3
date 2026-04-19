@@ -7,6 +7,7 @@ import org.benski.evolv3.core.constants.ConfigPaths;
 import org.benski.evolv3.core.helpers.Utils;
 import org.benski.evolv3.core.managers.EnchantAnimationConfig;
 import org.benski.evolv3.core.managers.MineManager;
+import org.benski.evolv3.core.managers.OmnitoolManager;
 import org.benski.evolv3.core.managers.RankManager;
 import org.benski.evolv3.core.managers.StorageRegistryManager;
 import org.benski.evolv3.datacenters.PickaxeDataCenter;
@@ -127,6 +128,18 @@ public class PlaceholderAPIExpansion extends PlaceholderExpansion
 
         if (params.startsWith("mine_")) {
             return handleMinePlaceholder(params.substring(5));
+        }
+
+        if (params.equals("tool_label")) {
+            OmnitoolManager omni = OmnitoolManager.getInstance();
+            if (omni.isInOmnitoolMode(player)) {
+                return switch (omni.getForm(player)) {
+                    case AXE   -> "Axe";
+                    case SWORD -> "Sword";
+                    default    -> "Pickaxe";
+                };
+            }
+            return "Pickaxe";
         }
 
         return null;

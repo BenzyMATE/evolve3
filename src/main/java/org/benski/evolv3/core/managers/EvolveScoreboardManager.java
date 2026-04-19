@@ -21,6 +21,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
+import org.benski.evolv3.core.managers.OmnitoolManager;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitTask;
 import org.bukkit.scoreboard.Criteria;
@@ -210,7 +211,8 @@ public final class EvolveScoreboardManager
         int lineCount = Math.min(configLines.size(), state.teams.size());
 
         boolean holdingPickaxe  = player.getInventory().getItemInMainHand()
-                .getType().name().endsWith("_PICKAXE");
+                .getType().name().endsWith("_PICKAXE")
+                || OmnitoolManager.getInstance().isInOmnitoolMode(player);
         boolean pickaxeLoaded   = isPickaxeLoaded(player);
         boolean enchantActive   = EnchantSelectionManager.getInstance().hasActiveSelection(player);
 
@@ -320,7 +322,8 @@ public final class EvolveScoreboardManager
 
         String evoRaw   = configLines.get(i);
         boolean holding = player.getInventory().getItemInMainHand()
-                .getType().name().endsWith("_PICKAXE");
+                .getType().name().endsWith("_PICKAXE")
+                || OmnitoolManager.getInstance().isInOmnitoolMode(player);
 
         // Hide line and reset state when not holding a pickaxe
         if (!holding) {
@@ -400,11 +403,11 @@ public final class EvolveScoreboardManager
                 state.animCharIndex = Math.max(0, state.animCharIndex - 1);
                 int rem = state.animCharIndex;
                 if (rem > 0) {
-                    pushLine(state, i, state.coloredPrefix
+                    pushLine(state, i, coloredPrefix
                             + truncateFormatted(state.animFormattedText, rem) + "§8▌" + CLOSE);
                 } else {
                     // Erase complete — prepare atoms reveal
-                    pushLine(state, i, state.coloredPrefix + CLOSE);
+                    pushLine(state, i, coloredPrefix + CLOSE);
                     String formattedAtoms       = Utils.formatMessage(player, atomsRaw);
                     state.animFormattedText     = formattedAtoms;
                     state.animText              = stripColors(formattedAtoms);
@@ -418,17 +421,17 @@ public final class EvolveScoreboardManager
                 int shown = state.animCharIndex;
                 boolean done = shown >= state.animText.length();
                 if (done) {
-                    pushLine(state, i, state.coloredPrefix + state.animFormattedText + CLOSE);
+                    pushLine(state, i, coloredPrefix + state.animFormattedText + CLOSE);
                     state.evoAtomPhase = EvoAtomPhase.ATOMS_DISPLAY;
                     state.displayTick  = 0;
                 } else {
-                    pushLine(state, i, state.coloredPrefix
+                    pushLine(state, i, coloredPrefix
                             + truncateFormatted(state.animFormattedText, shown) + "§8▌" + CLOSE);
                 }
             }
 
             case ATOMS_DISPLAY -> {
-                String formattedAtoms = state.coloredPrefix + Utils.formatMessage(player, atomsRaw) + CLOSE;
+                String formattedAtoms = coloredPrefix + Utils.formatMessage(player, atomsRaw) + CLOSE;
                 if (!formattedAtoms.equals(state.lastTexts.get(i))) {
                     state.lastTexts.set(i, formattedAtoms);
                     state.teams.get(i).prefix(legacy(formattedAtoms));
@@ -447,10 +450,10 @@ public final class EvolveScoreboardManager
                 state.animCharIndex = Math.max(0, state.animCharIndex - 1);
                 int rem = state.animCharIndex;
                 if (rem > 0) {
-                    pushLine(state, i, state.coloredPrefix
+                    pushLine(state, i, coloredPrefix
                             + truncateFormatted(state.animFormattedText, rem) + "§8▌" + CLOSE);
                 } else {
-                    pushLine(state, i, state.coloredPrefix + CLOSE);
+                    pushLine(state, i, coloredPrefix + CLOSE);
                     // Capture fresh evo inner for the reveal
                     String inner = (bracketOpen >= 0 && bracketClose > bracketOpen)
                             ? formattedEvo.substring(bracketOpen + 1, bracketClose)
@@ -471,7 +474,7 @@ public final class EvolveScoreboardManager
                     state.evoAtomPhase = EvoAtomPhase.EVO_DISPLAY;
                     state.displayTick  = 0;
                 } else {
-                    pushLine(state, i, state.coloredPrefix
+                    pushLine(state, i, coloredPrefix
                             + truncateFormatted(state.animFormattedText, shown) + "§8▌" + CLOSE);
                 }
             }

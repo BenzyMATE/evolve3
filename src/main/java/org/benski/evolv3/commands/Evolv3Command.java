@@ -69,6 +69,7 @@ public class Evolv3Command extends BaseCommand
         delegates.put("border", new BorderCommand(plugin));
         delegates.put("beam", new BeamCommand(plugin));
         delegates.put("launchpad", new LaunchPadCommand(plugin));
+        delegates.put("spawner", new SpawnerCommand(plugin));
 
         // Rank commands
         setRankCommand = new SetRankCommand(plugin);
@@ -84,7 +85,7 @@ public class Evolv3Command extends BaseCommand
 
     @Override public String getCommandName() { return "evolve"; }
     @Override public @Nullable String getDescription() { return "Main admin command for the Evolv3 plugin"; }
-    @Override public @Nullable String getUsage() { return "/e <help|reload|info|mine|border|beam|launchpad|rank|...>"; }
+    @Override public @Nullable String getUsage() { return "/e <help|reload|info|mine|border|beam|launchpad|spawner|rank|...>"; }
     @Override public @Nullable String getPermission() { return "evolv3.admin"; }
     @Override public @Nullable List<String> getAliases() { return List.of("e"); }
 
@@ -533,7 +534,7 @@ public class Evolv3Command extends BaseCommand
 
     private static final List<String> TOP_LEVEL = List.of(
             "help", "reload", "info",
-            "mine", "border", "beam", "launchpad",
+            "mine", "border", "beam", "launchpad", "spawner",
             "rank",
             "backpack", "resetpickaxes", "resetprofile", "stone", "setbackpack");
 

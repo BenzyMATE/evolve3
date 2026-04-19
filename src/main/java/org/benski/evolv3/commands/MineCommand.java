@@ -3,6 +3,7 @@ package org.benski.evolv3.commands;
 import org.benski.evolv3.core.abstracts.BaseCommand;
 import org.benski.evolv3.core.constants.ConfigPaths;
 import org.benski.evolv3.core.helpers.Messageable;
+import org.benski.evolv3.core.managers.BeamManager;
 import org.benski.evolv3.core.managers.MineHologramManager;
 import org.benski.evolv3.core.managers.MineManager;
 import org.benski.evolv3.core.managers.MineManager.Mine;
@@ -65,6 +66,7 @@ public class MineCommand extends BaseCommand
             case "addcontent"    -> handleAddContent(player, args);
             case "removecontent" -> handleRemoveContent(player, args);
             case "set"           -> handleSet(player, args);
+            case "hologram"      -> handleHologramEdit(player, args);
             case "reload"        -> handleReload(player);
             default              -> sendHelp(player);
         }
@@ -401,6 +403,136 @@ public class MineCommand extends BaseCommand
         }
     }
 
+    private void handleHologramEdit(Player player, String[] args)
+    {
+        if (args.length < 3)
+        {
+            sendError(player, "Usage: &#FFFFFF/e mine hologram <name> <option> [value]");
+            Messageable.sendRaw(player, "  &#888888setpos &#444444» &#CCCCCCPlace hologram at your location");
+            Messageable.sendRaw(player, "  &#888888resetpos &#444444» &#CCCCCCRevert to auto-calculated position");
+            Messageable.sendRaw(player, "  &#888888scale <value> &#444444» &#CCCCCCSet text size &#888888(default: 4.0)");
+            Messageable.sendRaw(player, "  &#888888billboard <true|false> &#444444» &#CCCCCCToggle player-facing rotation");
+            Messageable.sendRaw(player, "  &#888888setfacing &#444444» &#CCCCCCSet facing direction from your yaw &#888888(billboard false only)");
+            Messageable.sendRaw(player, "  &#888888color <preset|reset> &#444444» &#CCCCCCSet name-line colour &#888888(purple, yellow, green, red, blue)");
+            Messageable.sendRaw(player, "  &#888888arrow <true|false> &#444444» &#CCCCCCShow or hide the ▼ arrow");
+            Messageable.sendRaw(player, "  &#888888icon <emoji|reset> &#444444» &#CCCCCCSet the icon before the mine name");
+            return;
+        }
+
+        String name = args[1].toLowerCase(Locale.ROOT);
+        Mine mine = MineManager.getInstance().getMine(name);
+        if (mine == null) { sendMineNotFound(player, name); return; }
+
+        switch (args[2].toLowerCase(Locale.ROOT))
+        {
+            case "setpos" ->
+            {
+                org.bukkit.Location loc = player.getLocation();
+                MineHologramManager.getInstance().setPosition(name, loc.getX(), loc.getY(), loc.getZ());
+                Messageable.sendConfigMessage(player, ConfigPaths.Messages.Mine.HOLOGRAM_POS_SET,
+                        "%mine%", name);
+            }
+            case "resetpos" ->
+            {
+                MineHologramManager.getInstance().resetPosition(name);
+                Messageable.sendConfigMessage(player, ConfigPaths.Messages.Mine.HOLOGRAM_POS_RESET,
+                        "%mine%", name);
+            }
+            case "scale" ->
+            {
+                if (args.length < 4)
+                {
+                    sendError(player, "Usage: &#FFFFFF/e mine hologram <name> scale <value>");
+                    return;
+                }
+                try
+                {
+                    float scale = Float.parseFloat(args[3]);
+                    if (scale <= 0) { sendError(player, "Scale must be a positive number."); return; }
+                    MineHologramManager.getInstance().setScale(name, scale);
+                    Messageable.sendConfigMessage(player, ConfigPaths.Messages.Mine.HOLOGRAM_SCALE_SET,
+                            "%mine%", name, "%value%", args[3]);
+                }
+                catch (NumberFormatException e) { sendError(player, "Scale must be a number (e.g. 4.0)."); }
+            }
+            case "billboard" ->
+            {
+                if (args.length < 4)
+                {
+                    sendError(player, "Usage: &#FFFFFF/e mine hologram <name> billboard <true|false>");
+                    return;
+                }
+                boolean faces = Boolean.parseBoolean(args[3]);
+                MineHologramManager.getInstance().setBillboard(name, faces);
+                Messageable.sendConfigMessage(player, ConfigPaths.Messages.Mine.HOLOGRAM_BILLBOARD_SET,
+                        "%mine%", name, "%value%", String.valueOf(faces));
+            }
+            case "setfacing" ->
+            {
+                // Store the player's look direction so the text faces toward them.
+                // TextDisplay yaw 0 = faces south; adding 180° makes it face the viewer.
+                float yaw = (player.getLocation().getYaw() + 180f) % 360f;
+                MineHologramManager.getInstance().setFacing(name, yaw);
+                Messageable.sendConfigMessage(player, ConfigPaths.Messages.Mine.HOLOGRAM_FACING_SET,
+                        "%mine%", name, "%value%", String.format("%.1f", yaw));
+            }
+            case "color" ->
+            {
+                if (args.length < 4)
+                {
+                    sendError(player, "Usage: &#FFFFFF/e mine hologram <name> color <purple|yellow|green|red|blue|reset>");
+                    return;
+                }
+                String colorName = args[3].toLowerCase(Locale.ROOT);
+                if ("reset".equals(colorName))
+                {
+                    MineHologramManager.getInstance().setColor(name, "");
+                    Messageable.sendConfigMessage(player, ConfigPaths.Messages.Mine.HOLOGRAM_COLOR_RESET,
+                            "%mine%", name);
+                }
+                else if (BeamManager.getColorNames().contains(colorName))
+                {
+                    MineHologramManager.getInstance().setColor(name, colorName);
+                    Messageable.sendConfigMessage(player, ConfigPaths.Messages.Mine.HOLOGRAM_COLOR_SET,
+                            "%mine%", name, "%value%", colorName);
+                }
+                else
+                {
+                    sendError(player, "Unknown colour. Valid: &#FFFFFFpurple&#888888, &#FFFFFFyellow&#888888, &#FFFFFFgreen&#888888, &#FFFFFFred&#888888, &#FFFFFFblue&#888888, &#FFFFFFreset");
+                }
+            }
+            case "arrow" ->
+            {
+                if (args.length < 4)
+                {
+                    sendError(player, "Usage: &#FFFFFF/e mine hologram <name> arrow <true|false>");
+                    return;
+                }
+                boolean show = Boolean.parseBoolean(args[3]);
+                MineHologramManager.getInstance().setShowArrow(name, show);
+                Messageable.sendConfigMessage(player, ConfigPaths.Messages.Mine.HOLOGRAM_ARROW_SET,
+                        "%mine%", name, "%value%", String.valueOf(show));
+            }
+            case "icon" ->
+            {
+                if (args.length < 4)
+                {
+                    sendError(player, "Usage: &#FFFFFF/e mine hologram <name> icon <emoji|reset>");
+                    return;
+                }
+                String icon = args[3].equalsIgnoreCase("reset") ? "" : args[3];
+                MineHologramManager.getInstance().setIcon(name, icon);
+                Messageable.sendConfigMessage(player, ConfigPaths.Messages.Mine.HOLOGRAM_ICON_SET,
+                        "%mine%", name, "%value%", icon.isEmpty() ? "(default)" : icon);
+            }
+            default ->
+            {
+                sendError(player, "Unknown option: &#FFFFFF" + args[2]
+                        + " &#888888(setpos, resetpos, scale, billboard, setfacing, color, arrow, icon)");
+            }
+        }
+    }
+
     private void handleReload(Player player)
     {
         MineManager.getInstance().loadFromConfig();
@@ -427,6 +559,7 @@ public class MineCommand extends BaseCommand
         Messageable.sendRaw(player, "  &#888888/e mine addcontent <name> <material> <weight> &#444444» &#CCCCCCAdd block");
         Messageable.sendRaw(player, "  &#888888/e mine removecontent <name> <material> &#444444» &#CCCCCCRemove block");
         Messageable.sendRaw(player, "  &#888888/e mine set <name> <setting> <value> &#444444» &#CCCCCCEdit settings");
+        Messageable.sendRaw(player, "  &#888888/e mine hologram <name> <option> &#444444» &#CCCCCCEdit hologram in-game");
         Messageable.sendRaw(player, "  &#888888/e mine reload &#444444» &#CCCCCCReload from config");
         Messageable.sendRaw(player, "");
     }
@@ -447,7 +580,10 @@ public class MineCommand extends BaseCommand
 
     private static final List<String> SUBCOMMANDS = List.of(
             "create", "remove", "reset", "list", "info", "setspawn",
-            "addcontent", "removecontent", "set", "reload");
+            "addcontent", "removecontent", "set", "hologram", "reload");
+
+    private static final List<String> HOLOGRAM_OPTIONS = List.of(
+            "setpos", "resetpos", "scale", "billboard", "setfacing", "color", "arrow", "icon");
 
     private static final List<String> SETTINGS = List.of(
             "reset-interval", "reset-percentage", "reset-warning",
@@ -469,16 +605,22 @@ public class MineCommand extends BaseCommand
 
         // Arg 2: mine name for most subcommands
         if (args.length == 2 && List.of("remove", "reset", "info", "setspawn",
-                "addcontent", "removecontent", "set").contains(sub))
+                "addcontent", "removecontent", "set", "hologram").contains(sub))
         {
             return mineNames.stream()
                     .filter(s -> s.startsWith(args[1].toLowerCase(Locale.ROOT)))
                     .collect(Collectors.toList());
         }
 
-        // Arg 3: material for addcontent/removecontent, setting name for set
+        // Arg 3: option for hologram; material for addcontent/removecontent; setting for set
         if (args.length == 3)
         {
+            if ("hologram".equals(sub))
+            {
+                return HOLOGRAM_OPTIONS.stream()
+                        .filter(s -> s.startsWith(args[2].toLowerCase(Locale.ROOT)))
+                        .collect(Collectors.toList());
+            }
             if ("addcontent".equals(sub))
             {
                 String prefix = args[2].toUpperCase(Locale.ROOT);
@@ -508,6 +650,24 @@ public class MineCommand extends BaseCommand
         }
 
         // Arg 4: value suggestions
+        if (args.length == 4 && "hologram".equals(sub))
+        {
+            String option = args[2].toLowerCase(Locale.ROOT);
+            if ("billboard".equals(option)) return List.of("true", "false");
+            if ("arrow".equals(option))     return List.of("true", "false");
+            if ("scale".equals(option))     return List.of("1.0", "2.0", "3.0", "4.0", "6.0", "8.0");
+            if ("color".equals(option))     return BeamManager.getColorNames().stream()
+                    .filter(s -> s.startsWith(args[3].toLowerCase(Locale.ROOT)))
+                    .collect(Collectors.toList());
+        }
+        if (args.length == 4 && "set".equals(sub))
+        {
+            String setting = args[2].toLowerCase(Locale.ROOT);
+            if ("hologram".equals(setting) || "teleport".equals(setting))
+                return List.of("true", "false").stream()
+                        .filter(s -> s.startsWith(args[3].toLowerCase(Locale.ROOT)))
+                        .collect(Collectors.toList());
+        }
         if (args.length == 4 && "addcontent".equals(sub))
         {
             return List.of("1", "5", "10", "20", "50", "100");

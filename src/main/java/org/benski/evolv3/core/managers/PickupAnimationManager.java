@@ -251,6 +251,67 @@ public class PickupAnimationManager
     }
 
     /**
+     * Plays a pickup animation with an explicit XP amount shown in the hologram,
+     * bypassing the config-based block XP lookup. Used by omnitool and other systems
+     * where the XP source is not a mine block.
+     *
+     * @param player        the player receiving the items
+     * @param location      the location of the event
+     * @param items         the items to animate
+     * @param blockMaterial the material (for visual purposes only)
+     * @param dropCategory  the drop category
+     * @param xpAmount      the XP amount to display in the hologram
+     * @return true if the animation was played
+     */
+    public boolean playPickupAnimation(Player player, Location location, List<ItemStack> items,
+                                       Material blockMaterial, PreferenceType.DropCategory dropCategory,
+                                       int xpAmount) {
+        if (items == null || items.isEmpty() || player == null || location == null) return false;
+
+        PreferenceType.PickupEffect effect = PreferenceType.PickupEffect.DEFAULT;
+        PlayerDataCenter pdc = DataCenterRegistry.getInstance().getPlayerDataCenter();
+        if (pdc != null) {
+            PlayerProfile profile = pdc.getLocal(player);
+            if (profile != null) effect = profile.preferences.pickupEffect;
+        }
+
+        if (effect == PreferenceType.PickupEffect.DISABLED) return false;
+
+        String animationId = effect == PreferenceType.PickupEffect.SIMPLE ? "teleport" : DEFAULT_ANIMATION;
+        PreferenceType.PickupAnimation style = effect == PreferenceType.PickupEffect.SIMPLE
+                ? PreferenceType.PickupAnimation.SIMPLE
+                : PreferenceType.PickupAnimation.NORMAL;
+
+        BasePickupAnimation animation = createAnimation(animationId);
+        if (animation == null) {
+            animation = createAnimation(DEFAULT_ANIMATION);
+            if (animation == null) return false;
+        }
+
+        if (!AnimationRegistry.getInstance().canPlay(animation)) {
+            return false;
+        }
+
+        animation.setStyle(style);
+        animation.setDropCategory(dropCategory);
+        animation.setXpOverride(xpAmount);
+
+        animation.initialize(player, items, blockMaterial);
+
+        List<Player> viewers = new ArrayList<>();
+        viewers.add(player);
+        if (location.getWorld() != null) {
+            for (Player nearby : location.getWorld().getPlayers()) {
+                if (nearby.equals(player)) continue;
+                if (!canSeeOthersAnimations(nearby)) continue;
+                if (nearby.getLocation().distance(location) <= VIEW_OTHERS_RADIUS) viewers.add(nearby);
+            }
+        }
+
+        return AnimationRegistry.getInstance().play(animation, location, viewers);
+    }
+
+    /**
      * Fallback when animation cannot play.
      * Items are already handled by the backpack system, so this is a no-op.
      */

@@ -1,0 +1,10 @@
+defaults:
+  spawn-interval: 30
+  spawn-chance: 80.0
+  mob-limit: 10
+  mob-search-radius: 32
+  hologram-offset-y: 3.5
+  hologram-scale: 3.0
+  # Default icon displayed before the spawner name in the hologram title.
+  # Can be overridden per-spawner with /spawner hologram icon <id> <icon>.
+  hologram-icon: "⚔"

@@ -13,8 +13,6 @@ import org.benski.evolv3.core.helpers.Messageable;
 import org.benski.evolv3.core.helpers.WorldEditSelection;
 import org.benski.evolv3.registry.ConfigRegistry;
 import org.bukkit.Bukkit;
-import org.bukkit.Chunk;
-import org.bukkit.ChunkSnapshot;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
@@ -22,13 +20,11 @@ import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
-import org.bukkit.scheduler.BukkitTask;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -37,7 +33,6 @@ import java.util.NavigableMap;
 import java.util.Random;
 import java.util.Set;
 import java.util.TreeMap;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -63,26 +58,26 @@ public final class MineManager
     /** All loaded mines, keyed by lowercase name. */
     private final Map<String, Mine> mines = new LinkedHashMap<>();
 
-    /** Live block-mined counters, keyed by mine name. */
+    /** Live block-mined counters, keyed by mine name (used for reset-threshold checks). */
     private final Map<String, AtomicInteger> minedCounters = new ConcurrentHashMap<>();
+
+    /** Mines whose block count changed since the last scan — triggers an immediate rescan. */
+    private final Set<String> dirtyMines = ConcurrentHashMap.newKeySet();
+
+    /** Cached remaining % from the last block scan, keyed by mine name (lowercase). */
+    private final Map<String, Double> cachedRemainingPct = new ConcurrentHashMap<>();
+
+    /** Timestamp (ms) of the last block scan per mine — enforces a minimum re-scan interval. */
+    private final Map<String, Long> lastScanTimeMs = new ConcurrentHashMap<>();
+
+    /** Minimum time between full block scans (5 s), even when no dirty flag is set. */
+    private static final long SCAN_INTERVAL_MS = 5_000L;
 
     /** Scheduler task IDs for auto-reset timers, keyed by mine name. */
     private final Map<String, Integer> resetTaskIds = new ConcurrentHashMap<>();
 
     /** Live countdown ticks remaining per mine (written by the reset timer each tick). */
     private final Map<String, AtomicLong> resetCountdowns = new ConcurrentHashMap<>();
-
-    /**
-     * Scan-based cached remaining percentage per mine (0.0–100.0).
-     * Updated asynchronously every 5 seconds; seeded to 100.0 on load/reset.
-     */
-    private final Map<String, Double> cachedPercents = new ConcurrentHashMap<>();
-
-    /** Guard: mines currently undergoing an async block scan (prevents overlapping scans). */
-    private final Set<String> scanningMines = ConcurrentHashMap.newKeySet();
-
-    /** Periodic task that re-scans all mine block counts every 5 seconds. */
-    private BukkitTask scanTask;
 
     private static final Random RANDOM = new Random();
 
@@ -179,6 +174,9 @@ public final class MineManager
         cancelAllResetTimers();
         mines.clear();
         minedCounters.clear();
+        dirtyMines.clear();
+        cachedRemainingPct.clear();
+        lastScanTimeMs.clear();
 
         File file = getMinesDataFile();
         if (!file.exists()) return;
@@ -228,7 +226,7 @@ public final class MineManager
                     resetWarning, teleport, caveCount, caveMinDist, hologram, contents);
             mines.put(name.toLowerCase(), mine);
             minedCounters.put(name.toLowerCase(), new AtomicInteger(0));
-            cachedPercents.put(name.toLowerCase(), 100.0);
+            cachedRemainingPct.put(name.toLowerCase(), 100.0);
         }
 
         // Start auto-reset timers for all loaded mines
@@ -240,11 +238,6 @@ public final class MineManager
         // Spawn holograms for all loaded mines
         MineHologramManager.getInstance().cleanup();
         MineHologramManager.getInstance().initialize();
-
-        // Start periodic async scan: updates remaining % every 5 seconds
-        if (scanTask != null && !scanTask.isCancelled()) scanTask.cancel();
-        scanTask = Bukkit.getScheduler().runTaskTimer(Main.getInstance(),
-                () -> mines.values().forEach(this::scanMineAsync), 100L, 100L);
     }
 
     /** Saves all mine definitions to {@code localdata/mines-data.yml}. */
@@ -324,6 +317,7 @@ public final class MineManager
 
         mines.put(key, mine);
         minedCounters.put(key, new AtomicInteger(0));
+        cachedRemainingPct.put(key, 100.0);
         saveToConfig();
         scheduleAutoReset(mine);
         MineHologramManager.getInstance().spawnHologram(mine);
@@ -336,6 +330,9 @@ public final class MineManager
         String key = name.toLowerCase();
         cancelResetTimer(key);
         minedCounters.remove(key);
+        cachedRemainingPct.remove(key);
+        dirtyMines.remove(key);
+        lastScanTimeMs.remove(key);
 
         if (mines.remove(key) == null) return false;
         CaveManager.getInstance().clearCaves(key);
@@ -541,10 +538,13 @@ public final class MineManager
                     }
                 }
 
-                // Reset the mined counter and cached percentage immediately
-                AtomicInteger counter = minedCounters.get(mine.name().toLowerCase());
+                // Reset the mined counter and scan cache so the hologram shows 100% immediately
+                String resetKey = mine.name().toLowerCase();
+                AtomicInteger counter = minedCounters.get(resetKey);
                 if (counter != null) counter.set(0);
-                cachedPercents.put(mine.name().toLowerCase(), 100.0);
+                cachedRemainingPct.put(resetKey, 100.0);
+                dirtyMines.remove(resetKey);
+                lastScanTimeMs.remove(resetKey);
 
                 // Generate caves after fill (runs even if mine has no block contents)
                 if (mine.caveCount() > 0)
@@ -571,6 +571,8 @@ public final class MineManager
     public void onBlockMined(@NotNull String mineName)
     {
         String key = mineName.toLowerCase();
+        dirtyMines.add(key);  // signal the hologram to rescan on its next tick
+
         AtomicInteger counter = minedCounters.get(key);
         if (counter == null) return;
 
@@ -584,7 +586,6 @@ public final class MineManager
         double pct = (double) mined / total * 100.0;
         if (pct >= mine.resetPercentage())
         {
-            // Schedule reset on next tick to avoid mid-event issues
             Bukkit.getScheduler().runTask(Main.getInstance(), () -> resetMine(key));
         }
     }
@@ -608,117 +609,57 @@ public final class MineManager
     }
 
     /**
-     * Asynchronously scans a mine's bounding box using immutable {@link ChunkSnapshot}s
-     * and updates {@link #cachedPercents} with the ratio of non-air blocks.
+     * Returns the remaining percentage of solid blocks in a mine (0.0–100.0).
      *
-     * <p>Design:</p>
-     * <ol>
-     *   <li>Chunk loads are requested on the main thread via
-     *       {@code World.getChunkAtAsync()} — already-loaded chunks resolve
-     *       instantly without any I/O.</li>
-     *   <li>Once all chunk futures complete, snapshots are obtained
-     *       (still main-thread via {@code thenApply}) — they are immutable and
-     *       safe to read on any thread.</li>
-     *   <li>The block-count loop runs on the common ForkJoinPool via
-     *       {@code thenApplyAsync()} — no server-thread work is done there.</li>
-     *   <li>The result is written back to {@link #cachedPercents} (a
-     *       {@link ConcurrentHashMap}) — safe from any thread.</li>
-     * </ol>
-     *
-     * <p>The {@link #scanningMines} guard prevents overlapping scans for the
-     * same mine; a scan that is still running when the next tick fires is simply
-     * skipped.</p>
-     */
-    private void scanMineAsync(@NotNull Mine mine)
-    {
-        String key = mine.name().toLowerCase();
-        if (!scanningMines.add(key)) return; // previous scan still in progress
-
-        World world = Bukkit.getWorld(mine.world());
-        if (world == null)
-        {
-            scanningMines.remove(key);
-            return;
-        }
-
-        // Determine the range of chunks that contain the mine's bounding box
-        int minCX = mine.minX() >> 4, maxCX = mine.maxX() >> 4;
-        int minCZ = mine.minZ() >> 4, maxCZ = mine.maxZ() >> 4;
-
-        // Kick off async chunk loads; thenApply captures the snapshot on the main thread
-        List<CompletableFuture<ChunkSnapshot>> futures = new ArrayList<>();
-        for (int cx = minCX; cx <= maxCX; cx++)
-        {
-            for (int cz = minCZ; cz <= maxCZ; cz++)
-            {
-                futures.add(world.getChunkAtAsync(cx, cz)
-                        .thenApply(Chunk::getChunkSnapshot));
-            }
-        }
-
-        // When every chunk snapshot is ready, count non-air blocks off-thread
-        CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]))
-                .thenApplyAsync(ignored ->
-                {
-                    // Build a (cx,cz) → snapshot lookup; join() is instant here (all done)
-                    int idx = 0;
-                    Map<Long, ChunkSnapshot> snapshots = new LinkedHashMap<>(futures.size());
-                    for (int cx = minCX; cx <= maxCX; cx++)
-                    {
-                        for (int cz = minCZ; cz <= maxCZ; cz++)
-                        {
-                            snapshots.put(chunkKey(cx, cz), futures.get(idx++).join());
-                        }
-                    }
-
-                    // Iterate only the mine's exact block bounds
-                    int solid = 0;
-                    for (int bx = mine.minX(); bx <= mine.maxX(); bx++)
-                    {
-                        for (int bz = mine.minZ(); bz <= mine.maxZ(); bz++)
-                        {
-                            ChunkSnapshot snap = snapshots.get(chunkKey(bx >> 4, bz >> 4));
-                            if (snap == null) continue;
-                            int lx = bx & 15, lz = bz & 15;
-                            for (int by = mine.minY(); by <= mine.maxY(); by++)
-                            {
-                                if (snap.getBlockType(lx, by, lz) != Material.AIR) solid++;
-                            }
-                        }
-                    }
-
-                    int total = mine.totalBlocks();
-                    return total > 0 ? (double) solid / total * 100.0 : 0.0;
-                })
-                .thenAccept(pct -> cachedPercents.put(key, pct))
-                .whenComplete((r, ex) ->
-                {
-                    scanningMines.remove(key);
-                    if (ex != null)
-                    {
-                        Main.getInstance().getLogger().warning(
-                                "[Evolv3] Mine scan failed for '" + key + "': " + ex.getMessage());
-                    }
-                });
-    }
-
-    /** Encodes a chunk coordinate pair into a single long for use as a map key. */
-    private static long chunkKey(int cx, int cz)
-    {
-        return ((long) cx << 32) | (cz & 0xFFFFFFFFL);
-    }
-
-    /**
-     * Returns the remaining percentage of non-air blocks in a mine (0.00–100.00).
-     *
-     * <p>Returns the value from the scan cache, which is updated by an async
-     * chunk-snapshot scan every 5 seconds.  The cache is seeded to 100.0 on
-     * mine load and reset immediately to 100.0 after each mine reset, so the
-     * value is always a reasonable approximation even between scan cycles.</p>
+     * <p>Scans actual block types inside the mine region for accuracy — the
+     * result is never stale due to missed events or counter drift.  Results
+     * are cached and re-used until a block is broken (dirty flag set by
+     * {@link #onBlockMined}) or {@value #SCAN_INTERVAL_MS} ms have elapsed,
+     * so the main-thread scan cost is at most ~once per second per mine.</p>
      */
     public double getRemainingPercentage(@NotNull String mineName)
     {
-        return cachedPercents.getOrDefault(mineName.toLowerCase(), 100.0);
+        String key  = mineName.toLowerCase();
+        Mine   mine = getMine(key);
+        if (mine == null) return 0.0;
+
+        long now     = System.currentTimeMillis();
+        boolean dirty = dirtyMines.remove(key);
+        boolean stale = (now - lastScanTimeMs.getOrDefault(key, 0L)) >= SCAN_INTERVAL_MS;
+
+        if (dirty || stale)
+        {
+            double pct = scanRemainingPercentage(mine);
+            cachedRemainingPct.put(key, pct);
+            lastScanTimeMs.put(key, now);
+            return pct;
+        }
+
+        return cachedRemainingPct.getOrDefault(key, 100.0);
+    }
+
+    /** Counts solid (non-air) blocks inside the mine region on the calling (main) thread. */
+    private double scanRemainingPercentage(@NotNull Mine mine)
+    {
+        World world = Bukkit.getWorld(mine.world());
+        if (world == null) return cachedRemainingPct.getOrDefault(mine.name().toLowerCase(), 100.0);
+
+        int total = mine.totalBlocks();
+        if (total <= 0) return 0.0;
+
+        int solidCount = 0;
+        for (int x = mine.minX(); x <= mine.maxX(); x++)
+        {
+            for (int y = mine.minY(); y <= mine.maxY(); y++)
+            {
+                for (int z = mine.minZ(); z <= mine.maxZ(); z++)
+                {
+                    if (!world.getBlockAt(x, y, z).getType().isAir()) solidCount++;
+                }
+            }
+        }
+
+        return (double) solidCount / total * 100.0;
     }
 
     /**
@@ -929,16 +870,12 @@ public final class MineManager
 
     public void cleanup()
     {
-        if (scanTask != null)
-        {
-            scanTask.cancel();
-            scanTask = null;
-        }
         cancelAllResetTimers();
         mines.clear();
         minedCounters.clear();
+        dirtyMines.clear();
+        cachedRemainingPct.clear();
+        lastScanTimeMs.clear();
         resetCountdowns.clear();
-        cachedPercents.clear();
-        scanningMines.clear();
     }
 }

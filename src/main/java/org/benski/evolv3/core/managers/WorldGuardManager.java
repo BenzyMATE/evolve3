@@ -110,6 +110,95 @@ public class WorldGuardManager
     }
 
     /**
+     * Checks if a location is within a region whose id contains "spawner".
+     *
+     * @param location the location to check
+     * @return true if within a spawner region (or if WorldGuard is disabled)
+     */
+    public boolean isWithinSpawnerRegion(Location location)
+    {
+        if (!worldGuardEnabled || handler == null) return true;
+        if (location == null || location.getWorld() == null) return false;
+        try {
+            return handler.isInRegion(location, "spawner");
+        } catch (NoClassDefFoundError | Exception e) {
+            Bukkit.getLogger().warning("[Evolv3] Error checking spawner region: " + e.getMessage());
+            return true;
+        }
+    }
+
+    /**
+     * Returns the full 3-D bounds {@code [minX, minY, minZ, maxX, maxY, maxZ]} of the first
+     * "spawner" region containing the given location, or {@code null} if none found.
+     *
+     * @param location the location to query
+     * @return 6-element int array, or {@code null}
+     */
+    public int[] getSpawnerRegionBounds(Location location)
+    {
+        if (!worldGuardEnabled || handler == null) return null;
+        if (location == null || location.getWorld() == null) return null;
+        try {
+            return handler.getRegionFullBounds(location, "spawner");
+        } catch (NoClassDefFoundError | Exception e) {
+            Bukkit.getLogger().warning("[Evolv3] Error fetching spawner region bounds: " + e.getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * Checks if a location is within a region whose id contains "omnitool-axe".
+     *
+     * @param location the location to check
+     * @return true if within an omnitool-axe region (false if WorldGuard is disabled)
+     */
+    public boolean isWithinOmnitoolAxeRegion(Location location)
+    {
+        if (!worldGuardEnabled || handler == null) return false;
+        if (location == null || location.getWorld() == null) return false;
+        try {
+            return handler.isInRegion(location, "omnitool-axe");
+        } catch (NoClassDefFoundError | Exception e) {
+            return false;
+        }
+    }
+
+    /**
+     * Checks if a location is within a region whose id contains "omnitool-sword".
+     *
+     * @param location the location to check
+     * @return true if within an omnitool-sword region (false if WorldGuard is disabled)
+     */
+    public boolean isWithinOmnitoolSwordRegion(Location location)
+    {
+        if (!worldGuardEnabled || handler == null) return false;
+        if (location == null || location.getWorld() == null) return false;
+        try {
+            return handler.isInRegion(location, "omnitool-sword");
+        } catch (NoClassDefFoundError | Exception e) {
+            return false;
+        }
+    }
+
+    /**
+     * Counts online players currently inside any region whose id contains the given keyword.
+     *
+     * @param location location used to identify the region
+     * @param keyword  region id keyword to match
+     * @return number of players inside the matching region, or 0 if WorldGuard is unavailable
+     */
+    public int countPlayersInRegion(Location location, String keyword)
+    {
+        if (!worldGuardEnabled || handler == null) return 0;
+        if (location == null || location.getWorld() == null) return 0;
+        try {
+            return handler.countPlayersInRegion(location, keyword);
+        } catch (NoClassDefFoundError | Exception e) {
+            return 0;
+        }
+    }
+
+    /**
      * Inner handler class that contains all WorldGuard-specific code.
      * This class is only loaded when WorldGuard is actually available,
      * preventing ClassNotFoundException when WorldGuard is not installed.
@@ -118,57 +207,89 @@ public class WorldGuardManager
     {
         /**
          * Checks if a location is within a region containing the keyword.
-         *
-         * @param location the location to check
-         * @param keyword the keyword to search for in region IDs
-         * @return true if in a matching region
          */
         public boolean isInRegion(Location location, String keyword)
         {
-            com.sk89q.worldguard.protection.regions.RegionContainer container =
-                    com.sk89q.worldguard.WorldGuard.getInstance().getPlatform().getRegionContainer();
-
-            com.sk89q.worldguard.protection.managers.RegionManager regionManager =
-                    container.get(com.sk89q.worldedit.bukkit.BukkitAdapter.adapt(location.getWorld()));
-
-            if (regionManager == null) {
-                return false;
-            }
+            com.sk89q.worldguard.protection.managers.RegionManager regionManager = getRegionManager(location);
+            if (regionManager == null) return false;
 
             for (com.sk89q.worldguard.protection.regions.ProtectedRegion region :
                     regionManager.getApplicableRegions(com.sk89q.worldedit.bukkit.BukkitAdapter.asBlockVector(location))) {
-                if (region.getId().toLowerCase().contains(keyword.toLowerCase())) {
-                    return true;
-                }
+                if (region.getId().toLowerCase().contains(keyword.toLowerCase())) return true;
             }
-
             return false;
         }
 
-        /**
-         * Returns {@code [minX, minZ, maxX, maxZ]} for the first mine region
-         * containing the given location, or {@code null} if none found.
-         */
+        /** Returns {@code [minX, minZ, maxX, maxZ]} for the first matching region. */
         public int[] getRegionXZBounds(Location location, String keyword)
         {
-            com.sk89q.worldguard.protection.regions.RegionContainer container =
-                    com.sk89q.worldguard.WorldGuard.getInstance().getPlatform().getRegionContainer();
-
-            com.sk89q.worldguard.protection.managers.RegionManager regionManager =
-                    container.get(com.sk89q.worldedit.bukkit.BukkitAdapter.adapt(location.getWorld()));
-
+            com.sk89q.worldguard.protection.managers.RegionManager regionManager = getRegionManager(location);
             if (regionManager == null) return null;
 
             for (com.sk89q.worldguard.protection.regions.ProtectedRegion region :
                     regionManager.getApplicableRegions(com.sk89q.worldedit.bukkit.BukkitAdapter.asBlockVector(location))) {
                 if (!region.getId().toLowerCase().contains(keyword.toLowerCase())) continue;
-
                 com.sk89q.worldedit.math.BlockVector3 min = region.getMinimumPoint();
                 com.sk89q.worldedit.math.BlockVector3 max = region.getMaximumPoint();
                 return new int[]{ min.x(), min.z(), max.x(), max.z() };
             }
-
             return null;
+        }
+
+        /** Returns {@code [minX, minY, minZ, maxX, maxY, maxZ]} for the first matching region. */
+        public int[] getRegionFullBounds(Location location, String keyword)
+        {
+            com.sk89q.worldguard.protection.managers.RegionManager regionManager = getRegionManager(location);
+            if (regionManager == null) return null;
+
+            for (com.sk89q.worldguard.protection.regions.ProtectedRegion region :
+                    regionManager.getApplicableRegions(com.sk89q.worldedit.bukkit.BukkitAdapter.asBlockVector(location))) {
+                if (!region.getId().toLowerCase().contains(keyword.toLowerCase())) continue;
+                com.sk89q.worldedit.math.BlockVector3 min = region.getMinimumPoint();
+                com.sk89q.worldedit.math.BlockVector3 max = region.getMaximumPoint();
+                return new int[]{ min.x(), min.y(), min.z(), max.x(), max.y(), max.z() };
+            }
+            return null;
+        }
+
+        /** Counts online players inside the first matching region at the given location. */
+        public int countPlayersInRegion(Location location, String keyword)
+        {
+            com.sk89q.worldguard.protection.managers.RegionManager regionManager = getRegionManager(location);
+            if (regionManager == null) return 0;
+
+            com.sk89q.worldguard.protection.regions.ProtectedRegion target = null;
+            for (com.sk89q.worldguard.protection.regions.ProtectedRegion region :
+                    regionManager.getApplicableRegions(com.sk89q.worldedit.bukkit.BukkitAdapter.asBlockVector(location))) {
+                if (region.getId().toLowerCase().contains(keyword.toLowerCase())) {
+                    target = region;
+                    break;
+                }
+            }
+            if (target == null) return 0;
+
+            com.sk89q.worldedit.math.BlockVector3 min = target.getMinimumPoint();
+            com.sk89q.worldedit.math.BlockVector3 max = target.getMaximumPoint();
+
+            int count = 0;
+            for (org.bukkit.entity.Player p : location.getWorld().getPlayers())
+            {
+                org.bukkit.Location pl = p.getLocation();
+                if (pl.getBlockX() >= min.x() && pl.getBlockX() <= max.x()
+                 && pl.getBlockY() >= min.y() && pl.getBlockY() <= max.y()
+                 && pl.getBlockZ() >= min.z() && pl.getBlockZ() <= max.z())
+                {
+                    count++;
+                }
+            }
+            return count;
+        }
+
+        private com.sk89q.worldguard.protection.managers.RegionManager getRegionManager(Location location)
+        {
+            com.sk89q.worldguard.protection.regions.RegionContainer container =
+                    com.sk89q.worldguard.WorldGuard.getInstance().getPlatform().getRegionContainer();
+            return container.get(com.sk89q.worldedit.bukkit.BukkitAdapter.adapt(location.getWorld()));
         }
     }
 }

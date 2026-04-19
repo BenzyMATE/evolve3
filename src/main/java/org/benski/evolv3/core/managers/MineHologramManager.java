@@ -5,6 +5,7 @@ import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.benski.evolv3.Main;
 import org.benski.evolv3.core.constants.ConfigNames;
+import org.benski.evolv3.core.helpers.FontUtils;
 import org.benski.evolv3.core.managers.MineManager.Mine;
 import org.benski.evolv3.registry.ConfigRegistry;
 import org.bukkit.Bukkit;
@@ -13,7 +14,9 @@ import org.bukkit.Color;
 import org.bukkit.Location;
 import org.bukkit.NamespacedKey;
 import org.bukkit.World;
+import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Display;
 import org.bukkit.entity.TextDisplay;
 import org.bukkit.persistence.PersistentDataType;
@@ -24,6 +27,8 @@ import org.jetbrains.annotations.Nullable;
 import org.joml.AxisAngle4f;
 import org.joml.Vector3f;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -60,6 +65,49 @@ public final class MineHologramManager
      */
     private final Map<String, MineSnapshot> lastSnapshot = new HashMap<>();
 
+    /** Per-mine hologram customization (position, scale, billboard mode). */
+    private final Map<String, HologramConfig> holoConfigs = new HashMap<>();
+
+    /**
+     * Per-mine hologram customization settings.
+     *
+     * @param customPos  whether {@code x/y/z} override the auto-calculated position
+     * @param x          custom world X (only used when {@code customPos} is true)
+     * @param y          custom world Y
+     * @param z          custom world Z
+     * @param scale      text scale; use -1 to fall back to the global default
+     * @param billboard  true = CENTER (hologram faces the nearest player),
+     *                   false = FIXED (hologram is static, readable from one direction)
+     * @param facing     entity yaw in degrees, applied when {@code billboard} is false
+     * @param color      beam colour name for the mine-name line (purple/yellow/green/red/blue),
+     *                   or an empty string to use the template default
+     * @param showArrow  whether to include the decorative arrow line at the bottom
+     * @param icon       icon character(s) shown before the mine name; empty = use global default
+     */
+    private record HologramConfig(
+            boolean customPos, double x, double y, double z,
+            float scale,
+            boolean billboard,
+            float facing,
+            String color,
+            boolean showArrow,
+            String icon)
+    {
+        static HologramConfig defaults()
+        {
+            return new HologramConfig(false, 0, 0, 0, -1f, true, 0f, "", true, "");
+        }
+    }
+
+    /** Hex colour codes for the beam colour presets (matches BeamManager.BEAM_COLORS). */
+    private static final Map<String, String> COLOR_HEX = Map.of(
+            "purple", "&#A020F0",
+            "yellow", "&#FFFF32",
+            "green",  "&#32FF64",
+            "red",    "&#FF3232",
+            "blue",   "&#32DCFF"
+    );
+
     /** Periodic update task — null when not running. */
     private BukkitTask updateTask;
 
@@ -85,6 +133,7 @@ public final class MineHologramManager
     private List<String> cachedTemplateLines = null;
     private float         cachedScale         = 4.0f;
     private double        cachedOffsetY        = 14.0;
+    private String        cachedDefaultIcon    = "⛏";
 
     /** Ticks accumulated since the last config refresh. */
     private int ticksSinceRefresh = CONFIG_REFRESH_TICKS; // trigger on first tick
@@ -114,6 +163,7 @@ public final class MineHologramManager
         if (!isEnabled()) return;
 
         refreshConfigCache();
+        loadHologramConfigs();
         startUpdateTask();
 
         Bukkit.getScheduler().runTaskLater(Main.getInstance(), () ->
@@ -215,10 +265,16 @@ public final class MineHologramManager
 
         MineSnapshot snap = buildSnapshot(mine);
 
+        HologramConfig config = holoConfigs.getOrDefault(mine.name().toLowerCase(), HologramConfig.defaults());
+        float effectiveScale = config.scale() > 0 ? config.scale() : cachedScale;
+        Display.Billboard effectiveBillboard = config.billboard() ? Display.Billboard.CENTER : Display.Billboard.FIXED;
+
+        if (!config.billboard()) loc.setYaw(config.facing());
+
         TextDisplay display = loc.getWorld().spawn(loc, TextDisplay.class, td ->
         {
             td.text(buildText(mine, snap));
-            td.setBillboard(Display.Billboard.CENTER);
+            td.setBillboard(effectiveBillboard);
             td.setShadowed(true);
             td.setAlignment(TextDisplay.TextAlignment.CENTER);
             td.setSeeThrough(false);
@@ -231,7 +287,7 @@ public final class MineHologramManager
             td.setTransformation(new org.bukkit.util.Transformation(
                     new Vector3f(0, 0, 0),
                     new AxisAngle4f(0, 0, 0, 1),
-                    new Vector3f(cachedScale, cachedScale, cachedScale),
+                    new Vector3f(effectiveScale, effectiveScale, effectiveScale),
                     new AxisAngle4f(0, 0, 0, 1)
             ));
         });
@@ -388,9 +444,28 @@ public final class MineHologramManager
             resetTime = String.format("%d:%02d", min, sec);
         }
 
-        List<String> lines = (cachedTemplateLines != null) ? cachedTemplateLines : defaultTemplate();
+        HologramConfig config = holoConfigs.getOrDefault(mine.name().toLowerCase(), HologramConfig.defaults());
+        String nameColor = COLOR_HEX.getOrDefault(config.color(), "&#00FFFF");
+        String icon = config.icon().isEmpty() ? cachedDefaultIcon : config.icon();
+
+        List<String> lines = new java.util.ArrayList<>(
+                (cachedTemplateLines != null) ? cachedTemplateLines : defaultTemplate());
+
+        // Remove cave line when caves are disabled for this mine
+        if (mine.caveCount() == 0)
+        {
+            lines.removeIf(l -> l.contains("%caves_discovered%") || l.contains("%caves_total%"));
+        }
+
+        // Remove arrow line when disabled
+        if (!config.showArrow())
+        {
+            lines.removeIf(l -> l.contains("▼"));
+        }
 
         String text = String.join("\n", lines)
+                .replace("%name_color%",       nameColor)
+                .replace("%icon%",             icon)
                 .replace("%mine%",             mine.name().toUpperCase())
                 .replace("%remaining%",        String.format("%.1f", snap.remaining()))
                 .replace("%reset_time%",       resetTime)
@@ -398,13 +473,17 @@ public final class MineHologramManager
                 .replace("%caves_discovered%", String.valueOf(snap.caves()))
                 .replace("%caves_total%",      String.valueOf(mine.caveCount()));
 
-        return LEGACY.deserialize(net.matrixcreations.libraries.MatrixColorAPI.process(text));
+        // Apply the same font pipeline used by all other plugin messages
+        text = FontUtils.toSmallCaps(text);
+        text = net.matrixcreations.libraries.MatrixColorAPI.process(text);
+
+        return LEGACY.deserialize(text);
     }
 
     private static @NotNull List<String> defaultTemplate()
     {
         return List.of(
-                "&#00FFFF&l⛏ %mine%",
+                "%name_color%&l%icon% %mine%",
                 "",
                 "&#888888Remaining  &#FFFFFF%remaining%%",
                 "&#888888Reset  &#FFFFFF%reset_time%",
@@ -429,8 +508,9 @@ public final class MineHologramManager
         FileConfiguration minesCfg = ConfigRegistry.getInstance().get(ConfigNames.MINES);
         if (minesCfg != null)
         {
-            cachedScale   = (float) minesCfg.getDouble("defaults.hologram-scale",    4.0);
-            cachedOffsetY =         minesCfg.getDouble("defaults.hologram-offset-y", 14.0);
+            cachedScale       = (float) minesCfg.getDouble("defaults.hologram-scale",    4.0);
+            cachedOffsetY     =         minesCfg.getDouble("defaults.hologram-offset-y", 14.0);
+            cachedDefaultIcon =         minesCfg.getString("defaults.hologram-icon",     "⛏");
         }
 
         FileConfiguration msgCfg = ConfigRegistry.getInstance().get(ConfigNames.MESSAGES);
@@ -457,10 +537,225 @@ public final class MineHologramManager
         World world = Bukkit.getWorld(mine.world());
         if (world == null) return null;
 
+        HologramConfig config = holoConfigs.get(mine.name().toLowerCase());
+        if (config != null && config.customPos())
+        {
+            return new Location(world, config.x(), config.y(), config.z());
+        }
+
         double cx = (mine.minX() + mine.maxX()) / 2.0;
         double cz = (mine.minZ() + mine.maxZ()) / 2.0;
 
         return new Location(world, cx, mine.maxY() + cachedOffsetY, cz);
+    }
+
+    // =========================================================================
+    // In-game hologram editing
+    // =========================================================================
+
+    /** Sets a custom world-space position for the named mine's hologram and respawns it. */
+    public void setPosition(@NotNull String mineName, double x, double y, double z)
+    {
+        String key = mineName.toLowerCase();
+        HologramConfig cur = holoConfigs.getOrDefault(key, HologramConfig.defaults());
+        holoConfigs.put(key, new HologramConfig(true, x, y, z,
+                cur.scale(), cur.billboard(), cur.facing(), cur.color(), cur.showArrow(), cur.icon()));
+        saveHologramConfigs();
+        respawnIfActive(mineName);
+    }
+
+    /** Clears any custom position and reverts to the auto-calculated centre-top location. */
+    public void resetPosition(@NotNull String mineName)
+    {
+        String key = mineName.toLowerCase();
+        HologramConfig cur = holoConfigs.getOrDefault(key, HologramConfig.defaults());
+        holoConfigs.put(key, new HologramConfig(false, 0, 0, 0,
+                cur.scale(), cur.billboard(), cur.facing(), cur.color(), cur.showArrow(), cur.icon()));
+        saveHologramConfigs();
+        respawnIfActive(mineName);
+    }
+
+    /** Sets the text scale for the named mine's hologram. Use -1 to revert to the global default. */
+    public void setScale(@NotNull String mineName, float scale)
+    {
+        String key = mineName.toLowerCase();
+        HologramConfig cur = holoConfigs.getOrDefault(key, HologramConfig.defaults());
+        holoConfigs.put(key, new HologramConfig(cur.customPos(), cur.x(), cur.y(), cur.z(),
+                scale, cur.billboard(), cur.facing(), cur.color(), cur.showArrow(), cur.icon()));
+        saveHologramConfigs();
+        respawnIfActive(mineName);
+    }
+
+    /**
+     * Sets whether the hologram rotates to face the nearest player.
+     *
+     * @param facesPlayer true = CENTER billboard (rotates to face player);
+     *                    false = FIXED (static, faces one direction)
+     */
+    public void setBillboard(@NotNull String mineName, boolean facesPlayer)
+    {
+        String key = mineName.toLowerCase();
+        HologramConfig cur = holoConfigs.getOrDefault(key, HologramConfig.defaults());
+        holoConfigs.put(key, new HologramConfig(cur.customPos(), cur.x(), cur.y(), cur.z(),
+                cur.scale(), facesPlayer, cur.facing(), cur.color(), cur.showArrow(), cur.icon()));
+        saveHologramConfigs();
+        respawnIfActive(mineName);
+    }
+
+    /**
+     * Sets the facing yaw for a FIXED-billboard hologram.
+     * Has no visible effect when billboard mode is CENTER.
+     *
+     * @param yaw degrees (0 = south, 90 = west, 180 = north, -90/270 = east)
+     */
+    public void setFacing(@NotNull String mineName, float yaw)
+    {
+        String key = mineName.toLowerCase();
+        HologramConfig cur = holoConfigs.getOrDefault(key, HologramConfig.defaults());
+        holoConfigs.put(key, new HologramConfig(cur.customPos(), cur.x(), cur.y(), cur.z(),
+                cur.scale(), cur.billboard(), yaw, cur.color(), cur.showArrow(), cur.icon()));
+        saveHologramConfigs();
+        respawnIfActive(mineName);
+    }
+
+    /**
+     * Sets the colour of the mine-name line using a beam colour preset name
+     * (purple, yellow, green, red, blue), or an empty string to use the template default.
+     */
+    public void setColor(@NotNull String mineName, @NotNull String colorName)
+    {
+        String key = mineName.toLowerCase();
+        HologramConfig cur = holoConfigs.getOrDefault(key, HologramConfig.defaults());
+        holoConfigs.put(key, new HologramConfig(cur.customPos(), cur.x(), cur.y(), cur.z(),
+                cur.scale(), cur.billboard(), cur.facing(), colorName, cur.showArrow(), cur.icon()));
+        saveHologramConfigs();
+        Mine mine = MineManager.getInstance().getMine(mineName);
+        if (mine != null && mine.hologram())
+        {
+            TextDisplay td = holograms.get(key);
+            if (td != null && td.isValid())
+            {
+                td.text(buildText(mine, buildSnapshot(mine)));
+                lastSnapshot.remove(key);
+            }
+        }
+    }
+
+    /** Toggles the decorative arrow (▼) at the bottom of the hologram. */
+    public void setShowArrow(@NotNull String mineName, boolean show)
+    {
+        String key = mineName.toLowerCase();
+        HologramConfig cur = holoConfigs.getOrDefault(key, HologramConfig.defaults());
+        holoConfigs.put(key, new HologramConfig(cur.customPos(), cur.x(), cur.y(), cur.z(),
+                cur.scale(), cur.billboard(), cur.facing(), cur.color(), show, cur.icon()));
+        saveHologramConfigs();
+        Mine mine = MineManager.getInstance().getMine(mineName);
+        if (mine != null && mine.hologram())
+        {
+            TextDisplay td = holograms.get(key);
+            if (td != null && td.isValid())
+            {
+                td.text(buildText(mine, buildSnapshot(mine)));
+                lastSnapshot.remove(key);
+            }
+        }
+    }
+
+    /**
+     * Sets the icon shown before the mine name in the hologram title.
+     * Pass an empty string to revert to the global default from mines.yml.
+     */
+    public void setIcon(@NotNull String mineName, @NotNull String icon)
+    {
+        String key = mineName.toLowerCase();
+        HologramConfig cur = holoConfigs.getOrDefault(key, HologramConfig.defaults());
+        holoConfigs.put(key, new HologramConfig(cur.customPos(), cur.x(), cur.y(), cur.z(),
+                cur.scale(), cur.billboard(), cur.facing(), cur.color(), cur.showArrow(), icon));
+        saveHologramConfigs();
+        Mine mine = MineManager.getInstance().getMine(mineName);
+        if (mine != null && mine.hologram())
+        {
+            TextDisplay td = holograms.get(key);
+            if (td != null && td.isValid())
+            {
+                td.text(buildText(mine, buildSnapshot(mine)));
+                lastSnapshot.remove(key);
+            }
+        }
+    }
+
+    private void respawnIfActive(@NotNull String mineName)
+    {
+        Mine mine = MineManager.getInstance().getMine(mineName);
+        if (mine != null && mine.hologram())
+        {
+            removeHologram(mineName);
+            spawnHologram(mine);
+        }
+    }
+
+    // =========================================================================
+    // Hologram config persistence
+    // =========================================================================
+
+    private void loadHologramConfigs()
+    {
+        holoConfigs.clear();
+        File file = getHologramSettingsFile();
+        if (!file.exists()) return;
+
+        YamlConfiguration cfg = YamlConfiguration.loadConfiguration(file);
+        ConfigurationSection section = cfg.getConfigurationSection("mines");
+        if (section == null) return;
+
+        for (String name : section.getKeys(false))
+        {
+            String path = "mines." + name;
+            boolean customPos = cfg.getBoolean(path + ".custom-pos",  false);
+            double  x         = cfg.getDouble (path + ".x",           0);
+            double  y         = cfg.getDouble (path + ".y",           0);
+            double  z         = cfg.getDouble (path + ".z",           0);
+            float   scale     = (float) cfg.getDouble(path + ".scale", -1);
+            boolean billboard = cfg.getBoolean(path + ".billboard",   true);
+            float   facing    = (float) cfg.getDouble(path + ".facing", 0);
+            String  color     = cfg.getString (path + ".color",       "");
+            boolean showArrow = cfg.getBoolean(path + ".show-arrow",  true);
+            String  icon      = cfg.getString (path + ".icon",        "");
+            holoConfigs.put(name.toLowerCase(),
+                    new HologramConfig(customPos, x, y, z, scale, billboard, facing, color, showArrow, icon));
+        }
+    }
+
+    private void saveHologramConfigs()
+    {
+        YamlConfiguration cfg = new YamlConfiguration();
+        for (Map.Entry<String, HologramConfig> entry : holoConfigs.entrySet())
+        {
+            String path = "mines." + entry.getKey();
+            HologramConfig c = entry.getValue();
+            cfg.set(path + ".custom-pos", c.customPos());
+            cfg.set(path + ".x",          c.x());
+            cfg.set(path + ".y",          c.y());
+            cfg.set(path + ".z",          c.z());
+            cfg.set(path + ".scale",      c.scale());
+            cfg.set(path + ".billboard",  c.billboard());
+            cfg.set(path + ".facing",     c.facing());
+            cfg.set(path + ".color",      c.color());
+            cfg.set(path + ".show-arrow", c.showArrow());
+            cfg.set(path + ".icon",       c.icon());
+        }
+        try { cfg.save(getHologramSettingsFile()); }
+        catch (IOException e)
+        {
+            Bukkit.getLogger().severe("[Evolv3] Failed to save hologram settings: " + e.getMessage());
+        }
+    }
+
+    private @NotNull File getHologramSettingsFile()
+    {
+        File dir = new File(Main.getInstance().getDataFolder(), "localdata");
+        if (!dir.exists()) dir.mkdirs();
+        return new File(dir, "hologram-settings.yml");
     }
 
     private boolean isEnabled()

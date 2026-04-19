@@ -435,15 +435,41 @@ mine:
   invalid-material: "  %evolv3_prefix% &cInvalid block material: &#FFFFFF%material%"
   not-in-composition: "  %evolv3_prefix% &c&#FFFFFF%material% &cis not in mine &#FFFFFF%mine%&c's composition."
   no-mines: "  %evolv3_prefix% &#CCCCCCNo mines configured."
+  hologram-pos-set: "  %evolv3_prefix% &#00FFFFHologram position for mine &#FFFFFF%mine% &#00FFFFset to your location."
+  hologram-pos-reset: "  %evolv3_prefix% &#00FFFFHologram position for mine &#FFFFFF%mine% &#00FFFFreset to default."
+  hologram-scale-set: "  %evolv3_prefix% &#00FFFFHologram scale for mine &#FFFFFF%mine% &#CCCCCCset to &#FFFFFF%value%&#CCCCCC."
+  hologram-billboard-set: "  %evolv3_prefix% &#00FFFFHologram for mine &#FFFFFF%mine% &#CCCCCCtrack-player set to &#FFFFFF%value%&#CCCCCC."
+  hologram-facing-set: "  %evolv3_prefix% &#00FFFFHologram facing for mine &#FFFFFF%mine% &#CCCCCCset to &#FFFFFF%value%°&#CCCCCC."
+  hologram-color-set: "  %evolv3_prefix% &#00FFFFHologram name colour for mine &#FFFFFF%mine% &#CCCCCCset to &#FFFFFF%value%&#CCCCCC."
+  hologram-color-reset: "  %evolv3_prefix% &#00FFFFHologram name colour for mine &#FFFFFF%mine% &#00FFFFreset to default."
+  hologram-arrow-set: "  %evolv3_prefix% &#00FFFFHologram arrow for mine &#FFFFFF%mine% &#CCCCCCset to &#FFFFFF%value%&#CCCCCC."
+  hologram-icon-set: "  %evolv3_prefix% &#00FFFFHologram icon for mine &#FFFFFF%mine% &#CCCCCCset to &#FFFFFF%value%&#CCCCCC."
   # Mine info hologram — each line is a separate line of the TextDisplay.
-  # Placeholders: %mine%, %remaining%, %reset_time%, %players%, %caves_discovered%, %caves_total%
+  # Placeholders: %mine%, %icon%, %remaining%, %reset_time%, %players%, %caves_discovered%, %caves_total%
+  # %icon% is replaced by the per-mine icon (or defaults.hologram-icon from mines.yml).
   hologram-template:
-    - "&#00FFFF&l⛏ %mine%"
+    - "%name_color%&l%icon% %mine%"
     - ""
     - "&#888888Remaining  &#FFFFFF%remaining%%"
     - "&#888888Reset  &#FFFFFF%reset_time%"
     - "&#888888Miners  &#FFFFFF%players%"
     - "&#888888Caves  &#FFFFFF%caves_discovered%&#888888/&#FFFFFF%caves_total%"
+    - ""
+    - "&#444444▼"
+
+# =====================================================
+# Spawner Messages
+# =====================================================
+spawner:
+  # Spawner info hologram — each line is a separate line of the TextDisplay.
+  # Placeholders: %name%, %icon%, %hunters%, %remaining%, %spawn_time%
+  # %icon% is replaced by the per-spawner icon (or defaults.hologram-icon from spawners.yml).
+  hologram-template:
+    - "%mob_color%&l%icon% %name%"
+    - ""
+    - "&#888888Remaining  &#FFFFFF%remaining%"
+    - "&#888888Spawning in  &#FFFFFF%spawn_time%"
+    - "&#888888Hunters    &#FFFFFF%hunters%"
     - ""
     - "&#444444▼"
 

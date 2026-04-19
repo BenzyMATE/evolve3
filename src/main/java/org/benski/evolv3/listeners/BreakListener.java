@@ -13,6 +13,7 @@ import org.benski.evolv3.core.helpers.Utils;
 import org.benski.evolv3.core.managers.EnchantDropManager;
 import org.benski.evolv3.core.managers.FrostbiteBlockManager;
 import org.benski.evolv3.core.managers.MineManager;
+import org.benski.evolv3.core.managers.OmnitoolManager;
 import org.benski.evolv3.core.managers.MineManager.Mine;
 import org.benski.evolv3.core.managers.PickupAnimationManager;
 import org.benski.evolv3.core.managers.WorldGuardManager;
@@ -222,15 +223,6 @@ public class BreakListener extends BaseListener
             return;
         }
 
-        // --- Track mine block breaks (for percentage display) ---
-        // This ensures that any block successfully broken by Evolv3's logic (either directly
-        // or via enchantments) updates the mine's remaining percentage.
-        Mine mine = MineManager.getInstance().getMineAt(ctx.blockLocation());
-        if (mine != null) {
-            MineManager.getInstance().onBlockMined(mine.name());
-        }
-        // --- End mine block tracking ---
-
         ItemStack finalDrop = handleEnchantDrops(player.getUniqueId(), ctx.baseDrop());
         int fortuneAmount = FortuneEnchant.popDropAmount(player.getUniqueId());
         int finalDropAmount = fortuneAmount > 0 ? fortuneAmount : ctx.dropAmount();
@@ -368,7 +360,9 @@ public class BreakListener extends BaseListener
         // Skip if holding a pickaxe — that break is handled by onBreakCapture/onBreakFinalize
         if (isPickaxe(player.getInventory().getItemInMainHand().getType())) return;
 
-        if (!WorldGuardManager.getInstance().isWithinMineRegion(block.getLocation())) return;
+        WorldGuardManager wg = WorldGuardManager.getInstance();
+        if (!wg.isWithinMineRegion(block.getLocation())
+                && !wg.isWithinOmnitoolAxeRegion(block.getLocation())) return;
 
         PlayerDataCenter playerDataCenter = DataCenterRegistry.getInstance().getPlayerDataCenter();
         if (playerDataCenter == null) return;
@@ -392,14 +386,21 @@ public class BreakListener extends BaseListener
 
         Location center = block.getLocation().add(0.5, 0.5, 0.5);
 
-        // Play the player's preferred pickup animation for the log
-        pickupAnimationManager.playPickupAnimation(
-                player,
-                center,
-                List.of(new ItemStack(blockType)),
-                blockType,
-                PreferenceType.DropCategory.NORMAL
-        );
+        // When in omnitool axe mode, show the configured omnitool XP in the hologram
+        OmnitoolManager omni = OmnitoolManager.getInstance();
+        boolean isOmnitoolAxe = omni.isInOmnitoolMode(player)
+                && omni.getForm(player) == OmnitoolManager.Form.AXE;
+        if (isOmnitoolAxe) {
+            FileConfiguration cfg = ConfigRegistry.getInstance().get(ConfigNames.DEFAULT);
+            int omniXp = cfg.getInt("Omnitool.LogBreakXp", 5);
+            pickupAnimationManager.playPickupAnimation(
+                    player, center, List.of(new ItemStack(blockType)),
+                    blockType, PreferenceType.DropCategory.NORMAL, omniXp);
+        } else {
+            pickupAnimationManager.playPickupAnimation(
+                    player, center, List.of(new ItemStack(blockType)),
+                    blockType, PreferenceType.DropCategory.NORMAL);
+        }
 
         backpack.addItem(player, blockType, 1, false);
         BackpackListener.refresh(player);
