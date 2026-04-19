@@ -4,13 +4,13 @@ import lombok.Getter;
 import org.benski.evolv3.core.constants.ConfigNames;
 import org.benski.evolv3.core.constants.ConfigPaths;
 import org.benski.evolv3.registry.ConfigRegistry;
-import org.bukkit.Location;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -28,6 +28,9 @@ import java.util.UUID;
  * B-zone wall). Players whose rank comes before that ID in {@code ranks.yml}
  * are blocked; players at or beyond it pass freely.</p>
  *
+ * <p>Up to {@code max-borders-per-rank} walls (configured in {@code borders.yml})
+ * can be defined per rank to handle zones with multiple entrances.</p>
+ *
  * <p>Walls are persisted in {@code borders.yml}.</p>
  */
 public final class BorderManager
@@ -35,12 +38,8 @@ public final class BorderManager
     @Getter
     private static final BorderManager instance = new BorderManager();
 
-    /** wallId → wall data */
-    private final Map<String, BorderWall> borders = new HashMap<>();
-
-    /** Per-player wand selection points */
-    private final Map<UUID, Location> point1 = new HashMap<>();
-    private final Map<UUID, Location> point2 = new HashMap<>();
+    /** rankId → ordered list of walls (slot 1 = index 0, slot 2 = index 1, …) */
+    private final Map<String, List<BorderWall>> borders = new HashMap<>();
 
     /** Throttle: last time the BLOCKED title was sent, millis */
     private final Map<UUID, Long> lastTitleMs = new HashMap<>();
@@ -54,13 +53,17 @@ public final class BorderManager
     /**
      * Immutable snapshot of one border wall.
      *
-     * @param wallId the rank ID required to cross this wall (e.g. "B1", "C1")
+     * @param rankId the rank ID required to cross this wall (e.g. "B1", "C1")
+     * @param slot   1-based slot number within this rank (1 … max-borders-per-rank)
      * @param x1     X coordinate of the first endpoint
      * @param z1     Z coordinate of the first endpoint
      * @param x2     X coordinate of the second endpoint
      * @param z2     Z coordinate of the second endpoint
+     * @param minY   bottom Y coordinate of the wall
+     * @param maxY   top Y coordinate of the wall
      */
-    public record BorderWall(String wallId, double x1, double z1, double x2, double z2)
+    public record BorderWall(String rankId, int slot, double x1, double z1, double x2, double z2,
+                             double minY, double maxY)
     {
         /**
          * Returns true if the movement segment (fx,fz)→(tx,tz) crosses this wall.
@@ -94,17 +97,34 @@ public final class BorderManager
         FileConfiguration cfg = ConfigRegistry.getInstance().get(ConfigNames.BORDERS);
         if (cfg == null) return;
 
-        ConfigurationSection section = cfg.getConfigurationSection("borders");
-        if (section == null) return;
+        ConfigurationSection ranksSection = cfg.getConfigurationSection("borders");
+        if (ranksSection == null) return;
 
-        for (String wallId : section.getKeys(false))
+        for (String rankId : ranksSection.getKeys(false))
         {
-            String path = "borders." + wallId;
-            double x1 = cfg.getDouble(path + ".x1");
-            double z1 = cfg.getDouble(path + ".z1");
-            double x2 = cfg.getDouble(path + ".x2");
-            double z2 = cfg.getDouble(path + ".z2");
-            borders.put(wallId, new BorderWall(wallId, x1, z1, x2, z2));
+            ConfigurationSection rankSection = ranksSection.getConfigurationSection(rankId);
+            if (rankSection == null) continue;
+
+            List<BorderWall> walls = new ArrayList<>();
+            for (String slotKey : rankSection.getKeys(false))
+            {
+                int slot;
+                try { slot = Integer.parseInt(slotKey); }
+                catch (NumberFormatException e) { continue; }
+
+                String path = "borders." + rankId + "." + slotKey;
+                double x1 = cfg.getDouble(path + ".x1");
+                double z1 = cfg.getDouble(path + ".z1");
+                double x2 = cfg.getDouble(path + ".x2");
+                double z2 = cfg.getDouble(path + ".z2");
+                double minY = cfg.getDouble(path + ".minY", 0);
+                double maxY = cfg.getDouble(path + ".maxY", 256);
+                walls.add(new BorderWall(rankId, slot, x1, z1, x2, z2, minY, maxY));
+            }
+
+            // Keep list in slot order
+            walls.sort((a, b) -> Integer.compare(a.slot(), b.slot()));
+            if (!walls.isEmpty()) borders.put(rankId, walls);
         }
     }
 
@@ -116,16 +136,22 @@ public final class BorderManager
 
         cfg.set("borders", null); // clear existing
 
-        for (BorderWall w : borders.values())
+        for (Map.Entry<String, List<BorderWall>> entry : borders.entrySet())
         {
-            String path = "borders." + w.wallId();
-            cfg.set(path + ".x1", w.x1());
-            cfg.set(path + ".z1", w.z1());
-            cfg.set(path + ".x2", w.x2());
-            cfg.set(path + ".z2", w.z2());
+            String rankId = entry.getKey();
+            for (BorderWall w : entry.getValue())
+            {
+                String path = "borders." + rankId + "." + w.slot();
+                cfg.set(path + ".x1", w.x1());
+                cfg.set(path + ".z1", w.z1());
+                cfg.set(path + ".x2", w.x2());
+                cfg.set(path + ".z2", w.z2());
+                cfg.set(path + ".minY", w.minY());
+                cfg.set(path + ".maxY", w.maxY());
+            }
         }
 
-        StorageRegistryManager.getInstance().saveConfig(ConfigNames.BORDERS);
+        ConfigRegistry.getInstance().save(ConfigNames.BORDERS);
     }
 
     // -------------------------------------------------------------------------
@@ -133,33 +159,81 @@ public final class BorderManager
     // -------------------------------------------------------------------------
 
     /**
-     * Creates or replaces the border wall for the given rank ID, then saves to disk.
+     * Returns the maximum number of border walls allowed per rank,
+     * as configured by {@code max-borders-per-rank} in {@code borders.yml}.
      */
-    public void setBorder(@NotNull String wallId,
-                          double x1, double z1, double x2, double z2)
+    public int getMaxBordersPerRank()
     {
-        borders.put(wallId, new BorderWall(wallId, x1, z1, x2, z2));
-        saveToConfig();
+        FileConfiguration cfg = ConfigRegistry.getInstance().get(ConfigNames.BORDERS);
+        return (cfg != null) ? cfg.getInt("max-borders-per-rank", 2) : 2;
     }
 
     /**
-     * Removes the border wall for the given rank ID.
+     * Adds a new border wall for the given rank into the next available slot.
      *
-     * @return true if a wall existed and was removed
+     * @return the 1-based slot number used, or {@code -1} if the rank is already at its limit
      */
-    public boolean removeBorder(@NotNull String wallId)
+    public int addBorder(@NotNull String rankId,
+                         double x1, double z1, double x2, double z2,
+                         double minY, double maxY)
     {
-        if (borders.remove(wallId) == null) return false;
+        int max = getMaxBordersPerRank();
+        List<BorderWall> walls = borders.computeIfAbsent(rankId, k -> new ArrayList<>());
+
+        if (walls.size() >= max) return -1;
+
+        // Find the next unused slot number
+        int slot = 1;
+        for (BorderWall w : walls)
+        {
+            if (w.slot() == slot) slot++;
+            else break;
+        }
+
+        walls.add(new BorderWall(rankId, slot, x1, z1, x2, z2, minY, maxY));
+        walls.sort((a, b) -> Integer.compare(a.slot(), b.slot()));
+        saveToConfig();
+        return slot;
+    }
+
+    /**
+     * Removes all border walls for the given rank.
+     *
+     * @return true if any walls existed and were removed
+     */
+    public boolean removeBorder(@NotNull String rankId)
+    {
+        if (borders.remove(rankId) == null) return false;
         saveToConfig();
         return true;
     }
 
-    public @Nullable BorderWall getBorder(@NotNull String wallId)
+    /**
+     * Removes the border wall at the specified 1-based slot for the given rank.
+     *
+     * @return true if the wall existed and was removed
+     */
+    public boolean removeBorder(@NotNull String rankId, int slot)
     {
-        return borders.get(wallId);
+        List<BorderWall> walls = borders.get(rankId);
+        if (walls == null) return false;
+
+        boolean removed = walls.removeIf(w -> w.slot() == slot);
+        if (!removed) return false;
+
+        if (walls.isEmpty()) borders.remove(rankId);
+        saveToConfig();
+        return true;
     }
 
-    public @NotNull Map<String, BorderWall> getAllBorders()
+    /** Returns all walls for the given rank, or an empty list if none. */
+    public @NotNull List<BorderWall> getBorders(@NotNull String rankId)
+    {
+        return Collections.unmodifiableList(borders.getOrDefault(rankId, List.of()));
+    }
+
+    /** Returns all configured borders, keyed by rank ID. */
+    public @NotNull Map<String, List<BorderWall>> getAllBorders()
     {
         return Collections.unmodifiableMap(borders);
     }
@@ -218,10 +292,13 @@ public final class BorderManager
         {
             if (i <= playerIndex) continue; // player has unlocked walls up to their rank
 
-            BorderWall wall = borders.get(order.get(i));
-            if (wall == null) continue;
+            List<BorderWall> walls = borders.get(order.get(i));
+            if (walls == null) continue;
 
-            if (wall.crossesWall(fx, fz, tx, tz)) return wall;
+            for (BorderWall wall : walls)
+            {
+                if (wall.crossesWall(fx, fz, tx, tz)) return wall;
+            }
         }
         return null;
     }
@@ -240,30 +317,17 @@ public final class BorderManager
     }
 
     // -------------------------------------------------------------------------
-    // Wand point tracking
-    // -------------------------------------------------------------------------
-
-    public void setPoint1(@NotNull UUID uuid, @NotNull Location loc) { point1.put(uuid, loc.clone()); }
-    public void setPoint2(@NotNull UUID uuid, @NotNull Location loc) { point2.put(uuid, loc.clone()); }
-    public @Nullable Location getPoint1(@NotNull UUID uuid) { return point1.get(uuid); }
-    public @Nullable Location getPoint2(@NotNull UUID uuid) { return point2.get(uuid); }
-
-    // -------------------------------------------------------------------------
     // Cleanup
     // -------------------------------------------------------------------------
 
     public void cleanupPlayer(@NotNull UUID uuid)
     {
-        point1.remove(uuid);
-        point2.remove(uuid);
         lastTitleMs.remove(uuid);
     }
 
     public void cleanup()
     {
         borders.clear();
-        point1.clear();
-        point2.clear();
         lastTitleMs.clear();
     }
 }

@@ -3,17 +3,13 @@ package org.benski.evolv3.registry;
 import lombok.Getter;
 import org.benski.evolv3.Main;
 import org.benski.evolv3.commands.BackpackCommand;
-import org.benski.evolv3.commands.BorderCommand;
 import org.benski.evolv3.commands.BalCommand;
 import org.benski.evolv3.commands.EnchantPickaxeCommand;
 import org.benski.evolv3.commands.Evolv3Command;
 import org.benski.evolv3.commands.PickaxeCommand;
 import org.benski.evolv3.commands.PickupAnimationCommand;
 import org.benski.evolv3.commands.PreferencesCommand;
-import org.benski.evolv3.commands.RankPermCommand;
 import org.benski.evolv3.commands.RankupCommand;
-import org.benski.evolv3.commands.SetRankCommand;
-import org.benski.evolv3.commands.SetStaffCommand;
 import org.benski.evolv3.commands.SkinCommand;
 import org.benski.evolv3.commands.SoundCommand;
 import org.benski.evolv3.commands.TestCommand;
@@ -46,11 +42,7 @@ public class CommandRegistry implements Registry<BaseCommand>
             EnchantPickaxeCommand.class,
             SkinCommand.class,
             SoundCommand.class,
-            RankupCommand.class,
-            SetRankCommand.class,
-            SetStaffCommand.class,
-            RankPermCommand.class,
-            BorderCommand.class
+            RankupCommand.class
     );
 
     /**

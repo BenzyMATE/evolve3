@@ -1,0 +1,37 @@
+# =====================================================
+# Evolv3 - Levitation Beams
+# =====================================================
+# Use /beam wand then /beam set <name> <color> in-game.
+#
+# A beam is a rectangular column defined by two opposite
+# corner points. Particles render inside the area to
+# create a UFO tractor-beam effect, and any player who
+# enters the beam is smoothly pulled upward.
+#
+# Commands:
+#   /beam wand                     → gives the beam selection wand
+#   /beam set <name> <color>       → creates a beam from two wand points
+#   /beam remove <name>            → removes a beam
+#   /beam list                     → lists all configured beams
+#   /beam reload                   → reloads beams from disk
+#
+# Colours: purple, yellow, green, red, blue
+#
+# Settings:
+#   pull-speed       → upward velocity applied to players (0.35 = smooth)
+#   particle-density → spacing between edge particles (lower = denser)
+#   particle-tick    → ticks between particle renders (20 = 1 second)
+#
+# Players who are falling will not be pulled (they pass through).
+# =====================================================
+
+# Upward velocity applied to players inside a beam (higher = faster pull)
+pull-speed: 0.45
+
+# Horizontal spacing between particle columns (blocks)
+particle-density: 0.8
+
+# Ticks between each particle render cycle (20 ticks = 1 second)
+particle-tick: 5
+
+beams: {}

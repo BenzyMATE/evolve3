@@ -10,8 +10,19 @@
 # A wall is a line segment defined by two XZ points (spanning all Y heights).
 # Players who move across the wall line are pushed back until they rank up.
 #
+# max-borders-per-rank: Maximum border walls allowed per rank.
+#   Set to 2 because some zone blocks have two entrances.
+#   Increase this value if a zone has more entrances.
+#
+# Wall slots are numbered starting at 1.
+#   /border set <rankId>         → adds to the next available slot
+#   /border remove <rankId>      → removes all walls for that rank
+#   /border remove <rankId> <n>  → removes wall at slot n
+#
 # x1 / z1 : First endpoint of the wall
 # x2 / z2 : Second endpoint of the wall
 # =====================================================
+
+max-borders-per-rank: 2
 
 borders: {}

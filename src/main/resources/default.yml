@@ -75,6 +75,19 @@ Schedules:
     IntervalTicks: 100  # 5 seconds
 
 # =====================================================
+# Animation Budget Configuration
+# =====================================================
+# Limits how many animations can run simultaneously to
+# prevent lag spikes on servers with many active players.
+# Raise these values if players see "Animation budget
+# exceeded" warnings in the server log.
+Animations:
+  # Maximum number of animations that may be active at once
+  MaxConcurrentAnimations: 100
+  # Maximum sum of resource costs across all active animations
+  MaxResourceCost: 500
+
+# =====================================================
 # Pickaxe Configuration
 # =====================================================
 Pickaxe:

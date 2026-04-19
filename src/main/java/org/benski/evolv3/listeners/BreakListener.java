@@ -12,6 +12,8 @@ import org.benski.evolv3.core.types.PreferenceType;
 import org.benski.evolv3.core.helpers.Utils;
 import org.benski.evolv3.core.managers.EnchantDropManager;
 import org.benski.evolv3.core.managers.FrostbiteBlockManager;
+import org.benski.evolv3.core.managers.MineManager;
+import org.benski.evolv3.core.managers.MineManager.Mine;
 import org.benski.evolv3.core.managers.PickupAnimationManager;
 import org.benski.evolv3.core.managers.WorldGuardManager;
 import org.benski.evolv3.datacenters.PlayerDataCenter;
@@ -220,6 +222,15 @@ public class BreakListener extends BaseListener
             return;
         }
 
+        // --- Track mine block breaks (for percentage display) ---
+        // This ensures that any block successfully broken by Evolv3's logic (either directly
+        // or via enchantments) updates the mine's remaining percentage.
+        Mine mine = MineManager.getInstance().getMineAt(ctx.blockLocation());
+        if (mine != null) {
+            MineManager.getInstance().onBlockMined(mine.name());
+        }
+        // --- End mine block tracking ---
+
         ItemStack finalDrop = handleEnchantDrops(player.getUniqueId(), ctx.baseDrop());
         int fortuneAmount = FortuneEnchant.popDropAmount(player.getUniqueId());
         int finalDropAmount = fortuneAmount > 0 ? fortuneAmount : ctx.dropAmount();
@@ -392,6 +403,14 @@ public class BreakListener extends BaseListener
 
         backpack.addItem(player, blockType, 1, false);
         BackpackListener.refresh(player);
+
+        // --- Track bare-hand log breaks (for mine percentage display) ---
+        Mine mine = MineManager.getInstance().getMineAt(block.getLocation());
+        if (mine != null) {
+            MineManager.getInstance().onBlockMined(mine.name());
+        }
+        // --- End mine block tracking ---
+
         playerProfile.save(null);
 
         // Roll Ancient Resin drop chance
@@ -588,6 +607,20 @@ public class BreakListener extends BaseListener
             text = text.replace("%amount%", Utils.formatNumber(amount));
             animationRegistry.play("hologram", hologramLoc, List.of(player), text);
         }
+    }
+
+    /**
+     * Removes any pending break context for the given player.
+     *
+     * <p>Called from {@link JoinListener#onQuitEvent} to prevent a stale
+     * {@link BreakContext} entry lingering in the map when a player disconnects
+     * between the NORMAL and HIGHEST break event priorities.</p>
+     *
+     * @param uuid the player's UUID
+     */
+    public void clearPendingBreak(java.util.UUID uuid)
+    {
+        pendingBreaks.remove(uuid);
     }
 
     /**

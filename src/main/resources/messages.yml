@@ -339,16 +339,27 @@ admin:
     - "  &#888888  /rankup &#444444» &#CCCCCC Rank up"
     - "  &#888888  /bal [player] &#444444» &#CCCCCC Check balance"
     - ""
+    - "  &#FFD700● &fWorld Management"
+    - "  &#888888  /e mine <...> &#444444» &#CCCCCC Mine management"
+    - "  &#888888  /e border <...> &#444444» &#CCCCCC Zone border walls"
+    - "  &#888888  /e beam <...> &#444444» &#CCCCCC Levitation beams"
+    - "  &#888888  /e launchpad <...> &#444444» &#CCCCCC Launch pads"
+    - ""
     - "  &#FFD700● &fRank Management"
-    - "  &#888888  /setrank <player> <rank> &#444444» &#CCCCCC Set prison rank"
-    - "  &#888888  /setstaff <player> <rank|clear> &#444444» &#CCCCCC Set staff rank"
-    - "  &#888888  /rankperm <add|remove|list> <rank> &#444444» &#CCCCCC Rank permissions"
+    - "  &#888888  /e rank set <player> <rank> &#444444» &#CCCCCC Set prison rank"
+    - "  &#888888  /e rank staff <player> <rank|clear> &#444444» &#CCCCCC Set staff rank"
+    - "  &#888888  /e rank addperm <rank> <perm> &#444444» &#CCCCCC Add permission"
+    - "  &#888888  /e rank removeperm <rank> <perm> &#444444» &#CCCCCC Remove permission"
+    - "  &#888888  /e rank listperms <rank> &#444444» &#CCCCCC List permissions"
     - ""
     - "  &#FF5555● &fAdmin"
-    - "  &#888888  /evolve reload &#444444» &#CCCCCC Reload configs"
-    - "  &#888888  /evolve info &#444444» &#CCCCCC Plugin info"
-    - "  &#888888  /evolve resetpickaxes <player> &#444444» &#CCCCCC Wipe pickaxe data"
-    - "  &#888888  /evolve resetprofile <player> &#444444» &#CCCCCC Delete profile"
+    - "  &#888888  /e reload &#444444» &#CCCCCC Reload configs"
+    - "  &#888888  /e info &#444444» &#CCCCCC Plugin info"
+    - "  &#888888  /e resetpickaxes <player> &#444444» &#CCCCCC Wipe pickaxe data"
+    - "  &#888888  /e resetprofile <player> &#444444» &#CCCCCC Delete profile"
+    - "  &#888888  /e setbackpack <player> <size> &#444444» &#CCCCCC Set backpack limit"
+    - "  &#888888  /e backpack model <n> [player] &#444444» &#CCCCCC Set backpack model"
+    - "  &#888888  /e stone <rarity> [enchant] &#444444» &#CCCCCC Give evo stone"
     - "  &#888888  /enchantpickaxe &#444444» &#CCCCCC Force-set enchant on held pickaxe"
     - ""
   info:
@@ -386,3 +397,101 @@ furnace-smelt:
 enchant-animation:
   selection-prompt: "  &#FFFF55Look at an enchant and &a&lLEFT-CLICK &#FFFF55to claim it!"
   enchant-unlocked: "  &#FFD700&l✦ ENCHANT UNLOCKED ✦"
+
+# =====================================================
+# Mine Messages
+# =====================================================
+mine:
+  # Broadcast to all players when a mine resets
+  reset-broadcast: "  %evolv3_prefix% &#00FFFF⛏ &#CCCCCCMine &#FFFFFF%mine% &#CCCCCChas been reset."
+  # Warning to players inside the mine before reset
+  reset-warning: "  %evolv3_prefix% &c⚠ &#CCCCCCMine &#FFFFFF%mine% &#CCCCCCresets in &#FFFFFF%seconds%s&#CCCCCC."
+  # Admin: mine created
+  mine-created: "  %evolv3_prefix% &#00FFFFMine &#FFFFFF%mine% &#00FFFFcreated successfully."
+  # Admin: mine removed
+  mine-removed: "  %evolv3_prefix% &#FF5555Mine &#FFFFFF%mine% &#FF5555removed."
+  # Mine not found
+  mine-not-found: "  %evolv3_prefix% &cMine &#FFFFFF%mine% &cdoes not exist."
+  # Admin: block composition updated
+  contents-added: "  %evolv3_prefix% &#00FFFFAdded &#FFFFFF%material% &#888888(weight: &#FFFFFF%weight%&#888888) &#00FFFFto mine &#FFFFFF%mine%&#00FFFF."
+  contents-removed: "  %evolv3_prefix% &#FF5555Removed &#FFFFFF%material% &#FF5555from mine &#FFFFFF%mine%&#FF5555."
+  # Cave entry/exit titles
+  cave-entry: "&#FFD700&lCave Discovered"
+  cave-entry-subtitle: "&#CCCCCCExplore for hidden rewards"
+  cave-exit: "&#00FFFFLeaving Cave"
+  cave-exit-subtitle: "&#888888Returning to the mine"
+  # Title shown when a player empties all items from a cave chest
+  cave-looted: "&#FFD700&lRewards Claimed"
+  cave-looted-subtitle: "&#CCCCCCThe cave collapses behind you..."
+  # Floating hologram broadcast to all mine players when a cave is discovered
+  cave-discovered-broadcast: "&#FFD700&l⛏ %player% &#FFD700&lfound a cave!"
+  # Admin feedback
+  spawn-set: "  %evolv3_prefix% &#00FFFFSpawn for mine &#FFFFFF%mine% &#00FFFFset to your location."
+  resetting: "  %evolv3_prefix% &#00FFFFMine &#FFFFFF%mine% &#00FFFFis resetting..."
+  reloaded: "  %evolv3_prefix% &#00FFFFMines reloaded &#888888(&#FFFFFF%count% &#888888mines)."
+  already-exists: "  %evolv3_prefix% &cA mine named &#FFFFFF%mine% &calready exists."
+  no-selection: "  %evolv3_prefix% &cMake a WorldEdit selection first &#888888(//wand, then left/right click)&#CCCCCC."
+  setting-updated: "  %evolv3_prefix% &#00FFFF%setting% &#CCCCCCfor mine &#FFFFFF%mine% &#CCCCCCset to &#FFFFFF%value%&#CCCCCC."
+  invalid-material: "  %evolv3_prefix% &cInvalid block material: &#FFFFFF%material%"
+  not-in-composition: "  %evolv3_prefix% &c&#FFFFFF%material% &cis not in mine &#FFFFFF%mine%&c's composition."
+  no-mines: "  %evolv3_prefix% &#CCCCCCNo mines configured."
+  # Mine info hologram — each line is a separate line of the TextDisplay.
+  # Placeholders: %mine%, %remaining%, %reset_time%, %players%, %caves_discovered%, %caves_total%
+  hologram-template:
+    - "&#00FFFF&l⛏ %mine%"
+    - ""
+    - "&#888888Remaining  &#FFFFFF%remaining%%"
+    - "&#888888Reset  &#FFFFFF%reset_time%"
+    - "&#888888Miners  &#FFFFFF%players%"
+    - "&#888888Caves  &#FFFFFF%caves_discovered%&#888888/&#FFFFFF%caves_total%"
+    - ""
+    - "&#444444▼"
+
+# =====================================================
+# Border Messages
+# =====================================================
+border:
+  wall-set: "  %evolv3_prefix% &#00FFFFBorder wall &#888888[slot &#FFFFFF%slot%&#888888] &#00FFFFset for rank &#FFFFFF%rank% &#888888(&#FFFFFF%pos1% &#888888→ &#FFFFFF%pos2%&#888888)."
+  wall-removed: "  %evolv3_prefix% &#FF5555Border wall &#888888[slot &#FFFFFF%slot%&#888888] &#FF5555for rank &#FFFFFF%rank% &#FF5555removed."
+  all-removed: "  %evolv3_prefix% &#FF5555All border walls for rank &#FFFFFF%rank% &#FF5555removed."
+  max-reached: "  %evolv3_prefix% &cRank &#FFFFFF%rank% &calready has &#FFFFFF%max% &cborder wall(s). Remove one first."
+  unknown-rank: "  %evolv3_prefix% &cUnknown rank: &#FFFFFF%rank%"
+  no-border-at-slot: "  %evolv3_prefix% &cNo border wall at slot &#FFFFFF%slot% &cfor rank: &#FFFFFF%rank%"
+  no-borders-for-rank: "  %evolv3_prefix% &cNo border walls exist for rank: &#FFFFFF%rank%"
+  no-borders: "  %evolv3_prefix% &#CCCCCCNo border walls configured."
+  reloaded: "  %evolv3_prefix% &#00FFFFBorder walls reloaded."
+  no-selection: "  %evolv3_prefix% &cMake a WorldEdit selection first &#888888(//wand, then left/right click)&#CCCCCC."
+  no-worldedit: "  %evolv3_prefix% &cWorldEdit is required. Use //wand to select two points."
+
+# =====================================================
+# Beam Messages
+# =====================================================
+beam:
+  created: "  %evolv3_prefix% &#00FFFFBeam &#FFFFFF%name% &#888888(%color%) &#00FFFFcreated &#888888(&#FFFFFF%pos1% &#888888→ &#FFFFFF%pos2%&#888888)."
+  removed: "  %evolv3_prefix% &#FF5555Beam &#FFFFFF%name% &#FF5555removed."
+  not-found: "  %evolv3_prefix% &cNo beam exists with name: &#FFFFFF%name%"
+  unknown-colour: "  %evolv3_prefix% &cUnknown colour: &#FFFFFF%color%"
+  no-beams: "  %evolv3_prefix% &#CCCCCCNo beams configured."
+  reloaded: "  %evolv3_prefix% &#00FFFFBeams reloaded."
+  no-selection: "  %evolv3_prefix% &cMake a WorldEdit selection first &#888888(//wand, then left/right click)&#CCCCCC."
+  no-worldedit: "  %evolv3_prefix% &cWorldEdit is required. Use //wand to select two points."
+  available-colours: "  &#888888Colours: &#d580ff purple&#888888, &#FFD700yellow&#888888, &#55FF55green&#888888, &#FF5555red&#888888, &#00FFFFblue"
+
+# =====================================================
+# Launch Pad Messages
+# =====================================================
+launchpad:
+  set-mode: "  %evolv3_prefix% &#00FFFFEntered &#FFFFFF&lSET &#00FFFFmode. Right-click pressure plates to register them."
+  set-power: "  &#888888Forward: &#FFFFFF%forward% &#888888| Upward: &#FFFFFF%upward%"
+  remove-mode: "  %evolv3_prefix% &#FF5555Entered &#FFFFFF&lREMOVE &#FF5555mode. Right-click launch pads to delete them."
+  cancel-hint: "  &#888888Use &#FFFFFF/e launchpad cancel &#888888to exit."
+  cancelled: "  %evolv3_prefix% &#CCCCCCSelection mode cancelled."
+  not-in-mode: "  %evolv3_prefix% &#CCCCCCYou're not in any selection mode."
+  pad-created: "  %evolv3_prefix% &#00FFFFLaunch pad created at &#FFFFFF(%x%, %y%, %z%) &#888888| Forward: &#FFFFFF%forward% &#888888| Upward: &#FFFFFF%upward%"
+  pad-removed: "  %evolv3_prefix% &#FF5555Launch pad removed at &#FFFFFF(%x%, %y%, %z%)&#FF5555."
+  already-exists: "  %evolv3_prefix% &cA launch pad already exists here. Remove it first."
+  not-pressure-plate: "  %evolv3_prefix% &cThat's not a pressure plate. Right-click a pressure plate."
+  no-pad-at-location: "  %evolv3_prefix% &cNo launch pad exists at that location."
+  create-failed: "  %evolv3_prefix% &cFailed to create launch pad."
+  no-pads: "  %evolv3_prefix% &#CCCCCCNo launch pads configured."
+  reloaded: "  %evolv3_prefix% &#00FFFFLaunch pads reloaded &#888888(&#FFFFFF%count% &#888888pads)."

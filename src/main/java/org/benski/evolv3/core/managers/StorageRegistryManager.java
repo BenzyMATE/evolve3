@@ -45,11 +45,17 @@ public class StorageRegistryManager
      * Register a config file to be managed by StorageManager.
      * This will automatically create/copy it from resources on initialization.
      *
-     * @param name The name of the config (without .yml extension)
+     * <p>Supports subdirectory paths (e.g. {@code "localdata/beams"}) which
+     * resolve to {@code plugins/Evolv3/localdata/beams.yml}. Parent directories
+     * are created automatically.</p>
+     *
+     * @param name The name of the config (without .yml extension), may include subdirectory
      */
     public void registerConfig(String name)
     {
         File configFile = new File(dataFolder, name + ".yml");
+        File parentDir = configFile.getParentFile();
+        if (parentDir != null && !parentDir.exists()) parentDir.mkdirs();
         registeredConfigs.put(name, configFile);
     }
 
@@ -78,16 +84,36 @@ public class StorageRegistryManager
             String name = entry.getKey();
             File configFile = entry.getValue();
 
+            // Determine the resource name — strip any directory prefix for JAR lookup.
+            // e.g. "localdata/beams" → resource is still "beams.yml" in the JAR root
+            // (localdata configs typically have no JAR resource at all).
+            String baseName = name.contains("/")
+                    ? name.substring(name.lastIndexOf('/') + 1)
+                    : name;
+
             if (!configFile.exists()) {
-                try {
-                    plugin.saveResource(name + ".yml", false);
-                    created.add(name);
-                } catch (IllegalArgumentException e) {
+                // First try to copy from JAR resources using the base name
+                boolean copiedFromResource = false;
+                InputStream jarResource = plugin.getResource(baseName + ".yml");
+                if (jarResource != null) {
+                    try {
+                        Files.copy(jarResource, configFile.toPath());
+                        copiedFromResource = true;
+                        created.add(name);
+                    } catch (IOException ex) {
+                        plugin.getLogger().warning("Failed to copy resource for " + name + ".yml");
+                    } finally {
+                        try { jarResource.close(); } catch (IOException ignored) {}
+                    }
+                }
+
+                // If no resource exists, create an empty file
+                if (!copiedFromResource) {
                     try {
                         configFile.createNewFile();
-                        plugin.getLogger().warning("Config " + name + ".yml not found in resources, created empty file");
+                        created.add(name);
                     } catch (IOException ex) {
-                        plugin.getLogger().severe("Failed to create config file: " + name + ".yml");
+                        plugin.getLogger().severe("Failed to create config file: " + configFile.getPath());
                         ex.printStackTrace();
                     }
                 }
@@ -96,7 +122,7 @@ public class StorageRegistryManager
             // Load from disk, then apply JAR resource as defaults so new keys added
             // to the resource are available even if the server's file predates them.
             FileConfiguration config = YamlConfiguration.loadConfiguration(configFile);
-            InputStream resourceStream = plugin.getResource(name + ".yml");
+            InputStream resourceStream = plugin.getResource(baseName + ".yml");
             if (resourceStream != null) {
                 FileConfiguration resourceDefaults = YamlConfiguration.loadConfiguration(
                         new InputStreamReader(resourceStream, StandardCharsets.UTF_8));
@@ -126,10 +152,10 @@ public class StorageRegistryManager
             return configCache.get(name);
         }
 
-        // Otherwise, load it
-        File configFile = new File(dataFolder, name + ".yml");
+        // Otherwise, load it — use registered path if available, else fallback
+        File configFile = registeredConfigs.getOrDefault(name, new File(dataFolder, name + ".yml"));
         if (!configFile.exists()) {
-            plugin.getLogger().warning("Config file not found: " + name + ".yml");
+            plugin.getLogger().warning("Config file not found: " + configFile.getPath());
             return null;
         }
 
@@ -151,11 +177,11 @@ public class StorageRegistryManager
             return;
         }
 
-        File configFile = new File(dataFolder, name + ".yml");
+        File configFile = registeredConfigs.getOrDefault(name, new File(dataFolder, name + ".yml"));
         try {
             config.save(configFile);
         } catch (IOException e) {
-            plugin.getLogger().severe("Failed to save config: " + name + ".yml");
+            plugin.getLogger().severe("Failed to save config: " + configFile.getPath());
             e.printStackTrace();
         }
     }
@@ -167,7 +193,7 @@ public class StorageRegistryManager
      */
     public void reloadConfig(String name)
     {
-        File configFile = new File(dataFolder, name + ".yml");
+        File configFile = registeredConfigs.getOrDefault(name, new File(dataFolder, name + ".yml"));
         if (!configFile.exists()) {
             plugin.getLogger().warning("Cannot reload config " + name + " - file doesn't exist");
             return;
@@ -240,7 +266,7 @@ public class StorageRegistryManager
      */
     public boolean configExists(String name)
     {
-        File configFile = new File(dataFolder, name + ".yml");
+        File configFile = registeredConfigs.getOrDefault(name, new File(dataFolder, name + ".yml"));
         return configFile.exists();
     }
 
@@ -257,7 +283,19 @@ public class StorageRegistryManager
     }
 
     /**
-     * Delete a config file.
+     * Removes a config from the in-memory cache without touching the file on disk.
+     * Use this during plugin shutdown to release memory while preserving saved data.
+     *
+     * @param name The name of the config (without .yml extension)
+     */
+    public void unloadConfig(String name)
+    {
+        configCache.remove(name);
+    }
+
+    /**
+     * Delete a config file from disk and remove it from the cache.
+     * Only use this when you intentionally want to destroy the file.
      *
      * @param name The name of the config (without .yml extension)
      * @return true if deletion was successful
@@ -265,7 +303,7 @@ public class StorageRegistryManager
     public boolean deleteConfig(String name)
     {
         configCache.remove(name);
-        File configFile = new File(dataFolder, name + ".yml");
+        File configFile = registeredConfigs.getOrDefault(name, new File(dataFolder, name + ".yml"));
         return configFile.delete();
     }
 

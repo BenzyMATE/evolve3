@@ -11,6 +11,10 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
 import static org.benski.evolv3.core.helpers.Utils.formatMessage;
@@ -82,6 +86,27 @@ public class PickaxeDataCenter extends BaseDataCenter<PickaxeProfile>
         String pickaxeId = item.getData("id");
         if (pickaxeId == null || pickaxeId.isEmpty()) return null;
         return data.get(pickaxeId);
+    }
+
+    /**
+     * Saves all cached pickaxe profiles and blocks until every save completes (or times out).
+     * Should be called during plugin disable to prevent data loss on shutdown.
+     * Waits up to 10 seconds for all saves to finish before returning.
+     */
+    public void saveAll()
+    {
+        List<CompletableFuture<Void>> futures = new ArrayList<>();
+        for (PickaxeProfile profile : data.values()) {
+            futures.add(mongoManager.upsertAsync(profile));
+        }
+        if (futures.isEmpty()) return;
+        try {
+            CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]))
+                    .get(10, TimeUnit.SECONDS);
+        } catch (Exception e) {
+            org.benski.evolv3.Main.getInstance().getLogger()
+                    .severe("Timed out waiting for pickaxe profile saves on shutdown: " + e.getMessage());
+        }
     }
 
     @Override

@@ -9,6 +9,7 @@ import org.benski.evolv3.core.helpers.AoEDropResolver;
 import org.benski.evolv3.core.helpers.Utils;
 import org.benski.evolv3.core.managers.PickaxeManager;
 import org.benski.evolv3.core.managers.StorageRegistryManager;
+import org.benski.evolv3.core.managers.MineManager;
 import org.benski.evolv3.core.managers.WorldGuardManager;
 import org.benski.evolv3.datacenters.PickaxeDataCenter;
 import org.benski.evolv3.datacenters.PlayerDataCenter;
@@ -289,6 +290,7 @@ public class ThorEnchant implements Listener
 
                 if (iceOriginY < 0 && off[0] == 0 && off[1] == 0) iceOriginY = y;
 
+                MineManager.getInstance().trackBlockAtLocation(block.getLocation());
                 block.setType(Material.AIR);
 
                 int dropCount = Math.min(fortuneAmount > 0 ? fortuneAmount : 1, remaining);

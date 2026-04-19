@@ -40,8 +40,26 @@ public final class ConfigNames
      */
     public static final String STONES = "stones";
 
+    // ----- Local data configs (runtime-saved, not user-editable) -----
+    // These are stored in the localdata/ subdirectory.
+
     /**
-     * Prison zone borders configuration file.
+     * Prison zone borders — stored in {@code localdata/borders.yml}.
      */
-    public static final String BORDERS = "borders";
+    public static final String BORDERS = "localdata/borders";
+
+    /**
+     * Levitation beams — stored in {@code localdata/beams.yml}.
+     */
+    public static final String BEAMS = "localdata/beams";
+
+    /**
+     * Launch pads — stored in {@code localdata/launchpads.yml}.
+     */
+    public static final String LAUNCHPADS = "localdata/launchpads";
+
+    /**
+     * Mines configuration file.
+     */
+    public static final String MINES = "mines";
 }
