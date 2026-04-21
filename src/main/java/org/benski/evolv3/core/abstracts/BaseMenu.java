@@ -18,9 +18,9 @@ import org.bukkit.scheduler.BukkitTask;
 
 import static org.benski.evolv3.core.helpers.Utils.formatMessage;
 
-import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Abstract base class for menu implementations.
@@ -31,8 +31,8 @@ import java.util.UUID;
 public abstract class BaseMenu implements Menu, InventoryHolder, Listener
 {
     protected final JavaPlugin plugin;
-    protected final Map<UUID, Inventory> openInventories = new HashMap<>();
-    private final Map<UUID, BukkitTask> titleUpdateTasks = new HashMap<>();
+    protected final Map<UUID, Inventory> openInventories = new ConcurrentHashMap<>();
+    private final Map<UUID, BukkitTask> titleUpdateTasks = new ConcurrentHashMap<>();
 
     public BaseMenu(JavaPlugin plugin) {
         this.plugin = plugin;

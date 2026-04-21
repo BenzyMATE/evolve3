@@ -9,6 +9,7 @@ import org.benski.evolv3.core.constants.ConfigPaths;
 import org.benski.evolv3.core.helpers.SkinRenderer;
 import org.benski.evolv3.core.helpers.Utils;
 import org.benski.evolv3.core.managers.EnchantDropManager;
+import org.benski.evolv3.core.managers.PickaxeManager;
 import org.benski.evolv3.registry.ListenerRegistry;
 import org.benski.evolv3.core.managers.EnchantSelectionManager;
 import org.benski.evolv3.core.managers.EvolutionSelectionManager;
@@ -101,6 +102,12 @@ public class JoinListener extends BaseListener
                 RankManager.getInstance().applyPermissions(player, profile);
             }
         }, 2L);
+
+        // Apply pickaxe lore regardless of which slot the pickaxe is in.
+        // A small delay ensures the pickaxe profile has loaded from cache before we read it.
+        Bukkit.getScheduler().runTaskLater(plugin, () -> {
+            if (player.isOnline()) PickaxeManager.getInstance().updateLoreFromInventory(player);
+        }, 5L);
 
         // Send skin join message — slight delay so the player's client is fully loaded
         Bukkit.getScheduler().runTaskLater(plugin, () -> sendJoinMessage(player), 20L);

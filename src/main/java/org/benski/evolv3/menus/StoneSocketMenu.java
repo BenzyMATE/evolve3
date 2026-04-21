@@ -329,7 +329,7 @@ public class StoneSocketMenu extends BaseMenu
                 String effectTemplate  = cfg != null ? cfg.getString(ConfigPaths.Stones.SocketMenu.FILLED_EFFECT_LINE,   " &8| &#{hex}{effect}")                            : " &8| &#{hex}{effect}";
                 String removeHint      = cfg != null ? cfg.getString(ConfigPaths.Stones.SocketMenu.FILLED_REMOVE_HINT,   " &8| &cRight-Click &#AAAAAAto remove this stone.") : " &8| &cRight-Click &#AAAAAAto remove this stone.";
 
-                ItemStack item = new ItemStack(org.bukkit.Material.HEART_OF_THE_SEA);
+                ItemStack item = new ItemStack(org.bukkit.Material.END_CRYSTAL);
                 ItemMeta  meta = item.getItemMeta();
                 if (meta != null) {
                     meta.displayName(format(player, nameTemplate
@@ -363,7 +363,7 @@ public class StoneSocketMenu extends BaseMenu
         String howToHeader     = cfg != null ? cfg.getString(ConfigPaths.Stones.SocketMenu.EMPTY_HOW_TO_HEADER, " &#FFFFFF&lHow to Socket")                   : " &#FFFFFF&lHow to Socket";
         List<String> howToLines = cfg != null ? cfg.getStringList(ConfigPaths.Stones.SocketMenu.EMPTY_HOW_TO_LINES) : List.of(" &8| &#888888Hold an &#00FFFFEvolution Stone", " &8| &#888888in your cursor and left-click.");
 
-        ItemStack item = new ItemStack(Material.GRAY_STAINED_GLASS_PANE);
+        ItemStack item = new ItemStack(Material.GLASS_PANE);
         ItemMeta  meta = item.getItemMeta();
         if (meta != null) {
             meta.displayName(format(player, emptyName.replace("{index}", String.valueOf(socketIndex + 1))));

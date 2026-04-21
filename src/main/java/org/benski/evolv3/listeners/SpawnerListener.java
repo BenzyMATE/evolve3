@@ -97,9 +97,12 @@ public class SpawnerListener extends BaseListener
             return;
         }
 
-        // Read defaults for mob-limit and search-radius from SpawnerManager defaults
-        int mobLimit     = 10;
-        int searchRadius = 32;
+        // Read defaults for mob-limit and search-radius from spawners.yml
+        org.bukkit.configuration.file.FileConfiguration spawnCfg =
+                org.benski.evolv3.registry.ConfigRegistry.getInstance().get(
+                        org.benski.evolv3.core.constants.ConfigNames.SPAWNERS);
+        int mobLimit     = spawnCfg != null ? spawnCfg.getInt("defaults.mob-limit",        15) : 15;
+        int searchRadius = spawnCfg != null ? spawnCfg.getInt("defaults.mob-search-radius", 32) : 32;
 
         String id = UUID.randomUUID().toString();
         Spawner spawner = new Spawner(

@@ -4,7 +4,6 @@ import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.TextDecoration;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import net.matrixcreations.libraries.MatrixColorAPI;
-import org.benski.evolv3.Main;
 import org.benski.evolv3.core.constants.ConfigNames;
 import org.benski.evolv3.core.constants.ConfigPaths;
 import org.benski.evolv3.core.helpers.FontUtils;
@@ -50,16 +49,12 @@ public final class EvolutionStone
     /** Value stored under {@link #PDC_TYPE_KEY} for evolution stones. */
     public static final String TYPE_VALUE      = "evolution_stone";
 
-    // Cached keys — created once at class-load time so PDC lookups don't allocate on every call
-    private static final NamespacedKey KEY_TYPE;
-    private static final NamespacedKey KEY_RARITY;
-    private static final NamespacedKey KEY_ENCHANT;
-    static {
-        org.bukkit.plugin.java.JavaPlugin plugin = Main.getInstance();
-        KEY_TYPE   = new NamespacedKey(plugin, PDC_TYPE_KEY);
-        KEY_RARITY = new NamespacedKey(plugin, PDC_RARITY_KEY);
-        KEY_ENCHANT = new NamespacedKey(plugin, PDC_ENCHANT_KEY);
-    }
+    // Cached keys — created once at class-load time so PDC lookups don't allocate on every call.
+    // Uses the string-based constructor to avoid depending on Main.getInstance() at class-load time
+    // (plugin-based constructor can cause ExceptionInInitializerError if accessed too early).
+    private static final NamespacedKey KEY_TYPE   = new NamespacedKey("evolv3", PDC_TYPE_KEY);
+    private static final NamespacedKey KEY_RARITY = new NamespacedKey("evolv3", PDC_RARITY_KEY);
+    private static final NamespacedKey KEY_ENCHANT = new NamespacedKey("evolv3", PDC_ENCHANT_KEY);
 
     private EvolutionStone() {}
 
@@ -98,7 +93,7 @@ public final class EvolutionStone
         if (stoneName == null) stoneName = rarity.displayName() + " Evolution Stone";
         String effectText   = StoneEffectRegistry.getEffect(internalName, rarity.displayName());
 
-        ItemStack item = new ItemStack(Material.HEART_OF_THE_SEA);
+        ItemStack item = new ItemStack(Material.NETHER_STAR);
         ItemMeta  meta = item.getItemMeta();
         if (meta == null) return item;
 

@@ -75,6 +75,8 @@ public final class Main extends JavaPlugin
         this.registerEvolutionCallbackProvider();
         // Load any evolution animations that were in-progress when the server last stopped
         EvolutionSelectionManager.getInstance().loadPendingFromDatabase();
+        // Kill all mobs (including passive animals) left over from before the restart
+        Bukkit.getScheduler().runTask(this, this::clearAllMobs);
         this.sendConsoleMessage("Evolv3 has been enabled successfully!");
     }
 
@@ -85,6 +87,7 @@ public final class Main extends JavaPlugin
     public void onDisable()
     {
         this.sendConsoleMessage("Evolv3 is shutting down...");
+        clearAllMobs();
 
         // Save all armor profiles before shutdown
         ArmorDataCenter armorDataCenter = DataCenterRegistry.getInstance().getArmorDataCenter();
@@ -249,6 +252,22 @@ public final class Main extends JavaPlugin
      * Static class to get the Main instance.
      * @return A instance of the Main class.
      */
+    /** Removes every living entity (mobs and animals) from all worlds, leaving only players. */
+    private void clearAllMobs()
+    {
+        int killed = 0;
+        for (org.bukkit.World world : Bukkit.getWorlds()) {
+            for (org.bukkit.entity.Entity entity : world.getEntities()) {
+                if (entity instanceof org.bukkit.entity.LivingEntity
+                        && !(entity instanceof org.bukkit.entity.Player)) {
+                    entity.remove();
+                    killed++;
+                }
+            }
+        }
+        getLogger().info("[Evolv3] Cleared " + killed + " entities.");
+    }
+
     public static Main getInstance()
     {
         return getPlugin(Main.class);

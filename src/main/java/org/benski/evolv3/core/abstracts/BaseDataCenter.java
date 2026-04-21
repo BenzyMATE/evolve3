@@ -8,7 +8,6 @@ import org.benski.evolv3.core.managers.StorageRegistryManager;
 import org.benski.evolv3.core.managers.TaskManager;
 import org.bukkit.entity.Player;
 
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -17,7 +16,7 @@ import java.util.logging.Logger;
 
 public abstract class BaseDataCenter<T extends MongoCollection> implements DataCenter<T>
 {
-    protected final Map<String, T> data = new HashMap<>();
+    protected final Map<String, T> data = new ConcurrentHashMap<>();
     protected final MongoManager mongoManager = MongoManager.getInstance();
     protected final StorageRegistryManager storageManager = StorageRegistryManager.getInstance();
     private final Logger logger = Main.getInstance().getLogger();

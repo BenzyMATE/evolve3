@@ -89,9 +89,13 @@ public class OmnitoolManager
      */
     public boolean transformTo(Player player, Form form)
     {
-        ItemStack held = player.getInventory().getItemInMainHand();
-        if (!isPickaxe(held)) return false;
+        // Find the pickaxe anywhere in the inventory — not just main hand.
+        // This way the axe/sword replaces the pickaxe in its current slot and
+        // nothing else in the player's inventory is disturbed.
+        int pickaxeSlot = findPickaxeSlot(player);
+        if (pickaxeSlot == -1) return false;
 
+        ItemStack held = player.getInventory().getItem(pickaxeSlot);
         Map<Material, Material> map = form == Form.AXE ? PICKAXE_TO_AXE : PICKAXE_TO_SWORD;
         Material target = map.get(held.getType());
         if (target == null) return false;
@@ -104,7 +108,6 @@ public class OmnitoolManager
         ItemMeta newMeta  = transformed.getItemMeta();
         if (newMeta != null)
         {
-            // Build display name from config template (correct icon + text)
             FileConfiguration config = ConfigRegistry.getInstance().get(ConfigNames.DEFAULT);
             String path        = form == Form.AXE ? "Omnitool.AxeName" : "Omnitool.SwordName";
             String defaultName = form == Form.AXE
@@ -116,7 +119,6 @@ public class OmnitoolManager
                     .deserialize(formatted)
                     .decoration(TextDecoration.ITALIC, false));
 
-            // Copy lore and durability from original pickaxe
             if (origMeta != null) {
                 newMeta.lore(origMeta.lore());
                 if (origMeta instanceof Damageable origDmg && newMeta instanceof Damageable newDmg) {
@@ -129,13 +131,15 @@ public class OmnitoolManager
             transformed.setItemMeta(newMeta);
         }
 
-        player.getInventory().setItemInMainHand(transformed);
+        // Replace the pickaxe in its original slot — main hand is untouched if the
+        // player has since switched to another item.
+        player.getInventory().setItem(pickaxeSlot, transformed);
         return true;
     }
 
     /**
-     * Reverts the player to their stored pickaxe.
-     * All tagged omnitool items are removed from the inventory before the pickaxe is restored.
+     * Reverts the player to their stored pickaxe, placing it back in whichever
+     * inventory slot the omnitool item currently occupies.  No other slots are touched.
      */
     public void revertToPickaxe(Player player)
     {
@@ -143,32 +147,46 @@ public class OmnitoolManager
         if (!activeForms.containsKey(uuid)) return;
 
         activeForms.remove(uuid);
+        ItemStack original = storedPickaxes.remove(uuid);
 
-        // Remove every omnitool-tagged item from inventory
+        // Find the omnitool item's current slot and swap it for the original pickaxe.
         for (int slot = 0; slot < player.getInventory().getSize(); slot++)
         {
             ItemStack item = player.getInventory().getItem(slot);
             if (item == null) continue;
             ItemMeta meta = item.getItemMeta();
-            if (meta != null && meta.getPersistentDataContainer()
-                    .has(OMNITOOL_ITEM_KEY, PersistentDataType.STRING))
-            {
+            if (meta == null) continue;
+            if (!meta.getPersistentDataContainer().has(OMNITOOL_ITEM_KEY, PersistentDataType.STRING)) continue;
+
+            if (original != null) {
+                // Carry durability changes from the omnitool back to the pickaxe
+                ItemMeta origMeta = original.getItemMeta();
+                if (meta instanceof Damageable toolDmg && origMeta instanceof Damageable origDmg) {
+                    origDmg.setDamage(toolDmg.getDamage());
+                    original.setItemMeta(origMeta);
+                }
+                player.getInventory().setItem(slot, original);
+            } else {
                 player.getInventory().setItem(slot, null);
             }
+            return;
         }
 
-        ItemStack original = storedPickaxes.remove(uuid);
+        // Omnitool not found in inventory (edge case) — just give the pickaxe back to main hand
         if (original != null) {
-            // Carry durability changes from the omnitool back to the original pickaxe
-            ItemStack heldOmnitool = player.getInventory().getItemInMainHand();
-            ItemMeta heldMeta = heldOmnitool.getItemMeta();
-            ItemMeta origMeta = original.getItemMeta();
-            if (heldMeta instanceof Damageable heldDmg && origMeta instanceof Damageable origDmg) {
-                origDmg.setDamage(heldDmg.getDamage());
-                original.setItemMeta(origMeta);
-            }
             player.getInventory().setItemInMainHand(original);
         }
+    }
+
+    /** Finds the first pickaxe slot in the player's inventory, or -1 if none. */
+    private int findPickaxeSlot(Player player)
+    {
+        for (int slot = 0; slot < player.getInventory().getSize(); slot++)
+        {
+            ItemStack item = player.getInventory().getItem(slot);
+            if (isPickaxe(item)) return slot;
+        }
+        return -1;
     }
 
     /** Called on plugin disable — cleans up all active forms without attempting to restore items. */

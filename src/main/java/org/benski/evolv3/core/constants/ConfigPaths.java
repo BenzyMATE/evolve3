@@ -64,6 +64,7 @@ public final class ConfigPaths
             public static final String ACTION_BAR = "Pickaxe.ActionBar";
             public static final String LORE = "Pickaxe.Lore";
             public static final String LORE_FOOTER = "Pickaxe.LoreFooter";
+            public static final String OMNITOOL_LORE_TAG = "Omnitool.LoreTag";
 
             // Progress bar symbols
             public static final String PROGRESSBAR_SYMBOL_FILLED = "Pickaxe.Progressbar Symbol 1";

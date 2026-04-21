@@ -2,9 +2,9 @@ package org.benski.evolv3.core.managers;
 
 import org.bukkit.Material;
 
-import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Shared registry for the final drop material produced by enchant listeners.
@@ -18,7 +18,7 @@ import java.util.UUID;
  */
 public final class EnchantDropManager
 {
-    private static final Map<UUID, Material> pendingResults = new HashMap<>();
+    private static final Map<UUID, Material> pendingResults = new ConcurrentHashMap<>();
 
     private EnchantDropManager() {}
 

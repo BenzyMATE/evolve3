@@ -112,8 +112,8 @@ pickaxe:
       - "  &#888888Your pickaxe has ascended to %tier%&#888888."
       - ""
       - "  &#FFFFFF&lRewards"
-      - "  &#B366D9🔥 &#FFFFFF+%essence% &#B366D9Essence"
-      - "  %stone_color%✦ &#FFFFFF+1 %stone_rarity% &#FFFFFFEvolution Stone"
+      - "  &#B366D9🔥 &#B366D9+%essence% &#B366D9Essence"
+      - "  %stone_color%✦ %stone_color%+1 %stone_rarity% Evolution Stone"
       - ""
 
 # =====================================================

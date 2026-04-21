@@ -2,7 +2,8 @@ package org.benski.evolv3.core.managers;
 
 import lombok.Getter;
 import org.benski.evolv3.Main;
-import org.benski.evolv3.animations.EvolutionAnimationD;
+import org.benski.evolv3.animations.EvolutionAnimation;
+import org.benski.evolv3.animations.EvolutionAnimation3;
 import org.benski.evolv3.datacenters.PickaxeDataCenter;
 import org.benski.evolv3.items.EvolutionStone;
 import org.benski.evolv3.core.types.PendingEvolutionData;
@@ -55,7 +56,7 @@ public class EvolutionSelectionManager
     private final Logger logger;
 
     /** Animations currently playing. Entries are removed on completion or disconnect. */
-    private final Map<UUID, EvolutionAnimationD> activeAnimations = new ConcurrentHashMap<>();
+    private final Map<UUID, EvolutionAnimation> activeAnimations = new ConcurrentHashMap<>();
 
     /**
      * Persistent pending state — survives animation completion and player disconnects.
@@ -145,7 +146,7 @@ public class EvolutionSelectionManager
      */
     public boolean hasActiveEvolution(Player player) {
         if (player == null) return false;
-        EvolutionAnimationD animation = activeAnimations.get(player.getUniqueId());
+        EvolutionAnimation animation = activeAnimations.get(player.getUniqueId());
         return animation != null && !animation.isFinished();
     }
 
@@ -170,7 +171,7 @@ public class EvolutionSelectionManager
         logger.fine("[ESM-DEBUG] handlePlayerQuit: uuid=" + uuid
             + " activeAnimations.size=" + activeAnimations.size()
             + " pendingEvolutions.size=" + pendingEvolutions.size());
-        EvolutionAnimationD animation = activeAnimations.remove(uuid);
+        EvolutionAnimation animation = activeAnimations.remove(uuid);
         if (animation == null) {
             logger.fine("[ESM-DEBUG] handlePlayerQuit: no active animation found for " + uuid);
             return;
@@ -332,7 +333,7 @@ public class EvolutionSelectionManager
      * disabled.  MongoDB documents are left intact so they can be restored on next start.
      */
     public void cleanup() {
-        for (EvolutionAnimationD animation : activeAnimations.values()) {
+        for (EvolutionAnimation animation : activeAnimations.values()) {
             if (animation != null && !animation.isFinished()) {
                 animation.stop();
             }
@@ -358,7 +359,7 @@ public class EvolutionSelectionManager
         UUID uuid = player.getUniqueId();
 
         // Cancel any running animation
-        EvolutionAnimationD existing = activeAnimations.remove(uuid);
+        EvolutionAnimation existing = activeAnimations.remove(uuid);
         if (existing != null && !existing.isFinished()) {
             existing.stop();
         }
@@ -381,8 +382,8 @@ public class EvolutionSelectionManager
             if (callback != null) callback.run();
         };
 
-        EvolutionAnimationD animation =
-                new EvolutionAnimationD(plugin, player, current, next, winningRarity, wrappedCallback);
+        EvolutionAnimation animation =
+                new EvolutionAnimation3(plugin, player, current, next, winningRarity, wrappedCallback);
 
         // onComplete fires at tick 268 only when items were actually delivered to an online player.
         // Safe to fully clean up at this point.

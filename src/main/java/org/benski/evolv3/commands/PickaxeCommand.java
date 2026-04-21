@@ -1,6 +1,7 @@
 package org.benski.evolv3.commands;
 
 import org.benski.evolv3.core.abstracts.BaseCommand;
+import org.benski.evolv3.core.managers.OmnitoolManager;
 import org.benski.evolv3.menus.PickaxeLimitMenu;
 import org.benski.evolv3.registry.MenuRegistry;
 import org.bukkit.command.Command;
@@ -60,6 +61,11 @@ public class PickaxeCommand extends BaseCommand
         }
 
         Player player = (Player) sender;
+
+        if (OmnitoolManager.getInstance().isInOmnitoolMode(player)) {
+            sendError(sender, "You cannot open the pickaxe menu while in an Omnitool zone.");
+            return true;
+        }
 
         PickaxeLimitMenu menu = (PickaxeLimitMenu) MenuRegistry.getInstance().get("pickaxe_limit");
         if (menu != null) {

@@ -83,7 +83,8 @@ public class PickaxeCheckSchedule extends BaseSchedule
         if (PickaxeManager.getInstance().isActiveMining(player.getUniqueId())) return;
 
         ItemStack item = player.getInventory().getItemInMainHand();
-        if (!pickaxeDataCenter.exists(player.getItemId())) return;
+        String itemId = player.getItemId();
+        if (itemId == null || !pickaxeDataCenter.exists(itemId)) return;
 
         PickaxeProfile pickaxeProfile = pickaxeDataCenter.getLocal(player);
         if (pickaxeProfile == null) return;

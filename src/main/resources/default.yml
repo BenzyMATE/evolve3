@@ -159,6 +159,8 @@ Omnitool:
   AxeName: '&#00FFFF🔨 &#FFFFFF&l%evolv3_player_name% &#00FFFFAxe'
   # Display name applied when in sword form (supports PlaceholderAPI & hex colours)
   SwordName: '&#00FFFF🗡 &#FFFFFF&l%evolv3_player_name% &#00FFFFSword'
+  # Hidden tag placed on the first lore line of the pickaxe item so the omnitool system can identify it
+  LoreTag: '&7omnitool'
 
 # =====================================================
 # Player Configuration

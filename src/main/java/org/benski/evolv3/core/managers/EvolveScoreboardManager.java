@@ -212,7 +212,7 @@ public final class EvolveScoreboardManager
 
         boolean holdingPickaxe  = player.getInventory().getItemInMainHand()
                 .getType().name().endsWith("_PICKAXE")
-                || OmnitoolManager.getInstance().isInOmnitoolMode(player);
+                || isHoldingOmnitool(player);
         boolean pickaxeLoaded   = isPickaxeLoaded(player);
         boolean enchantActive   = EnchantSelectionManager.getInstance().hasActiveSelection(player);
 
@@ -323,7 +323,7 @@ public final class EvolveScoreboardManager
         String evoRaw   = configLines.get(i);
         boolean holding = player.getInventory().getItemInMainHand()
                 .getType().name().endsWith("_PICKAXE")
-                || OmnitoolManager.getInstance().isInOmnitoolMode(player);
+                || isHoldingOmnitool(player);
 
         // Hide line and reset state when not holding a pickaxe
         if (!holding) {
@@ -705,6 +705,14 @@ public final class EvolveScoreboardManager
      * Returns true when the pickaxe profile is present in local cache.
      * Used to gate pickaxe placeholder rendering so values don't flash as "0" on join.
      */
+    /** Returns true if the player is holding their omnitool axe/sword (PDC-tagged item). */
+    private static boolean isHoldingOmnitool(Player player) {
+        org.bukkit.inventory.ItemStack held = player.getInventory().getItemInMainHand();
+        org.bukkit.inventory.meta.ItemMeta meta = held.getItemMeta();
+        return meta != null && meta.getPersistentDataContainer()
+                .has(OmnitoolManager.OMNITOOL_ITEM_KEY, org.bukkit.persistence.PersistentDataType.STRING);
+    }
+
     private static boolean isPickaxeLoaded(Player player) {
         PickaxeDataCenter pkc = DataCenterRegistry.getInstance().getPickaxeDataCenter();
         return pkc != null && pkc.getLocal(player) != null;

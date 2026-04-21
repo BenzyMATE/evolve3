@@ -4,6 +4,7 @@ import net.kyori.adventure.text.format.NamedTextColor;
 import net.matrixcreations.libraries.MatrixColorAPI;
 import org.benski.evolv3.core.constants.ConfigNames;
 import org.benski.evolv3.core.constants.ConfigPaths;
+import org.benski.evolv3.core.managers.OmnitoolManager;
 import org.benski.evolv3.core.managers.StorageRegistryManager;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
@@ -56,12 +57,26 @@ public class Utils
      */
     public static String formatMessage(Player player, String message)
     {
+        // Resolve %evolv3_tool_label% directly so it works regardless of PAPI availability
+        // and even when the server's config still has a hardcoded tool name.
+        if (player != null && message.contains("%evolv3_tool_label%")) {
+            message = message.replace("%evolv3_tool_label%", resolveToolLabel(player));
+        }
         if (PLACEHOLDER_API_ENABLED) {
             message = PlaceholderHook.setPlaceholders(player, message);
         }
         message = FontUtils.toSmallCaps(message);
         message = MatrixColorAPI.process(message);
         return message;
+    }
+
+    private static String resolveToolLabel(Player player) {
+        OmnitoolManager omni = OmnitoolManager.getInstance();
+        if (!omni.isInOmnitoolMode(player)) return "Pickaxe";
+        OmnitoolManager.Form form = omni.getForm(player);
+        if (form == OmnitoolManager.Form.AXE)   return "Axe";
+        if (form == OmnitoolManager.Form.SWORD) return "Sword";
+        return "Pickaxe";
     }
 
     /**

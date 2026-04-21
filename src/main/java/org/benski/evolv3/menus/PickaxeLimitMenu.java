@@ -397,7 +397,7 @@ public class PickaxeLimitMenu extends BaseMenu
                         " &8| &#CCCCCCYou already have an active pickaxe.",
                         " &8| &#CCCCCCDeposit it first to claim this slot.", ""));
 
-        return new ItemBuilder(Material.RED_STAINED_GLASS_PANE)
+        return new ItemBuilder(Material.ORANGE_STAINED_GLASS_PANE)
                 .name(fmt(player, name))
                 .lore(lore)
                 .build();

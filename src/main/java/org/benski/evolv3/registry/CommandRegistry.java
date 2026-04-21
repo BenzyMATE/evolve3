@@ -11,7 +11,6 @@ import org.benski.evolv3.commands.PickupAnimationCommand;
 import org.benski.evolv3.commands.PreferencesCommand;
 import org.benski.evolv3.commands.RankupCommand;
 import org.benski.evolv3.commands.SkinCommand;
-import org.benski.evolv3.commands.SoundCommand;
 import org.benski.evolv3.commands.TestCommand;
 import org.benski.evolv3.core.abstracts.BaseCommand;
 import org.benski.evolv3.core.interfaces.Registry;
@@ -41,7 +40,6 @@ public class CommandRegistry implements Registry<BaseCommand>
             BalCommand.class,
             EnchantPickaxeCommand.class,
             SkinCommand.class,
-            SoundCommand.class,
             RankupCommand.class
     );
 

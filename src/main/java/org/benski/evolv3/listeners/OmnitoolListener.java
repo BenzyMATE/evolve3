@@ -4,7 +4,6 @@ import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.benski.evolv3.core.abstracts.BaseListener;
 import org.benski.evolv3.core.constants.ConfigNames;
 import org.benski.evolv3.core.constants.ConfigPaths;
-import org.benski.evolv3.core.helpers.Messageable;
 import org.benski.evolv3.core.helpers.Utils;
 import org.benski.evolv3.core.managers.OmnitoolManager;
 import org.benski.evolv3.core.managers.OmnitoolManager.Form;
@@ -95,7 +94,7 @@ public class OmnitoolListener extends BaseListener
             {
                 omni.revertToPickaxe(player);
                 playTransformAnimation(player);
-                Messageable.sendRaw(player, "  &#888888⚒ Omnitool &#FF5555deactivated&#888888. Pickaxe restored.");
+                sendActionBar(player, "  &#888888⚒ Omnitool &cDeactivated");
             }
             return;
         }
@@ -154,7 +153,8 @@ public class OmnitoolListener extends BaseListener
         if (meta == null) return;
         if (!meta.getPersistentDataContainer().has(OmnitoolManager.OMNITOOL_ITEM_KEY, PersistentDataType.STRING)) return;
 
-        Messageable.sendRaw(player, "  &#FF5555⚠ &#FFFFFFPickaxe menu unavailable in omnitool mode. &#888888Exit the area first.");
+        sendActionBar(player, "&#FF5555⚠ &#FFFFFFPickaxe menu unavailable.");
+        player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
     }
 
     // =========================================================================
@@ -263,8 +263,13 @@ public class OmnitoolListener extends BaseListener
 
     private void sendTransformMessage(Player player, Form form)
     {
-        String label = form == Form.AXE ? "&#FFD700Axe" : "&#FF5555Sword";
-        Messageable.sendRaw(player, "  &#888888⚒ Omnitool activated: " + label + " &#888888mode.");
+        sendActionBar(player, "  &#888888⚒ Omnitool &aActivated");
+    }
+
+    private static void sendActionBar(Player player, String raw)
+    {
+        String formatted = Utils.formatMessage(player, raw);
+        player.sendActionBar(LegacyComponentSerializer.legacySection().deserialize(formatted));
     }
 
     private static boolean isLog(Material material)

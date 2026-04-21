@@ -21,7 +21,6 @@ import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -196,6 +195,12 @@ public final class SpawnerManager
         }
 
         startSharedTask();
+
+        // Re-cache region bounds one tick after load in case WorldGuard's region
+        // container wasn't fully queryable at the moment loadFromConfig ran.
+        Bukkit.getScheduler().runTaskLater(Main.getInstance(), () -> {
+            for (Spawner s : spawners.values()) cacheRegionBounds(s);
+        }, 1L);
     }
 
     /**
@@ -368,8 +373,8 @@ public final class SpawnerManager
     }
 
     /**
-     * Pushes mobs of each spawner's type back into their region when they wander out.
-     * Runs every 4 ticks for tight containment.
+     * Pushes mobs owned by each spawner (identified via PDC tag) back into their region
+     * when they wander out. Runs every 4 ticks for tight containment.
      * Mobs just over the border get velocity nudged; mobs far outside get teleported.
      */
     private void containMobs()
@@ -382,10 +387,6 @@ public final class SpawnerManager
             World world = Bukkit.getWorld(s.world());
             if (world == null) continue;
 
-            EntityType type;
-            try { type = EntityType.valueOf(s.mobType().toUpperCase()); }
-            catch (IllegalArgumentException e) { continue; }
-
             double cx = (b[0] + b[3]) / 2.0;
             double cy = (b[1] + b[4]) / 2.0;
             double cz = (b[2] + b[5]) / 2.0;
@@ -397,7 +398,8 @@ public final class SpawnerManager
             for (Entity entity : world.getNearbyEntities(new Location(world, cx, cy, cz), rx, ry, rz))
             {
                 if (!(entity instanceof LivingEntity) || entity instanceof org.bukkit.entity.Player) continue;
-                if (entity.getType() != type) continue;
+                // Only manage mobs that belong to this spawner
+                if (!s.id().equals(entity.getPersistentDataContainer().get(SPAWNER_MOB_KEY, PersistentDataType.STRING))) continue;
 
                 Location el = entity.getLocation();
                 double ex = el.getX(), ey = el.getY(), ez = el.getZ();
@@ -439,8 +441,9 @@ public final class SpawnerManager
     // =========================================================================
 
     /**
-     * Counts living entities of this spawner's mob type within the spawner's region
-     * bounds (if cached), falling back to {@code searchRadius} when no region is known.
+     * Counts all living entities of the spawner's mob type within the region bounds,
+     * or within a wide radius fallback. Counts by entity type (not PDC tag) so mobs
+     * that lost their tag or were spawned before tagging was in place are still counted.
      *
      * @param s the spawner
      * @return the count of matching entities
@@ -450,20 +453,23 @@ public final class SpawnerManager
         World world = Bukkit.getWorld(s.world());
         if (world == null) return 0;
 
-        EntityType type;
-        try { type = EntityType.valueOf(s.mobType().toUpperCase()); }
-        catch (IllegalArgumentException e) { return 0; }
+        EntityType type = parseEntityType(s.mobType());
+        if (type == null) return 0;
 
         int[] bounds = regionBoundsCache.get(s.id());
         if (bounds != null)
         {
-            return countMobsInBounds(world, type, bounds);
+            return countMobsInBounds(world, bounds, type);
         }
 
+        // Fallback: wide radius search by entity type
         Location center = new Location(world, s.x(), s.y(), s.z());
-        Collection<Entity> nearby = world.getNearbyEntities(center, s.searchRadius(), s.searchRadius(), s.searchRadius());
         int count = 0;
-        for (Entity e : nearby) { if (e.getType() == type && e instanceof LivingEntity) count++; }
+        for (Entity e : world.getNearbyEntities(center, 128, 128, 128))
+        {
+            if (!(e instanceof LivingEntity) || e instanceof org.bukkit.entity.Player) continue;
+            if (e.getType() == type) count++;
+        }
         return count;
     }
 
@@ -490,7 +496,7 @@ public final class SpawnerManager
         return count;
     }
 
-    private int countMobsInBounds(World world, EntityType type, int[] bounds)
+    private int countMobsInBounds(World world, int[] bounds, EntityType type)
     {
         double cx = (bounds[0] + bounds[3]) / 2.0;
         double cy = (bounds[1] + bounds[4]) / 2.0;
@@ -499,14 +505,55 @@ public final class SpawnerManager
         double ry = (bounds[4] - bounds[1]) / 2.0 + 1;
         double rz = (bounds[5] - bounds[2]) / 2.0 + 1;
 
-        Collection<Entity> nearby = world.getNearbyEntities(new Location(world, cx, cy, cz), rx, ry, rz);
         int count = 0;
-        for (Entity e : nearby)
+        for (Entity e : world.getNearbyEntities(new Location(world, cx, cy, cz), rx, ry, rz))
         {
             if (!(e instanceof LivingEntity) || e instanceof org.bukkit.entity.Player) continue;
             if (e.getType() == type) count++;
         }
         return count;
+    }
+
+    /**
+     * Removes excess mobs of the spawner's type down to the mob limit.
+     * Handles the case where mobs accumulated (e.g. via unloaded-chunk bypass)
+     * and need to be actively culled rather than just blocked from spawning.
+     */
+    private void cullExcessMobs(@NotNull Spawner s, int excess)
+    {
+        World world = Bukkit.getWorld(s.world());
+        if (world == null) return;
+
+        EntityType type = parseEntityType(s.mobType());
+        if (type == null) return;
+
+        int[] bounds = regionBoundsCache.get(s.id());
+        if (bounds == null) return;
+
+        double cx = (bounds[0] + bounds[3]) / 2.0;
+        double cy = (bounds[1] + bounds[4]) / 2.0;
+        double cz = (bounds[2] + bounds[5]) / 2.0;
+        double rx = (bounds[3] - bounds[0]) / 2.0 + 1;
+        double ry = (bounds[4] - bounds[1]) / 2.0 + 1;
+        double rz = (bounds[5] - bounds[2]) / 2.0 + 1;
+
+        int removed = 0;
+        for (Entity e : world.getNearbyEntities(new Location(world, cx, cy, cz), rx, ry, rz))
+        {
+            if (removed >= excess) break;
+            if (!(e instanceof LivingEntity) || e instanceof org.bukkit.entity.Player) continue;
+            if (e.getType() == type)
+            {
+                e.remove();
+                removed++;
+            }
+        }
+    }
+
+    private static @Nullable EntityType parseEntityType(@NotNull String name)
+    {
+        try { return EntityType.valueOf(name.toUpperCase(java.util.Locale.ROOT)); }
+        catch (IllegalArgumentException e) { return null; }
     }
 
     /** Returns true if the location is inside a WorldGuard region whose id contains "spawner". */
@@ -531,6 +578,19 @@ public final class SpawnerManager
         return regionBoundsCache.get(spawnerId);
     }
 
+    /** Returns true if any player is within 128 blocks of the spawner (i.e. the region chunks are loaded). */
+    private boolean hasNearbyPlayer(@NotNull Spawner s)
+    {
+        World world = Bukkit.getWorld(s.world());
+        if (world == null) return false;
+        Location center = new Location(world, s.x(), s.y(), s.z());
+        for (org.bukkit.entity.Player p : world.getPlayers())
+        {
+            if (p.getLocation().distanceSquared(center) <= 128.0 * 128.0) return true;
+        }
+        return false;
+    }
+
     /**
      * Attempts to spawn a mob for the given spawner. Checks the mob cap, rolls
      * the spawn chance, and finds a safe random location within 2 blocks XZ of center.
@@ -539,7 +599,19 @@ public final class SpawnerManager
      */
     private void doSpawn(@NotNull Spawner s)
     {
-        if (countNearbyMobs(s) >= s.mobLimit()) return;
+        // Don't spawn when no players are within 128 blocks — chunks may be unloaded,
+        // causing countNearbyMobs to return 0 even when the cap is full.
+        // Uses proximity rather than exact region bounds so it works even when
+        // the WG region bounds cache is empty or the player is just outside the region.
+        if (!hasNearbyPlayer(s)) return;
+        int current = countNearbyMobs(s);
+        if (current > s.mobLimit())
+        {
+            // Cull excess mobs that built up (e.g. from the unloaded-chunk bypass).
+            cullExcessMobs(s, current - s.mobLimit());
+            return;
+        }
+        if (current >= s.mobLimit()) return;
         if (RANDOM.nextDouble() * 100.0 >= s.spawnChance()) return;
 
         EntityType type;

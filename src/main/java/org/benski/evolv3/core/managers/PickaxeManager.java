@@ -673,6 +673,27 @@ public class PickaxeManager
     }
 
     /**
+     * Scans the player's full inventory for a pickaxe and updates its lore.
+     * Used on join when the player may not be holding the pickaxe in main hand
+     * (e.g. they joined while inside an Omnitool zone on a previous session).
+     */
+    public void updateLoreFromInventory(Player player)
+    {
+        PickaxeDataCenter dataCenter = DataCenterRegistry.getInstance().getPickaxeDataCenter();
+        for (int slot = 0; slot < player.getInventory().getSize(); slot++)
+        {
+            ItemStack item = player.getInventory().getItem(slot);
+            if (item == null || item.getType() == Material.AIR) continue;
+            if (!item.getType().name().endsWith("_PICKAXE")) continue;
+            dataCenter.get(player, profile -> {
+                if (profile == null) return;
+                applyLoreAndName(player, profile, item);
+            });
+            return;
+        }
+    }
+
+    /**
      * Directly applies lore, display name, and enchant modifiers to an item using a known profile.
      * Unlike {@link #updateLore}, this does not require the item to be in the player's main hand.
      *
@@ -695,7 +716,10 @@ public class PickaxeManager
 
         List<String> formattedLore = buildFormattedLoreStrings(player, profile, loreTemplate, durabilityBar);
 
-        // Blank line + durability bar — appended after statistics, before footer
+        // Insert omnitool identifier tag as the very first lore line (directly under the item name)
+        String omnitoolTag = getDefaultConfig().getString(ConfigPaths.Default.Pickaxe.OMNITOOL_LORE_TAG, "&7omnitool");
+        formattedLore.add(0, Utils.formatMessage(player, omnitoolTag));
+
         formattedLore.add("");
         String durabilityLabel = getDefaultConfig().getString(ConfigPaths.Default.Pickaxe.DURABILITY_LABEL, " &8| &#00FFFFDurability:");
         formattedLore.add(Utils.formatMessage(player, durabilityLabel));
