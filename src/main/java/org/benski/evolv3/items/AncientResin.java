@@ -1,8 +1,10 @@
 package org.benski.evolv3.items;
 
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.TextColor;
 import net.kyori.adventure.text.format.TextDecoration;
+import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
+import net.matrixcreations.libraries.MatrixColorAPI;
+import org.benski.evolv3.core.helpers.FontUtils;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.Registry;
@@ -12,6 +14,7 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
 import java.util.List;
+
 /**
  * Factory and identifier for the Ancient Resin custom item.
  * Dropped from logs in the Log Mine; used to repair pickaxes.
@@ -20,10 +23,14 @@ public final class AncientResin
 {
     /** PDC key used to tag and identify Ancient Resin items. */
     public static final NamespacedKey KEY = new NamespacedKey("evolv3", "ancient_resin");
-    private static final TextColor AMBER  = TextColor.fromHexString("#E8890A");
-    private static final TextColor WHITE  = TextColor.fromHexString("#FFFFFF");
-    private static final TextColor GRAY   = TextColor.fromHexString("#AAAAAA");
+    private static final LegacyComponentSerializer LEGACY = LegacyComponentSerializer.legacySection();
     private AncientResin() {}
+
+    private static Component ds(String message) {
+        return LEGACY.deserialize(MatrixColorAPI.process(FontUtils.toSmallCaps(message)))
+                .decoration(TextDecoration.ITALIC, false);
+    }
+
     /**
      * Creates an Ancient Resin ItemStack with the given amount.
      */
@@ -32,17 +39,13 @@ public final class AncientResin
         ItemStack item = new ItemStack(Material.HONEYCOMB, amount);
         ItemMeta meta = item.getItemMeta();
         if (meta == null) return item;
-        meta.displayName(Component.text("\u2B22 ", AMBER)
-                .append(Component.text("Ancient Resin", WHITE).decorate(TextDecoration.BOLD))
-                .decoration(TextDecoration.ITALIC, false));
+        meta.displayName(ds("&#E8890A⬢ &#FFFFFF&lAncient Resin"));
         meta.lore(List.of(
                 Component.empty(),
-                Component.text(" A hardened amber sap drawn", GRAY).decoration(TextDecoration.ITALIC, false),
-                Component.text(" from the heartwood of ancient logs.", GRAY).decoration(TextDecoration.ITALIC, false),
+                ds(" &#AAAAAA A hardened amber sap drawn"),
+                ds(" &#AAAAAA from the heartwood of ancient logs."),
                 Component.empty(),
-                Component.text(" Use: ", WHITE).decorate(TextDecoration.BOLD)
-                        .append(Component.text("Repair pickaxes", GRAY).decoration(TextDecoration.BOLD, false))
-                        .decoration(TextDecoration.ITALIC, false),
+                ds(" &#FFFFFF&lUse: &#AAAAAA Repair pickaxes"),
                 Component.empty()
         ));
         Enchantment unbreaking = Registry.ENCHANTMENT.get(NamespacedKey.minecraft("unbreaking"));
@@ -54,6 +57,7 @@ public final class AncientResin
         item.setItemMeta(meta);
         return item;
     }
+
     /**
      * Returns true if the given ItemStack is an Ancient Resin item.
      */

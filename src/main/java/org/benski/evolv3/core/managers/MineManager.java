@@ -9,6 +9,7 @@ import com.sk89q.worldedit.regions.CuboidRegion;
 import lombok.Getter;
 import org.benski.evolv3.Main;
 import org.benski.evolv3.core.constants.ConfigNames;
+import org.benski.evolv3.core.helpers.FontUtils;
 import org.benski.evolv3.core.helpers.Messageable;
 import org.benski.evolv3.core.helpers.WorldEditSelection;
 import org.benski.evolv3.registry.ConfigRegistry;
@@ -486,7 +487,7 @@ public final class MineManager
         String resetMsg = getMessage("reset-broadcast")
                 .replace("%mine%", mine.name());
         var resetComponent = net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer
-                .legacySection().deserialize(net.matrixcreations.libraries.MatrixColorAPI.process(resetMsg));
+                .legacySection().deserialize(net.matrixcreations.libraries.MatrixColorAPI.process(FontUtils.toSmallCaps(resetMsg)));
         for (Player p : Bukkit.getOnlinePlayers())
         {
             p.sendMessage(resetComponent);
@@ -728,7 +729,7 @@ public final class MineManager
                     if (world != null)
                     {
                         var component = net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer
-                                .legacySection().deserialize(net.matrixcreations.libraries.MatrixColorAPI.process(warnMsg));
+                                .legacySection().deserialize(net.matrixcreations.libraries.MatrixColorAPI.process(FontUtils.toSmallCaps(warnMsg)));
                         for (Player p : world.getPlayers())
                         {
                             if (mine.contains(p.getLocation())) p.sendMessage(component);

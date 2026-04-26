@@ -224,7 +224,7 @@ public class PickaxeLimitMenu extends BaseMenu
             }
             player.getOpenInventory().setCursor(new ItemStack(Material.AIR));
             player.playSound(player.getLocation(), Sound.BLOCK_SHULKER_BOX_CLOSE, 1.0f, 1.2f);
-            sendMessageList(player, ConfigPaths.Messages.PickaxeLimit.PICKAXE_DEPOSITED);
+            sendBar(player, ConfigPaths.Messages.PickaxeLimit.PICKAXE_DEPOSITED);
             refresh(player);
             return;
         }
@@ -249,7 +249,7 @@ public class PickaxeLimitMenu extends BaseMenu
 
             player.getInventory().setItem(i, new ItemStack(Material.AIR));
             player.playSound(player.getLocation(), Sound.BLOCK_SHULKER_BOX_CLOSE, 1.0f, 1.2f);
-            sendMessageList(player, ConfigPaths.Messages.PickaxeLimit.PICKAXE_DEPOSITED);
+            sendBar(player, ConfigPaths.Messages.PickaxeLimit.PICKAXE_DEPOSITED);
             refresh(player);
             return;
         }
@@ -296,7 +296,7 @@ public class PickaxeLimitMenu extends BaseMenu
         }
         player.getInventory().addItem(pickaxeItem);
         player.playSound(player.getLocation(), Sound.BLOCK_SHULKER_BOX_OPEN, 1.0f, 1.2f);
-        sendMessageList(player, ConfigPaths.Messages.PickaxeLimit.PICKAXE_WITHDRAWN);
+        sendBar(player, ConfigPaths.Messages.PickaxeLimit.PICKAXE_WITHDRAWN);
         refresh(player);
     }
 
@@ -665,6 +665,14 @@ public class PickaxeLimitMenu extends BaseMenu
         for (String line : lines) {
             player.sendMessage(fmt(player, line));
         }
+    }
+
+    /** Sends a single-string message from messages.yml as an action bar. */
+    private void sendBar(Player player, String path)
+    {
+        String msg = ConfigRegistry.getInstance().get(ConfigNames.MESSAGES).getString(path, "");
+        if (msg.isEmpty()) return;
+        player.sendActionBar(LegacyComponentSerializer.legacySection().deserialize(fmt(player, msg)));
     }
 
     /** Sends a message list with token replacements applied (token, value, token, value, ...). */

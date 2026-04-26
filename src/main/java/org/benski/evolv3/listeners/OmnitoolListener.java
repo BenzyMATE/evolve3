@@ -24,6 +24,8 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.event.player.PlayerItemBreakEvent;
+import org.bukkit.event.player.PlayerItemHeldEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.EquipmentSlot;
@@ -130,6 +132,52 @@ public class OmnitoolListener extends BaseListener
     {
         Player player = event.getPlayer();
         OmnitoolManager.getInstance().revertToPickaxe(player);
+        lastRegionState.remove(player.getUniqueId());
+    }
+
+    /**
+     * Bug #1: Player enters omnitool region without a pickaxe, then switches to one.
+     * Movement events won't re-fire since their position hasn't changed, so we
+     * catch the slot change here and trigger a transform if needed.
+     */
+    @EventHandler
+    public void onItemHeld(PlayerItemHeldEvent event)
+    {
+        Player player = event.getPlayer();
+        String region = lastRegionState.get(player.getUniqueId());
+        if (region == null) return;
+
+        OmnitoolManager omni = OmnitoolManager.getInstance();
+        if (omni.isInOmnitoolMode(player)) return;
+
+        Form targetForm = region.equals("axe") ? Form.AXE : Form.SWORD;
+        // Delay 1 tick so the inventory reflects the newly selected slot
+        org.bukkit.Bukkit.getScheduler().runTaskLater(plugin, () -> {
+            if (!player.isOnline()) return;
+            if (omni.isInOmnitoolMode(player)) return;
+            if (omni.transformTo(player, targetForm)) {
+                playTransformAnimation(player);
+                sendTransformMessage(player, targetForm);
+            }
+        }, 1L);
+    }
+
+    /**
+     * Bug #2: When the omnitool sword/axe breaks, clean up the stored state and
+     * restore the original pickaxe so it isn't lost.
+     */
+    @EventHandler
+    public void onItemBreak(PlayerItemBreakEvent event)
+    {
+        Player player = event.getPlayer();
+        ItemMeta meta = event.getBrokenItem().getItemMeta();
+        if (meta == null) return;
+        if (!meta.getPersistentDataContainer().has(OmnitoolManager.OMNITOOL_ITEM_KEY, PersistentDataType.STRING)) return;
+
+        // revertToPickaxe cleans activeForms/storedPickaxes; the omnitool slot is already
+        // AIR when this event fires, so the fallback path puts the pickaxe in main hand.
+        OmnitoolManager.getInstance().revertToPickaxe(player);
+        // Clear region cache so the next movement re-evaluates (will re-transform if still in region)
         lastRegionState.remove(player.getUniqueId());
     }
 

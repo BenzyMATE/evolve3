@@ -287,6 +287,46 @@ AncientResin:
   RepairCost: 5
 
 # =====================================================
+# Hunger System Configuration
+# =====================================================
+# Vanilla hunger is fully disabled. Hunger only drains
+# while mining inside a mine region. Food from mob kills
+# goes to the backpack and can be right-clicked to eat.
+# =====================================================
+Hunger:
+  # Blocks mined inside a mine region before hunger drops by 1 point (min 0, max 20)
+  BlocksPerDrain: 50
+
+  # Hunger points restored when consuming each food type.
+  # Use the exact Bukkit Material name in UPPER_SNAKE_CASE.
+  # DEFAULT is used for any food not listed below.
+  FoodRestore:
+    DEFAULT: 2
+    # Cooked meats
+    COOKED_BEEF: 8
+    COOKED_PORKCHOP: 8
+    COOKED_CHICKEN: 6
+    COOKED_MUTTON: 6
+    COOKED_RABBIT: 5
+    COOKED_COD: 5
+    COOKED_SALMON: 6
+    # Raw meats
+    RAW_BEEF: 3
+    RAW_PORKCHOP: 3
+    RAW_CHICKEN: 2
+    RAW_MUTTON: 2
+    RAW_RABBIT: 3
+    RAW_COD: 2
+    RAW_SALMON: 2
+    # Other
+    ROTTEN_FLESH: 4
+    BREAD: 5
+    APPLE: 4
+    GOLDEN_APPLE: 4
+    ENCHANTED_GOLDEN_APPLE: 4
+    SPIDER_EYE: 2
+
+# =====================================================
 # Pickaxe Storage Configuration
 # =====================================================
 PickaxeStorage:
@@ -521,6 +561,53 @@ BlockDefaults:
   GOLD_INGOT:
     XP: 20
     Sell: 12.0
+
+  # Food items (from mob kills — can be sold, smelted, or consumed)
+  RAW_BEEF:
+    XP: 0
+    Sell: 4.0
+  RAW_PORKCHOP:
+    XP: 0
+    Sell: 4.0
+  RAW_CHICKEN:
+    XP: 0
+    Sell: 3.0
+  RAW_MUTTON:
+    XP: 0
+    Sell: 3.0
+  RAW_RABBIT:
+    XP: 0
+    Sell: 3.5
+  RAW_COD:
+    XP: 0
+    Sell: 2.5
+  RAW_SALMON:
+    XP: 0
+    Sell: 3.0
+  COOKED_BEEF:
+    XP: 0
+    Sell: 8.0
+  COOKED_PORKCHOP:
+    XP: 0
+    Sell: 8.0
+  COOKED_CHICKEN:
+    XP: 0
+    Sell: 6.0
+  COOKED_MUTTON:
+    XP: 0
+    Sell: 6.0
+  COOKED_RABBIT:
+    XP: 0
+    Sell: 7.0
+  COOKED_COD:
+    XP: 0
+    Sell: 5.0
+  COOKED_SALMON:
+    XP: 0
+    Sell: 6.0
+  ROTTEN_FLESH:
+    XP: 0
+    Sell: 1.0
 
   # Nether blocks
   NETHERRACK:

@@ -224,6 +224,24 @@ public final class ConfigPaths
         }
 
         /**
+         * Custom hunger system configuration paths.
+         */
+        public static final class Hunger
+        {
+            private Hunger() {}
+
+            /** Blocks mined inside a mine region before hunger drops by 1 point. */
+            public static final String BLOCKS_PER_DRAIN     = "Hunger.BlocksPerDrain";
+
+            /**
+             * Prefix for per-material hunger restore values.
+             * Full path: {@code Hunger.FoodRestore.MATERIAL_NAME}
+             * Fallback:  {@code Hunger.FoodRestore.DEFAULT}
+             */
+            public static final String FOOD_RESTORE_PREFIX  = "Hunger.FoodRestore";
+        }
+
+        /**
          * Scoreboard configuration paths.
          */
         public static final class Scoreboard
@@ -310,6 +328,7 @@ public final class ConfigPaths
             // Ownership / durability messages
             public static final String PICKAXE_BROKEN          = "pickaxe.pickaxe-broken";
             public static final String DROP_CONFIRMATION        = "pickaxe.drop-confirmation";
+            public static final String OMNITOOL_DROP_CONFIRMATION = "pickaxe.omnitool-drop-confirmation";
             public static final String PICKUP_NEW_OWNER         = "pickaxe.pickup-new-owner";
             public static final String DURABILITY_WARNING       = "pickaxe.durability-warning";
             /** Template for the floating TextDisplay shown above a dropped pickaxe.
@@ -739,6 +758,17 @@ public final class ConfigPaths
 
             /** Lore tag appended to smeltable items in the backpack menu. Supports %result%. */
             public static final String SMELTABLE_TAG = "furnace-smelt.smeltable-tag";
+        }
+
+        /**
+         * Hunger system message paths.
+         */
+        public static final class Hunger
+        {
+            private Hunger() {}
+
+            /** Message sent when a player consumes a food item. Supports %food_name%, %hunger%. */
+            public static final String CONSUME_MESSAGE = "hunger.consume-message";
         }
     }
 

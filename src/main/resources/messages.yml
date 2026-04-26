@@ -60,6 +60,12 @@ pickaxe:
     - "  &#CCCCCCDropping this pickaxe will release your ownership."
     - "  &#FFFFFFPress Q again &#CCCCCCto confirm."
     - ""
+  omnitool-drop-confirmation:
+    - ""
+    - "  &#FF4444⚠ &lConfirm Drop"
+    - "  &#CCCCCCDropping this %evolv3_tool_label% will remove it permanently."
+    - "  &#FFFFFFPress Q again &#CCCCCCto confirm."
+    - ""
   pickup-new-owner: "  &#00FFFFYou picked up a pickaxe!"
   dropped-display-text: "&b⛏ &f&lLevel %level%  &7XP &f%xp%/%target%"
   durability-warning:
@@ -262,19 +268,11 @@ pickaxe-limit:
   insufficient-essence: "  %evolv3_prefix% &#CCCCCCNot enough resources to unlock this slot."
   insufficient-wood: "  %evolv3_prefix% &#CCCCCCYou need &#FFFFFF%required_amount% %required_wood% &#CCCCCCto unlock the next slot."
   purchase-error: "  %evolv3_prefix% &cSomething went wrong. Please try again."
-  pickaxe-deposited:
-    - ""
-    - "  &#00FFFF⛏ &lPickaxe Deposited"
-    - "  &#CCCCCCYour pickaxe has been stored safely."
-    - ""
+  pickaxe-deposited: "  &#00FFFF⛏ &#FFFFFF&lPickaxe Deposited &#888888— &#CCCCCCStored safely."
   pickaxe-not-found: "  %evolv3_prefix% &#CCCCCCPickaxe not found in your inventory."
   must-deposit-before-withdraw: "  %evolv3_prefix% &#CCCCCCDeposit your active pickaxe before withdrawing another."
   inventory-full: "  %evolv3_prefix% &cYour inventory is full."
-  pickaxe-withdrawn:
-    - ""
-    - "  &#00FFFF⛏ &lPickaxe Withdrawn"
-    - "  &#CCCCCCYour pickaxe is ready to mine."
-    - ""
+  pickaxe-withdrawn: "  &#00FFFF⛏ &#FFFFFF&lPickaxe Withdrawn &#888888— &#CCCCCCReady to mine."
   must-deposit-before-claim: "  %evolv3_prefix% &#CCCCCCDeposit your active pickaxe before claiming a new one."
   pickaxe-claimed:
     - ""
@@ -502,6 +500,12 @@ beam:
   no-selection: "  %evolv3_prefix% &cMake a WorldEdit selection first &#888888(//wand, then left/right click)&#CCCCCC."
   no-worldedit: "  %evolv3_prefix% &cWorldEdit is required. Use //wand to select two points."
   available-colours: "  &#888888Colours: &#d580ff purple&#888888, &#FFD700yellow&#888888, &#55FF55green&#888888, &#FF5555red&#888888, &#00FFFFblue"
+
+# =====================================================
+# Hunger System Messages
+# =====================================================
+hunger:
+  consume-message: "  %evolv3_prefix% &#FF8C00Consumed &#FFFFFF%food_name% &#888888(&#FFFFFF+%hunger% &#888888hunger)"
 
 # =====================================================
 # Launch Pad Messages

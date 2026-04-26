@@ -11,6 +11,8 @@ import org.benski.evolv3.listeners.BorderListener;
 import org.benski.evolv3.listeners.LaunchPadListener;
 import org.benski.evolv3.listeners.MineListener;
 import org.benski.evolv3.listeners.SpawnerListener;
+import org.benski.evolv3.listeners.FoodDropListener;
+import org.benski.evolv3.listeners.HungerListener;
 import org.benski.evolv3.listeners.OmnitoolListener;
 import org.benski.evolv3.listeners.EnchantListener;
 import org.benski.evolv3.listeners.BreakListener;
@@ -51,7 +53,9 @@ public class ListenerRegistry implements Registry<BaseListener>
             LaunchPadListener.class,
             MineListener.class,
             SpawnerListener.class,
-            OmnitoolListener.class
+            OmnitoolListener.class,
+            HungerListener.class,
+            FoodDropListener.class
     );
 
     /**

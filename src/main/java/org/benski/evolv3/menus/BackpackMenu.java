@@ -22,7 +22,8 @@ import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.benski.evolv3.core.helpers.SmeltingHelper;
-import org.bukkit.inventory.FurnaceRecipe;
+import org.benski.evolv3.listeners.HungerListener;
+import org.bukkit.event.inventory.ClickType;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.text.NumberFormat;
@@ -160,26 +161,35 @@ public class BackpackMenu extends BaseMenu
                     : fmt(player, "&#FFFFFF" + formatMaterialName(item.getMaterial()));
 
             List<String> lore = new ArrayList<>();
+            // Tags sit directly under the item name
+            if (SmeltingHelper.isSmeltable(item.getMaterial())) {
+                lore.add(fmt(player, " &8| &#FF8C00🔥 Smeltable"));
+            }
+            if (item.getMaterial().isEdible()) {
+                lore.add(fmt(player, " &8| &#FF8C00🍖 Edible"));
+            }
+            if (item.isEvolveItem()) {
+                lore.add(fmt(player, " &8| &#9932CC✦ Enchant Drop"));
+            }
+            // Stats section
             lore.add("");
             lore.add(fmt(player, " &#FFFFFF&lItem"));
             lore.add(fmt(player, " &8| &#00FFFFAmount: &#FFFFFF" + formatAmount(item.getAmount())));
             lore.add(fmt(player, " &8| &#00FFFFValue: &#FFD700⛁ &#FFD700" + formatCoins(getItemValue(item))));
-            if (item.isEvolveItem()) {
-                lore.add(fmt(player, " &8| &#9932CC✦ Enchant Drop"));
+            if (item.getMaterial().isEdible()) {
+                FileConfiguration defCfg = ConfigRegistry.getInstance().get(ConfigNames.DEFAULT);
+                int specific = defCfg.getInt(ConfigPaths.Default.Hunger.FOOD_RESTORE_PREFIX + "." + item.getMaterial().name(), -1);
+                int fills = specific >= 0 ? specific : defCfg.getInt(ConfigPaths.Default.Hunger.FOOD_RESTORE_PREFIX + ".DEFAULT", 2);
+                lore.add(fmt(player, " &8| &#FF8C00Fills: &#FFFFFF+" + fills));
             }
-            if (SmeltingHelper.isSmeltable(item.getMaterial())) {
-                FurnaceRecipe recipe = SmeltingHelper.getRecipe(item.getMaterial());
-                String resultName = recipe != null ? formatMaterialName(recipe.getResult().getType()) : "?";
-                FileConfiguration messages = ConfigRegistry.getInstance().get(ConfigNames.MESSAGES);
-                String smeltTag = messages.getString(ConfigPaths.Messages.FurnaceSmelt.SMELTABLE_TAG,
-                                " &8| &#FF8C00🔥 Smeltable &#888888→ &#FFFFFF%result%")
-                        .replace("%result%", resultName);
-                lore.add(fmt(player, smeltTag));
-            }
+            // Actions section
             lore.add("");
             lore.add(isSelected
                     ? fmt(player, " &8| &#FF5555Left-Click &#AAAAAAto deselect")
                     : fmt(player, " &8| &aLeft-Click &#AAAAAAto select"));
+            if (item.getMaterial().isEdible()) {
+                lore.add(fmt(player, " &8| &aRight-Click &#AAAAAAto consume"));
+            }
             lore.add("");
 
             ItemStack displayItem = new ItemBuilder(displayMaterial)
@@ -291,6 +301,30 @@ public class BackpackMenu extends BaseMenu
             List<BackpackItem> items = profile.backpack.getItems();
 
             if (itemIndex >= items.size()) {
+                return true;
+            }
+
+            BackpackItem item = items.get(itemIndex);
+
+            // Right-click on an edible item → consume one, restore hunger
+            if (event.getClick() == ClickType.RIGHT && item.getMaterial().isEdible()) {
+                if (player.getFoodLevel() >= 20) {
+                    player.sendMessage(org.benski.evolv3.core.helpers.Utils.formatMessage(player,
+                            "%evolv3_prefix% &#FF5555You are not hungry!"));
+                    player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
+                    return true;
+                }
+                profile.backpack.consumeMaterial(item.getMaterial(), 1);
+                profile.save(null);
+                HungerListener.applyFoodRestore(player, item.getMaterial());
+                selected.remove(itemIndex);
+                if (profile.backpack.getItems().isEmpty()) {
+                    closeMenu(player);
+                } else {
+                    int maxPage = Math.max(0, getTotalPages(profile.backpack) - 1);
+                    if (page > maxPage) currentPage.put(player.getUniqueId(), maxPage);
+                    refresh(player);
+                }
                 return true;
             }
 

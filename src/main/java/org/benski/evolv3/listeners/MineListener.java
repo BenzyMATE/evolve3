@@ -28,6 +28,7 @@ import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.benski.evolv3.core.constants.ConfigNames;
+import org.benski.evolv3.core.helpers.FontUtils;
 import org.benski.evolv3.core.helpers.Messageable;
 import org.benski.evolv3.registry.ConfigRegistry;
 import org.bukkit.Bukkit;
@@ -259,8 +260,8 @@ public class MineListener extends BaseListener
 
     private void showTitle(Player player, String titleText, String subtitleText)
     {
-        Component title = LEGACY.deserialize(net.matrixcreations.libraries.MatrixColorAPI.process(titleText));
-        Component subtitle = LEGACY.deserialize(net.matrixcreations.libraries.MatrixColorAPI.process(subtitleText));
+        Component title = LEGACY.deserialize(net.matrixcreations.libraries.MatrixColorAPI.process(FontUtils.toSmallCaps(titleText)));
+        Component subtitle = LEGACY.deserialize(net.matrixcreations.libraries.MatrixColorAPI.process(FontUtils.toSmallCaps(subtitleText)));
         player.showTitle(Title.title(title, subtitle,
                 Title.Times.times(Duration.ofMillis(200), Duration.ofMillis(1400), Duration.ofMillis(400))));
     }
@@ -297,7 +298,7 @@ public class MineListener extends BaseListener
             raw = msgCfg.getString("mine.cave-discovered-broadcast", raw);
         }
         raw = raw.replace("%player%", discoverer.getName());
-        String processed = net.matrixcreations.libraries.MatrixColorAPI.process(raw);
+        String processed = net.matrixcreations.libraries.MatrixColorAPI.process(FontUtils.toSmallCaps(raw));
         net.kyori.adventure.text.Component text = LEGACY.deserialize(processed);
 
         // Spawn the entity — visible to everyone by default

@@ -428,6 +428,7 @@ public class PickaxeManager
                 ConfigPaths.Messages.Pickaxe.EVOLVE_ESSENCE_REWARD, 250);
         profile.currentEssence  += essenceReward;
         playerProfile.essence   += essenceReward;
+        checkEssence(profile, player);
 
         profile.save(null);
         playerProfile.save(null);

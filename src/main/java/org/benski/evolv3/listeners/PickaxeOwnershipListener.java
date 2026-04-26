@@ -145,7 +145,7 @@ public class PickaxeOwnershipListener extends BaseListener
                           .has(OmnitoolManager.OMNITOOL_ITEM_KEY, org.bukkit.persistence.PersistentDataType.STRING);
 
         if (isOmnitool) {
-            // Same two-step confirmation as a pickaxe drop, but no ownership release needed
+            // Two-step confirmation for omnitool drop — no ownership release needed
             if (confirmedDropPlayers.remove(playerUuid)) {
                 dropConfirmationExpiry.remove(playerUuid);
                 return; // allow the drop on second press
@@ -154,7 +154,10 @@ public class PickaxeOwnershipListener extends BaseListener
             dropConfirmationExpiry.put(playerUuid, System.currentTimeMillis() + 5_000);
             confirmedDropPlayers.add(playerUuid);
             FileConfiguration messages = ConfigRegistry.getInstance().get(ConfigNames.MESSAGES);
-            List<String> promptLines = messages.getStringList(ConfigPaths.Messages.Pickaxe.DROP_CONFIRMATION);
+            List<String> promptLines = messages.getStringList(ConfigPaths.Messages.Pickaxe.OMNITOOL_DROP_CONFIRMATION);
+            if (promptLines.isEmpty()) {
+                promptLines = messages.getStringList(ConfigPaths.Messages.Pickaxe.DROP_CONFIRMATION);
+            }
             for (String line : promptLines) {
                 player.sendMessage(Utils.formatMessage(player, line));
             }
