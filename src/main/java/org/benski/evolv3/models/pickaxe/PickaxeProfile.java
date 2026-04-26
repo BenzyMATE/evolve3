@@ -97,6 +97,13 @@ public class PickaxeProfile extends MongoDocument
     public PickaxeEnchants enchants = new PickaxeEnchants();
 
     /**
+     * The prestige level of this pickaxe (0 = no prestige, max from config).
+     * Each prestige unlocks an extra evolution stone socket and increases the
+     * essence/atom discovery multiplier.
+     */
+    public int prestige = 0;
+
+    /**
      * Saved durability damage value (0 = full, higher = more damaged).
      * Persisted so durability survives deposit/withdraw cycles.
      */
@@ -136,6 +143,7 @@ public class PickaxeProfile extends MongoDocument
         profile.evolutionAtoms = config.getInt(ConfigPaths.Default.Pickaxe.DEFAULT_EVOLUTION_ATOMS, 0);
         profile.atomTarget = config.getInt(ConfigPaths.Default.Atoms.DEFAULT_ATOM_TARGET, 100);
         profile.evolutionRolls = 0;
+        profile.prestige = 0;
         profile.enchants = new PickaxeEnchants();
 
         return profile;
@@ -208,6 +216,7 @@ public class PickaxeProfile extends MongoDocument
         doc.put("targetEssence", targetEssence);
         doc.put("enchants", enchants.toDocument());
         doc.put("durability", durability);
+        doc.put("prestige", prestige);
         return doc;
     }
 
@@ -236,6 +245,7 @@ public class PickaxeProfile extends MongoDocument
                         .getInt(ConfigPaths.Default.Pickaxe.DEFAULT_ESSENCE_TARGET, 100);
 
         this.durability = document.getInteger("durability", 0);
+        this.prestige   = document.getInteger("prestige", 0);
 
         Document enchantsDoc = document.get("enchants", Document.class);
         if (enchantsDoc != null) {

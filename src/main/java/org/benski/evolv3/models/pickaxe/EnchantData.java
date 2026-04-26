@@ -4,7 +4,6 @@ import org.benski.evolv3.core.interfaces.MongoSubDocument;
 import org.benski.evolv3.core.managers.EnchantAnimationConfig;
 import org.bson.Document;
 
-import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -14,8 +13,8 @@ import java.util.List;
  */
 public class EnchantData implements MongoSubDocument
 {
-    /** The number of evolution stone sockets each enchant supports. */
-    public static final int SOCKET_COUNT = 3;
+    /** Maximum possible evolution stone sockets per enchant (requires max prestige to unlock all). */
+    public static final int MAX_SOCKET_COUNT = 5;
 
     /**
      * The internal name of the enchantment (e.g., "efficiency", "frostbite").
@@ -46,9 +45,10 @@ public class EnchantData implements MongoSubDocument
     /**
      * Evolution stone sockets. Each element is the rarity display name of the applied stone
      * (e.g. {@code "Common"}), or {@code null} if the socket is empty.
-     * Array length is always {@value #SOCKET_COUNT}.
+     * Array length is always {@value #MAX_SOCKET_COUNT}; only the first
+     * {@link #getUnlockedSlotCount(int)} slots are usable based on pickaxe prestige.
      */
-    public String[] socketStones = new String[SOCKET_COUNT];
+    public String[] socketStones = new String[MAX_SOCKET_COUNT];
 
     /**
      * Default constructor for deserialization.
@@ -100,6 +100,17 @@ public class EnchantData implements MongoSubDocument
     }
 
     /**
+     * Returns the number of usable socket slots for the given prestige level.
+     * Starts at 1 and increases by 1 per prestige, capped at {@value #MAX_SOCKET_COUNT}.
+     *
+     * @param prestige the pickaxe prestige level (0 = no prestige)
+     * @return number of unlocked socket slots
+     */
+    public static int getUnlockedSlotCount(int prestige) {
+        return Math.min(1 + prestige, MAX_SOCKET_COUNT);
+    }
+
+    /**
      * Returns {@code true} if the given rarity is socketed in any slot of this enchant.
      *
      * @param rarity the rarity display name to check (e.g. {@code "Common"})
@@ -115,7 +126,7 @@ public class EnchantData implements MongoSubDocument
     /**
      * Returns how many sockets are currently occupied by a stone.
      *
-     * @return number of non-null socket slots (0–{@value #SOCKET_COUNT})
+     * @return number of non-null socket slots (0–{@value #MAX_SOCKET_COUNT})
      */
     public int getSocketedCount() {
         int count = 0;
@@ -123,6 +134,20 @@ public class EnchantData implements MongoSubDocument
             if (s != null) count++;
         }
         return count;
+    }
+
+    /**
+     * Returns the first empty unlocked socket index for the given prestige, or -1 if all are full.
+     *
+     * @param prestige the pickaxe prestige level
+     * @return index of the first empty socket, or -1
+     */
+    public int getFirstEmptySocket(int prestige) {
+        int unlocked = getUnlockedSlotCount(prestige);
+        for (int i = 0; i < unlocked; i++) {
+            if (socketStones[i] == null) return i;
+        }
+        return -1;
     }
 
     /**
@@ -137,7 +162,11 @@ public class EnchantData implements MongoSubDocument
         // maxLevel and maxChance are config-driven — not persisted so config changes
         // always take effect without a DB migration.
         doc.put("enabled", enabled);
-        doc.put("sockets", Arrays.asList(socketStones[0], socketStones[1], socketStones[2]));
+        List<String> socketList = new java.util.ArrayList<>(MAX_SOCKET_COUNT);
+        for (int i = 0; i < MAX_SOCKET_COUNT; i++) {
+            socketList.add(socketStones[i]);
+        }
+        doc.put("sockets", socketList);
         return doc;
     }
 
@@ -159,10 +188,11 @@ public class EnchantData implements MongoSubDocument
         this.maxLevel  = EnchantAnimationConfig.getEnchantMaxLevel(displayName);
         this.maxChance = EnchantAnimationConfig.getEnchantMaxChance(displayName);
 
-        // Deserialize socket stones (null elements are valid — they represent empty sockets)
+        // Deserialize socket stones (null elements are valid — they represent empty sockets).
+        // Handles documents saved before MAX_SOCKET_COUNT was expanded to 5 (fills with null).
         List<String> sockets = document.getList("sockets", String.class);
         if (sockets != null) {
-            for (int i = 0; i < SOCKET_COUNT && i < sockets.size(); i++) {
+            for (int i = 0; i < MAX_SOCKET_COUNT && i < sockets.size(); i++) {
                 this.socketStones[i] = sockets.get(i);
             }
         }

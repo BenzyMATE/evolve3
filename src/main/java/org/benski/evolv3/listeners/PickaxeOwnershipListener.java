@@ -153,21 +153,7 @@ public class PickaxeOwnershipListener extends BaseListener
             event.setCancelled(true);
             dropConfirmationExpiry.put(playerUuid, System.currentTimeMillis() + 5_000);
             confirmedDropPlayers.add(playerUuid);
-            FileConfiguration messages = ConfigRegistry.getInstance().get(ConfigNames.MESSAGES);
-            List<String> promptLines = messages.getStringList(ConfigPaths.Messages.Pickaxe.OMNITOOL_DROP_CONFIRMATION);
-            if (promptLines.isEmpty()) {
-                promptLines = messages.getStringList(ConfigPaths.Messages.Pickaxe.DROP_CONFIRMATION);
-            }
-            for (String line : promptLines) {
-                player.sendMessage(Utils.formatMessage(player, line));
-            }
-            Bukkit.getScheduler().runTaskLater(plugin, () -> {
-                Long expiry = dropConfirmationExpiry.get(playerUuid);
-                if (expiry != null && System.currentTimeMillis() >= expiry) {
-                    dropConfirmationExpiry.remove(playerUuid);
-                    confirmedDropPlayers.remove(playerUuid);
-                }
-            }, DROP_CONFIRM_TICKS);
+            sendDropConfirmation(player, playerUuid, Utils.formatMessage(player, "%evolv3_tool_label%"));
             return;
         }
 
@@ -185,21 +171,7 @@ public class PickaxeOwnershipListener extends BaseListener
         event.setCancelled(true);
         dropConfirmationExpiry.put(playerUuid, System.currentTimeMillis() + 5_000);
         confirmedDropPlayers.add(playerUuid);
-
-        FileConfiguration messages = ConfigRegistry.getInstance().get(ConfigNames.MESSAGES);
-        List<String> promptLines = messages.getStringList(ConfigPaths.Messages.Pickaxe.DROP_CONFIRMATION);
-        for (String line : promptLines) {
-            player.sendMessage(Utils.formatMessage(player, line));
-        }
-
-        // Expire the confirmation window after 5 s
-        Bukkit.getScheduler().runTaskLater(plugin, () -> {
-            Long expiry = dropConfirmationExpiry.get(playerUuid);
-            if (expiry != null && System.currentTimeMillis() >= expiry) {
-                dropConfirmationExpiry.remove(playerUuid);
-                confirmedDropPlayers.remove(playerUuid);
-            }
-        }, DROP_CONFIRM_TICKS);
+        sendDropConfirmation(player, playerUuid, "Pickaxe");
     }
 
     // ─── Pickup → New Owner ───────────────────────────────────────────────────
@@ -404,6 +376,22 @@ public class PickaxeOwnershipListener extends BaseListener
     }
 
     // ─── Helpers ──────────────────────────────────────────────────────────────
+
+    /** Sends the shared drop confirmation prompt, replacing {tool} with the tool label. */
+    private void sendDropConfirmation(Player player, UUID playerUuid, String toolLabel) {
+        FileConfiguration messages = ConfigRegistry.getInstance().get(ConfigNames.MESSAGES);
+        List<String> promptLines = messages.getStringList(ConfigPaths.Messages.Pickaxe.DROP_CONFIRMATION);
+        for (String line : promptLines) {
+            player.sendMessage(Utils.formatMessage(player, line.replace("{tool}", toolLabel)));
+        }
+        Bukkit.getScheduler().runTaskLater(plugin, () -> {
+            Long expiry = dropConfirmationExpiry.get(playerUuid);
+            if (expiry != null && System.currentTimeMillis() >= expiry) {
+                dropConfirmationExpiry.remove(playerUuid);
+                confirmedDropPlayers.remove(playerUuid);
+            }
+        }, DROP_CONFIRM_TICKS);
+    }
 
     /**
      * Releases a player's ownership of a pickaxe by removing it from their stored pickaxes.

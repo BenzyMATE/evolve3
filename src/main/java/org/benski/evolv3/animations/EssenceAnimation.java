@@ -125,7 +125,7 @@ public class EssenceAnimation extends BaseAnimation
 
         // Trail effect
         if (currentTick % 2 == 0) {
-            spawnParticle(particleLocation, Particle.DRAGON_BREATH, 1, 0.03, 0.03, 0.03, 0.005, 1.0f);
+            spawnParticle(particleLocation, Particle.FALLING_OBSIDIAN_TEAR, 1, 0.05, 0.05, 0.05, 0);
         }
 
         // Enchanting sparkles during loop phase

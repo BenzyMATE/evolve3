@@ -60,7 +60,8 @@ public class StoneSocketMenu extends BaseMenu
 
     // Layout constants
     private static final int SLOT_ENCHANT_HEADER = 4;
-    private static final int[] SOCKET_SLOTS      = {11, 13, 15};
+    /** All possible socket slot positions (up to MAX_SOCKET_COUNT). Prestige unlocks each in order. */
+    private static final int[] SOCKET_SLOTS      = {11, 12, 13, 14, 15};
     private static final int SLOT_BACK           = 22;
 
     /** Per-player state: which enchant display name this player is currently viewing. */
@@ -95,8 +96,7 @@ public class StoneSocketMenu extends BaseMenu
 
     @Override
     protected String getMenuTitle(Player player) {
-        String name = pendingEnchants.getOrDefault(player.getUniqueId(), "Enchant");
-        return "&8&#00FFFF✦ &f&l" + name + " &8\u2014 &7Sockets";
+        return "&8Sockets";
     }
 
     @Override
@@ -132,11 +132,16 @@ public class StoneSocketMenu extends BaseMenu
         }
 
         // Slot 4: Enchant header
-        inventory.setItem(SLOT_ENCHANT_HEADER, buildEnchantHeader(player, displayName, enchant));
+        int unlockedSlots = EnchantData.getUnlockedSlotCount(profile.prestige);
+        inventory.setItem(SLOT_ENCHANT_HEADER, buildEnchantHeader(player, displayName, enchant, unlockedSlots));
 
-        // Slots 11, 13, 15: Socket 1, 2, 3
+        // Show unlocked socket slots based on pickaxe prestige
         for (int i = 0; i < SOCKET_SLOTS.length; i++) {
-            inventory.setItem(SOCKET_SLOTS[i], buildSocketItem(player, displayName, enchant, i));
+            if (i < unlockedSlots) {
+                inventory.setItem(SOCKET_SLOTS[i], buildSocketItem(player, displayName, enchant, i));
+            } else {
+                inventory.setItem(SOCKET_SLOTS[i], buildLockedSocketItem(player, i));
+            }
         }
 
         // Slot 22: Back button
@@ -181,6 +186,9 @@ public class StoneSocketMenu extends BaseMenu
 
         PickaxeProfile profile = pickaxeDataCenter.getLocal(player);
         if (profile == null) return;
+
+        // Reject clicks on locked slots
+        if (socketIndex >= EnchantData.getUnlockedSlotCount(profile.prestige)) return;
 
         EnchantData enchant = profile.enchants.getEnchant(displayName.toLowerCase());
         if (enchant == null) return;
@@ -241,7 +249,7 @@ public class StoneSocketMenu extends BaseMenu
         }
 
         // Prevent the same rarity from being socketed twice (design: one stone per tier)
-        for (int i = 0; i < EnchantData.SOCKET_COUNT; i++) {
+        for (int i = 0; i < EnchantData.MAX_SOCKET_COUNT; i++) {
             if (i != socketIndex && rarityName.equals(enchant.socketStones[i])) {
                 player.sendMessage(formatMessage(player,
                         "%evolv3_prefix% &#CCCCCCYou already have a &#00FFFF" + rarityName
@@ -267,7 +275,7 @@ public class StoneSocketMenu extends BaseMenu
     // Item builders
     // -------------------------------------------------------------------------
 
-    private ItemStack buildEnchantHeader(Player player, String displayName, EnchantData enchant) {
+    private ItemStack buildEnchantHeader(Player player, String displayName, EnchantData enchant, int unlockedSlots) {
         ItemStack item = EnchantAnimationConfig.createEnchantItem(displayName);
         ItemMeta  meta = item.getItemMeta();
         if (meta == null) return item;
@@ -286,7 +294,7 @@ public class StoneSocketMenu extends BaseMenu
         lore.add(format(player, " &#FFFFFF&lStatistics"));
         if (enchant != null) {
             lore.add(format(player, " &8| &#888888Level: &#FFFFFF" + enchant.level + " &8/ &7" + enchant.maxLevel));
-            lore.add(format(player, " &8| &#888888Sockets: &#FFFFFF" + enchant.getSocketedCount() + " &8/ &73"));
+            lore.add(format(player, " &8| &#888888Sockets: &#FFFFFF" + enchant.getSocketedCount() + " &8/ &7" + unlockedSlots));
         } else {
             lore.add(format(player, " &8| &#FF5555This enchant has not been unlocked."));
         }
@@ -373,6 +381,26 @@ public class StoneSocketMenu extends BaseMenu
             for (String line : howToLines) {
                 lore.add(format(player, line));
             }
+            lore.add(Component.empty());
+            meta.lore(lore);
+            item.setItemMeta(meta);
+        }
+        return item;
+    }
+
+    private ItemStack buildLockedSocketItem(Player player, int socketIndex) {
+        // socketIndex is 0-based; slot i is unlocked at prestige i (getUnlockedSlotCount = 1 + prestige)
+        int requiredPrestige = socketIndex;
+        ItemStack item = new ItemStack(Material.RED_STAINED_GLASS_PANE);
+        ItemMeta  meta = item.getItemMeta();
+        if (meta != null) {
+            meta.displayName(format(player, "&#FF4444&lLocked Socket"));
+            List<Component> lore = new ArrayList<>();
+            lore.add(Component.empty());
+            lore.add(format(player, " &#888888Requires &#FFD700Prestige " + requiredPrestige));
+            lore.add(Component.empty());
+            lore.add(format(player, " &#888888Prestige your pickaxe to"));
+            lore.add(format(player, " &#888888unlock this socket slot."));
             lore.add(Component.empty());
             meta.lore(lore);
             item.setItemMeta(meta);

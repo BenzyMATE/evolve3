@@ -70,6 +70,7 @@ public class Evolv3Command extends BaseCommand
         delegates.put("beam", new BeamCommand(plugin));
         delegates.put("launchpad", new LaunchPadCommand(plugin));
         delegates.put("spawner", new SpawnerCommand(plugin));
+        delegates.put("statistic", new StatisticCommand(plugin));
 
         // Rank commands
         setRankCommand = new SetRankCommand(plugin);
@@ -536,7 +537,7 @@ public class Evolv3Command extends BaseCommand
             "help", "reload", "info",
             "mine", "border", "beam", "launchpad", "spawner",
             "rank",
-            "backpack", "resetpickaxes", "resetprofile", "stone", "setbackpack");
+            "backpack", "resetpickaxes", "resetprofile", "stone", "setbackpack", "statistic");
 
     @Override
     public @Nullable List<String> getTabCompletion(@NotNull CommandSender sender, @NotNull Command command,

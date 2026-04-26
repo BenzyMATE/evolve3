@@ -175,7 +175,7 @@ public class Utils
     public static String buildDurabilityBar(int damage, int maxDurability)
     {
         if (maxDurability <= 0) return "&#00FF88Full";
-        double ratio = 1.0 - (double) damage / maxDurability;
+        double ratio = Math.max(0.0, Math.min(1.0, 1.0 - (double) damage / maxDurability));
         int filled = (int) Math.round(ratio * 8);
         String barColor = ratio > 0.6 ? "&#00FF88" : ratio > 0.3 ? "&#FFAA00" : "&#FF4444";
         // Strip embedded color codes so barColor controls the fill colour

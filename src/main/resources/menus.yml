@@ -557,6 +557,43 @@ Furnace Smelt Menu:
 # =====================================================
 
 # =====================================================
+# Prestige Confirm Menu
+# Tokens: {next_prestige}, {current_prestige}, {required_level}, {new_cap}, {mult}, {count}, {plural}
+# =====================================================
+Prestige Confirm Menu:
+  Confirm:
+    Name: "&#55FF55&l✔ &lConfirm Prestige"
+    Lore:
+      - ""
+      - " &#55FF55&lRewards"
+      - " &8| &#FFFFFF+1 &#888888evolution stone socket"
+      - " &8| &#FFFFFF+1 &#888888evolution stone &#444444(Rare minimum)"
+      - " &8| &#FFFFFF×{mult} &#888888essence amd atom discovery"
+      - ""
+      - " &#55FF55&lInformation"
+      - " &8| &#888888Pickaxe resets to &#FFFFFFWooden"
+      - " &8| &#888888Level & enchants &#FFFFFFcleared"
+      - " &8| &#888888New level cap: &#FFFFFF{new_cap}"
+      - ""
+      - " &aLeft-click &#888888to confirm your prestige."
+  Info:
+    Name: "&#FFD700✪ &lPrestige {next_prestige}"
+    Lore:
+      - ""
+      - " &#FFD700&lInformation"
+      - " &#888888Current prestige: &#FFD700{current_prestige}"
+      - " &#888888Required level: &#FFFFFF{required_level}"
+      - " &#888888New level cap: &#FFFFFF{new_cap}"
+      - " &#888888Multiplier: &#FFFFFF×{mult}"
+      - ""
+    FinalPrestigeLine: " &#FFD700&lFinal prestige tier."
+  Cancel:
+    Name: "&#FF4444&l✖ Cancel"
+  SocketWarning:
+    - " &#FFAA00⚠ &#FFFFFF{count} &#888888socketed stone{plural} will be returned"
+    - "   &#888888to your inventory."
+
+# =====================================================
 # Item Properties:
 # =====================================================
 # material: MATERIAL_NAME   (required)

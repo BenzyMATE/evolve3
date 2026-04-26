@@ -16,6 +16,7 @@ import org.benski.evolv3.models.pickaxe.PickaxeProfile;
 import org.benski.evolv3.datacenters.PlayerDataCenter;
 import org.benski.evolv3.models.player.PlayerProfile;
 import org.benski.evolv3.registry.DataCenterRegistry;
+import org.bukkit.Bukkit;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
@@ -130,6 +131,14 @@ public class PlaceholderAPIExpansion extends PlaceholderExpansion
             return handleMinePlaceholder(params.substring(5));
         }
 
+        if (params.equals("online")) {
+            return String.valueOf(Bukkit.getOnlinePlayers().size());
+        }
+
+        if (params.equals("max_players")) {
+            return String.valueOf(Bukkit.getMaxPlayers());
+        }
+
         if (params.equals("tool_label")) {
             OmnitoolManager omni = OmnitoolManager.getInstance();
             if (omni.isInOmnitoolMode(player)) {
@@ -227,6 +236,7 @@ public class PlaceholderAPIExpansion extends PlaceholderExpansion
             case "atom_target" -> String.valueOf(profile.atomTarget);
             case "atom_percentage" -> calculatePercentage(profile.evolutionAtoms, profile.atomTarget);
             case "atom_progressbar" -> Utils.generateProgressBar(profile.evolutionAtoms, profile.atomTarget);
+            case "prestige" -> String.valueOf(profile.prestige);
             case "blank" -> "";
             default -> null;
         };

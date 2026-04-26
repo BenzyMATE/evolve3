@@ -24,7 +24,7 @@
 # =====================================================
 Scoreboard:
   Enabled: true
-  Title: "&#00AFA3&lEvolve &7(0/20)"
+  Title: "&#00AFA3&lEvolve &7(%evolv3_online%/%evolv3_max_players%)"
   UpdateIntervalTicks: 5
   # Seconds to display each phase (Evo and Atoms) before animating to the other
   EvoAtomToggleSeconds: 5
@@ -47,6 +47,7 @@ Scoreboard:
     - " &8| &#888888Backpack: &#FFFFFF%evolv3_player_backpack_items%&#888888/&#FFFFFF%evolv3_player_backpack_size%"
     - "%evolv3_pickaxe_blank%"
     - " &#CCCCCC%evolv3_tool_label% &8(&#00FFFF&lEvo %evolv3_pickaxe_evolution%&8)"
+    - " %evolv3_pickaxe_prestige_line%"
     - " &8| &#888888Level: &#FFFFFF%evolv3_pickaxe_level%      &#00FF88%evolv3_pickaxe_percentage%"
     - " &8| %evolv3_pickaxe_progressbar% &7&7 "
     - ""
@@ -125,12 +126,14 @@ Pickaxe:
 
   # Main lore template - uses PlaceholderAPI placeholders
   # %evolv3_pickaxe_enchants% is replaced with the formatted enchant list
+  # %evolv3_pickaxe_prestige_lore% is replaced with the prestige line (or nothing if not prestige'd)
   Lore:
     - ''
     - ' &#FFFFFF&lEnchantments'
     - ' %evolv3_pickaxe_enchants%'
     - ''
     - ' &#FFFFFF&lStatistics'
+    - ' %evolv3_pickaxe_prestige_lore%'
     - ' &8| &#00FFFFLevel: &#FFFFFF%evolv3_pickaxe_level%'
     - ' &8| &#00FFFFXP: &#FFFFFF%evolv3_pickaxe_xp%&#888888/&#FFFFFF%evolv3_pickaxe_target%'
     - ' &8| &#00FFFFProgress: &#00FF88%evolv3_pickaxe_percentage%'
@@ -146,6 +149,25 @@ Pickaxe:
   Hologram:
     Enabled: true
     Text: '&#00FFFF+ %xp% &#FFFFFF&lXP'
+
+# =====================================================
+# Prestige Configuration
+# =====================================================
+Prestige:
+  # Maximum number of prestiges a player can achieve (0 = no prestige system)
+  MaxPrestige: 5
+  # Levels required per prestige tier (prestige 1 = 100, prestige 2 = 200, etc.)
+  LevelRequirementPerPrestige: 100
+  # Essence and atom multiplier added per prestige on top of the base 1.0x
+  # Option A: prestige 1 = 2x, prestige 2 = 3x, prestige 5 = 6x
+  MultiplierPerPrestige: 1.0
+  # Maximum number of evolution stone sockets per enchant (unlocked 1 per prestige, starting at 1)
+  MaxSocketSlots: 5
+  # Rarity weight boost (%) applied to Epic and Legendary when rolling prestige stones
+  StoneBoost:
+    MinRarity: Rare
+    EpicBonus: 10
+    LegendaryBonus: 10
 
 # =====================================================
 # Omnitool Configuration
@@ -361,8 +383,10 @@ Backpack:
   Size: 100
   # Backpack display name (supports PlaceholderAPI)
   Name: '&#8B4513🎒 &#FFFFFF&l%evolv3_player_name% &#8B4513Backpack'
-  # Message when backpack is full
+  # Message when backpack is full (legacy action bar fallback, unused when FullTitle is set)
   FullMessage: '&#FF4444&lBACKPACK FULL &#AAAAAA- &#FFFFFF&lSELL ITEMS'
+  FullTitle: '&c&lBackpack Full'
+  FullSubtitle: '&cSell your items to keep mining.'
   # Backpack item lore (supports placeholders)
   Lore:
     - ''

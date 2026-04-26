@@ -136,6 +136,9 @@ public class EvolutionAnimation3 implements EvolutionAnimation
         World world  = eye.getWorld();
         if (world == null) return;
 
+        // Dramatic intro overlay — shown only to the evolving player
+        player.spawnParticle(Particle.ELDER_GUARDIAN, player.getLocation(), 1);
+
         Vector forward = eye.getDirection().setY(0).normalize();
         crystalCenter = eye.clone().add(forward.multiply(3.5)).subtract(0, 0.5, 0);
 
@@ -315,6 +318,17 @@ public class EvolutionAnimation3 implements EvolutionAnimation
         if (currentTick > EMERGE_END && currentTick <= FLOAT_END) {
             float dy = (float)(Math.sin(currentTick * 0.17) * 0.065);
             driftItem(exitPickaxeDisplay, exitPickaxeFinalPos, dy);
+            // Firefly particles drifting around the animation area
+            if (currentTick % 3 == 0) {
+                double rx = (ThreadLocalRandom.current().nextDouble() - 0.5) * 4;
+                double ry = ThreadLocalRandom.current().nextDouble() * 2.5;
+                double rz = (ThreadLocalRandom.current().nextDouble() - 0.5) * 4;
+                player.spawnParticle(Particle.GLOW, crystalCenter.clone().add(rx, ry, rz), 1, 0, 0, 0, 0);
+            }
+            if (currentTick % 6 == 0) {
+                player.spawnParticle(Particle.SPORE_BLOSSOM_AIR,
+                        crystalCenter.clone().add(0, 1, 0), 5, 1.5, 1.0, 1.5, 0);
+            }
             if (currentTick % 5 == 0) {
                 player.spawnParticle(Particle.DUST, exitPickaxeFinalPos.clone().add(0, dy, 0), 2, 0.1, 0.1, 0.1, 0,
                         new Particle.DustOptions(winningRarity.particleColor(), 1.2f));

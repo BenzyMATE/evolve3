@@ -219,7 +219,11 @@ public class BackpackMenu extends BaseMenu
         double totalValue = calculateTotalSelectedValue(player, backpack);
         double multiplier = getHelmetMultiplier(player);
         double finalValue = totalValue * multiplier;
-        int selectedCount = selected.size();
+        List<BackpackItem> allItems = backpack.getItems();
+        int selectedCount = selected.stream()
+                .filter(idx -> idx < allItems.size())
+                .mapToInt(idx -> allItems.get(idx).getAmount())
+                .sum();
         boolean hasSelection = selectedCount > 0;
 
         List<String> sellLore = new ArrayList<>();
@@ -234,7 +238,7 @@ public class BackpackMenu extends BaseMenu
                 : fmt(player, " &8| &#FF5555Select items first"));
         sellLore.add("");
 
-        ItemStack sellItem = new ItemBuilder(hasSelection ? Material.EMERALD : Material.GRAY_STAINED_GLASS_PANE)
+        ItemStack sellItem = new ItemBuilder(hasSelection ? Material.EMERALD : Material.BARRIER)
                 .name(hasSelection
                         ? fmt(player, "&#FFD700⛁ &#FFD700&lSell Selected")
                         : fmt(player, "&#888888⛁ &#888888&lSell Selected"))

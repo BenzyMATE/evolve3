@@ -191,6 +191,9 @@ public class EnchantAnimation extends BaseEnchantAnimation
         World world = playerLoc.getWorld();
         if (world == null) return;
 
+        // Dramatic intro jumpscare overlay — shown only to the animating player
+        player.spawnParticle(Particle.ELDER_GUARDIAN, playerLoc, 1);
+
         forwardDir = player.getLocation().getDirection().setY(0).normalize();
         rightDir   = forwardDir.clone().crossProduct(new Vector(0, 1, 0)).normalize();
 
@@ -595,6 +598,7 @@ public class EnchantAnimation extends BaseEnchantAnimation
                 nonSelRemoved[r] = true;
 
                 if (resultPos[r] != null) {
+                    world.spawnParticle(Particle.POOF, resultPos[r], 10, 0.25, 0.25, 0.25, 0.05);
                     world.playSound(resultPos[r], Sound.ENTITY_ITEM_PICKUP, 0.6f, 1.8f);
                 }
             }

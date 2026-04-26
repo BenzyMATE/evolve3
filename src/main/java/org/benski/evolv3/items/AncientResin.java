@@ -22,7 +22,7 @@ import java.util.List;
 public final class AncientResin
 {
     /** PDC key used to tag and identify Ancient Resin items. */
-    public static final NamespacedKey KEY = new NamespacedKey("evolv3", "ancient_resin");
+    public static  final NamespacedKey KEY = new NamespacedKey("evolv3", "ancient_resin");
     private static final LegacyComponentSerializer LEGACY = LegacyComponentSerializer.legacySection();
     private AncientResin() {}
 

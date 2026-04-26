@@ -130,6 +130,54 @@ public final class EvolutionStone
         return item;
     }
 
+    /**
+     * Creates a prestige Evolution Stone with no enchant binding.
+     * These stones can be socketed into any enchant socket slot.
+     *
+     * @param rarity the rarity tier of the stone
+     * @return a new {@link ItemStack} representing the unbound prestige stone
+     */
+    public static ItemStack createUnbound(RarityConfig rarity) {
+        String rarityHex = String.format("%06X", rarity.textColor().value());
+        FileConfiguration cfg = ConfigRegistry.getInstance().get(ConfigNames.STONES);
+
+        String stoneNameTemplate = cfg != null ? cfg.getString(ConfigPaths.Stones.Item.NAME, "&#{hex}◆ &l{stone_name}") : "&#{hex}◆ &l{stone_name}";
+        String rarityLineTemplate = cfg != null ? cfg.getString(ConfigPaths.Stones.Item.RARITY_LINE, " &#{hex}&l{rarity} &#888888Evolution Stone") : " &#{hex}&l{rarity} &#888888Evolution Stone";
+        List<String> applyHint = cfg != null ? cfg.getStringList(ConfigPaths.Stones.Item.APPLY_HINT) : List.of(" &#555555Apply via the Pickaxe Menu.", " &#555555Socket into any enchant slot.");
+
+        String stoneName = rarity.displayName() + " Evolution Stone";
+
+        ItemStack item = new ItemStack(Material.NETHER_STAR);
+        ItemMeta meta = item.getItemMeta();
+        if (meta == null) return item;
+
+        meta.displayName(ds(stoneNameTemplate
+                .replace("{hex}", rarityHex)
+                .replace("{stone_name}", stoneName)));
+
+        List<Component> lore = new ArrayList<>();
+        lore.add(ds(rarityLineTemplate.replace("{hex}", rarityHex).replace("{rarity}", rarity.displayName())));
+        lore.add(ds(" &#888888Prestige Reward &#444444— &#888888Any Enchant"));
+        lore.add(Component.empty());
+        for (String hint : applyHint) {
+            lore.add(ds(hint));
+        }
+        meta.lore(lore);
+
+        meta.getPersistentDataContainer().set(KEY_RARITY, PersistentDataType.STRING, rarity.displayName());
+        meta.getPersistentDataContainer().set(KEY_TYPE,   PersistentDataType.STRING, TYPE_VALUE);
+        // Intentionally no KEY_ENCHANT — unbound stones can go into any socket
+
+        Enchantment glow = Registry.ENCHANTMENT.get(NamespacedKey.minecraft("unbreaking"));
+        if (glow != null) {
+            meta.addEnchant(glow, 1, true);
+        }
+        meta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
+
+        item.setItemMeta(meta);
+        return item;
+    }
+
     // -------------------------------------------------------------------------
     // Identification helpers
     // -------------------------------------------------------------------------

@@ -88,6 +88,29 @@ public class PickaxeDataCenter extends BaseDataCenter<PickaxeProfile>
     }
 
     /**
+     * Silently loads a pickaxe profile into the cache if it is not already present.
+     * Used at player join to pre-warm stored pickaxes so the /pickaxe menu shows
+     * full lore immediately without a "not loaded" fallback.
+     *
+     * @param player     the owning player (used for {@code initialize})
+     * @param pickaxeId  the pickaxe UUID string to load
+     */
+    public void tryPreload(Player player, String pickaxeId) {
+        if (pickaxeId == null || pickaxeId.isEmpty() || data.containsKey(pickaxeId)) return;
+        mongoManager.getByIdAsync("Pickaxes", "id", pickaxeId, PickaxeProfile.class)
+                .thenAcceptAsync(profile -> {
+                    if (profile == null) return;
+                    profile.initialize(player);
+                    data.put(pickaxeId, profile);
+                }, org.benski.evolv3.core.managers.TaskManager.getInstance()::runSync)
+                .exceptionally(e -> {
+                    org.benski.evolv3.Main.getInstance().getLogger()
+                            .warning("Failed to preload pickaxe " + pickaxeId + ": " + e.getMessage());
+                    return null;
+                });
+    }
+
+    /**
      * Saves all cached pickaxe profiles and blocks until every save completes (or times out).
      * Should be called during plugin disable to prevent data loss on shutdown.
      * Waits up to 10 seconds for all saves to finish before returning.

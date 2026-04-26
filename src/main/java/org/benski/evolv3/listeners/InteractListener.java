@@ -1,6 +1,9 @@
 package org.benski.evolv3.listeners;
 
 import org.benski.evolv3.core.abstracts.BaseListener;
+import org.benski.evolv3.core.managers.PickaxeManager;
+import org.benski.evolv3.core.managers.PrestigeManager;
+import org.benski.evolv3.models.pickaxe.PickaxeProfile;
 import org.benski.evolv3.registry.MenuRegistry;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.player.PlayerInteractEvent;
@@ -21,9 +24,9 @@ public class InteractListener extends BaseListener
     }
 
     /**
-     * When a player right-clicks while holding a pickaxe.
-     *
-     * @param event The event that holds player data.
+     * When a player right-clicks (or shift+right-clicks) while holding a pickaxe.
+     * Shift+right-click opens the prestige confirm menu if the pickaxe is eligible;
+     * otherwise opens the normal pickaxe menu.
      */
     @EventHandler
     public void openPickaxeMenu(PlayerInteractEvent event)
@@ -32,13 +35,23 @@ public class InteractListener extends BaseListener
         if (event.getAction().isLeftClick()) return;
 
         var player = event.getPlayer();
+        if (!player.getInventory().getItemInMainHand().getType().toString().contains("PICKAXE")) return;
 
-        if (player.getInventory().getItemInMainHand().getType().toString().contains("PICKAXE"))
-        {
-            var menu = menuRegistry.get("pickaxe");
-            if (menu != null) {
-                menu.openMenu(player);
+        if (player.isSneaking()) {
+            PickaxeProfile profile = PrestigeManager.getInstance().getLocalProfile(player);
+            if (profile != null && PickaxeManager.getInstance().isPrestigeAvailable(profile)) {
+                var menu = menuRegistry.get("prestige_confirm");
+                if (menu != null) {
+                    event.setCancelled(true);
+                    menu.openMenu(player);
+                }
+                return;
             }
+        }
+
+        var menu = menuRegistry.get("pickaxe");
+        if (menu != null) {
+            menu.openMenu(player);
         }
     }
 }

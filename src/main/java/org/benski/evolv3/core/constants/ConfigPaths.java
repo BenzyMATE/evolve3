@@ -198,7 +198,9 @@ public final class ConfigPaths
 
             public static final String SIZE = "Backpack.Size";
             public static final String NAME = "Backpack.Name";
-            public static final String FULL_MESSAGE = "Backpack.FullMessage";
+            public static final String FULL_MESSAGE  = "Backpack.FullMessage";
+            public static final String FULL_TITLE    = "Backpack.FullTitle";
+            public static final String FULL_SUBTITLE = "Backpack.FullSubtitle";
             public static final String LORE = "Backpack.Lore";
             public static final String CUSTOM_MODEL_DATA = "Backpack.CustomModelData";
             /** Prefix for per-tier slot caps. Append the CustomModelData value (e.g. "Backpack.Tiers.2"). */
@@ -267,6 +269,22 @@ public final class ConfigPaths
 
             /** Text shown on the rank line when the player can afford to rankup (animates in/out). */
             public static final String RANKUP_TOGGLE_TEXT      = "Scoreboard.RankupToggleText";
+        }
+
+        /**
+         * Prestige configuration paths.
+         */
+        public static final class Prestige
+        {
+            private Prestige() {}
+
+            public static final String MAX_PRESTIGE           = "Prestige.MaxPrestige";
+            public static final String LEVEL_PER_PRESTIGE     = "Prestige.LevelRequirementPerPrestige";
+            public static final String MULTIPLIER_PER_PRESTIGE = "Prestige.MultiplierPerPrestige";
+            public static final String MAX_SOCKET_SLOTS       = "Prestige.MaxSocketSlots";
+            public static final String EPIC_BONUS             = "Prestige.StoneBoost.EpicBonus";
+            public static final String LEGENDARY_BONUS        = "Prestige.StoneBoost.LegendaryBonus";
+            public static final String MIN_STONE_RARITY       = "Prestige.StoneBoost.MinRarity";
         }
 
         /**
@@ -365,6 +383,18 @@ public final class ConfigPaths
 
             // Enchant selection messages
             public static final String ENCHANT_SELECTION_ALREADY_ACTIVE = "enchant-selection.already-active";
+
+            // Prestige messages
+            public static final String PRESTIGE_ACTION_BAR    = "pickaxe.prestige.action-bar";
+            public static final String PRESTIGE_LORE_LINE     = "pickaxe.prestige.lore-line";
+            public static final String PRESTIGE_SCOREBOARD_LINE = "pickaxe.prestige.scoreboard-line";
+            public static final String PRESTIGE_SUCCESS       = "pickaxe.prestige.success";
+            public static final String PRESTIGE_STONE_GAINED  = "pickaxe.prestige.stone-gained";
+            public static final String PRESTIGE_CONFIRM_TITLE = "pickaxe.prestige.confirm-title";
+            public static final String PRESTIGE_STONE_SELECT_TITLE = "pickaxe.prestige.stone-select-title";
+            public static final String PRESTIGE_ALREADY_MAX   = "pickaxe.prestige.already-max";
+            public static final String PRESTIGE_NOT_ELIGIBLE  = "pickaxe.prestige.not-eligible";
+            public static final String PRESTIGE_ERROR         = "pickaxe.prestige.error";
         }
 
         /**
@@ -394,6 +424,21 @@ public final class ConfigPaths
             public static final String INVALID_ARGUMENTS = "errors.invalid-arguments";
             /** Sent when a menu type is not registered. Supports %menu% placeholder. */
             public static final String MENU_NOT_FOUND = "errors.menu-not-found";
+        }
+
+        /**
+         * Statistic command messages (/e statistic).
+         */
+        public static final class Statistic
+        {
+            private Statistic() {}
+
+            public static final String SUCCESS          = "statistic.success";
+            public static final String PLAYER_NOT_FOUND = "statistic.player-not-found";
+            public static final String PROFILE_NOT_LOADED = "statistic.profile-not-loaded";
+            public static final String UNKNOWN_TYPE     = "statistic.unknown-type";
+            public static final String UNKNOWN_STAT     = "statistic.unknown-stat";
+            public static final String INVALID_AMOUNT   = "statistic.invalid-amount";
         }
 
         /**
@@ -620,9 +665,10 @@ public final class ConfigPaths
         {
             private JoinMessage() {}
 
-            public static final String ENABLED      = "join-message.enabled";
-            public static final String SKIN_PADDING = "join-message.skin-padding";
-            public static final String LINES        = "join-message.lines";
+            public static final String ENABLED          = "join-message.enabled";
+            public static final String SKIN_PADDING     = "join-message.skin-padding";
+            public static final String LINES            = "join-message.lines";
+            public static final String FIRST_JOIN_LINES = "join-message.first-join-lines";
         }
 
         /**
@@ -697,7 +743,9 @@ public final class ConfigPaths
             public static final String PICKAXE_DEPOSITED = "pickaxe-limit.pickaxe-deposited";
             public static final String PICKAXE_NOT_FOUND = "pickaxe-limit.pickaxe-not-found";
             public static final String MUST_DEPOSIT_BEFORE_WITHDRAW = "pickaxe-limit.must-deposit-before-withdraw";
-            public static final String INVENTORY_FULL = "pickaxe-limit.inventory-full";
+            public static final String INVENTORY_FULL          = "pickaxe-limit.inventory-full";
+            public static final String INVENTORY_FULL_TITLE    = "pickaxe-limit.inventory-full-title";
+            public static final String INVENTORY_FULL_SUBTITLE = "pickaxe-limit.inventory-full-subtitle";
             public static final String PICKAXE_WITHDRAWN = "pickaxe-limit.pickaxe-withdrawn";
             public static final String MUST_DEPOSIT_BEFORE_CLAIM = "pickaxe-limit.must-deposit-before-claim";
             public static final String PICKAXE_CLAIMED = "pickaxe-limit.pickaxe-claimed";
@@ -1015,6 +1063,23 @@ public final class ConfigPaths
             public static final String TITLE                = "Furnace Smelt Menu.Title";
             /** Server ticks to smelt one item. Vanilla = 200. Default = 20 (10× faster). */
             public static final String SMELT_TICKS_PER_ITEM = "Furnace Smelt Menu.SmeltTicksPerItem";
+        }
+
+        /**
+         * Prestige confirmation menu item paths.
+         * Tokens: {next_prestige}, {current_prestige}, {required_level}, {new_cap}, {mult}, {count}, {plural}
+         */
+        public static final class PrestigeConfirm
+        {
+            private PrestigeConfirm() {}
+
+            public static final String CONFIRM_NAME    = "Prestige Confirm Menu.Confirm.Name";
+            public static final String CONFIRM_LORE    = "Prestige Confirm Menu.Confirm.Lore";
+            public static final String INFO_NAME       = "Prestige Confirm Menu.Info.Name";
+            public static final String INFO_LORE       = "Prestige Confirm Menu.Info.Lore";
+            public static final String INFO_FINAL_LINE = "Prestige Confirm Menu.Info.FinalPrestigeLine";
+            public static final String CANCEL_NAME     = "Prestige Confirm Menu.Cancel.Name";
+            public static final String SOCKET_WARNING  = "Prestige Confirm Menu.SocketWarning";
         }
 
     }

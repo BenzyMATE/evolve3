@@ -97,6 +97,55 @@ public class PickaxeManager
     }
 
     /**
+     * Returns the configured maximum prestige level.
+     *
+     * @return the max prestige (default 5)
+     */
+    public int getMaxPrestige() {
+        return getDefaultConfig().getInt(ConfigPaths.Default.Prestige.MAX_PRESTIGE, 5);
+    }
+
+    /**
+     * Returns the level cap for the given prestige tier.
+     * At max prestige there is no cap (returns 0, meaning unlimited).
+     *
+     * @param prestige the current prestige level
+     * @return the level cap, or 0 if at max prestige
+     */
+    public int getLevelCap(int prestige) {
+        if (prestige >= getMaxPrestige()) return 0;
+        int levelPerPrestige = getDefaultConfig().getInt(ConfigPaths.Default.Prestige.LEVEL_PER_PRESTIGE, 100);
+        return (prestige + 1) * levelPerPrestige;
+    }
+
+    /**
+     * Returns the essence/atom discovery multiplier for the given prestige level.
+     * Formula: {@code 1.0 + (prestige * multiplierPerPrestige)}
+     * Defaults to P0=1.0x, P1=2.0x … P5=6.0x with the default config value of 1.0.
+     *
+     * @param prestige the pickaxe prestige level
+     * @return the total multiplier (always &gt;= 1.0)
+     */
+    public double getPrestigeMultiplier(int prestige) {
+        if (prestige <= 0) return 1.0;
+        double perPrestige = getDefaultConfig().getDouble(ConfigPaths.Default.Prestige.MULTIPLIER_PER_PRESTIGE, 1.0);
+        return 1.0 + (prestige * perPrestige);
+    }
+
+    /**
+     * Returns {@code true} if the player is currently eligible to prestige.
+     *
+     * @param profile the pickaxe profile to test
+     * @return true when prestige &lt; max and level &gt;= level cap
+     */
+    public boolean isPrestigeAvailable(PickaxeProfile profile) {
+        int maxPrestige = getMaxPrestige();
+        if (profile.prestige >= maxPrestige) return false;
+        int cap = getLevelCap(profile.prestige);
+        return cap > 0 && profile.level >= cap;
+    }
+
+    /**
      * Adds statistics to a player's pickaxe when mining a block.
      * Handles XP gain with armor multipliers, level checks, and lore updates.
      *
@@ -130,10 +179,18 @@ public class PickaxeManager
 
             checkLevel(profile, player, playerProfile);
 
-            String actionBar = getDefaultConfig().getString(ConfigPaths.Default.Pickaxe.ACTION_BAR, "");
-            if (!actionBar.isEmpty()) {
-                String formatted = Utils.formatMessage(player, actionBar);
+            if (isPrestigeAvailable(profile)) {
+                String prestigeBar = getMessagesConfig().getString(
+                        ConfigPaths.Messages.Pickaxe.PRESTIGE_ACTION_BAR,
+                        "&5&l⚡ PRESTIGE AVAILABLE &5&l⚡");
+                String formatted = Utils.formatMessage(player, prestigeBar);
                 player.sendActionBar(LegacyComponentSerializer.legacySection().deserialize(formatted));
+            } else {
+                String actionBar = getDefaultConfig().getString(ConfigPaths.Default.Pickaxe.ACTION_BAR, "");
+                if (!actionBar.isEmpty()) {
+                    String formatted = Utils.formatMessage(player, actionBar);
+                    player.sendActionBar(LegacyComponentSerializer.legacySection().deserialize(formatted));
+                }
             }
         });
     }
@@ -208,11 +265,27 @@ public class PickaxeManager
      */
     public void checkLevel(PickaxeProfile profile, Player player, PlayerProfile playerProfile)
     {
+        // Enforce level cap when not at max prestige
+        int levelCap = getLevelCap(profile.prestige);
+        if (levelCap > 0 && profile.level >= levelCap) {
+            profile.xp = profile.target - 1;
+            profile.save(null);
+            return;
+        }
+
         if (profile.xp < profile.target) {
             return;
         }
 
+        double prestigeMultiplier = getPrestigeMultiplier(profile.prestige);
+
         while (profile.xp >= profile.target) {
+            // Enforce cap before leveling up
+            if (levelCap > 0 && profile.level >= levelCap) {
+                profile.xp = profile.target - 1;
+                break;
+            }
+
             // Level up!
             int oldLevel = profile.level;
             profile.level++;
@@ -222,10 +295,10 @@ public class PickaxeManager
             double xpMultiplier = getDefaultConfig().getDouble(ConfigPaths.Default.Pickaxe.XP_MULTIPLIER, 1.15);
             profile.target = Math.max(1, (int) (profile.target * xpMultiplier));
 
-            // Calculate essence reward with chestplate multiplier
+            // Calculate essence reward with chestplate and prestige multipliers
             int essenceReward = calculateEssenceReward(profile.level);
             double chestplateMultiplier = getChestplateMultiplier(player);
-            essenceReward = (int) Math.round(essenceReward * chestplateMultiplier);
+            essenceReward = (int) Math.round(essenceReward * chestplateMultiplier * prestigeMultiplier);
 
             // Add essence to pickaxe
             profile.currentEssence += essenceReward;
@@ -247,8 +320,9 @@ public class PickaxeManager
 
             checkEssence(profile, player);
 
-            // Award atoms for this level-up
-            int atomReward = getDefaultConfig().getInt(ConfigPaths.Default.Atoms.LEVEL_UP_REWARD, 2);
+            // Award atoms for this level-up (prestige multiplier applies)
+            int atomReward = (int) Math.round(
+                    getDefaultConfig().getInt(ConfigPaths.Default.Atoms.LEVEL_UP_REWARD, 2) * prestigeMultiplier);
             profile.evolutionAtoms += atomReward;
 
             // Check atom threshold for evolution
@@ -653,7 +727,8 @@ public class PickaxeManager
                 .replace("%evolv3_pickaxe_enchant_rolls%", Utils.formatNumber(profile.enchantRolls))
                 .replace("%evolv3_pickaxe_evolution_atoms%", Utils.formatNumber(profile.evolutionAtoms))
                 .replace("%evolv3_pickaxe_atom_target%", Utils.formatNumber(profile.atomTarget))
-                .replace("%evolv3_pickaxe_evolution_rolls%", Utils.formatNumber(profile.evolutionRolls));
+                .replace("%evolv3_pickaxe_evolution_rolls%", Utils.formatNumber(profile.evolutionRolls))
+                .replace("%evolv3_pickaxe_prestige%", String.valueOf(profile.prestige));
     }
 
     /**
@@ -770,6 +845,18 @@ public class PickaxeManager
         for (String line : template) {
             if (line.contains("%evolv3_pickaxe_enchants%")) {
                 handleEnchantsLore(profile, result, player);
+            } else if (line.contains("%evolv3_pickaxe_prestige_lore%")) {
+                if (profile.prestige > 0) {
+                    String prestigeLine = getMessagesConfig().getString(
+                            ConfigPaths.Messages.Pickaxe.PRESTIGE_LORE_LINE,
+                            " &8| &5Prestige &d%prestige%");
+                    double mult = getPrestigeMultiplier(profile.prestige);
+                    prestigeLine = prestigeLine
+                            .replace("%prestige%", String.valueOf(profile.prestige))
+                            .replace("%multiplier%", String.format("%.1f", mult));
+                    result.add(Utils.formatMessage(player, substitutePlaceholders(prestigeLine, profile, durabilityBar)));
+                }
+                // prestige == 0 → skip the line entirely
             } else {
                 result.add(Utils.formatMessage(player, substitutePlaceholders(line, profile, durabilityBar)));
             }
@@ -831,18 +918,24 @@ public class PickaxeManager
                 levelDisplay = String.valueOf(enchant.level);
             }
 
-            // Build stone socket icons — only filled sockets
+            // Build stone socket icons — only shown when at least one stone is socketed
+            int unlockedSockets = EnchantData.getUnlockedSlotCount(profile.prestige);
             StringBuilder stoneIconsBuilder = new StringBuilder();
-            for (String stoneRarity : enchant.socketStones) {
+            boolean hasSocketed = false;
+            for (int si = 0; si < unlockedSockets; si++) {
+                String stoneRarity = enchant.socketStones[si];
                 if (stoneRarity != null) {
+                    hasSocketed = true;
                     RarityConfig stoneRarConfig = EnchantAnimationConfig.getRarityByName(stoneRarity);
                     String sHex = stoneRarConfig != null
                             ? String.format("%06X", stoneRarConfig.textColor().value())
                             : "FFFFFF";
                     stoneIconsBuilder.append("&#").append(sHex).append("◆");
+                } else {
+                    stoneIconsBuilder.append("&#444444◆");
                 }
             }
-            String stoneIcons = stoneIconsBuilder.length() > 0 ? stoneIconsBuilder + " " : "";
+            String stoneIcons = hasSocketed ? stoneIconsBuilder + " " : "";
 
             // " &8| [stone icons][rarity-color][Name] [level]"
             String enchantLine = " &8| " + stoneIcons + rarityColor + displayName + " " + levelDisplay;

@@ -4,6 +4,9 @@ import lombok.experimental.ExtensionMethod;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.TextDecoration;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
+import net.kyori.adventure.title.Title;
+
+import java.time.Duration;
 import org.benski.evolv3.core.abstracts.BaseMenu;
 import org.benski.evolv3.core.builders.ItemBuilder;
 import org.benski.evolv3.core.constants.ConfigNames;
@@ -269,8 +272,7 @@ public class PickaxeLimitMenu extends BaseMenu
         }
 
         if (player.getInventory().firstEmpty() == -1) {
-            sendMessage(player, ConfigPaths.Messages.PickaxeLimit.INVENTORY_FULL,
-                    "%evolv3_prefix% &cYour inventory is full.");
+            showInventoryFullTitle(player);
             return;
         }
 
@@ -313,8 +315,7 @@ public class PickaxeLimitMenu extends BaseMenu
         }
 
         if (player.getInventory().firstEmpty() == -1) {
-            sendMessage(player, ConfigPaths.Messages.PickaxeLimit.INVENTORY_FULL,
-                    "%evolv3_prefix% &cYour inventory is full.");
+            showInventoryFullTitle(player);
             return;
         }
 
@@ -335,7 +336,7 @@ public class PickaxeLimitMenu extends BaseMenu
         player.getInventory().addItem(pickaxeItem);
         recordClaim(player);
         player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.0f);
-        sendMessageList(player, ConfigPaths.Messages.PickaxeLimit.PICKAXE_CLAIMED);
+        sendBar(player, ConfigPaths.Messages.PickaxeLimit.PICKAXE_CLAIMED);
         refresh(player);
     }
 
@@ -675,6 +676,17 @@ public class PickaxeLimitMenu extends BaseMenu
         player.sendActionBar(LegacyComponentSerializer.legacySection().deserialize(fmt(player, msg)));
     }
 
+    /** Shows an inventory-full title and subtitle to the player. */
+    private void showInventoryFullTitle(Player player) {
+        FileConfiguration msgs = ConfigRegistry.getInstance().get(ConfigNames.MESSAGES);
+        String titleRaw = msgs.getString(ConfigPaths.Messages.PickaxeLimit.INVENTORY_FULL_TITLE, "&c&lInventory Full");
+        String subRaw   = msgs.getString(ConfigPaths.Messages.PickaxeLimit.INVENTORY_FULL_SUBTITLE, "&cMake room and try again.");
+        Component title = SERIALIZER.deserialize(fmt(player, titleRaw)).decoration(TextDecoration.ITALIC, false);
+        Component sub   = SERIALIZER.deserialize(fmt(player, subRaw)).decoration(TextDecoration.ITALIC, false);
+        player.showTitle(Title.title(title, sub,
+                Title.Times.times(Duration.ofMillis(200), Duration.ofMillis(2000), Duration.ofMillis(500))));
+    }
+
     /** Sends a message list with token replacements applied (token, value, token, value, ...). */
     private void sendMessageList(Player player, String path, String... replacements)
     {
@@ -755,7 +767,7 @@ public class PickaxeLimitMenu extends BaseMenu
         }
 
         player.playSound(player.getLocation(), Sound.BLOCK_ANVIL_USE, 1.0f, 1.2f);
-        sendMessageList(player, ConfigPaths.Messages.PickaxeLimit.REPAIR_SUCCESS);
+        sendBar(player, ConfigPaths.Messages.PickaxeLimit.REPAIR_SUCCESS);
         refresh(player);
     }
 

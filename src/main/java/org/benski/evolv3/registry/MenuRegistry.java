@@ -18,6 +18,8 @@ import org.benski.evolv3.menus.PickaxeLimitMenu;
 import org.benski.evolv3.menus.PickaxeMenu;
 import org.benski.evolv3.menus.StoneSocketMenu;
 import org.benski.evolv3.menus.PreferencesMenu;
+import org.benski.evolv3.menus.PrestigeConfirmMenu;
+import org.benski.evolv3.menus.PrestigeStoneSelectMenu;
 import org.benski.evolv3.menus.TestMenu;
 
 import java.util.List;
@@ -48,7 +50,9 @@ public class MenuRegistry implements Registry<Menu>
             EnchantOptionMenu.class,
             FurnaceSmeltMenu.class,
             StoneSocketMenu.class,
-            ExperimentalPreferencesMenu.class
+            ExperimentalPreferencesMenu.class,
+            PrestigeConfirmMenu.class,
+            PrestigeStoneSelectMenu.class
     );
 
     /**

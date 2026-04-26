@@ -10,6 +10,7 @@ import org.benski.evolv3.core.helpers.SkinRenderer;
 import org.benski.evolv3.core.helpers.Utils;
 import org.benski.evolv3.core.managers.EnchantDropManager;
 import org.benski.evolv3.core.managers.PickaxeManager;
+import org.benski.evolv3.datacenters.PickaxeDataCenter;
 import org.benski.evolv3.registry.ListenerRegistry;
 import org.benski.evolv3.core.managers.EnchantSelectionManager;
 import org.benski.evolv3.core.managers.EvolutionSelectionManager;
@@ -74,6 +75,7 @@ public class JoinListener extends BaseListener
     {
         Player player = event.getPlayer();
         String playerId = player.getUniqueId().toString();
+        boolean firstJoin = !player.hasPlayedBefore();
 
         PlayerDataCenter playerDataCenter = DataCenterRegistry.getInstance().getPlayerDataCenter();
         ArmorDataCenter armorDataCenter = DataCenterRegistry.getInstance().getArmorDataCenter();
@@ -109,11 +111,26 @@ public class JoinListener extends BaseListener
             if (player.isOnline()) PickaxeManager.getInstance().updateLoreFromInventory(player);
         }, 5L);
 
+        // Pre-warm all stored pickaxe profiles so /pickaxe shows full lore immediately.
+        // Runs at 40 ticks (2 s) to give the player profile time to load from MongoDB.
+        Bukkit.getScheduler().runTaskLater(plugin, () -> {
+            if (!player.isOnline()) return;
+            PlayerProfile profile = playerDataCenter != null ? playerDataCenter.getLocal(player) : null;
+            if (profile == null) return;
+            PickaxeDataCenter pickaxeDataCenter = DataCenterRegistry.getInstance().getPickaxeDataCenter();
+            if (pickaxeDataCenter == null) return;
+            for (String entry : profile.storedPickaxes) {
+                if (entry == null || entry.isEmpty()) continue;
+                String id = entry.split(":", 2)[0];
+                pickaxeDataCenter.tryPreload(player, id);
+            }
+        }, 40L);
+
         // Send skin join message — slight delay so the player's client is fully loaded
-        Bukkit.getScheduler().runTaskLater(plugin, () -> sendJoinMessage(player), 20L);
+        Bukkit.getScheduler().runTaskLater(plugin, () -> sendJoinMessage(player, firstJoin), 20L);
     }
 
-    private void sendJoinMessage(Player player)
+    private void sendJoinMessage(Player player, boolean firstJoin)
     {
         if (!player.isOnline()) return;
 
@@ -121,7 +138,12 @@ public class JoinListener extends BaseListener
         if (!messages.getBoolean(ConfigPaths.Messages.JoinMessage.ENABLED, true)) return;
 
         String padding = messages.getString(ConfigPaths.Messages.JoinMessage.SKIN_PADDING, "  ");
-        List<String> textLines = messages.getStringList(ConfigPaths.Messages.JoinMessage.LINES);
+        List<String> firstJoinLines = firstJoin
+                ? messages.getStringList(ConfigPaths.Messages.JoinMessage.FIRST_JOIN_LINES)
+                : List.of();
+        List<String> textLines = !firstJoinLines.isEmpty()
+                ? firstJoinLines
+                : messages.getStringList(ConfigPaths.Messages.JoinMessage.LINES);
 
         SkinRenderer.renderAsync(player, plugin, skinRows -> {
             if (!player.isOnline()) return;

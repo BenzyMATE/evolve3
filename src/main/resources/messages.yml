@@ -31,6 +31,14 @@ join-message:
     - "  &#FFEE00Atoms ⚛ %evolv3_pickaxe_evolution_atoms%"
     - "  &#FFD700Coins ⛁ %evolv3_player_coins%"
     - ""
+  first-join-lines:
+    - ""
+    - "  &#00FFFF&lWelcome, &#FFFFFF&l%evolv3_player_name%"
+    - "  &#888888Your mining journey begins now."
+    - ""
+    - "  &#CCCCCCUse &#FFFFFF/pickaxe &#CCCCCCto claim your first pickaxe."
+    - "  &#CCCCCCMine blocks to level up and unlock enchants."
+    - ""
 
 general:
   no-permission: "  %evolv3_prefix% &#CCCCCCYou don't have permission to do that."
@@ -57,14 +65,8 @@ pickaxe:
   drop-confirmation:
     - ""
     - "  &#FF4444⚠ &lConfirm Drop"
-    - "  &#CCCCCCDropping this pickaxe will release your ownership."
-    - "  &#FFFFFFPress Q again &#CCCCCCto confirm."
-    - ""
-  omnitool-drop-confirmation:
-    - ""
-    - "  &#FF4444⚠ &lConfirm Drop"
-    - "  &#CCCCCCDropping this %evolv3_tool_label% will remove it permanently."
-    - "  &#FFFFFFPress Q again &#CCCCCCto confirm."
+    - "  &#CCCCCCDropping your {tool} will release your ownership."
+    - "  &#FFFFFFPress Q again &#CCCCCCwithin 5 seconds to confirm."
     - ""
   pickup-new-owner: "  &#00FFFFYou picked up a pickaxe!"
   dropped-display-text: "&b⛏ &f&lLevel %level%  &7XP &f%xp%/%target%"
@@ -121,6 +123,37 @@ pickaxe:
       - "  &#B366D9🔥 &#B366D9+%essence% &#B366D9Essence"
       - "  %stone_color%✦ %stone_color%+1 %stone_rarity% Evolution Stone"
       - ""
+
+  prestige:
+    # Action bar shown while mining when prestige is available
+    action-bar: "&#55FF55&lPRESTIGE AVAILABLE &#888888(Shift+Right-Click)"
+    # Lore line displayed on the pickaxe when prestige > 0 (shown in Statistics section)
+    lore-line: " &8| &#FFD700✪ &#FFD700&lPrestige %prestige% &#888888(x%multiplier%)"
+    # Scoreboard line displayed when prestige > 0
+    scoreboard-line: " &8| &#FFD700✪ &#FFD700Prestige %prestige%"
+    # Broadcast/chat messages shown after a successful prestige
+    success:
+      - ""
+      - "  &#FFD700✪ &lPrestige &F&l%prestige_number%"
+      - "  &#888888Your pickaxe has transcended."
+      - ""
+      - "  &#FFFFFF&lRewards"
+      - "  &#FFFFFF+1 &#888888Evolution Stone Socket"
+      - "  &#B366D9🔥 &8& &#FFEE00⚛ &#888888Multiplier &#FFFFFFx%multiplier%"
+      - "  %stone_color%%stone_color%+1 %stone_rarity% Evolution Stone"
+      - ""
+    # Message shown when the stone from prestige is delivered to inventory
+    stone-gained: "  %evolv3_prefix% &#CCCCCCYou received a &#%rarity_color%%rarity% &#CCCCCCEvolution Stone!"
+    # Confirmation GUI title
+    confirm-title: "&8Confirm Prestige"
+    # Stone selection GUI title
+    stone-select-title: "&f&l✪ Choose Your Stone"
+    # Shown when player is already at max prestige
+    already-max: "  %evolv3_prefix% &#CCCCCCYour pickaxe is already at maximum prestige."
+    # Shown when player tries to prestige without meeting the level requirement
+    not-eligible: "  %evolv3_prefix% &#CCCCCCYour pickaxe must reach level &#FFFFFF%required_level% &#CCCCCCto prestige."
+    # Shown when prestige data couldn't be loaded
+    error: "  %evolv3_prefix% &cFailed to process prestige. Please try again."
 
 # =====================================================
 # Player Messages
@@ -272,24 +305,18 @@ pickaxe-limit:
   pickaxe-not-found: "  %evolv3_prefix% &#CCCCCCPickaxe not found in your inventory."
   must-deposit-before-withdraw: "  %evolv3_prefix% &#CCCCCCDeposit your active pickaxe before withdrawing another."
   inventory-full: "  %evolv3_prefix% &cYour inventory is full."
+  inventory-full-title: "&c&lInventory Full"
+  inventory-full-subtitle: "&cMake room and try again."
   pickaxe-withdrawn: "  &#00FFFF⛏ &#FFFFFF&lPickaxe Withdrawn &#888888— &#CCCCCCReady to mine."
   must-deposit-before-claim: "  %evolv3_prefix% &#CCCCCCDeposit your active pickaxe before claiming a new one."
-  pickaxe-claimed:
-    - ""
-    - "  &#00FFFF⛏ &lPickaxe Claimed"
-    - "  &#CCCCCCYour journey as a miner begins now."
-    - ""
+  pickaxe-claimed: "  &#00FFFF⛏ &lPickaxe Claimed &#888888— &#CCCCCCYour mining journey begins."
   must-deposit-before-craft: "  %evolv3_prefix% &#CCCCCCDeposit your active pickaxe before crafting."
   wood-consumption-error: "  %evolv3_prefix% &cFailed to consume materials. Please try again."
   pickaxe-crafted: "  %evolv3_prefix% &#00FFFFPickaxe crafted."
   craft-save-error: "  %evolv3_prefix% &cFailed to save the new pickaxe."
   claim-rate-limited: "  &#FF4444Too many claims in a short time. Please wait a moment."
   pickup-no-slots: "  &#CCCCCCYou need a free pickaxe storage slot to pick this up."
-  repair-success:
-    - ""
-    - "  &#00FFFF⛏ &lPickaxe Repaired"
-    - "  &#CCCCCCYour pickaxe is back to full durability."
-    - ""
+  repair-success: "  &#00FFFF⛏ &lPickaxe Repaired &#888888— &#CCCCCCBack to full durability."
   repair-insufficient-wood:
     - ""
     - "  &#FF4444⚠ &lNot Enough Ancient Resin"
@@ -324,6 +351,14 @@ pickup-animation:
 # =====================================================
 # Admin Command Messages (/evolve)
 # =====================================================
+statistic:
+  success: "  %evolv3_prefix% &#00FFFFSet &#FFFFFF%stat% &#00FFFFto &#FFFFFF%value% &#00FFFFfor &#FFFFFF%player%&#00FFFF."
+  player-not-found: "  %evolv3_prefix% &cPlayer not found: &#FFFFFF%player%"
+  profile-not-loaded: "  %evolv3_prefix% &cProfile not loaded for: &#FFFFFF%player%"
+  unknown-type: "  %evolv3_prefix% &cUnknown type: &#FFFFFF%type% &#888888(use pickaxe or player)"
+  unknown-stat: "  %evolv3_prefix% &cUnknown stat: &#FFFFFF%stat%"
+  invalid-amount: "  %evolv3_prefix% &cInvalid amount: &#FFFFFF%value%"
+
 admin:
   help:
     - ""

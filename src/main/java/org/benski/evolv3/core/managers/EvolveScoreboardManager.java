@@ -13,6 +13,7 @@ import org.benski.evolv3.core.types.EnchantOption;
 import org.benski.evolv3.core.types.RarityConfig;
 import org.benski.evolv3.datacenters.PickaxeDataCenter;
 import org.benski.evolv3.datacenters.PlayerDataCenter;
+import org.benski.evolv3.models.pickaxe.PickaxeProfile;
 import org.benski.evolv3.models.player.PlayerProfile;
 import org.benski.evolv3.registry.ConfigRegistry;
 import org.benski.evolv3.registry.DataCenterRegistry;
@@ -161,12 +162,14 @@ public final class EvolveScoreboardManager
         int levelLineIndex       = -1;
         int progressbarLineIndex = -1;
         int rankLineIndex        = -1;
+        int prestigeLineIndex    = -1;
         for (int i = 0; i < lineCount; i++) {
             String l = lines.get(i);
             if (l.contains("%evolv3_pickaxe_evolution%"))                                                   evoLineIndex         = i;
             if (l.contains("%evolv3_pickaxe_level%") && !l.contains("%evolv3_pickaxe_evolution%"))         levelLineIndex       = i;
             if (l.contains("%evolv3_pickaxe_progressbar%"))                                                progressbarLineIndex = i;
             if (l.contains("%evolv3_rank%"))                                                                rankLineIndex        = i;
+            if (l.contains("%evolv3_pickaxe_prestige_line%"))                                               prestigeLineIndex    = i;
         }
 
         for (int i = 0; i < lineCount; i++) {
@@ -182,7 +185,7 @@ public final class EvolveScoreboardManager
 
         states.put(player.getUniqueId(),
                 new PlayerState(board, objective, teams, lastTexts, scores, shown,
-                        evoLineIndex, levelLineIndex, progressbarLineIndex, rankLineIndex));
+                        evoLineIndex, levelLineIndex, progressbarLineIndex, rankLineIndex, prestigeLineIndex));
         player.setScoreboard(board);
     }
 
@@ -207,6 +210,14 @@ public final class EvolveScoreboardManager
         PlayerState state = states.get(player.getUniqueId());
         if (state == null) return;
 
+        // Refresh title if the resolved value changed (e.g. player count updated)
+        String titleRaw = config().getString(ConfigPaths.Default.Scoreboard.TITLE, "&3&lEvolv3");
+        String titleResolved = Utils.formatMessage(player, titleRaw);
+        if (!titleResolved.equals(state.lastTitle)) {
+            state.lastTitle = titleResolved;
+            state.objective.displayName(legacy(titleResolved));
+        }
+
         List<String> configLines = config().getStringList(ConfigPaths.Default.Scoreboard.LINES);
         int lineCount = Math.min(configLines.size(), state.teams.size());
 
@@ -224,6 +235,12 @@ public final class EvolveScoreboardManager
             // During enchant selection, level and progressbar lines are driven by tickAnimation
             if (enchantActive && i == state.levelLineIndex)       continue;
             if (enchantActive && i == state.progressbarLineIndex) continue;
+
+            // Prestige line: hide entirely when prestige == 0
+            if (i == state.prestigeLineIndex) {
+                handlePrestigeLine(player, state, i);
+                continue;
+            }
 
             String  raw           = configLines.get(i);
             boolean isPickaxeLine = raw.contains("%evolv3_pickaxe_");
@@ -1073,6 +1090,42 @@ public final class EvolveScoreboardManager
         }
     }
 
+    /**
+     * Shows or hides the prestige scoreboard line based on the player's current prestige level.
+     * When prestige == 0 the line is removed from the sidebar entirely;
+     * when prestige > 0 the line is shown with the configured prestige text.
+     */
+    private void handlePrestigeLine(Player player, PlayerState state, int lineIndex) {
+        PickaxeDataCenter pkc = DataCenterRegistry.getInstance().getPickaxeDataCenter();
+        PickaxeProfile pk = pkc != null ? pkc.getLocal(player) : null;
+        int prestige = pk != null ? pk.prestige : 0;
+
+        if (prestige == 0) {
+            if (state.lineShown[lineIndex]) {
+                state.board.resetScores(ENTRIES[lineIndex]);
+                state.lineShown[lineIndex] = false;
+                state.lastTexts.set(lineIndex, null);
+            }
+            return;
+        }
+
+        if (!state.lineShown[lineIndex]) {
+            state.objective.getScore(ENTRIES[lineIndex]).setScore(state.lineScores[lineIndex]);
+            state.lineShown[lineIndex] = true;
+        }
+
+        FileConfiguration msgs = ConfigRegistry.getInstance().get(ConfigNames.MESSAGES);
+        String raw = msgs.getString(ConfigPaths.Messages.Pickaxe.PRESTIGE_SCOREBOARD_LINE,
+                " &8| &5&lPrestige &d" + prestige);
+        String formatted = Utils.formatMessage(player,
+                raw.replace("%evolv3_pickaxe_prestige%", String.valueOf(prestige))
+                   .replace("%prestige%", String.valueOf(prestige)));
+        if (!formatted.equals(state.lastTexts.get(lineIndex))) {
+            state.lastTexts.set(lineIndex, formatted);
+            state.teams.get(lineIndex).prefix(legacy(formatted));
+        }
+    }
+
     private void startTasks() {
         int intervalTicks = config().getInt(ConfigPaths.Default.Scoreboard.UPDATE_INTERVAL_TICKS, 20);
         updateTask = Bukkit.getScheduler().runTaskTimer(plugin, () -> {
@@ -1124,6 +1177,8 @@ public final class EvolveScoreboardManager
         final int          progressbarLineIndex;
         /** Index of the rank toggle line, or -1 if not configured. */
         final int          rankLineIndex;
+        /** Index of the prestige line, or -1 if not configured. */
+        final int          prestigeLineIndex;
 
         // Evo/atom toggle animation state
         EvoAtomPhase evoAtomPhase      = EvoAtomPhase.EVO_DISPLAY;
@@ -1146,6 +1201,9 @@ public final class EvolveScoreboardManager
         String          rankAnimText      = "";
         String          rankAnimFormatted = "";
 
+        // Last rendered scoreboard title (used for diff-based title updates)
+        String lastTitle = null;
+
         // Enchant selection display state
         boolean        enchantWasActive  = false;
         int            enchantArrowTick  = 0;
@@ -1159,7 +1217,8 @@ public final class EvolveScoreboardManager
                     List<Team> teams, List<String> lastTexts,
                     int[] lineScores, boolean[] lineShown,
                     int evoLineIndex, int levelLineIndex,
-                    int progressbarLineIndex, int rankLineIndex) {
+                    int progressbarLineIndex, int rankLineIndex,
+                    int prestigeLineIndex) {
             this.board                = board;
             this.objective            = objective;
             this.teams                = teams;
@@ -1170,6 +1229,7 @@ public final class EvolveScoreboardManager
             this.levelLineIndex       = levelLineIndex;
             this.progressbarLineIndex = progressbarLineIndex;
             this.rankLineIndex        = rankLineIndex;
+            this.prestigeLineIndex    = prestigeLineIndex;
         }
     }
 }

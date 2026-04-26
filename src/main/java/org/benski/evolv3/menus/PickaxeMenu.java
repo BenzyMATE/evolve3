@@ -368,7 +368,7 @@ public class PickaxeMenu extends BaseMenu
             if (i < unlocked.size()) {
                 EnchantData enchant     = unlocked.get(i);
                 String      displayName = EnchantAnimationConfig.getDisplayName(enchant.name);
-                inventory.setItem(slot, buildUnlockedEnchantItem(player, displayName, enchant));
+                inventory.setItem(slot, buildUnlockedEnchantItem(player, displayName, enchant, profile.prestige));
             } else {
                 inventory.setItem(slot, buildEmptyEnchantSlot(player, menus));
             }
@@ -386,7 +386,7 @@ public class PickaxeMenu extends BaseMenu
      * @param enchant     the player's current enchant data
      * @return the configured ItemStack
      */
-    private ItemStack buildUnlockedEnchantItem(Player player, String displayName, EnchantData enchant)
+    private ItemStack buildUnlockedEnchantItem(Player player, String displayName, EnchantData enchant, int prestige)
     {
         var option = EnchantAnimationConfig.getOption(displayName);
         RarityConfig rarity = option != null ? option.rarity() : null;
@@ -470,9 +470,10 @@ public class PickaxeMenu extends BaseMenu
             }
             // Expand {stones} token into the stone socket block
             if (line.equals("{stones}")) {
-                lore.add(deserialize(formatMessage(player, stonesHeader)));
                 String internalEnchant = displayName.toLowerCase();
-                for (int si = 0; si < EnchantData.SOCKET_COUNT; si++) {
+                int unlockedSockets = EnchantData.getUnlockedSlotCount(prestige);
+                lore.add(deserialize(formatMessage(player, stonesHeader)));
+                for (int si = 0; si < unlockedSockets; si++) {
                     String stoneRarity = enchant.socketStones[si];
                     if (stoneRarity != null) {
                         RarityConfig stoneRarConfig = EnchantAnimationConfig.getRarityByName(stoneRarity);

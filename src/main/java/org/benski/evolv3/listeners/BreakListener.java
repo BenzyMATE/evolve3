@@ -36,9 +36,13 @@ import org.benski.evolv3.models.player.PlayerProfile;
 import org.benski.evolv3.registry.AnimationRegistry;
 import org.benski.evolv3.registry.ConfigRegistry;
 import org.benski.evolv3.registry.DataCenterRegistry;
+import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
+import net.kyori.adventure.title.Title;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Sound;
+
+import java.time.Duration;
 import org.bukkit.block.Block;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
@@ -175,8 +179,13 @@ public class BreakListener extends BaseListener
 
         if (backpack.isFull()) {
             FileConfiguration config = ConfigRegistry.getInstance().get(ConfigNames.DEFAULT);
-            String fullMessage = config.getString(ConfigPaths.Default.Backpack.FULL_MESSAGE, "&c&lBACKPACK FULL");
-            player.sendActionBar(net.kyori.adventure.text.Component.text(Utils.formatMessage(player, fullMessage)));
+            String titleRaw = config.getString(ConfigPaths.Default.Backpack.FULL_TITLE, "&c&lBackpack Full");
+            String subRaw   = config.getString(ConfigPaths.Default.Backpack.FULL_SUBTITLE, "&cSell your items to keep mining.");
+            LegacyComponentSerializer lcs = LegacyComponentSerializer.legacySection();
+            player.showTitle(Title.title(
+                    lcs.deserialize(Utils.formatMessage(player, titleRaw)),
+                    lcs.deserialize(Utils.formatMessage(player, subRaw)),
+                    Title.Times.times(Duration.ofMillis(100), Duration.ofMillis(1500), Duration.ofMillis(400))));
             player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_BASS, 1.0f, 1.0f);
             event.setCancelled(true);
             return;
@@ -580,13 +589,19 @@ public class BreakListener extends BaseListener
     {
         FileConfiguration config = ConfigRegistry.getInstance().get(ConfigNames.DEFAULT);
 
-        int minAmount  = config.getInt(ConfigPaths.Default.Atoms.DISCOVERY_MIN_AMOUNT, 1);
-        int maxAmount  = config.getInt(ConfigPaths.Default.Atoms.DISCOVERY_MAX_AMOUNT, 3);
-        int multiplier = RadioactiveEnchant.popAmountMultiplier(player.getUniqueId());
-        int amount     = Utils.amount(minAmount, maxAmount) * Math.max(1, multiplier);
+        int minAmount     = config.getInt(ConfigPaths.Default.Atoms.DISCOVERY_MIN_AMOUNT, 1);
+        int maxAmount     = config.getInt(ConfigPaths.Default.Atoms.DISCOVERY_MAX_AMOUNT, 3);
+        int rawMultiplier = RadioactiveEnchant.popAmountMultiplier(player.getUniqueId());
+        int baseAmount    = Utils.amount(minAmount, maxAmount) * Math.max(1, rawMultiplier);
 
         var pickaxeDataCenter = DataCenterRegistry.getInstance().getPickaxeDataCenter();
         if (pickaxeDataCenter == null) return;
+
+        // Apply prestige multiplier using cached local profile
+        PickaxeProfile localProfile = pickaxeDataCenter.getLocal(player);
+        double prestigeMultiplier = localProfile != null
+                ? pickaxeManager.getPrestigeMultiplier(localProfile.prestige) : 1.0;
+        int amount = (int) Math.round(baseAmount * prestigeMultiplier);
 
         pickaxeDataCenter.get(player, pickaxeProfile -> {
             if (pickaxeProfile != null) {
@@ -606,6 +621,9 @@ public class BreakListener extends BaseListener
         if (atomHologramOn && config.getBoolean(ConfigPaths.Default.Atoms.HOLOGRAM_ENABLED, true)) {
             String text = config.getString(ConfigPaths.Default.Atoms.HOLOGRAM_TEXT, "&#FFEE00⚛ &#FFFFFF&l+ %amount% &#FFEE00Atoms");
             text = text.replace("%amount%", Utils.formatNumber(amount));
+            if (localProfile != null && localProfile.prestige > 0) {
+                text += String.format(" &7(x%.1f)", prestigeMultiplier);
+            }
             animationRegistry.play("hologram", hologramLoc, List.of(player), text);
         }
     }
@@ -635,12 +653,19 @@ public class BreakListener extends BaseListener
     {
         FileConfiguration config = ConfigRegistry.getInstance().get(ConfigNames.DEFAULT);
 
-        int minAmount = config.getInt(ConfigPaths.Default.Essence.DISCOVERY_MIN_AMOUNT, 1);
-        int maxAmount = config.getInt(ConfigPaths.Default.Essence.DISCOVERY_MAX_AMOUNT, 5);
-        int amount = Utils.amount(minAmount, maxAmount) * Math.max(1, multiplier);
+        int minAmount  = config.getInt(ConfigPaths.Default.Essence.DISCOVERY_MIN_AMOUNT, 1);
+        int maxAmount  = config.getInt(ConfigPaths.Default.Essence.DISCOVERY_MAX_AMOUNT, 5);
+        int baseAmount = Utils.amount(minAmount, maxAmount) * Math.max(1, multiplier);
 
         var pickaxeDataCenter = DataCenterRegistry.getInstance().getPickaxeDataCenter();
         if (pickaxeDataCenter == null) return;
+
+        // Apply prestige multiplier using cached local profile
+        PickaxeProfile localProfile = pickaxeDataCenter.getLocal(player);
+        double prestigeMultiplier = localProfile != null
+                ? pickaxeManager.getPrestigeMultiplier(localProfile.prestige) : 1.0;
+        int amount = (int) Math.round(baseAmount * prestigeMultiplier);
+
         pickaxeDataCenter.get(player, pickaxeProfile -> {
             if (pickaxeProfile != null) {
                 // Both pools updated together so they stay in sync even if the DC lookup is slow
@@ -657,6 +682,9 @@ public class BreakListener extends BaseListener
                 && config.getBoolean(ConfigPaths.Default.Essence.HOLOGRAM_ENABLED, true)) {
             String text = config.getString(ConfigPaths.Default.Essence.HOLOGRAM_TEXT, "&#B366D9🔥 &#FFFFFF&l+ %amount% &#B366D9Essence");
             text = text.replace("%amount%", Utils.formatNumber(amount));
+            if (localProfile != null && localProfile.prestige > 0) {
+                text += String.format(" &7(x%.1f)", prestigeMultiplier);
+            }
             animationRegistry.play("hologram", hologramLoc, List.of(player), text);
         }
     }
