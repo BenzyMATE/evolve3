@@ -81,9 +81,14 @@
       "Bash(find /c -maxdepth 4 -name \"javac.exe\")",
       "Bash(\"C:\\\\Program Files\\\\Java\\\\jdk-21\\\\bin\\\\java.exe\" -version)",
       "Bash(JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64 mvn package -q)",
-      "PowerShell(Get-Command *)"
+      "PowerShell(Get-Command *)",
+      "Bash(echo \"EXIT:$?\"0)"
     ],
     "deny": [],
     "ask": []
-  }
+  },
+  "enableAllProjectMcpServers": true,
+  "enabledMcpjsonServers": [
+    "game-asset-generator"
+  ]
 }

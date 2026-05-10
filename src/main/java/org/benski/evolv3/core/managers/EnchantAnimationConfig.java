@@ -458,6 +458,12 @@ public final class EnchantAnimationConfig
         return findRarity(name);
     }
 
+    /** Returns the enchant display names belonging to the given rarity, or an empty list. */
+    public static List<String> getEnchantsForRarity(String rarityName) {
+        List<String> pool = RARITY_POOLS.get(rarityName);
+        return pool != null ? Collections.unmodifiableList(pool) : Collections.emptyList();
+    }
+
     private static RarityConfig findRarity(String key) {
         for (RarityConfig r : RARITIES) {
             if (r.displayName().equals(key)) return r;

@@ -1,4 +1,3 @@
-# =============================================================================
 # Mine Configuration
 # =============================================================================
 # Mines are cuboid regions that fill with configurable block compositions,
@@ -29,16 +28,6 @@ defaults:
   # Minimum distance (in blocks) between cave entrances.
   cave-min-distance: 20
 
-  # Placeholder items placed inside cave chests.
-  # Each entry: material (Bukkit Material name) and amount.
-  cave-rewards:
-    - material: DIAMOND
-      amount: 1
-    - material: GOLD_INGOT
-      amount: 3
-    - material: EMERALD
-      amount: 2
-
   # Whether to display a floating TextDisplay hologram above each mine.
   hologram-enabled: true
 
@@ -52,15 +41,182 @@ defaults:
   # Can be overridden per-mine with /mine hologram icon <name> <icon>.
   hologram-icon: "⛏"
 
-  # Default block composition — material name → weight (relative chance).
-  # Weights do NOT need to sum to 100; they are relative.
-  contents:
-    STONE: 60
-    COAL_ORE: 20
-    IRON_ORE: 10
-    GOLD_ORE: 5
-    DIAMOND_ORE: 3
-    EMERALD_ORE: 2
+# ---- Cave Tier Reward Tables ----
+# Tiers 1–4 define how many items appear and what rewards are available.
+# Per-mine tier is stored in localdata/mines-data.yml (cave-tier field, default 1).
+# Weights are relative — they do not need to sum to 100.
+# Supported types: MONEY, RESIN, EVOLUTION_STONE, ENCHANT_ROLL, PICKAXE_XP,
+#                  BACKPACK_SLOTS, ESSENCE, ATOMS
+cave-tiers:
+  # Tier 1 — basic resources; very rare Common/Uncommon stones possible
+  1:
+    chest-items: 5
+    rewards:
+      - type: MONEY
+        min: 100
+        max: 500
+        weight: 25
+      - type: ESSENCE
+        min: 50
+        max: 200
+        weight: 25
+      - type: ATOMS
+        min: 10
+        max: 50
+        weight: 25
+      - type: RESIN
+        min: 1
+        max: 5
+        weight: 20
+      - type: EVOLUTION_STONE
+        rarity: Common
+        min: 1
+        max: 1
+        weight: 4
+      - type: EVOLUTION_STONE
+        rarity: Uncommon
+        min: 1
+        max: 1
+        weight: 1
+
+  # Tier 2 — better amounts; Common–Rare stones possible
+  2:
+    chest-items: 5
+    rewards:
+      - type: MONEY
+        min: 300
+        max: 1500
+        weight: 20
+      - type: ESSENCE
+        min: 150
+        max: 600
+        weight: 20
+      - type: ATOMS
+        min: 30
+        max: 120
+        weight: 20
+      - type: PICKAXE_XP
+        min: 300
+        max: 1500
+        weight: 10
+      - type: RESIN
+        min: 1
+        max: 10
+        weight: 18
+      - type: EVOLUTION_STONE
+        rarity: Common
+        min: 1
+        max: 1
+        weight: 7
+      - type: EVOLUTION_STONE
+        rarity: Uncommon
+        min: 1
+        max: 1
+        weight: 4
+      - type: EVOLUTION_STONE
+        rarity: Rare
+        min: 1
+        max: 1
+        weight: 1
+
+  # Tier 3 — high amounts; Common–Epic stones possible, Epic is rare
+  3:
+    chest-items: 5
+    rewards:
+      - type: MONEY
+        min: 800
+        max: 4000
+        weight: 20
+      - type: ESSENCE
+        min: 400
+        max: 1600
+        weight: 18
+      - type: ATOMS
+        min: 80
+        max: 320
+        weight: 17
+      - type: PICKAXE_XP
+        min: 800
+        max: 4000
+        weight: 12
+      - type: RESIN
+        min: 1
+        max: 15
+        weight: 12
+      - type: EVOLUTION_STONE
+        rarity: Common
+        min: 1
+        max: 1
+        weight: 9
+      - type: EVOLUTION_STONE
+        rarity: Uncommon
+        min: 1
+        max: 1
+        weight: 6
+      - type: EVOLUTION_STONE
+        rarity: Rare
+        min: 1
+        max: 1
+        weight: 4
+      - type: EVOLUTION_STONE
+        rarity: Epic
+        min: 1
+        max: 1
+        weight: 2
+
+  # Tier 4 — best amounts; all rarities available, Epic common, Legendary rare
+  4:
+    chest-items: 5
+    rewards:
+      - type: MONEY
+        min: 2000
+        max: 10000
+        weight: 15
+      - type: ESSENCE
+        min: 1000
+        max: 5000
+        weight: 12
+      - type: ATOMS
+        min: 200
+        max: 800
+        weight: 12
+      - type: PICKAXE_XP
+        min: 2000
+        max: 10000
+        weight: 10
+      - type: RESIN
+        min: 2
+        max: 5
+        weight: 15
+      - type: BACKPACK_SLOTS
+        min: 1
+        max: 1
+        weight: 5
+      - type: EVOLUTION_STONE
+        rarity: Common
+        min: 1
+        max: 1
+        weight: 12
+      - type: EVOLUTION_STONE
+        rarity: Uncommon
+        min: 1
+        max: 1
+        weight: 8
+      - type: EVOLUTION_STONE
+        rarity: Rare
+        min: 1
+        max: 1
+        weight: 6
+      - type: EVOLUTION_STONE
+        rarity: Epic
+        min: 1
+        max: 1
+        weight: 4
+      - type: EVOLUTION_STONE
+        rarity: Legendary
+        min: 1
+        max: 1
+        weight: 1
 
 # ---- Messages ----
 # Mine messages are now stored in messages.yml under the "mine:" section.

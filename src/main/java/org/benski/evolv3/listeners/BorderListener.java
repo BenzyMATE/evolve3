@@ -7,6 +7,7 @@ import net.kyori.adventure.title.Title;
 import org.benski.evolv3.core.abstracts.BaseListener;
 import org.benski.evolv3.core.constants.ConfigNames;
 import org.benski.evolv3.core.constants.ConfigPaths;
+import org.benski.evolv3.core.managers.BorderHologramManager;
 import org.benski.evolv3.core.managers.BorderManager;
 import org.benski.evolv3.core.managers.BorderManager.BorderWall;
 import org.benski.evolv3.datacenters.PlayerDataCenter;
@@ -16,13 +17,13 @@ import org.benski.evolv3.registry.DataCenterRegistry;
 import org.bukkit.Bukkit;
 import org.bukkit.Color;
 import org.bukkit.Location;
-import org.bukkit.Material;
 import org.bukkit.Particle;
-import org.bukkit.block.data.BlockData;
+import org.bukkit.Particle.DustTransition;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
+import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -47,29 +48,24 @@ public class BorderListener extends BaseListener
             .color(TextColor.color(0xFF5555))
             .decorate(TextDecoration.BOLD);
 
-    // Wall particle — barrier block icon
-    private static final BlockData BARRIER_DATA = Material.BARRIER.createBlockData();
-
-    // Impact burst particle appearance (kept as red dust for the flashy effect)
+    // Impact burst appearance — vivid red for the pushback flash
     private static final Particle.DustOptions IMPACT_DUST =
             new Particle.DustOptions(Color.fromRGB(255, 50, 50), 1.4f);
 
-    /** Perpendicular distance from wall at which the wall becomes visible */
     private static final double PERP_TRIGGER_DIST = 100.0;
+    private static final double ALONG_WALL_RANGE  = 120.0;
+    private static final double PARTICLE_SPACING  = 1.8;   // horizontal column gap
+    private static final double PARTICLE_Y_STEP   = 1.2;   // vertical row gap
+    private static final int    ARC_COLUMNS       = 3;     // electric arc every N columns
+    private static final int    NODE_COLUMNS       = 6;     // energy node every N columns
 
-    /** Once the wall is visible, show this many blocks along the wall in each direction */
-    private static final double ALONG_WALL_RANGE = 120.0;
-
-    /** Horizontal spacing between particle columns (blocks) */
-    private static final double PARTICLE_SPACING = 0.9;
-
-    /** Vertical spacing between particle rows (blocks) */
-    private static final double PARTICLE_Y_STEP = 0.75;
+    // Tick counter drives the animated scan line
+    private int tick = 0;
 
     public BorderListener(JavaPlugin plugin)
     {
         super(plugin);
-        Bukkit.getScheduler().runTaskTimer(plugin, this::tickParticles, 20L, 20L);
+        Bukkit.getScheduler().runTaskTimer(plugin, this::tickParticles, 20L, 4L);
     }
 
     // -------------------------------------------------------------------------
@@ -109,6 +105,7 @@ public class BorderListener extends BaseListener
 
     private void tickParticles()
     {
+        tick++;
         Map<String, List<BorderWall>> allBorders = BorderManager.getInstance().getAllBorders();
         if (allBorders.isEmpty()) return;
 
@@ -144,16 +141,16 @@ public class BorderListener extends BaseListener
     }
 
     /**
-     * Renders particles along the wall for one player.
-     *
-     * <p>The wall is only shown when the player is within {@link #PERP_TRIGGER_DIST}
-     * blocks (perpendicular) of the wall. When triggered, every particle column along
-     * the wall within {@link #ALONG_WALL_RANGE} blocks of the player is rendered.</p>
+     * Plasma barrier effect:
+     *  - DUST_COLOR_TRANSITION shimmer (rank color → white) fills the wall plane
+     *  - ELECTRIC_SPARK arcs crackle at random heights every few columns
+     *  - GLOW pulses at energy-node columns
+     *  - END_ROD scan line sweeps up the wall over ~3 seconds
+     *  - END_ROD edge glow traces the top and bottom of the wall
      */
     private void renderWallParticles(Player player, BorderWall wall,
                                       double px, double py, double pz)
     {
-        // Perpendicular distance from player to the wall line segment
         if (perpDistToWall(wall, px, pz) > PERP_TRIGGER_DIST) return;
 
         double dx = wall.x2() - wall.x1();
@@ -161,21 +158,80 @@ public class BorderListener extends BaseListener
         double length = Math.sqrt(dx * dx + dz * dz);
         if (length < 0.001) return;
 
-        int steps = Math.max(1, (int) (length / PARTICLE_SPACING));
+        Color base  = rankColor(wall.rankId());
+        Color white = Color.fromRGB(220, 240, 255);
+        Particle.DustTransition shimmer = new Particle.DustTransition(base, white, 1.2f);
+
+        double wallHeight = wall.maxY() - wall.minY();
+        // Scan line sweeps from minY to maxY over 75 ticks (~15 seconds at 4-tick interval),
+        // then resets. Multiply tick by 0.4 so it covers the height smoothly.
+        double scanY = wall.minY() + ((tick * 0.4) % (wallHeight + 2));
+
+        int steps    = Math.max(1, (int) (length / PARTICLE_SPACING));
         double rangeSq = ALONG_WALL_RANGE * ALONG_WALL_RANGE;
 
-        for (int step = 0; step <= steps; step++) {
-            double t = (double) step / steps;
+        for (int step = 0; step <= steps; step++)
+        {
+            double t  = (double) step / steps;
             double wx = wall.x1() + t * dx;
             double wz = wall.z1() + t * dz;
-
-            // Only render columns that are within ALONG_WALL_RANGE of the player
             if ((wx - px) * (wx - px) + (wz - pz) * (wz - pz) > rangeSq) continue;
 
-            for (double y = wall.minY(); y <= wall.maxY(); y += PARTICLE_Y_STEP) {
-                player.spawnParticle(Particle.BLOCK_MARKER, wx, y, wz, 1, 0, 0, 0, 0, BARRIER_DATA, true);
+            boolean isNode = (step % NODE_COLUMNS == 0);
+            boolean isArc  = (step % ARC_COLUMNS  == 0);
+
+            // ── Plasma body ──────────────────────────────────────────────────
+            for (double y = wall.minY(); y <= wall.maxY(); y += PARTICLE_Y_STEP)
+            {
+                player.spawnParticle(Particle.DUST_COLOR_TRANSITION,
+                        wx, y, wz, 1, 0, 0, 0, 0, shimmer, true);
+            }
+
+            // ── Scan line ─────────────────────────────────────────────────────
+            if (scanY >= wall.minY() && scanY <= wall.maxY())
+            {
+                player.spawnParticle(Particle.END_ROD,
+                        wx, scanY, wz, 1, 0.0, 0.05, 0.0, 0.0, null, true);
+            }
+
+            // ── Top + bottom edge glow ────────────────────────────────────────
+            player.spawnParticle(Particle.END_ROD,
+                    wx, wall.minY(), wz, 1, 0.0, 0.0, 0.0, 0.0, null, true);
+            player.spawnParticle(Particle.END_ROD,
+                    wx, wall.maxY(), wz, 1, 0.0, 0.0, 0.0, 0.0, null, true);
+
+            // ── Energy nodes (GLOW pulse) ─────────────────────────────────────
+            if (isNode)
+            {
+                double midY = (wall.minY() + wall.maxY()) / 2.0;
+                player.spawnParticle(Particle.GLOW,
+                        wx, midY, wz, 5, 0.05, wallHeight * 0.35, 0.05, 0, null, true);
+            }
+
+            // ── Electric arcs (ELECTRIC_SPARK crackle) ───────────────────────
+            if (isArc && Math.random() < 0.45)
+            {
+                double arcY = wall.minY() + 1 + Math.random() * (wallHeight - 2);
+                player.spawnParticle(Particle.ELECTRIC_SPARK,
+                        wx, arcY, wz, 6, 0.1, 0.4, 0.1, 0.04, null, true);
             }
         }
+    }
+
+    /** Maps a rank's block letter to a display color for the wall particles. */
+    private static Color rankColor(String rankId)
+    {
+        char block = (rankId == null || rankId.isEmpty()) ? 'A'
+                : Character.toUpperCase(rankId.charAt(0));
+        return switch (block) {
+            case 'A' -> Color.fromRGB(255, 85,  85);
+            case 'B' -> Color.fromRGB(255, 221, 68);
+            case 'C' -> Color.fromRGB(85,  255, 119);
+            case 'D' -> Color.fromRGB(255, 170,  0);
+            case 'E' -> Color.fromRGB(85,  170, 255);
+            case 'F' -> Color.fromRGB(255,  85, 255);
+            default  -> Color.fromRGB(180, 180, 180);
+        };
     }
 
     // -------------------------------------------------------------------------
@@ -233,6 +289,12 @@ public class BorderListener extends BaseListener
     // -------------------------------------------------------------------------
     // Quit cleanup
     // -------------------------------------------------------------------------
+
+    @EventHandler
+    public void onPlayerJoin(PlayerJoinEvent event)
+    {
+        BorderHologramManager.getInstance().refreshVisibilityForPlayer(event.getPlayer());
+    }
 
     @EventHandler
     public void onPlayerQuit(PlayerQuitEvent event)

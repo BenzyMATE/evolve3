@@ -6,6 +6,8 @@ import org.benski.evolv3.core.abstracts.BaseListener;
 import org.benski.evolv3.core.interfaces.Registry;
 import org.benski.evolv3.core.managers.ListenerRegistryManager;
 import org.benski.evolv3.listeners.BackpackListener;
+import org.benski.evolv3.listeners.BlackholeListener;
+import org.benski.evolv3.listeners.CellListener;
 import org.benski.evolv3.listeners.BeamListener;
 import org.benski.evolv3.listeners.BorderListener;
 import org.benski.evolv3.listeners.LaunchPadListener;
@@ -22,6 +24,7 @@ import org.benski.evolv3.listeners.JoinListener;
 import org.benski.evolv3.listeners.PickaxeOwnershipListener;
 import org.benski.evolv3.listeners.RankChatListener;
 import org.benski.evolv3.listeners.ScoreboardListener;
+import org.benski.evolv3.listeners.ScrollListener;
 
 import java.util.List;
 
@@ -55,7 +58,10 @@ public class ListenerRegistry implements Registry<BaseListener>
             SpawnerListener.class,
             OmnitoolListener.class,
             HungerListener.class,
-            FoodDropListener.class
+            FoodDropListener.class,
+            ScrollListener.class,
+            BlackholeListener.class,
+            CellListener.class
     );
 
     /**

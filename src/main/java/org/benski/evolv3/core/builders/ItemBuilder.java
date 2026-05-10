@@ -1,5 +1,8 @@
 package org.benski.evolv3.core.builders;
 
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.TextDecoration;
+import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.Registry;
@@ -32,6 +35,8 @@ import java.util.function.Consumer;
  */
 public class ItemBuilder
 {
+    private static final LegacyComponentSerializer LEGACY = LegacyComponentSerializer.legacySection();
+
     private final ItemStack itemStack;
     private final ItemMeta itemMeta;
 
@@ -74,7 +79,7 @@ public class ItemBuilder
      */
     public ItemBuilder name(String name) {
         if (itemMeta != null) {
-            itemMeta.setDisplayName(colorize(name));
+            itemMeta.displayName(deserialize(colorize(name)));
         }
         return this;
     }
@@ -88,11 +93,11 @@ public class ItemBuilder
      */
     public ItemBuilder lore(String... lore) {
         if (itemMeta != null) {
-            List<String> loreList = new ArrayList<>();
+            List<Component> loreList = new ArrayList<>();
             for (String line : lore) {
-                loreList.add(colorize(line));
+                loreList.add(line.isEmpty() ? Component.empty() : deserialize(colorize(line)));
             }
-            itemMeta.setLore(loreList);
+            itemMeta.lore(loreList);
         }
         return this;
     }
@@ -106,11 +111,11 @@ public class ItemBuilder
      */
     public ItemBuilder lore(List<String> lore) {
         if (itemMeta != null) {
-            List<String> loreList = new ArrayList<>();
+            List<Component> loreList = new ArrayList<>();
             for (String line : lore) {
-                loreList.add(colorize(line));
+                loreList.add(line.isEmpty() ? Component.empty() : deserialize(colorize(line)));
             }
-            itemMeta.setLore(loreList);
+            itemMeta.lore(loreList);
         }
         return this;
     }
@@ -124,9 +129,10 @@ public class ItemBuilder
      */
     public ItemBuilder addLoreLine(String line) {
         if (itemMeta != null) {
-            List<String> lore = itemMeta.hasLore() ? itemMeta.getLore() : new ArrayList<>();
-            lore.add(colorize(line));
-            itemMeta.setLore(lore);
+            List<Component> existing = itemMeta.lore();
+            List<Component> lore = existing != null ? new ArrayList<>(existing) : new ArrayList<>();
+            lore.add(line.isEmpty() ? Component.empty() : deserialize(colorize(line)));
+            itemMeta.lore(lore);
         }
         return this;
     }
@@ -140,11 +146,12 @@ public class ItemBuilder
      */
     public ItemBuilder addLoreLines(String... lines) {
         if (itemMeta != null) {
-            List<String> lore = itemMeta.hasLore() ? itemMeta.getLore() : new ArrayList<>();
+            List<Component> existing = itemMeta.lore();
+            List<Component> lore = existing != null ? new ArrayList<>(existing) : new ArrayList<>();
             for (String line : lines) {
-                lore.add(colorize(line));
+                lore.add(line.isEmpty() ? Component.empty() : deserialize(colorize(line)));
             }
-            itemMeta.setLore(lore);
+            itemMeta.lore(lore);
         }
         return this;
     }
@@ -341,7 +348,13 @@ public class ItemBuilder
      * @return the colorized text
      */
     private String colorize(String text) {
+        text = org.benski.evolv3.core.helpers.FontUtils.toSmallCaps(text);
+        text = net.matrixcreations.libraries.MatrixColorAPI.process(text);
         return text.replace('&', '§');
+    }
+
+    private Component deserialize(String text) {
+        return LEGACY.deserialize(text).decoration(TextDecoration.ITALIC, false);
     }
 
     /**

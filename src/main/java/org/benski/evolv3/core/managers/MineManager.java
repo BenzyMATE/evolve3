@@ -74,6 +74,9 @@ public final class MineManager
     /** Minimum time between full block scans (5 s), even when no dirty flag is set. */
     private static final long SCAN_INTERVAL_MS = 5_000L;
 
+    /** Cave tier (1–4) per mine name — controls which reward table is used. */
+    private final Map<String, Integer> caveTiers = new ConcurrentHashMap<>();
+
     /** Scheduler task IDs for auto-reset timers, keyed by mine name. */
     private final Map<String, Integer> resetTaskIds = new ConcurrentHashMap<>();
 
@@ -178,6 +181,7 @@ public final class MineManager
         dirtyMines.clear();
         cachedRemainingPct.clear();
         lastScanTimeMs.clear();
+        caveTiers.clear();
 
         File file = getMinesDataFile();
         if (!file.exists()) return;
@@ -221,6 +225,9 @@ public final class MineManager
                     contents.put(mat.toUpperCase(), contentsSection.getInt(mat));
                 }
             }
+
+            int caveTier = cfg.getInt(path + ".cave-tier", 1);
+            caveTiers.put(name.toLowerCase(), Math.max(1, Math.min(4, caveTier)));
 
             Mine mine = new Mine(name, world, minX, minY, minZ, maxX, maxY, maxZ,
                     spawnX, spawnY, spawnZ, resetInterval, resetPercentage,
@@ -266,6 +273,8 @@ public final class MineManager
             cfg.set(path + ".cave-count", m.caveCount());
             cfg.set(path + ".cave-min-distance", m.caveMinDistance());
             cfg.set(path + ".hologram", m.hologram());
+
+            cfg.set(path + ".cave-tier", caveTiers.getOrDefault(m.name().toLowerCase(), 1));
 
             for (Map.Entry<String, Integer> entry : m.contents().entrySet())
             {
@@ -506,6 +515,21 @@ public final class MineManager
                     if (mine.contains(p.getLocation()))
                     {
                         p.teleport(finalSpawn);
+                    }
+                }
+                // Also teleport players who are inside cave regions belonging to this mine
+                // so they don't get buried when undoCaves() restores the blocks around them.
+                for (Map.Entry<String, CaveManager.CaveBounds> caveEntry
+                        : CaveManager.getInstance().getAllCaveRegions().entrySet())
+                {
+                    if (!mine.name().equalsIgnoreCase(
+                            CaveManager.getInstance().getMineName(caveEntry.getKey()))) continue;
+                    for (Player p : world.getPlayers())
+                    {
+                        if (caveEntry.getValue().contains(p.getLocation()))
+                        {
+                            p.teleport(finalSpawn);
+                        }
                     }
                 }
             }
@@ -785,6 +809,12 @@ public final class MineManager
             map.put(cumulative, mat);
         }
         return map;
+    }
+
+    /** Returns the cave reward tier (1–4) for a mine; defaults to 1. */
+    public int getCaveTier(@NotNull String mineName)
+    {
+        return caveTiers.getOrDefault(mineName.toLowerCase(), 1);
     }
 
     /** Returns a message string from the messages config, with prefix resolved. */

@@ -334,7 +334,9 @@ public final class ConfigPaths
             public static final String LOADING_PROFILE = "pickaxe.loading-profile";
             public static final String PROFILE_CREATED = "pickaxe.profile-created";
             public static final String NO_PICKAXE = "pickaxe.no-pickaxe";
-            public static final String ENCHANT_ROLL_GAINED = "pickaxe.enchant-roll-gained";
+            public static final String ENCHANT_ROLL_GAINED   = "pickaxe.enchant-roll-gained";
+            public static final String ENCHANT_ROLL_TITLE    = "pickaxe.enchant-roll-title";
+            public static final String ENCHANT_ROLL_SUBTITLE = "pickaxe.enchant-roll-subtitle";
 
             // Level up messages (list)
             public static final String LEVEL_UP = "pickaxe.level-up";
@@ -376,6 +378,8 @@ public final class ConfigPaths
             public static final String EVOLVE_INSUFFICIENT_SPINS = "pickaxe.evolve.insufficient-spins";
             public static final String EVOLVE_MAX_TIER          = "pickaxe.evolve.max-tier";
             public static final String EVOLVE_SUCCESS           = "pickaxe.evolve.success";
+            public static final String EVOLVE_SUCCESS_TITLE    = "pickaxe.evolve.success-title";
+            public static final String EVOLVE_SUCCESS_SUBTITLE = "pickaxe.evolve.success-subtitle";
             public static final String EVOLVE_TIER_SUCCESS      = "pickaxe.evolve.evolve-success";
             public static final String EVOLVE_STONE_PLACEHOLDER = "pickaxe.evolve.stone-placeholder";
             public static final String EVOLVE_RESULT            = "pickaxe.evolve.result";
@@ -489,6 +493,7 @@ public final class ConfigPaths
             public static final String CONTENTS_ADDED      = "mine.contents-added";
             public static final String CONTENTS_REMOVED    = "mine.contents-removed";
             public static final String CAVE_ENTRY          = "mine.cave-entry";
+            public static final String CAVE_REWARD         = "mine.cave-reward";
             public static final String CAVE_ENTRY_SUBTITLE = "mine.cave-entry-subtitle";
             public static final String CAVE_EXIT           = "mine.cave-exit";
             public static final String CAVE_EXIT_SUBTITLE  = "mine.cave-exit-subtitle";
@@ -513,6 +518,24 @@ public final class ConfigPaths
             public static final String HOLOGRAM_COLOR_RESET   = "mine.hologram-color-reset";
             public static final String HOLOGRAM_ARROW_SET     = "mine.hologram-arrow-set";
             public static final String HOLOGRAM_ICON_SET      = "mine.hologram-icon-set";
+        }
+
+        /**
+         * Scroll item messages.
+         */
+        public static final class Scroll
+        {
+            private Scroll() {}
+
+            public static final String REDEEMED           = "scroll.redeemed";
+            public static final String COMBINED           = "scroll.combined";
+            public static final String APPLIED_XP         = "scroll.applied-xp";
+            public static final String APPLIED_ATOMS      = "scroll.applied-atoms";
+            public static final String USE_ON_PICKAXE     = "scroll.use-on-pickaxe";
+            public static final String PICKAXE_NOT_LOADED = "scroll.pickaxe-not-loaded";
+            public static final String GIVEN              = "scroll.given";
+            public static final String LIST_HEADER        = "scroll.list-header";
+            public static final String LIST_ENTRY         = "scroll.list-entry";
         }
 
         /**

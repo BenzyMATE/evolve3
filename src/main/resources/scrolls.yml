@@ -1,0 +1,60 @@
+# =============================================================
+# Scroll Item Configuration
+# =============================================================
+# Display names and lore for all scroll types.
+#
+# Placeholder:
+#   {amount}  — replaced with the scroll's stored value at item creation
+#
+# Use "" for blank separator lines in lore.
+# All colour codes (&#RRGGBB and &X) are supported.
+# Text is automatically rendered in the custom small-caps font.
+# =============================================================
+
+scrolls:
+  coins:
+    name: "&#FFD700&lCoin Scroll"
+    lore:
+      - " &#FFD700⛁ &#FFFFFF+{amount} &#FFD700coins."
+      - ""
+      - " &#FFFFFF&lUse: &#AAAAAA Right-click to redeem."
+      - " &#AAAAAADrag onto another Coin Scroll"
+      - " &#AAAAAAto merge."
+
+  essence:
+    name: "&#B366D9&lEssence Scroll"
+    lore:
+      - " &#B366D9🔥 &#FFFFFF+{amount} &#B366D9essence."
+      - ""
+      - " &#FFFFFF&lUse: &#AAAAAA Right-click to redeem."
+      - " &#AAAAAADrag onto another Essence Scroll"
+      - " &#AAAAAAto merge."
+
+  atoms:
+    name: "&#FFEE00&lAtom Scroll"
+    lore:
+      - " &#FFEE00⚛ &#FFFFFF+{amount} &#FFEE00atoms."
+      - ""
+      - " &#FFFFFF&lUse: &#AAAAAA Drag onto your pickaxe"
+      - " &#AAAAAAin your inventory to apply."
+      - " &#AAAAAADrag onto another Atom Scroll"
+      - " &#AAAAAAto merge."
+
+  pickaxe-xp:
+    name: "&#00FFFF&lXP Scroll"
+    lore:
+      - " &#00FFFF⛏ &#FFFFFF+{amount} &#00FFFFpickaxe XP."
+      - ""
+      - " &#FFFFFF&lUse: &#AAAAAA Drag onto your pickaxe"
+      - " &#AAAAAAin your inventory to apply."
+      - " &#AAAAAADrag onto another XP Scroll"
+      - " &#AAAAAAto merge."
+
+  backpack-slots:
+    name: " &#00FFFF&lBackpack Scroll"
+    lore:
+      - " &#00FFFF◎ &#FFFFFF+{amount} &#00FFFFbackpack slot(s)."
+      - ""
+      - " &#FFFFFF&lUse: &#AAAAAA Right-click to redeem."
+      - " &#AAAAAADrag onto another Backpack Scroll."
+      - " &#AAAAAATo merge"

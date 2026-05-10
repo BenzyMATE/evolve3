@@ -36,6 +36,7 @@ public final class Messageable
      */
     private static String colorize(String message)
     {
+        message = FontUtils.toSmallCaps(message);
         return MatrixColorAPI.process(message);
     }
 

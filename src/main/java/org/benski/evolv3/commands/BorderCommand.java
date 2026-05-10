@@ -5,9 +5,12 @@ import org.benski.evolv3.core.constants.ConfigNames;
 import org.benski.evolv3.core.constants.ConfigPaths;
 import org.benski.evolv3.core.helpers.Messageable;
 import org.benski.evolv3.core.helpers.WorldEditSelection;
+import org.benski.evolv3.core.managers.BeamManager;
+import org.benski.evolv3.core.managers.BorderHologramManager;
 import org.benski.evolv3.core.managers.BorderManager;
 import org.benski.evolv3.core.managers.RankManager;
 import org.benski.evolv3.registry.ConfigRegistry;
+import org.bukkit.Location;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.file.FileConfiguration;
@@ -39,7 +42,7 @@ public class BorderCommand extends BaseCommand
 
     @Override public String getCommandName()    { return "border"; }
     @Override public @Nullable String getDescription() { return "Manage prison zone border walls"; }
-    @Override public @Nullable String getUsage()       { return "/e border <set|remove|list|reload>"; }
+    @Override public @Nullable String getUsage()       { return "/e border <set|remove|list|reload|hologram>"; }
     @Override public @Nullable String getPermission()  { return "evolv3.admin"; }
 
     @Override
@@ -55,11 +58,12 @@ public class BorderCommand extends BaseCommand
         }
 
         switch (args[0].toLowerCase(Locale.ROOT)) {
-            case "set"    -> handleSet(player, args);
-            case "remove" -> handleRemove(player, args);
-            case "list"   -> handleList(player);
-            case "reload" -> handleReload(player);
-            default       -> sendUsage(player);
+            case "set"      -> handleSet(player, args);
+            case "remove"   -> handleRemove(player, args);
+            case "list"     -> handleList(player);
+            case "reload"   -> handleReload(player);
+            case "hologram" -> handleHologram(player, args);
+            default         -> sendUsage(player);
         }
         return true;
     }
@@ -179,7 +183,142 @@ public class BorderCommand extends BaseCommand
     private void handleReload(Player player)
     {
         BorderManager.getInstance().loadFromConfig();
+        BorderHologramManager.getInstance().refreshAll();
         Messageable.sendConfigMessage(player, ConfigPaths.Messages.Border.RELOADED);
+    }
+
+    private void handleHologram(Player player, String[] args)
+    {
+        // /e border hologram <rankId> <add|list|slot> [subcommand] [value]
+        if (args.length < 3) {
+            sendHologramUsage(player);
+            return;
+        }
+
+        String rankId = args[1].toUpperCase(Locale.ROOT);
+        if (!RankManager.getInstance().isPrisonRank(rankId)) {
+            Messageable.sendError(player, "Unknown rank &#FFFFFF" + rankId);
+            return;
+        }
+
+        BorderHologramManager mgr = BorderHologramManager.getInstance();
+        String third = args[2].toLowerCase(Locale.ROOT);
+
+        // /e border hologram <rankId> add
+        if ("add".equals(third)) {
+            int slot = mgr.addHologramSlot(rankId);
+            Messageable.sendSuccess(player, "Added hologram slot &#FFFFFF" + slot
+                    + " &#00FFFFfor &#FFFFFF" + rankId + "&#00FFFF."
+                    + " Use &#FFFFFF/e border hologram " + rankId + " " + slot + " setpos&#00FFFF to position it.");
+            return;
+        }
+
+        // /e border hologram <rankId> list
+        if ("list".equals(third)) {
+            java.util.Collection<Integer> slots = mgr.getSlots(rankId);
+            Messageable.sendRaw(player, "");
+            Messageable.sendRaw(player, "  &#00FFFF&l⚡ Holograms for " + rankId);
+            Messageable.sendRaw(player, "  &#444444&m                                    ");
+            if (slots.isEmpty()) {
+                Messageable.sendRaw(player, "  &#888888No configured slots &#444444(default slot 0 auto-spawns)");
+            } else {
+                for (int s : slots) {
+                    Location loc = mgr.getHologramLocation(rankId, s);
+                    String pos = loc != null
+                            ? String.format("(%.0f, %.0f, %.0f)", loc.getX(), loc.getY(), loc.getZ())
+                            : "(no position)";
+                    Messageable.sendRaw(player, "  &#FFFFFFSlot " + s + " &#888888» " + pos);
+                }
+            }
+            Messageable.sendRaw(player, "");
+            return;
+        }
+
+        // /e border hologram <rankId> <slot> <subcommand> [value]
+        int slot;
+        try {
+            slot = Integer.parseInt(third);
+        } catch (NumberFormatException e) {
+            sendHologramUsage(player);
+            return;
+        }
+
+        if (args.length < 4) {
+            sendHologramUsage(player);
+            return;
+        }
+
+        String sub = args[3].toLowerCase(Locale.ROOT);
+
+        switch (sub) {
+            case "setpos" -> {
+                Location loc = player.getLocation();
+                mgr.setPosition(rankId, slot, loc.getWorld().getName(), loc.getX(), loc.getY(), loc.getZ());
+                Messageable.sendSuccess(player, "Hologram " + slot + " for &#FFFFFF" + rankId
+                        + " &#00FFFFmoved to your position.");
+            }
+            case "resetpos" -> {
+                mgr.resetPosition(rankId, slot);
+                Messageable.sendSuccess(player, "Hologram " + slot + " for &#FFFFFF" + rankId
+                        + " &#00FFFFreset to wall midpoint.");
+            }
+            case "remove" -> {
+                mgr.deleteHologramSlot(rankId, slot);
+                Messageable.sendSuccess(player, "Hologram slot &#FFFFFF" + slot
+                        + " &#00FFFFfor &#FFFFFF" + rankId + " &#00FFFFremoved.");
+            }
+            case "scale" -> {
+                if (args.length < 5) {
+                    Messageable.sendError(player, "Usage: /e border hologram <rankId> <slot> scale <value>");
+                    return;
+                }
+                try {
+                    float scale = Float.parseFloat(args[4]);
+                    if (scale <= 0) throw new NumberFormatException();
+                    mgr.setScale(rankId, slot, scale);
+                    Messageable.sendSuccess(player, "Scale for slot " + slot + " of &#FFFFFF" + rankId
+                            + " &#00FFFFset to &#FFFFFF" + scale + "&#00FFFF.");
+                } catch (NumberFormatException e) {
+                    Messageable.sendError(player, "Scale must be a positive number.");
+                }
+            }
+            case "billboard" -> {
+                if (args.length < 5) {
+                    Messageable.sendError(player, "Usage: /e border hologram <rankId> <slot> billboard <true|false>");
+                    return;
+                }
+                boolean facesPlayer = args[4].equalsIgnoreCase("true");
+                mgr.setBillboard(rankId, slot, facesPlayer);
+                Messageable.sendSuccess(player, "Billboard for slot " + slot + " of &#FFFFFF" + rankId
+                        + (facesPlayer ? " &#00FFFFset to CENTER (faces player)."
+                                       : " &#00FFFFset to FIXED (static)."));
+            }
+            case "setfacing" -> {
+                float yaw = (player.getLocation().getYaw() + 180f) % 360f;
+                mgr.setFacing(rankId, slot, yaw);
+                Messageable.sendSuccess(player, "Facing for slot " + slot + " of &#FFFFFF" + rankId
+                        + " &#00FFFFset to face your direction.");
+            }
+            case "color" -> {
+                if (args.length < 5) {
+                    sendError(player, "Usage: &#FFFFFF/e border hologram <rankId> <slot> color <purple|yellow|green|red|blue|reset>");
+                    return;
+                }
+                String colorName = args[4].toLowerCase(Locale.ROOT);
+                if ("reset".equals(colorName)) {
+                    mgr.setColor(rankId, slot, "");
+                    Messageable.sendSuccess(player, "Color for slot " + slot + " of &#FFFFFF" + rankId
+                            + " &#00FFFFreset to default.");
+                } else if (BeamManager.getColorNames().contains(colorName)) {
+                    mgr.setColor(rankId, slot, colorName);
+                    Messageable.sendSuccess(player, "Color for slot " + slot + " of &#FFFFFF" + rankId
+                            + " &#00FFFFset to &#FFFFFF" + colorName + "&#00FFFF.");
+                } else {
+                    sendError(player, "Unknown colour. Valid: &#FFFFFFpurple&#888888, &#FFFFFFyellow&#888888, &#FFFFFFgreen&#888888, &#FFFFFFred&#888888, &#FFFFFFblue&#888888, &#FFFFFFreset");
+                }
+            }
+            default -> sendHologramUsage(player);
+        }
     }
 
     // -------------------------------------------------------------------------
@@ -196,6 +335,25 @@ public class BorderCommand extends BaseCommand
         Messageable.sendRaw(player, "  &#888888/e border remove <rankId> [slot] &#444444» &#CCCCCCRemove wall(s)");
         Messageable.sendRaw(player, "  &#888888/e border list &#444444» &#CCCCCCList all walls");
         Messageable.sendRaw(player, "  &#888888/e border reload &#444444» &#CCCCCCReload from config");
+        Messageable.sendRaw(player, "  &#888888/e border hologram <rankId> <sub> &#444444» &#CCCCCCEdit border hologram");
+        Messageable.sendRaw(player, "");
+    }
+
+    private void sendHologramUsage(Player player)
+    {
+        Messageable.sendRaw(player, "");
+        Messageable.sendRaw(player, "  &#00FFFF&l⚡ Border Hologram Commands");
+        Messageable.sendRaw(player, "  &#444444&m                                    ");
+        Messageable.sendRaw(player, "");
+        Messageable.sendRaw(player, "  &#888888/e border hologram <rankId> add &#444444» &#CCCCCCAdd a new hologram slot");
+        Messageable.sendRaw(player, "  &#888888/e border hologram <rankId> list &#444444» &#CCCCCCList configured slots");
+        Messageable.sendRaw(player, "  &#888888/e border hologram <rankId> <slot> setpos &#444444» &#CCCCCCPlace at your location");
+        Messageable.sendRaw(player, "  &#888888/e border hologram <rankId> <slot> resetpos &#444444» &#CCCCCCReset to wall midpoint");
+        Messageable.sendRaw(player, "  &#888888/e border hologram <rankId> <slot> scale <n> &#444444» &#CCCCCCSet text size");
+        Messageable.sendRaw(player, "  &#888888/e border hologram <rankId> <slot> billboard <t|f> &#444444» &#CCCCCCFaces-player toggle");
+        Messageable.sendRaw(player, "  &#888888/e border hologram <rankId> <slot> setfacing &#444444» &#CCCCCCFace your look direction");
+        Messageable.sendRaw(player, "  &#888888/e border hologram <rankId> <slot> color <preset|reset> &#444444» &#CCCCCCSet label colour");
+        Messageable.sendRaw(player, "  &#888888/e border hologram <rankId> <slot> remove &#444444» &#CCCCCCDelete this slot");
         Messageable.sendRaw(player, "");
     }
 
@@ -204,11 +362,36 @@ public class BorderCommand extends BaseCommand
                                                     @NotNull String alias, @NotNull String[] args)
     {
         if (args.length == 1) {
-            return List.of("set", "remove", "list", "reload");
+            return List.of("set", "remove", "list", "reload", "hologram");
         }
-        if (args.length == 2 && (args[0].equalsIgnoreCase("set") || args[0].equalsIgnoreCase("remove"))) {
-            FileConfiguration ranksCfg = ConfigRegistry.getInstance().get(ConfigNames.RANKS);
-            if (ranksCfg != null) return ranksCfg.getStringList(ConfigPaths.Ranks.ORDER);
+        if (args.length == 2) {
+            String sub = args[0].toLowerCase(Locale.ROOT);
+            if (sub.equals("set") || sub.equals("remove") || sub.equals("hologram")) {
+                FileConfiguration ranksCfg = ConfigRegistry.getInstance().get(ConfigNames.RANKS);
+                if (ranksCfg != null) return ranksCfg.getStringList(ConfigPaths.Ranks.ORDER);
+            }
+        }
+        if (args.length == 3 && args[0].equalsIgnoreCase("hologram")) {
+            // Offer add/list plus any existing slot numbers
+            List<String> opts = new java.util.ArrayList<>(List.of("add", "list"));
+            BorderHologramManager.getInstance().getSlots(args[1].toUpperCase(Locale.ROOT))
+                    .forEach(s -> opts.add(String.valueOf(s)));
+            return opts;
+        }
+        if (args.length == 4 && args[0].equalsIgnoreCase("hologram")) {
+            // args[2] is a slot number — offer subcommands
+            try { Integer.parseInt(args[2]); }
+            catch (NumberFormatException ignored) { return List.of(); }
+            return List.of("setpos", "resetpos", "scale", "billboard", "setfacing", "color", "remove");
+        }
+        if (args.length == 5 && args[0].equalsIgnoreCase("hologram")) {
+            String sub = args[3].toLowerCase(Locale.ROOT);
+            if ("billboard".equals(sub)) return List.of("true", "false");
+            if ("color".equals(sub)) {
+                List<String> opts = new java.util.ArrayList<>(BeamManager.getColorNames());
+                opts.add("reset");
+                return opts;
+            }
         }
         return List.of();
     }

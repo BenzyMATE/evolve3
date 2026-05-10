@@ -20,13 +20,3 @@ ambient-particles:
 
 # Fall damage protection duration after launch (in ticks)
 no-fall-damage-ticks: 80
-
-# Registered pads are stored below (managed by commands, do not edit manually)
-# pads:
-#   pad0:
-#     world: world
-#     x: 100
-#     y: 64
-#     z: 200
-#     forward-power: 2.0
-#     upward-power: 1.2

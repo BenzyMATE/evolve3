@@ -23,6 +23,11 @@ import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
+import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
+import org.benski.evolv3.core.types.RarityConfig;
+import org.benski.evolv3.items.AncientResin;
+import org.benski.evolv3.items.EvolutionStone;
+import org.benski.evolv3.items.Scroll;
 import org.bukkit.block.Block;
 import org.bukkit.block.Chest;
 import org.bukkit.configuration.ConfigurationSection;
@@ -71,6 +76,10 @@ public final class CaveManager
     /** Maps each cave key to its owning mine name (for spawn lookup on despawn). */
     private final Map<String, String> caveMineMap = new ConcurrentHashMap<>();
 
+    /** Per-instance tier (1–4) for each pasted cave, assigned randomly at paste time. */
+    private final Map<String, Integer> caveInstanceTiers = new ConcurrentHashMap<>();
+
+    private static final LegacyComponentSerializer LEGACY = LegacyComponentSerializer.legacySection();
     private static final Random RANDOM = new Random();
     private static final int MAX_PLACEMENT_ATTEMPTS = 500;
 
@@ -116,23 +125,10 @@ public final class CaveManager
     public void generateCaves(@NotNull Mine mine)
     {
         int caveCount = mine.caveCount();
-        if (caveCount <= 0)
-        {
-            Bukkit.getLogger().info("[Evolv3] Cave generation skipped for mine '"
-                    + mine.name() + "' (cave-count is 0).");
-            return;
-        }
+        if (caveCount <= 0) return;
 
         File schematicFile = new File(Main.getInstance().getDataFolder(), "schematics/cave.schem");
-        Bukkit.getLogger().info("[Evolv3] Looking for cave schematic at: " + schematicFile.getAbsolutePath());
-        if (!schematicFile.exists())
-        {
-            Bukkit.getLogger().warning("[Evolv3] Cave schematic not found: " + schematicFile.getAbsolutePath());
-            return;
-        }
-
-        Bukkit.getLogger().info("[Evolv3] Generating " + caveCount + " cave(s) for mine '"
-                + mine.name() + "'...");
+        if (!schematicFile.exists()) return;
 
         int minDist = mine.caveMinDistance();
         List<BlockVector3> usedLocations = new ArrayList<>();
@@ -145,8 +141,6 @@ public final class CaveManager
             public void run()
             {
                 if (placed.get() >= caveCount) {
-                    Bukkit.getLogger().info("[Evolv3] Finished generating " + placed.get()
-                            + " cave(s) for mine '" + mine.name() + "'.");
                     saveCaveData();
                     return;
                 }
@@ -160,9 +154,6 @@ public final class CaveManager
                     World world = Bukkit.getWorld(mine.world());
                     if (world != null)
                     {
-                        Bukkit.getLogger().info("[Evolv3] Pasting cave " + (placed.get() + 1)
-                                + "/" + caveCount + " at wall=" + wall + " loc=("
-                                + location.x() + "," + location.y() + "," + location.z() + ")");
                         pasteCave(new Location(world, location.x(), location.y(), location.z()),
                                 schematicFile, mine, wall);
                     }
@@ -331,6 +322,7 @@ public final class CaveManager
                     minPt.x(), minPt.y(), minPt.z(),
                     maxPt.x(), maxPt.y(), maxPt.z()));
             caveMineMap.put(caveKey, mine.name());
+            caveInstanceTiers.put(caveKey, pickRandomTier());
 
             // Paste the schematic
             try (EditSession editSession = WorldEdit.getInstance().newEditSession(weWorld))
@@ -384,50 +376,112 @@ public final class CaveManager
                     if (type == Material.CHEST || type == Material.TRAPPED_CHEST)
                     {
                         chests.add(block.getLocation());
-                        fillChestWithRewards(block);
+                        fillChestWithRewards(block, caveKey);
                     }
                 }
             }
         }
 
-        if (!chests.isEmpty())
+        if (chests.isEmpty())
+        {
+            despawnCave(caveKey);
+        }
+        else
         {
             caveChestLocations.put(caveKey, chests);
-            Bukkit.getLogger().info("[Evolv3] Found " + chests.size()
-                    + " chest(s) in cave '" + caveKey + "'.");
         }
     }
 
     /**
-     * Fills a chest block with placeholder reward items from the cave-rewards
-     * config section in {@code mines.yml}.
+     * Fills a chest block with weighted-random reward items determined by the
+     * cave tier of the owning mine (read from {@code cave-tiers} in mines.yml).
      */
-    private void fillChestWithRewards(@NotNull Block block)
+    private void fillChestWithRewards(@NotNull Block block, @NotNull String caveKey)
     {
         if (!(block.getState() instanceof Chest chest)) return;
 
         FileConfiguration cfg = ConfigRegistry.getInstance().get(ConfigNames.MINES);
         if (cfg == null) return;
 
-        List<Map<?, ?>> rewardList = cfg.getMapList("defaults.cave-rewards");
+        int tier = caveInstanceTiers.getOrDefault(caveKey, 1);
+        ConfigurationSection tierSection = cfg.getConfigurationSection("cave-tiers." + tier);
+        if (tierSection == null) tierSection = cfg.getConfigurationSection("cave-tiers.1");
+        if (tierSection == null) return;
+
+        int chestItems = tierSection.getInt("chest-items", 4);
+        List<Map<?, ?>> rewardList = tierSection.getMapList("rewards");
         if (rewardList.isEmpty()) return;
+
+        // Build cumulative weight total
+        int totalWeight = 0;
+        for (Map<?, ?> entry : rewardList) {
+            totalWeight += numValue(entry.get("weight"), 1);
+        }
+        if (totalWeight <= 0) return;
 
         chest.getBlockInventory().clear();
 
-        for (Map<?, ?> entry : rewardList)
-        {
-            String matName = (String) entry.get("material");
-            int amount = entry.containsKey("amount") ? ((Number) entry.get("amount")).intValue() : 1;
-
-            Material mat = Material.matchMaterial(matName);
-            if (mat == null)
-            {
-                Bukkit.getLogger().warning("[Evolv3] Invalid cave reward material: " + matName);
-                continue;
+        List<ItemStack> selected = new ArrayList<>();
+        for (int i = 0; i < chestItems; i++) {
+            int roll = RANDOM.nextInt(totalWeight);
+            int cumulative = 0;
+            for (Map<?, ?> entry : rewardList) {
+                cumulative += numValue(entry.get("weight"), 1);
+                if (roll < cumulative) {
+                    String type = (String) entry.get("type");
+                    int min = numValue(entry.get("min"), 1);
+                    int max = numValue(entry.get("max"), 1);
+                    int amount = (min >= max) ? min : min + RANDOM.nextInt(max - min + 1);
+                    String rarity = entry.get("rarity") instanceof String s ? s : null;
+                    ItemStack item = createScrollItem(type, amount, rarity);
+                    if (item != null) selected.add(item);
+                    break;
+                }
             }
-
-            chest.getBlockInventory().addItem(new ItemStack(mat, amount));
         }
+
+        // Scatter rewards across random chest slots
+        int invSize = chest.getBlockInventory().getSize();
+        int[] slots = new int[invSize];
+        for (int i = 0; i < invSize; i++) slots[i] = i;
+        for (int i = invSize - 1; i > 0; i--) {
+            int j = RANDOM.nextInt(i + 1);
+            int tmp = slots[i]; slots[i] = slots[j]; slots[j] = tmp;
+        }
+        for (int i = 0; i < selected.size() && i < invSize; i++) {
+            chest.getBlockInventory().setItem(slots[i], selected.get(i));
+        }
+    }
+
+    private static int numValue(@Nullable Object value, int fallback) {
+        return (value instanceof Number n) ? n.intValue() : fallback;
+    }
+
+    /** Maps a cave-tier reward type to the corresponding item. */
+    private static @Nullable ItemStack createScrollItem(@Nullable String type, int amount, @Nullable String rarity)
+    {
+        if (type == null) return null;
+        return switch (type) {
+            case "MONEY"          -> Scroll.createCoins(amount);
+            case "ESSENCE"        -> Scroll.createEssence(amount);
+            case "ATOMS"          -> Scroll.createAtoms(amount);
+            case "PICKAXE_XP"     -> Scroll.createPickaxeXP(amount);
+            case "BACKPACK_SLOTS" -> Scroll.createBackpackSlots(amount);
+            case "RESIN"          -> AncientResin.create(amount);
+            case "EVOLUTION_STONE" -> {
+                RarityConfig rc = (rarity != null) ? EnchantAnimationConfig.getRarityByName(rarity) : null;
+                if (rc == null) {
+                    List<RarityConfig> rarities = EnchantAnimationConfig.getRarities();
+                    rc = rarities.isEmpty() ? null : rarities.get(0);
+                }
+                if (rc == null) yield null;
+                List<String> pool = EnchantAnimationConfig.getEnchantsForRarity(rc.displayName());
+                if (pool.isEmpty()) yield null;
+                String enchant = pool.get(RANDOM.nextInt(pool.size()));
+                yield EvolutionStone.create(rc, enchant);
+            }
+            default -> null;
+        };
     }
 
     // =========================================================================
@@ -459,6 +513,7 @@ public final class CaveManager
         caveRegions.remove(caveKey);
         caveChestLocations.remove(caveKey);
         caveMineMap.remove(caveKey);
+        caveInstanceTiers.remove(caveKey);
 
         saveCaveData();
     }
@@ -568,6 +623,7 @@ public final class CaveManager
             caveRegions.remove(key);
             caveChestLocations.remove(key);
             caveMineMap.remove(key);
+            caveInstanceTiers.remove(key);
         }
 
         saveCaveData();
@@ -581,6 +637,7 @@ public final class CaveManager
         caveRegions.keySet().removeIf(k -> k.startsWith(prefix));
         caveChestLocations.keySet().removeIf(k -> k.startsWith(prefix));
         caveMineMap.keySet().removeIf(k -> k.startsWith(prefix));
+        caveInstanceTiers.keySet().removeIf(k -> k.startsWith(prefix));
         saveCaveData();
     }
 
@@ -594,6 +651,25 @@ public final class CaveManager
     public @NotNull Map<String, CaveBounds> getAllCaveRegions()
     {
         return caveRegions;
+    }
+
+    /**
+     * Returns the tier (1–4) assigned to a specific cave instance at paste time.
+     * Defaults to 1 if no tier has been recorded for the cave key.
+     */
+    public int getCaveTierForCave(@Nullable String caveKey)
+    {
+        if (caveKey == null) return 1;
+        return caveInstanceTiers.getOrDefault(caveKey, 1);
+    }
+
+    private static int pickRandomTier()
+    {
+        int roll = RANDOM.nextInt(100);
+        if (roll < 10) return 4;  // 10 %
+        if (roll < 30) return 3;  // 20 %
+        if (roll < 60) return 2;  // 30 %
+        return 1;                  // 40 %
     }
 
     // =========================================================================
@@ -657,6 +733,12 @@ public final class CaveManager
         for (Map.Entry<String, String> entry : caveMineMap.entrySet())
         {
             cfg.set("mines." + entry.getKey(), entry.getValue());
+        }
+
+        // Save per-cave tiers
+        for (Map.Entry<String, Integer> entry : caveInstanceTiers.entrySet())
+        {
+            cfg.set("tiers." + entry.getKey(), entry.getValue());
         }
 
         try { cfg.save(file); }
@@ -755,6 +837,36 @@ public final class CaveManager
                 caveMineMap.put(key, cfg.getString("mines." + key));
             }
         }
+
+        // Load per-cave tiers
+        ConfigurationSection tiersSection = cfg.getConfigurationSection("tiers");
+        if (tiersSection != null)
+        {
+            for (String key : tiersSection.getKeys(false))
+            {
+                caveInstanceTiers.put(key, cfg.getInt("tiers." + key, 1));
+            }
+        }
+
+        // Schedule a deferred cleanup to despawn caves that have no registered chests.
+        // These are either pre-update caves (chest tracking not yet added) or schematics
+        // without any chest blocks — they can never trigger the normal despawn path.
+        Bukkit.getScheduler().runTaskLater(Main.getInstance(), () ->
+        {
+            List<String> orphaned = new ArrayList<>();
+            for (String key : caveRegions.keySet())
+            {
+                List<Location> chests = caveChestLocations.get(key);
+                if (chests == null || chests.isEmpty())
+                {
+                    orphaned.add(key);
+                }
+            }
+            for (String key : orphaned)
+            {
+                despawnCave(key);
+            }
+        }, 40L);
     }
 
     private @NotNull File getCavesFile()
@@ -775,5 +887,6 @@ public final class CaveManager
         caveRegions.clear();
         caveChestLocations.clear();
         caveMineMap.clear();
+        caveInstanceTiers.clear();
     }
 }

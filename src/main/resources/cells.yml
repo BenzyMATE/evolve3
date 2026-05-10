@@ -1,0 +1,8 @@
+# Default values used when creating new cells via /e cell create
+# These can be overridden per-cell using the setprice, setcurrency, setlimit, setdirection, setwall commands.
+defaults:
+  max-expansions: 10
+  upgrade-direction: E
+  wall-material: PURPLE_WOOL
+  base-price: 2500.0
+  currency: coins

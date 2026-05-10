@@ -271,7 +271,8 @@ public abstract class BaseMenu implements Menu, InventoryHolder, Listener
 
     /**
      * Event handler for inventory clicks.
-     * Routes clicks to the appropriate menu implementation.
+     * Cancels ALL interactions (including the player's own inventory) while this menu is open,
+     * then routes top-inventory clicks to handleClick.
      */
     @EventHandler
     public void onInventoryClick(InventoryClickEvent event) {
@@ -279,11 +280,9 @@ public abstract class BaseMenu implements Menu, InventoryHolder, Listener
             return;
         }
 
-        if (event.getClickedInventory() == null) {
-            return;
-        }
-
-        if (!(event.getClickedInventory().getHolder() instanceof BaseMenu menu)) {
+        // Use the top inventory to identify the menu — this catches both top and bottom clicks.
+        Inventory topInventory = player.getOpenInventory().getTopInventory();
+        if (!(topInventory.getHolder() instanceof BaseMenu menu)) {
             return;
         }
 
@@ -295,16 +294,20 @@ public abstract class BaseMenu implements Menu, InventoryHolder, Listener
             return;
         }
 
+        // Cancel everything: top clicks, bottom clicks, shift-clicks, drags, double-clicks.
         event.setCancelled(true);
 
-        try {
-            handleClick(player, event.getSlot(), event);
-        } catch (Exception e) {
-            String msg = ConfigRegistry.getInstance().get(ConfigNames.MESSAGES)
-                    .getString(ConfigPaths.Messages.Errors.INTERNAL_ERROR,
-                            "&cSomething went wrong. Please try again.");
-            player.sendMessage(formatMessage(player, msg));
-            plugin.getLogger().log(java.util.logging.Level.SEVERE, "Error handling menu click", e);
+        // Only route to handleClick for clicks actually inside the menu (top inventory).
+        if (event.getClickedInventory() == topInventory) {
+            try {
+                handleClick(player, event.getSlot(), event);
+            } catch (Exception e) {
+                String msg = ConfigRegistry.getInstance().get(ConfigNames.MESSAGES)
+                        .getString(ConfigPaths.Messages.Errors.INTERNAL_ERROR,
+                                "&cSomething went wrong. Please try again.");
+                player.sendMessage(formatMessage(player, msg));
+                plugin.getLogger().log(java.util.logging.Level.SEVERE, "Error handling menu click", e);
+            }
         }
     }
 

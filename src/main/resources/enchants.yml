@@ -103,7 +103,7 @@ Unbreaking:
   MaxChance: 75
   Cost: 15
   Item: ANVIL
-  Texture: "http://textures.minecraft.net/texture/54a01c2b4cc9e2652e8b990651f0a27f0c8b5b3c72d1026f2b7b19ca2f4e5"
+  Texture: "http://textures.minecraft.net/texture/a35c586254aed3cfe6b89385195a4ae5149997ce66a39c0f91a700d1d69b6d58"
   Lore:
     - ' {rarity}'
     - ''
@@ -322,7 +322,7 @@ Scavenger:
   MaxChance: 15
   Cost: 20
   Item: CHEST
-  Texture: "http://textures.minecraft.net/texture/9a17f3e16f2e0b3ce3a54b334cfd1f6f8c68c4ca1f1b6d8b2e4b16c8b0a2a4f"
+  Texture: "http://textures.minecraft.net/texture/8351e505989838e27287e7afbc7f97e796cab5f3598a76160c131c940d0c5"
   Lore:
     - ' {rarity}'
     - ''
@@ -366,7 +366,7 @@ Merchant:
   MaxChance: 10
   Cost: 30
   Item: GOLD_NUGGET
-  Texture: "http://textures.minecraft.net/texture/5768b8d5b3c6e16bc31de9b85f83d9bfb22fc01d52ddcda48d0d0fd5f7f5c4a3"
+  Texture: "http://textures.minecraft.net/texture/81620dc71a3020c8ef2bb93de2138d911e122bca73dd1f7d461a64655a0f61b8"
   Lore:
     - ' {rarity}'
     - ''
@@ -408,7 +408,7 @@ Fortune:
   MaxChance: 0
   Cost: 20
   Item: DIAMOND_ORE
-  Texture: "http://textures.minecraft.net/texture/3ea4dd2e6a1bdb47e61da84d5185e5e4f59ea3e87d8ad9f6c2a3b1e4d7f0c9b2"
+  Texture: "http://textures.minecraft.net/texture/b55b3a9b8469db7f7df9c29da9fcc98cb945442503e116b0e87ce8e5a09c591"
   Lore:
     - ' {rarity}'
     - ''
@@ -442,7 +442,7 @@ AutoSell:
   MaxChance: 2.5
   Cost: 75
   Item: EMERALD
-  Texture: "http://textures.minecraft.net/texture/2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0e1f2a3b"
+  Texture: "http://textures.minecraft.net/texture/b311e842249745113333878fd5a8d8eb2280bcbab7689e473f1669623a11c997"
   Hologram:
     Enabled: true
     DefaultEnabled: false
@@ -481,7 +481,7 @@ Extraction:
   MaxChance: 10
   Cost: 40
   Item: EXPERIENCE_BOTTLE
-  Texture: "http://textures.minecraft.net/texture/a3d98b4e2a8e7b1e6c4f0d8c2a5b7e9f1c3d5e7a9b1c3d5e7f9a1b3c5d7e9f1"
+  Texture: "http://textures.minecraft.net/texture/ef0a64dc76a6567037fd9fe2d40a9803f0fea8931f1c6424ea48cab5f62950ee"
   Lore:
     - ' {rarity}'
     - ''
@@ -523,7 +523,7 @@ Radioactive:
   MaxChance: 7.5
   Cost: 50
   Item: LIME_DYE
-  Texture: "http://textures.minecraft.net/texture/7b2d1c8a4f6e0d3b5a9c7e1f2b4d6e8a0c2e4f6a8b0c2d4e6f8a0b2c4d6e8f0"
+  Texture: "http://textures.minecraft.net/texture/9c64568adebf2844df824332dc27e4c66a8a9af6b4d752782f610db61d065"
   Lore:
     - ' {rarity}'
     - ''
@@ -559,7 +559,7 @@ Drill:
   MaxChance: 10
   Cost: 60
   Item: PLAYER_HEAD
-  Texture: "REPLACE_ME"
+  Texture: "http://textures.minecraft.net/texture/bdfc6712f94b278ba6239aba04126a3baf001115f3514294d615af79d6bf4da0"
   # Maximum depth the drill can reach. Actual depth per trigger is random between 2 and this value (max 4).
   MaxDepth: 4
   Lore:
@@ -593,7 +593,7 @@ Explosive:
   MaxChance: 12
   Cost: 120
   Item: PLAYER_HEAD
-  Texture: "REPLACE_ME"
+  Texture: "http://textures.minecraft.net/texture/364bbf1ded81cb1465e7d0fa3a7ad3f5b42e2811c954ae640b3ec5e2598d74e1"
   # Maximum explosion radius at max level (sphere). Scales with level: radius = 1 to MaxRadius.
   MaxRadius: 2
   Lore:
@@ -627,7 +627,7 @@ Lazer:
   MaxChance: 8
   Cost: 100
   Item: PLAYER_HEAD
-  Texture: "REPLACE_ME"
+  Texture: "http://textures.minecraft.net/texture/1debcfe4143a11e61d3931799fb322e5aa2ae73275c53c2c67416178d149e152"
   # Maximum number of blocks the laser can travel before stopping.
   MaxRange: 50
   Lore:
@@ -669,7 +669,7 @@ Thor:
   MaxChance: 6
   Cost: 150
   Item: PLAYER_HEAD
-  Texture: "REPLACE_ME"
+  Texture: "http://textures.minecraft.net/texture/9f05a13853734b6a7e4f45eab72bb9dbcc917e780cd1eb6d630405fa8299665"
   # Maximum column height scanned in each direction (up + down from origin).
   MaxColumnHeight: 100
   Lore:
@@ -711,7 +711,7 @@ Vortex:
   MaxChance: 5
   Cost: 200
   Item: PLAYER_HEAD
-  Texture: "REPLACE_ME"
+  Texture: "http://textures.minecraft.net/texture/67b6f5b0d710e59a99bc81f5514585e61b547be4d3b82cc5e0d862f14a62574e"
   # Maximum sphere radius at max level. Scales with level: radius = 1 to MaxRadius.
   MaxRadius: 3
   Lore:
@@ -754,7 +754,7 @@ Cascade:
   MaxChance: 4
   Cost: 200
   Item: PLAYER_HEAD
-  Texture: "REPLACE_ME"
+  Texture: "http://textures.minecraft.net/texture/1a69ccf7ad904c9a852ea2ff3f5b4e23adebf72ed12d5f24b78ce2d44b4a2"
   # Maximum number of chain links at max level (scales from 3 at level 1).
   MaxChainLength: 10
   # Blocks advanced between each chain-link centre.
@@ -805,7 +805,7 @@ Jackhammer:
   MaxChance: 3
   Cost: 200
   Item: PLAYER_HEAD
-  Texture: "REPLACE_ME"
+  Texture: "http://textures.minecraft.net/texture/40c9c7e4a4a36f019de0491da9c8acc97bff669a8bbc5f414caad36156862565"
   # Fallback search radius (blocks) when WorldGuard is not installed.
   MaxScanRadius: 100
   Lore:
@@ -849,7 +849,7 @@ NuclearShower:
   MaxChance: 2
   Cost: 250
   Item: PLAYER_HEAD
-  Texture: "REPLACE_ME"
+  Texture: "http://textures.minecraft.net/texture/5ea7bf58e7bcb904422db434b252cbfafe3925aa3df91a5ae86a38ff887572aa"
   # Number of rain stream columns at max level (scales from 10 at level 1).
   MaxStreams: 150
   # Blocks each acid column eats through vertically (scales from 1 at level 1).

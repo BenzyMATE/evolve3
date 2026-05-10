@@ -557,6 +557,183 @@ Furnace Smelt Menu:
 # =====================================================
 
 # =====================================================
+# Cell Menu
+# Tokens: {cell_name}, {owner}, {allies}, {expires}, {expansions}, {status},
+#         {cost}, {max_expansions}, {remaining}, {remaining_plural}, {member_count}, {member_label}
+# =====================================================
+Cell Menu:
+  Border:
+    Material: GRAY_STAINED_GLASS_PANE
+  Info:
+    Material: IRON_BARS
+    Name: "&3&l{cell_name}"
+    Lore:
+      - ""
+      - " &f&lINFO"
+      - " &8| &#888888Owner: &#FFFFFF{owner}"
+      - " &8| &#888888Allies: &#FFFFFF{allies}"
+      - " &8| &#888888Expires: {expires}"
+      - " &8| &#888888Expansions: &#FFFFFF{expansions}"
+      - ""
+      - " &f&lSTATUS"
+      - " &8| {status}"
+      - ""
+  Lock:
+    SealedMaterial: IRON_DOOR
+    OpenMaterial: OAK_DOOR
+    SealedName: "&#FF5555Cell closed"
+    OpenName: "&#55FF55Cell open"
+    SealedLore:
+      - ""
+      - " &f&lINFO"
+      - " &8| &#888888Decide whether to allow non-members"
+      - " &8| &#888888to enter your cell. "
+      - ""
+      - " &f&lSTATUS"
+      - " &8| &#888888Only members can access this cell."
+      - ""
+      - " &8| &aLeft-click &#AAAAAAto open your cell."
+      - ""
+    OpenLore:
+      - ""
+      - " &f&lINFO"
+      - " &8| &#888888Decide whether to allow non-members"
+      - " &8| &#888888to enter your cell. "
+      - ""
+      - " &f&lSTATUS"
+      - " &8| &#888888All prisoners can access this cell."
+      - ""
+      - " &8| &aLeft-click &#AAAAAAto close your cell."
+      - ""
+  Expand:
+    AvailableMaterial: PISTON
+    MaxedMaterial: BARRIER
+    AvailableName: "&#55FF55Expand Territory"
+    MaxedName: "&#FF5555Expansion Limit Reached"
+    AvailableLore:
+      - ""
+      - " &f&lINFO"
+      - " &8| &#888888Expand your cell by 1 block"
+      - ""
+      - " &f&lSTATISTICS"
+      - " &8| &#888888Cost: {cost}"
+      - " &8| &#888888Expansions: &#FFFFFF{expansions}&#888888/&#FFFFFF{max_expansions}"
+      - ""
+      - " &8| &aLeft-click &#AAAAAAto expand."
+      - ""
+    MaxedLore:
+      - ""
+      - " &f&lINFO"
+      - " &8| &#888888Open a rift to a remote"
+      - " &8| &#888888unknown location."
+      - ""
+      - " &f&lSTATISTICS"
+      - " &8| &#888888Cost: {cost}"
+      - " &8| &#888888Expansions: &#FFFFFF{expansions}&#888888/&#FFFFFF{max_expansions}"
+      - ""
+      - " &8| &aLeft-click &#AAAAAAto open rift."
+      - ""
+  Members:
+    Material: PLAYER_HEAD
+    Name: "&#00FFFFAllies"
+    Lore:
+      - ""
+      - " &f&lINFO"
+      - " &8| &#888888Manage who has access to"
+      - " &8| &#888888your cell."
+      - ""
+      - " &f&lSTATUS"
+      - " &8| &#888888{member_count} {member_label} sworn in."
+      - ""
+      - " &8| &aLeft-click &#AAAAAAto manage."
+      - ""
+  Rift:
+    Material: ENDER_EYE
+    Name: "&#AA00FFOpen a Rift"
+    Lore:
+      - ""
+      - " &f&lINFO"
+      - " &8| &#888888Open a rift to an unknown"
+      - " &8| &#888888location. Walk through to evolve."
+      - ""
+      - " &f&lSTATISTICS"
+      - " &8| &#888888Expansions: &#FFFFFF{expansions}&#888888/&#FFFFFF{max_expansions}"
+      - ""
+      - " &8| &#FF5555This cannot be undone."
+      - ""
+      - " &8| &aLeft-click &#AAAAAAto open."
+      - ""
+  ExtendRent:
+    Name: "&#00FFFFExtend Rent"
+    MaxedName: "&#888888Max Rent Reached"
+    Lore:
+      - ""
+      - " &f&lINFO"
+      - " &8| &#888888Extend your rental period."
+      - " &8| &#888888Max 7 days from now."
+      - ""
+      - " &f&lSTATUS"
+      - " &8| &#888888Expires: {expires}"
+      - " &8| &#888888Can add: {extend_days} day{extend_plural}"
+      - " &8| &#888888Cost per day: {cost}"
+      - ""
+      - " &8| &aLeft-click &#AAAAAAto add 1 day."
+      - " &8| &#FFEE00Right-click &#AAAAAAto extend max."
+      - ""
+    MaxedLore:
+      - ""
+      - " &f&lSTATUS"
+      - " &8| &#888888Rental period is maxed at 7 days."
+      - " &8| &#888888Expires: {expires}"
+      - ""
+  Evolve:
+    Material: BEACON
+    Name: "&#AA00FFAscend to an Island"
+    Lore:
+      - ""
+      - " &f&lINFO"
+      - " &8| &#888888You have reached the pinnacle"
+      - " &8| &#888888of this cell. Ascend to claim"
+      - " &8| &#888888a private island."
+      - ""
+      - " &f&lDETAILS"
+      - " &8| &#888888Your cell will be fully reset."
+      - " &8| &#888888Allies and lock settings carry over."
+      - ""
+      - " &8| &#FF5555This cannot be undone."
+      - ""
+      - " &8| &aLeft-click &#AAAAAAto ascend."
+      - ""
+  Abandon:
+    Material: REDSTONE_BLOCK
+    OwnerName: "&#FF5555Abandon Cell"
+    MemberName: "&#FF5555Leave Cell"
+    OwnerLore:
+      - ""
+      - " &f&lINFO"
+      - " &8| &#888888Permanently relinquish your"
+      - " &8| &#888888claim to this cell."
+      - ""
+      - " &f&lDETAILS"
+      - " &8| &#888888All expansions will be undone."
+      - " &8| &#888888The cell will be made available."
+      - ""
+      - " &8| &#FF5555This cannot be undone."
+      - ""
+      - " &8| &aLeft-click &#AAAAAAto confirm."
+      - ""
+    MemberLore:
+      - ""
+      - " &f&lINFO"
+      - " &8| &#888888Step away from this cell."
+      - " &8| &#888888You will lose all access."
+      - ""
+      - " &8| &#FF5555This cannot be undone."
+      - ""
+      - " &8| &aLeft-click &#AAAAAAto confirm."
+      - ""
+
+# =====================================================
 # Prestige Confirm Menu
 # Tokens: {next_prestige}, {current_prestige}, {required_level}, {new_cap}, {mult}, {count}, {plural}
 # =====================================================

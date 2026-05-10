@@ -7,6 +7,24 @@ import org.benski.evolv3.core.constants.ConfigPaths;
 import org.benski.evolv3.core.managers.EnchantSelectionManager;
 import org.benski.evolv3.core.managers.EvolutionSelectionManager;
 import org.benski.evolv3.core.managers.BeamManager;
+import org.benski.evolv3.core.managers.BlackholeHologramManager;
+import org.benski.evolv3.core.managers.BlackholeManager;
+import org.benski.evolv3.core.managers.CellBlockBackupManager;
+import org.benski.evolv3.core.managers.CellHologramManager;
+import org.benski.evolv3.core.managers.CellManager;
+import org.benski.evolv3.core.managers.CellRentManager;
+import org.benski.evolv3.core.managers.CellWorldGuardManager;
+import org.benski.evolv3.core.managers.IslandManager;
+import org.benski.evolv3.core.managers.IslandWorldManager;
+import org.benski.evolv3.menus.CellAbandonConfirmMenu;
+import org.benski.evolv3.menus.CellEvolveConfirmMenu;
+import org.benski.evolv3.menus.CellMemberMenu;
+import org.benski.evolv3.menus.CellMemberPermMenu;
+import org.benski.evolv3.menus.CellMenu;
+import org.benski.evolv3.menus.CellRentInfoMenu;
+import org.benski.evolv3.menus.IslandMenu;
+import org.benski.evolv3.menus.IslandsMenu;
+import org.benski.evolv3.core.managers.BorderHologramManager;
 import org.benski.evolv3.core.managers.BorderManager;
 import org.benski.evolv3.core.managers.CaveManager;
 import org.benski.evolv3.core.managers.LaunchPadManager;
@@ -53,6 +71,9 @@ public final class Main extends JavaPlugin
         this.useRegistry();
         this.useMongo();
         this.useHooks();
+        // Load blackholes
+        BlackholeManager.getInstance().initialize();
+        BlackholeHologramManager.getInstance().initialize();
         // Load zone borders from borders.yml
         BorderManager.getInstance().loadFromConfig();
         // Load levitation beams from beams.yml
@@ -64,6 +85,8 @@ public final class Main extends JavaPlugin
         // Load mines from mines.yml and cave data
         CaveManager.getInstance().loadCaveData();
         MineManager.getInstance().loadFromConfig();
+        // Start border holograms after borders are already loaded
+        BorderHologramManager.getInstance().initialize();
         // Load custom spawners
         SpawnerManager.getInstance().initialize();
         SpawnerHologramManager.getInstance().initialize();
@@ -75,6 +98,21 @@ public final class Main extends JavaPlugin
         this.registerEvolutionCallbackProvider();
         // Load any evolution animations that were in-progress when the server last stopped
         EvolutionSelectionManager.getInstance().loadPendingFromDatabase();
+        // Initialize cell and island system
+        CellWorldGuardManager.getInstance().initialize();
+        CellManager.getInstance().initialize();
+        CellRentManager.getInstance().initialize();
+        IslandManager.getInstance().initialize();
+        IslandWorldManager.getInstance().initialize();
+        CellHologramManager.getInstance().initialize();
+        new CellMenu(this);
+        new CellEvolveConfirmMenu(this);
+        new CellAbandonConfirmMenu(this);
+        new CellRentInfoMenu(this);
+        new CellMemberMenu(this);
+        new CellMemberPermMenu(this);
+        new IslandMenu(this);
+        new IslandsMenu(this);
         // Kill all mobs (including passive animals) left over from before the restart
         Bukkit.getScheduler().runTask(this, this::clearAllMobs);
         this.sendConsoleMessage("Evolv3 has been enabled successfully!");
@@ -110,9 +148,18 @@ public final class Main extends JavaPlugin
         // Revert any active omnitool players before shutting down
         OmnitoolManager.getInstance().cleanup();
 
-        // Remove mine and spawner holograms before tasks are cancelled
+        // Cleanup cell and island system
+        CellHologramManager.getInstance().cleanup();
+        CellRentManager.getInstance().cleanup();
+        IslandWorldManager.getInstance().cleanup();
+        IslandManager.getInstance().cleanup();
+        CellManager.getInstance().cleanup();
+        // Remove mine, spawner, and border holograms before tasks are cancelled
+        BlackholeHologramManager.getInstance().cleanup();
+        BlackholeManager.getInstance().cleanup();
         MineHologramManager.getInstance().cleanup();
         SpawnerHologramManager.getInstance().cleanup();
+        BorderHologramManager.getInstance().cleanup();
         SpawnerManager.getInstance().cleanup();
 
         // Cancel all scheduled tasks first

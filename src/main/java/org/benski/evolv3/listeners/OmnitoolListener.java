@@ -86,12 +86,13 @@ public class OmnitoolListener extends BaseListener
         String last    = lastRegionState.get(player.getUniqueId());
         if (Objects.equals(current, last)) return;
 
-        lastRegionState.put(player.getUniqueId(), current);
         OmnitoolManager omni = OmnitoolManager.getInstance();
 
         if (current == null)
         {
-            // Left all omnitool regions — revert
+            // Left all omnitool regions — always record the exit so the next
+            // entry event is not skipped by the Objects.equals guard above.
+            lastRegionState.put(player.getUniqueId(), null);
             if (omni.isInOmnitoolMode(player))
             {
                 omni.revertToPickaxe(player);
@@ -105,7 +106,8 @@ public class OmnitoolListener extends BaseListener
 
         if (omni.isInOmnitoolMode(player))
         {
-            // Already transformed — switch between axe and sword regions
+            // Already transformed — record the target region before switching forms
+            lastRegionState.put(player.getUniqueId(), current);
             if (omni.getForm(player) != targetForm)
             {
                 omni.revertToPickaxe(player);
@@ -118,9 +120,12 @@ public class OmnitoolListener extends BaseListener
         }
         else
         {
-            // Not yet transformed — activate
+            // Not yet transformed — only record state if transform succeeds.
+            // If the pickaxe profile hasn't loaded yet, transformTo returns false
+            // and we leave lastRegionState unchanged so the next movement retries.
             if (omni.transformTo(player, targetForm))
             {
+                lastRegionState.put(player.getUniqueId(), current);
                 playTransformAnimation(player);
                 sendTransformMessage(player, targetForm);
             }

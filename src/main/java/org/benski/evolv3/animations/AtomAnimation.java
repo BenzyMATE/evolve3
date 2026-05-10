@@ -154,7 +154,7 @@ public class AtomAnimation extends BaseAnimation {
         if (prefSound) {
             targetPlayer.playSound(targetPlayer.getLocation(), Sound.BLOCK_AMETHYST_BLOCK_CHIME, 1.0f, 0.8f);
         }
-        showHologram();
+        // Hologram is shown by BreakListener.checkAtomDiscovery (includes prestige multiplier)
     }
 
     // -------------------------------------------------------------------------

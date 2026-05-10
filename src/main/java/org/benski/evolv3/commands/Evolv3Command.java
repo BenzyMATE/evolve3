@@ -1,6 +1,7 @@
 package org.benski.evolv3.commands;
 
 import org.benski.evolv3.Main;
+import org.benski.evolv3.commands.CellAdminCommand;
 import org.benski.evolv3.core.abstracts.BaseCommand;
 import org.benski.evolv3.core.constants.ConfigNames;
 import org.benski.evolv3.core.constants.ConfigPaths;
@@ -13,6 +14,7 @@ import org.benski.evolv3.core.types.RarityConfig;
 import org.benski.evolv3.datacenters.PickaxeDataCenter;
 import org.benski.evolv3.datacenters.PlayerDataCenter;
 import org.benski.evolv3.items.EvolutionStone;
+import org.benski.evolv3.items.Scroll;
 import org.benski.evolv3.models.player.PlayerProfile;
 import org.benski.evolv3.registry.ConfigRegistry;
 import org.benski.evolv3.registry.DataCenterRegistry;
@@ -71,6 +73,9 @@ public class Evolv3Command extends BaseCommand
         delegates.put("launchpad", new LaunchPadCommand(plugin));
         delegates.put("spawner", new SpawnerCommand(plugin));
         delegates.put("statistic", new StatisticCommand(plugin));
+        delegates.put("blackhole", new BlackholeCommand(plugin));
+        delegates.put("cell", new CellAdminCommand(plugin));
+        delegates.put("island", new IslandAdminCommand(plugin));
 
         // Rank commands
         setRankCommand = new SetRankCommand(plugin);
@@ -124,6 +129,7 @@ public class Evolv3Command extends BaseCommand
             case "resetprofile"   -> handleResetProfile(sender, args);
             case "stone"          -> handleGiveStone(sender, args);
             case "setbackpack"    -> handleSetBackpack(sender, args);
+            case "scroll"         -> handleScroll(sender, args);
             default -> {
                 sendError(sender, "Unknown subcommand: &#FFFFFF" + args[0]);
                 sendInfo(sender, "Use &#FFFFFF/e help &#CCCCCCfor available commands.");
@@ -518,6 +524,109 @@ public class Evolv3Command extends BaseCommand
     }
 
     // =========================================================================
+    // /e scroll <type> <amount> [player]  |  /e scroll list
+    // =========================================================================
+
+    private static final List<String> SCROLL_TYPES = List.of(
+            "coins", "essence", "atoms", "pickaxe_xp", "backpack_slots");
+
+    private void handleScroll(CommandSender sender, String[] args)
+    {
+        // args[0] = "scroll", args[1] = sub/type, args[2] = amount, args[3] = player
+        if (args.length < 2 || args[1].equalsIgnoreCase("list"))
+        {
+            showScrollList(sender);
+            return;
+        }
+
+        String typeArg = args[1].toLowerCase();
+        String internalType = switch (typeArg) {
+            case "coins"          -> Scroll.COINS;
+            case "essence"        -> Scroll.ESSENCE;
+            case "atoms"          -> Scroll.ATOMS;
+            case "pickaxe_xp"     -> Scroll.PICKAXE_XP;
+            case "backpack_slots" -> Scroll.BACKPACK_SLOTS;
+            default -> null;
+        };
+
+        if (internalType == null) {
+            sendError(sender, "Unknown scroll type: &#FFFFFF" + args[1]);
+            sendInfo(sender, "Valid types: &#FFFFFFcoins, essence, atoms, pickaxe_xp, backpack_slots");
+            return;
+        }
+
+        if (args.length < 3) {
+            sendInfo(sender, "Usage: &#FFFFFF/e scroll <type> <amount> [player]");
+            return;
+        }
+
+        int amount;
+        try {
+            amount = Integer.parseInt(args[2]);
+            if (amount < 1) throw new NumberFormatException();
+        } catch (NumberFormatException e) {
+            sendError(sender, "Amount must be a positive whole number.");
+            return;
+        }
+
+        Player target;
+        if (args.length >= 4) {
+            target = Bukkit.getPlayer(args[3]);
+            if (target == null) {
+                sendError(sender, "Player not found: &#FFFFFF" + args[3]);
+                return;
+            }
+        } else {
+            if (!requirePlayer(sender)) return;
+            target = (Player) sender;
+        }
+
+        ItemStack scroll = switch (internalType) {
+            case Scroll.COINS          -> Scroll.createCoins(amount);
+            case Scroll.ESSENCE        -> Scroll.createEssence(amount);
+            case Scroll.ATOMS          -> Scroll.createAtoms(amount);
+            case Scroll.PICKAXE_XP     -> Scroll.createPickaxeXP(amount);
+            case Scroll.BACKPACK_SLOTS -> Scroll.createBackpackSlots(amount);
+            default -> null;
+        };
+
+        if (scroll == null) {
+            sendError(sender, "Failed to create scroll item.");
+            return;
+        }
+
+        target.getInventory().addItem(scroll).values().forEach(
+                overflow -> target.getWorld().dropItemNaturally(target.getLocation(), overflow));
+
+        FileConfiguration messages = ConfigRegistry.getInstance().get(ConfigNames.MESSAGES);
+        String givenMsg = messages != null
+                ? messages.getString(ConfigPaths.Messages.Scroll.GIVEN,
+                    "  %evolv3_prefix% &#00FFFFGiven &#FFFFFF%player% &#00FFFFa scroll.")
+                : "  %evolv3_prefix% &#00FFFFGiven &#FFFFFF%player% &#00FFFFa scroll.";
+        sendSuccess(sender, givenMsg
+                .replace("%player%", target.getName())
+                .replace("%amount%", String.valueOf(amount))
+                .replace("%type%", typeArg)
+                .replace("%evolv3_prefix%", ""));
+    }
+
+    private void showScrollList(CommandSender sender)
+    {
+        Messageable.sendRaw(sender, "");
+        Messageable.sendRaw(sender, "  &#FFD700&l✦ Scroll Types");
+        Messageable.sendRaw(sender, "  &#444444&m                                    ");
+        Messageable.sendRaw(sender, "");
+        Messageable.sendRaw(sender, "  &#FFD700coins          &#888888» &#CCCCCCCoin voucher (combinable)");
+        Messageable.sendRaw(sender, "  &#B366D9essence        &#888888» &#CCCCCCEssence voucher");
+        Messageable.sendRaw(sender, "  &#FFEE00atoms          &#888888» &#CCCCCCAtom voucher");
+        Messageable.sendRaw(sender, "  &#00FFFFpickaxe_xp     &#888888» &#CCCCCCPickaxe XP (drag onto pickaxe)");
+        Messageable.sendRaw(sender, "  &#00FFFFbackpack_slots  &#888888» &#CCCCCCBackpack slot voucher");
+        Messageable.sendRaw(sender, "");
+        Messageable.sendRaw(sender, "  &#888888Usage: &#FFFFFF/e scroll <type> <amount> [player]");
+        Messageable.sendRaw(sender, "");
+    }
+
+    // =========================================================================
     // Helpers
     // =========================================================================
 
@@ -535,9 +644,10 @@ public class Evolv3Command extends BaseCommand
 
     private static final List<String> TOP_LEVEL = List.of(
             "help", "reload", "info",
-            "mine", "border", "beam", "launchpad", "spawner",
+            "mine", "border", "beam", "launchpad", "spawner", "blackhole", "cell",
             "rank",
-            "backpack", "resetpickaxes", "resetprofile", "stone", "setbackpack", "statistic");
+            "backpack", "resetpickaxes", "resetprofile", "stone", "setbackpack", "statistic",
+            "scroll");
 
     @Override
     public @Nullable List<String> getTabCompletion(@NotNull CommandSender sender, @NotNull Command command,
@@ -605,6 +715,12 @@ public class Evolv3Command extends BaseCommand
         }
         if (args.length == 4 && "backpack".equals(sub) && args[1].equalsIgnoreCase("model")) {
             return Bukkit.getOnlinePlayers().stream().map(Player::getName)
+                    .filter(n -> n.toLowerCase().startsWith(args[3].toLowerCase())).toList();
+        }
+        if ("scroll".equals(sub)) {
+            if (args.length == 2) return filterPrefix(List.of("list", "coins", "essence", "atoms", "pickaxe_xp", "backpack_slots"), args[1]);
+            if (args.length == 3) return filterPrefix(List.of("1", "10", "100", "1000"), args[2]);
+            if (args.length == 4) return Bukkit.getOnlinePlayers().stream().map(Player::getName)
                     .filter(n -> n.toLowerCase().startsWith(args[3].toLowerCase())).toList();
         }
 

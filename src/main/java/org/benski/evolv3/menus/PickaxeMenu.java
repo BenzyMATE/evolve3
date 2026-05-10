@@ -873,6 +873,7 @@ public class PickaxeMenu extends BaseMenu
 
     /**
      * Builds the invisible evolution-statistics item for slots 29, 38, 47.
+     * The action hint at the bottom is conditional on whether the player has evolution rolls.
      *
      * @param player the player viewing the menu
      * @return the built ItemStack
@@ -884,12 +885,28 @@ public class PickaxeMenu extends BaseMenu
                 "&#00BFFF⭐ &#FFFFFF&lEvolution");
         List<String> rawLore = menus.getStringList(ConfigPaths.Menus.PickaxeMenu.EVOLVE_LORE);
 
-        List<Component> lore = buildLoreFromConfig(player, rawLore);
+        PickaxeProfile evoProfile = pickaxeDataCenter.getLocal(player);
+        boolean canEvolve = evoProfile != null && evoProfile.evolutionRolls > 0;
+
+        // Replace the static action line with a conditional one
+        List<String> processedLore = new ArrayList<>(rawLore.size());
+        for (String line : rawLore) {
+            if (line.contains("Left-Click") && line.contains("evolve")) {
+                processedLore.add(canEvolve
+                        ? " &8| &aLeft-Click &#AAAAAAto fill the canister."
+                        : " &8| &#888888Not enough evolution points.");
+            } else {
+                processedLore.add(line);
+            }
+        }
+
+        List<Component> lore = buildLoreFromConfig(player, processedLore);
         return buildInvisibleMapItem(deserialize(formatMessage(player, rawName)), lore);
     }
 
     /**
      * Builds the invisible essence/enchant-roll statistics item for slots 33, 42, 51.
+     * The action hint at the bottom is conditional on whether the player has enchant rolls.
      *
      * @param player the player viewing the menu
      * @return the built ItemStack
@@ -901,7 +918,22 @@ public class PickaxeMenu extends BaseMenu
                 "&#9932CC🔥 &#FFFFFF&lEssence");
         List<String> rawLore = menus.getStringList(ConfigPaths.Menus.PickaxeMenu.ESSENCE_LORE);
 
-        List<Component> lore = buildLoreFromConfig(player, rawLore);
+        PickaxeProfile essProfile = pickaxeDataCenter.getLocal(player);
+        boolean canRoll = essProfile != null && essProfile.enchantRolls > 0;
+
+        // Replace the static action line with a conditional one
+        List<String> processedLore = new ArrayList<>(rawLore.size());
+        for (String line : rawLore) {
+            if (line.contains("Left-Click") && line.contains("roll")) {
+                processedLore.add(canRoll
+                        ? " &8| &aLeft-Click &#AAAAAAto roll an enchant."
+                        : " &8| &#888888Not enough essence.");
+            } else {
+                processedLore.add(line);
+            }
+        }
+
+        List<Component> lore = buildLoreFromConfig(player, processedLore);
         return buildInvisibleMapItem(deserialize(formatMessage(player, rawName)), lore);
     }
 

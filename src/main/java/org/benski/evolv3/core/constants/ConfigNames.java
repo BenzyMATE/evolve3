@@ -67,4 +67,9 @@ public final class ConfigNames
      * Spawners configuration file containing spawner defaults and hologram settings.
      */
     public static final String SPAWNERS = "spawners";
+
+    /**
+     * Scrolls configuration file containing scroll display names and lore.
+     */
+    public static final String SCROLLS = "scrolls";
 }

@@ -61,6 +61,8 @@ pickaxe:
   profile-created: "  %evolv3_prefix% &#00FFFFPickaxe profile created."
   no-pickaxe: "  %evolv3_prefix% &#CCCCCCYou don't have a pickaxe in storage."
   enchant-roll-gained: "  %evolv3_prefix% &#B366D9&l[Enchant Roll] &#CCCCCCYou earned an Enchant Roll!"
+  enchant-roll-title: "&#B366D9&l✦ Enchant Roll"
+  enchant-roll-subtitle: "&#CCCCCCYou earned an Enchant Roll"
   pickaxe-broken: "  &#FF4444Your pickaxe has broken and been removed from storage."
   drop-confirmation:
     - ""
@@ -114,6 +116,8 @@ pickaxe:
     not-available: "  %evolv3_prefix% &#CCCCCCEvolution is not yet available."
     insufficient-spins: "  %evolv3_prefix% &#CCCCCCNot enough Evolution Rolls."
     success: "  %evolv3_prefix% &#FFD700&l[Evolution Roll] &#CCCCCCYou earned an Evolution Roll!"
+    success-title: "&#FFD700&l⚛ Evolution Roll"
+    success-subtitle: "&#CCCCCCYou earned an Evolution Roll"
     result:
       - ""
       - "  &b⛏ &b&l EVOLUTION %evolution_level%"
@@ -450,7 +454,7 @@ mine:
   contents-removed: "  %evolv3_prefix% &#FF5555Removed &#FFFFFF%material% &#FF5555from mine &#FFFFFF%mine%&#FF5555."
   # Cave entry/exit titles
   cave-entry: "&#FFD700&lCave Discovered"
-  cave-entry-subtitle: "&#CCCCCCExplore for hidden rewards"
+  cave-entry-subtitle: "&#888888Tier &#FFD700%tier% &#888888— Explore for hidden rewards"
   cave-exit: "&#00FFFFLeaving Cave"
   cave-exit-subtitle: "&#888888Returning to the mine"
   # Title shown when a player empties all items from a cave chest
@@ -458,6 +462,7 @@ mine:
   cave-looted-subtitle: "&#CCCCCCThe cave collapses behind you..."
   # Floating hologram broadcast to all mine players when a cave is discovered
   cave-discovered-broadcast: "&#FFD700&l⛏ %player% &#FFD700&lfound a cave!"
+  cave-reward: "  %evolv3_prefix% &#CCCCCCReceived &#FFFFFF%reward%&#CCCCCC!"
   # Admin feedback
   spawn-set: "  %evolv3_prefix% &#00FFFFSpawn for mine &#FFFFFF%mine% &#00FFFFset to your location."
   resetting: "  %evolv3_prefix% &#00FFFFMine &#FFFFFF%mine% &#00FFFFis resetting..."
@@ -556,6 +561,18 @@ launchpad:
   pad-removed: "  %evolv3_prefix% &#FF5555Launch pad removed at &#FFFFFF(%x%, %y%, %z%)&#FF5555."
   already-exists: "  %evolv3_prefix% &cA launch pad already exists here. Remove it first."
   not-pressure-plate: "  %evolv3_prefix% &cThat's not a pressure plate. Right-click a pressure plate."
+
+# =====================================================
+# Scroll Messages
+# =====================================================
+scroll:
+  redeemed:           "  %evolv3_prefix% &#CCCCCCRedeemed %reward%&#CCCCCC."
+  combined:           "  %evolv3_prefix% &#FFD700Combined into &#FFFFFF%amount% %type%&#FFD700."
+  applied-xp:         "  %evolv3_prefix% &#00FFFFApplied &#FFFFFF+%amount% XP &#00FFFFto your pickaxe."
+  applied-atoms:      "  %evolv3_prefix% &#FFEE00Applied &#FFFFFF+%amount% Atoms &#FFEE00to your pickaxe."
+  use-on-pickaxe:     "  %evolv3_prefix% &#888888Drag this scroll onto a pickaxe in your inventory to apply it."
+  pickaxe-not-loaded: "  %evolv3_prefix% &cPickaxe not loaded — hold it in your main hand first."
+  given:              "  %evolv3_prefix% &#00FFFFGiven &#FFFFFF%player% &#00FFFFa &#FFFFFF%type% &#00FFFFscroll &#888888(x%amount%)&#00FFFF."
   no-pad-at-location: "  %evolv3_prefix% &cNo launch pad exists at that location."
   create-failed: "  %evolv3_prefix% &cFailed to create launch pad."
   no-pads: "  %evolv3_prefix% &#CCCCCCNo launch pads configured."

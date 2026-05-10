@@ -25,6 +25,8 @@ import org.benski.evolv3.registry.DataCenterRegistry;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.TextDecoration;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
+import net.kyori.adventure.title.Title;
+import java.time.Duration;
 import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.configuration.file.FileConfiguration;
@@ -386,6 +388,7 @@ public class PickaxeManager
             profile.currentEssence -= profile.targetEssence;
             profile.targetEssence = Math.min(cap, Math.max(1, (int)(profile.targetEssence * multiplier)));
             player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.5f);
+            showEnchantRollTitle(player);
         }
     }
 
@@ -407,20 +410,45 @@ public class PickaxeManager
         }
 
         double multiplier = getDefaultConfig().getDouble(ConfigPaths.Default.Atoms.ATOM_TARGET_MULTIPLIER, 1.5);
-        String msg = getMessagesConfig().getString(ConfigPaths.Messages.Pickaxe.EVOLVE_SUCCESS,
-                "%evolv3_prefix% &6&l[EVOLUTION ROLL] &eYou earned an evolution roll!");
 
         while (profile.evolutionAtoms >= profile.atomTarget) {
             profile.evolutionRolls++;
             profile.evolutionAtoms -= profile.atomTarget;
-
-            // Scale the next atom target
             profile.atomTarget = Math.max(1, (int) (profile.atomTarget * multiplier));
 
-            // Notify the player
             player.playSound(player.getLocation(), Sound.UI_TOAST_CHALLENGE_COMPLETE, 1.0f, 1.0f);
-            player.sendMessage(Utils.formatMessage(player, msg));
+            showEvolveRollTitle(player);
         }
+    }
+
+    private void showEvolveRollTitle(Player player)
+    {
+        FileConfiguration messages = getMessagesConfig();
+        String rawTitle    = messages.getString(ConfigPaths.Messages.Pickaxe.EVOLVE_SUCCESS_TITLE,    "&#FFD700&l⚛ Evolution Roll");
+        String rawSubtitle = messages.getString(ConfigPaths.Messages.Pickaxe.EVOLVE_SUCCESS_SUBTITLE, "&#CCCCCCYou earned an Evolution Roll");
+        Component title    = LegacyComponentSerializer.legacySection()
+                .deserialize(Utils.formatMessage(player, rawTitle))
+                .decoration(TextDecoration.ITALIC, false);
+        Component subtitle = LegacyComponentSerializer.legacySection()
+                .deserialize(Utils.formatMessage(player, rawSubtitle))
+                .decoration(TextDecoration.ITALIC, false);
+        player.showTitle(Title.title(title, subtitle,
+                Title.Times.times(Duration.ofMillis(200), Duration.ofMillis(2000), Duration.ofMillis(500))));
+    }
+
+    private void showEnchantRollTitle(Player player)
+    {
+        FileConfiguration messages = getMessagesConfig();
+        String rawTitle    = messages.getString(ConfigPaths.Messages.Pickaxe.ENCHANT_ROLL_TITLE,    "&#B366D9&l✦ Enchant Roll");
+        String rawSubtitle = messages.getString(ConfigPaths.Messages.Pickaxe.ENCHANT_ROLL_SUBTITLE, "&#CCCCCCYou earned an Enchant Roll");
+        Component title    = LegacyComponentSerializer.legacySection()
+                .deserialize(Utils.formatMessage(player, rawTitle))
+                .decoration(TextDecoration.ITALIC, false);
+        Component subtitle = LegacyComponentSerializer.legacySection()
+                .deserialize(Utils.formatMessage(player, rawSubtitle))
+                .decoration(TextDecoration.ITALIC, false);
+        player.showTitle(Title.title(title, subtitle,
+                Title.Times.times(Duration.ofMillis(200), Duration.ofMillis(2000), Duration.ofMillis(500))));
     }
 
     // -------------------------------------------------------------------------

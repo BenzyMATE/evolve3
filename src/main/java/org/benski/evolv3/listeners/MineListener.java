@@ -19,18 +19,22 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.block.BlockBreakEvent;
+import org.bukkit.event.inventory.InventoryAction;
+import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.world.ChunkLoadEvent;
 import org.bukkit.entity.TextDisplay;
-import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.persistence.PersistentDataType;
 import org.benski.evolv3.core.constants.ConfigNames;
 import org.benski.evolv3.core.helpers.FontUtils;
 import org.benski.evolv3.core.helpers.Messageable;
+import org.benski.evolv3.core.managers.PickaxeManager;
 import org.benski.evolv3.registry.ConfigRegistry;
+import org.benski.evolv3.registry.DataCenterRegistry;
 import org.bukkit.Bukkit;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -135,12 +139,14 @@ public class MineListener extends BaseListener
         UUID uuid = player.getUniqueId();
         boolean wasInCave = playersInCave.contains(uuid);
         boolean isInCave = false;
+        String enteredCaveKey = null;
 
         for (Map.Entry<String, CaveBounds> entry : CaveManager.getInstance().getAllCaveRegions().entrySet())
         {
             if (entry.getValue().contains(to))
             {
                 isInCave = true;
+                enteredCaveKey = entry.getKey();
                 break;
             }
         }
@@ -151,7 +157,10 @@ public class MineListener extends BaseListener
             player.playSound(player.getLocation(), Sound.AMBIENT_CAVE, 1.0f, 0.8f);
 
             String title = MineManager.getInstance().getMessage("cave-entry");
-            String subtitle = MineManager.getInstance().getMessage("cave-entry-subtitle");
+            String rawSubtitle = MineManager.getInstance().getMessage("cave-entry-subtitle");
+
+            int tier = CaveManager.getInstance().getCaveTierForCave(enteredCaveKey);
+            String subtitle = rawSubtitle.replace("%tier%", String.valueOf(tier));
             showTitle(player, title, subtitle);
 
             // Broadcast a floating hologram animation to all players in the mine
@@ -236,6 +245,35 @@ public class MineListener extends BaseListener
         String title = MineManager.getInstance().getMessage("cave-looted");
         String subtitle = MineManager.getInstance().getMessage("cave-looted-subtitle");
         showTitle(player, title, subtitle);
+    }
+
+    // -------------------------------------------------------------------------
+    // Cave chest pickup sound
+    // -------------------------------------------------------------------------
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onCaveChestPickup(InventoryClickEvent event)
+    {
+        if (!(event.getWhoClicked() instanceof Player player)) return;
+
+        var clickedInv = event.getClickedInventory();
+        if (clickedInv == null) return;
+        if (!(clickedInv.getHolder() instanceof Chest chest)) return;
+        if (CaveManager.getInstance().getCaveKeyForChest(chest.getLocation()) == null) return;
+
+        ItemStack item = event.getCurrentItem();
+        if (item == null || item.getType() == Material.AIR) return;
+
+        InventoryAction action = event.getAction();
+        if (action != InventoryAction.PICKUP_ALL
+                && action != InventoryAction.PICKUP_HALF
+                && action != InventoryAction.PICKUP_ONE
+                && action != InventoryAction.PICKUP_SOME
+                && action != InventoryAction.MOVE_TO_OTHER_INVENTORY
+                && action != InventoryAction.HOTBAR_SWAP
+                && action != InventoryAction.HOTBAR_MOVE_AND_READD) return;
+
+        player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 0.8f, 1.3f);
     }
 
     // -------------------------------------------------------------------------

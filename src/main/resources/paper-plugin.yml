@@ -50,6 +50,13 @@ commands:
     usage: /<command> <enchant> <level>
     aliases: [epickaxe, ep]
     permission: evolv3.admin
+  cell:
+    description: Manage your rented cell
+    usage: /<command> [rent|list|tp|leave|member]
+  island:
+    description: Manage your island
+    usage: /<command> [tp|lock|visits|member]
+    aliases: [islands]
   test:
     description: Test command
     usage: /<command>

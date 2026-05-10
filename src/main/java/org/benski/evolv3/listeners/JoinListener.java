@@ -32,6 +32,7 @@ import org.benski.evolv3.enchants.ScavengerStoneHandler;
 import org.benski.evolv3.enchants.ThorStoneHandler;
 import org.benski.evolv3.enchants.VortexStoneHandler;
 import org.benski.evolv3.enchants.UnbreakingStoneHandler;
+import org.benski.evolv3.core.managers.OmnitoolManager;
 import org.benski.evolv3.datacenters.ArmorDataCenter;
 import org.benski.evolv3.datacenters.PlayerDataCenter;
 import org.benski.evolv3.models.player.PlayerProfile;
@@ -44,6 +45,9 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.List;
@@ -76,6 +80,21 @@ public class JoinListener extends BaseListener
         Player player = event.getPlayer();
         String playerId = player.getUniqueId().toString();
         boolean firstJoin = !player.hasPlayedBefore();
+
+        // Remove any omnitool axe/sword that persisted to disk after a server
+        // crash while the player was in omnitool form.  storedPickaxes is
+        // in-memory only, so the proxy item would be orphaned on restart —
+        // clearing it here prevents a duplication exploit before any other
+        // code runs.
+        for (int i = 0; i < player.getInventory().getSize(); i++) {
+            ItemStack item = player.getInventory().getItem(i);
+            if (item == null || item.getType().isAir()) continue;
+            ItemMeta im = item.getItemMeta();
+            if (im != null && im.getPersistentDataContainer()
+                    .has(OmnitoolManager.OMNITOOL_ITEM_KEY, PersistentDataType.STRING)) {
+                player.getInventory().setItem(i, null);
+            }
+        }
 
         PlayerDataCenter playerDataCenter = DataCenterRegistry.getInstance().getPlayerDataCenter();
         ArmorDataCenter armorDataCenter = DataCenterRegistry.getInstance().getArmorDataCenter();
