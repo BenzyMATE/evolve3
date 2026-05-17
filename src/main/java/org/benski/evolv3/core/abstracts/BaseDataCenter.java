@@ -1,5 +1,10 @@
 package org.benski.evolv3.core.abstracts;
 
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Consumer;
+import java.util.logging.Logger;
 import org.benski.evolv3.Main;
 import org.benski.evolv3.core.interfaces.DataCenter;
 import org.benski.evolv3.core.interfaces.MongoCollection;
@@ -8,119 +13,117 @@ import org.benski.evolv3.core.managers.StorageRegistryManager;
 import org.benski.evolv3.core.managers.TaskManager;
 import org.bukkit.entity.Player;
 
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Consumer;
-import java.util.logging.Logger;
+public abstract class BaseDataCenter<T extends MongoCollection> implements DataCenter<T> {
+  protected final Map<String, T> data = new ConcurrentHashMap<>();
+  protected final MongoManager mongoManager = MongoManager.getInstance();
+  protected final StorageRegistryManager storageManager = StorageRegistryManager.getInstance();
+  private final Logger logger = Main.getInstance().getLogger();
 
-public abstract class BaseDataCenter<T extends MongoCollection> implements DataCenter<T>
-{
-    protected final Map<String, T> data = new ConcurrentHashMap<>();
-    protected final MongoManager mongoManager = MongoManager.getInstance();
-    protected final StorageRegistryManager storageManager = StorageRegistryManager.getInstance();
-    private final Logger logger = Main.getInstance().getLogger();
+  /**
+   * IDs currently being loaded from the database (async in-flight). Guards against the TOCTOU race
+   * in {@link #loadOrCreate} where two rapid join events could both pass the {@code exists()} cache
+   * check before either async callback returns, causing a duplicate create.
+   */
+  private final Set<String> inFlight = ConcurrentHashMap.newKeySet();
 
-    /**
-     * IDs currently being loaded from the database (async in-flight).
-     * Guards against the TOCTOU race in {@link #loadOrCreate} where two rapid
-     * join events could both pass the {@code exists()} cache check before either
-     * async callback returns, causing a duplicate create.
-     */
-    private final Set<String> inFlight = ConcurrentHashMap.newKeySet();
+  /** {@inheritDoc} */
+  @Override
+  public Map<String, T> getAll() {
+    return data;
+  }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public Map<String, T> getAll() {
-        return data;
-    }
+  /** {@inheritDoc} */
+  @Override
+  public boolean exists(String id) {
+    return data.containsKey(id);
+  }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public boolean exists(String id) {
-        return data.containsKey(id);
-    }
+  /** {@inheritDoc} */
+  @Override
+  public void updateLocal(T profile, boolean save) {
+    data.put(getProfileId(profile), profile);
+  }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void updateLocal(T profile, boolean save) {
-        data.put(getProfileId(profile), profile);
-    }
+  /** {@inheritDoc} */
+  @Override
+  public void existsInDatabase(String id, Consumer<Boolean> callback) {
+    this.mongoManager
+        .getByIdAsync(getCollectionName(), "id", id, getProfileClass())
+        .thenAcceptAsync(
+            profile -> callback.accept(profile != null), TaskManager.getInstance()::runSync)
+        .exceptionally(
+            throwable -> {
+              logger.severe(
+                  "Failed to check existence for ID " + id + ": " + throwable.getMessage());
+              callback.accept(false);
+              return null;
+            });
+  }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void existsInDatabase(String id, Consumer<Boolean> callback) {
-        this.mongoManager.getByIdAsync(getCollectionName(), "id", id, getProfileClass())
-                .thenAcceptAsync(profile -> callback.accept(profile != null), TaskManager.getInstance()::runSync)
-                .exceptionally(throwable -> {
-                    logger.severe("Failed to check existence for ID " + id + ": " + throwable.getMessage());
-                    callback.accept(false);
-                    return null;
-                });
-    }
+  /** {@inheritDoc} */
+  @Override
+  public void loadIntoCache(Player player, String profileId) {
+    this.mongoManager
+        .getByIdAsync(getCollectionName(), "id", profileId, getProfileClass())
+        .thenAcceptAsync(
+            profile -> {
+              if (profile == null) {
+                logger.warning(
+                    getLogPrefix()
+                        + "Profile was null for ID "
+                        + profileId
+                        + " despite existsInDatabase returning true!");
+                return;
+              }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void loadIntoCache(Player player, String profileId) {
-        this.mongoManager.getByIdAsync(getCollectionName(), "id", profileId, getProfileClass())
-                .thenAcceptAsync(profile -> {
-                    if (profile == null) {
-                        logger.warning(getLogPrefix() + "Profile was null for ID " + profileId + " despite existsInDatabase returning true!");
-                        return;
-                    }
+              initializeProfile(profile, player);
+              data.put(profileId, profile);
+            },
+            TaskManager.getInstance()::runSync)
+        .exceptionally(
+            throwable -> {
+              logger.severe("Failed to load profile " + profileId + ": " + throwable.getMessage());
+              return null;
+            });
+  }
 
-                    initializeProfile(profile, player);
-                    data.put(profileId, profile);
+  /**
+   * {@inheritDoc}
+   *
+   * <p>A set of in-flight IDs prevents a TOCTOU race where two rapid join events both pass the
+   * {@link #exists} cache check before either async callback returns, which would trigger two
+   * database creates for the same profile.
+   */
+  @Override
+  public void loadOrCreate(Player player, String id) {
+    if (exists(id)) return;
 
-                }, TaskManager.getInstance()::runSync)
-                .exceptionally(throwable -> {
-                    logger.severe("Failed to load profile " + profileId + ": " + throwable.getMessage());
-                    return null;
-                });
-    }
+    if (!inFlight.add(id)) return;
 
-    /**
-     * {@inheritDoc}
-     *
-     * <p>A set of in-flight IDs prevents a TOCTOU race where two rapid join
-     * events both pass the {@link #exists} cache check before either async
-     * callback returns, which would trigger two database creates for the same
-     * profile.</p>
-     */
-    @Override
-    public void loadOrCreate(Player player, String id) {
-        if (exists(id)) return;
-
-        // If a load is already in-flight for this ID, do not start another.
-        if (!inFlight.add(id)) return;
-
-        existsInDatabase(id, exists -> {
-            try {
-                if (exists) {
-                    loadIntoCache(player, id);
-                } else {
-                    createNewProfile(player, id);
-                }
-            } finally {
-                inFlight.remove(id);
+    existsInDatabase(
+        id,
+        exists -> {
+          try {
+            if (exists) {
+              loadIntoCache(player, id);
+            } else {
+              createNewProfile(player, id);
             }
+          } finally {
+            inFlight.remove(id);
+          }
         });
-    }
+  }
 
-    protected abstract String getCollectionName();
-    protected abstract Class<T> getProfileClass();
-    protected abstract void initializeProfile(T profile, Player player);
-    protected abstract void createNewProfile(Player player, String id);
-    protected abstract String getProfileId(T profile);
-    protected abstract String getLogPrefix();
+  protected abstract String getCollectionName();
+
+  protected abstract Class<T> getProfileClass();
+
+  protected abstract void initializeProfile(T profile, Player player);
+
+  protected abstract void createNewProfile(Player player, String id);
+
+  protected abstract String getProfileId(T profile);
+
+  protected abstract String getLogPrefix();
 }

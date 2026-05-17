@@ -1,5 +1,6 @@
 package org.benski.evolv3.listeners;
 
+import java.util.List;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.TextDecoration;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
@@ -9,35 +10,35 @@ import org.benski.evolv3.core.constants.ConfigPaths;
 import org.benski.evolv3.core.helpers.SkinRenderer;
 import org.benski.evolv3.core.helpers.Utils;
 import org.benski.evolv3.core.managers.EnchantDropManager;
-import org.benski.evolv3.core.managers.PickaxeManager;
-import org.benski.evolv3.datacenters.PickaxeDataCenter;
-import org.benski.evolv3.registry.ListenerRegistry;
 import org.benski.evolv3.core.managers.EnchantSelectionManager;
 import org.benski.evolv3.core.managers.EvolutionSelectionManager;
+import org.benski.evolv3.core.managers.OmnitoolManager;
+import org.benski.evolv3.core.managers.PickaxeManager;
 import org.benski.evolv3.core.managers.RankManager;
+import org.benski.evolv3.datacenters.ArmorDataCenter;
+import org.benski.evolv3.datacenters.PickaxeDataCenter;
+import org.benski.evolv3.datacenters.PlayerDataCenter;
 import org.benski.evolv3.enchants.AutoSellStoneHandler;
 import org.benski.evolv3.enchants.EfficiencyStoneHandler;
+import org.benski.evolv3.enchants.ExplosiveStoneHandler;
+import org.benski.evolv3.enchants.ExtractionEnchant;
+import org.benski.evolv3.enchants.ExtractionStoneHandler;
+import org.benski.evolv3.enchants.FortuneEnchant;
 import org.benski.evolv3.enchants.FortuneStoneHandler;
 import org.benski.evolv3.enchants.FrostbiteStoneHandler;
 import org.benski.evolv3.enchants.FurnaceStoneHandler;
 import org.benski.evolv3.enchants.LazerStoneHandler;
 import org.benski.evolv3.enchants.MerchantStoneHandler;
-import org.benski.evolv3.enchants.ExplosiveStoneHandler;
-import org.benski.evolv3.enchants.ExtractionStoneHandler;
-import org.benski.evolv3.enchants.ExtractionEnchant;
-import org.benski.evolv3.enchants.FortuneEnchant;
 import org.benski.evolv3.enchants.RadioactiveEnchant;
 import org.benski.evolv3.enchants.RadioactiveStoneHandler;
 import org.benski.evolv3.enchants.ScavengerStoneHandler;
 import org.benski.evolv3.enchants.ThorStoneHandler;
-import org.benski.evolv3.enchants.VortexStoneHandler;
 import org.benski.evolv3.enchants.UnbreakingStoneHandler;
-import org.benski.evolv3.core.managers.OmnitoolManager;
-import org.benski.evolv3.datacenters.ArmorDataCenter;
-import org.benski.evolv3.datacenters.PlayerDataCenter;
+import org.benski.evolv3.enchants.VortexStoneHandler;
 import org.benski.evolv3.models.player.PlayerProfile;
 import org.benski.evolv3.registry.ConfigRegistry;
 import org.benski.evolv3.registry.DataCenterRegistry;
+import org.benski.evolv3.registry.ListenerRegistry;
 import org.bukkit.Bukkit;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
@@ -50,208 +51,190 @@ import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.plugin.java.JavaPlugin;
 
-import java.util.List;
+/** Handles player join and quit events. Responsible for loading and unloading player profiles. */
+public class JoinListener extends BaseListener {
+  /**
+   * Constructor for JoinListener.
+   *
+   * @param plugin The plugin instance.
+   */
+  public JoinListener(JavaPlugin plugin) {
+    super(plugin);
+  }
 
-/**
- * Handles player join and quit events.
- * Responsible for loading and unloading player profiles.
- */
-public class JoinListener extends BaseListener
-{
-    /**
-     * Constructor for JoinListener.
-     *
-     * @param plugin The plugin instance.
-     */
-    public JoinListener(JavaPlugin plugin)
-    {
-        super(plugin);
+  /**
+   * Handles player join events. Loads the player's profile from the database or creates a new one.
+   *
+   * @param event The player join event.
+   */
+  @EventHandler(priority = EventPriority.LOWEST)
+  public void onJoinEvent(PlayerJoinEvent event) {
+    Player player = event.getPlayer();
+    String playerId = player.getUniqueId().toString();
+    boolean firstJoin = !player.hasPlayedBefore();
+
+    for (int i = 0; i < player.getInventory().getSize(); i++) {
+      ItemStack item = player.getInventory().getItem(i);
+      if (item == null || item.getType().isAir()) continue;
+      ItemMeta im = item.getItemMeta();
+      if (im != null
+          && im.getPersistentDataContainer()
+              .has(OmnitoolManager.OMNITOOL_ITEM_KEY, PersistentDataType.STRING)) {
+        player.getInventory().setItem(i, null);
+      }
     }
 
-    /**
-     * Handles player join events.
-     * Loads the player's profile from the database or creates a new one.
-     *
-     * @param event The player join event.
-     */
-    @EventHandler(priority = EventPriority.LOWEST)
-    public void onJoinEvent(PlayerJoinEvent event)
-    {
-        Player player = event.getPlayer();
-        String playerId = player.getUniqueId().toString();
-        boolean firstJoin = !player.hasPlayedBefore();
+    PlayerDataCenter playerDataCenter = DataCenterRegistry.getInstance().getPlayerDataCenter();
+    ArmorDataCenter armorDataCenter = DataCenterRegistry.getInstance().getArmorDataCenter();
 
-        // Remove any omnitool axe/sword that persisted to disk after a server
-        // crash while the player was in omnitool form.  storedPickaxes is
-        // in-memory only, so the proxy item would be orphaned on restart —
-        // clearing it here prevents a duplication exploit before any other
-        // code runs.
-        for (int i = 0; i < player.getInventory().getSize(); i++) {
-            ItemStack item = player.getInventory().getItem(i);
-            if (item == null || item.getType().isAir()) continue;
-            ItemMeta im = item.getItemMeta();
-            if (im != null && im.getPersistentDataContainer()
-                    .has(OmnitoolManager.OMNITOOL_ITEM_KEY, PersistentDataType.STRING)) {
-                player.getInventory().setItem(i, null);
-            }
-        }
+    if (playerDataCenter != null) {
+      playerDataCenter.loadOrCreate(player, playerId);
+    }
 
-        PlayerDataCenter playerDataCenter = DataCenterRegistry.getInstance().getPlayerDataCenter();
-        ArmorDataCenter armorDataCenter = DataCenterRegistry.getInstance().getArmorDataCenter();
+    if (armorDataCenter != null) {
+      armorDataCenter.loadOrCreate(player, playerId);
+    }
 
-        if (playerDataCenter != null) {
-            playerDataCenter.loadOrCreate(player, playerId);
-        }
+    EnchantSelectionManager.getInstance().handlePlayerJoin(player);
 
-        if (armorDataCenter != null) {
-            armorDataCenter.loadOrCreate(player, playerId);
-        }
+    EvolutionSelectionManager.getInstance().handlePlayerJoin(player);
 
-        // Restore any in-progress enchant selection (same options, pickaxe returned)
-        EnchantSelectionManager.getInstance().handlePlayerJoin(player);
-
-        // Restore any in-progress evolution animation (same rarity, items delivered)
-        EvolutionSelectionManager.getInstance().handlePlayerJoin(player);
-
-        // Apply rank permissions once the profile has had a tick to load from cache.
-        // The profile is loaded synchronously from cache on the same tick for returning
-        // players; a 2-tick delay covers the async DB load path for new/first joins.
-        Bukkit.getScheduler().runTaskLater(plugin, () -> {
-            if (!player.isOnline()) return;
-            PlayerProfile profile = playerDataCenter != null ? playerDataCenter.getLocal(player) : null;
-            if (profile != null) {
+    Bukkit.getScheduler()
+        .runTaskLater(
+            plugin,
+            () -> {
+              if (!player.isOnline()) return;
+              PlayerProfile profile =
+                  playerDataCenter != null ? playerDataCenter.getLocal(player) : null;
+              if (profile != null) {
                 RankManager.getInstance().applyPermissions(player, profile);
-            }
-        }, 2L);
+              }
+            },
+            2L);
 
-        // Apply pickaxe lore regardless of which slot the pickaxe is in.
-        // A small delay ensures the pickaxe profile has loaded from cache before we read it.
-        Bukkit.getScheduler().runTaskLater(plugin, () -> {
-            if (player.isOnline()) PickaxeManager.getInstance().updateLoreFromInventory(player);
-        }, 5L);
+    Bukkit.getScheduler()
+        .runTaskLater(
+            plugin,
+            () -> {
+              if (player.isOnline()) PickaxeManager.getInstance().updateLoreFromInventory(player);
+            },
+            5L);
 
-        // Pre-warm all stored pickaxe profiles so /pickaxe shows full lore immediately.
-        // Runs at 40 ticks (2 s) to give the player profile time to load from MongoDB.
-        Bukkit.getScheduler().runTaskLater(plugin, () -> {
-            if (!player.isOnline()) return;
-            PlayerProfile profile = playerDataCenter != null ? playerDataCenter.getLocal(player) : null;
-            if (profile == null) return;
-            PickaxeDataCenter pickaxeDataCenter = DataCenterRegistry.getInstance().getPickaxeDataCenter();
-            if (pickaxeDataCenter == null) return;
-            for (String entry : profile.storedPickaxes) {
+    Bukkit.getScheduler()
+        .runTaskLater(
+            plugin,
+            () -> {
+              if (!player.isOnline()) return;
+              PlayerProfile profile =
+                  playerDataCenter != null ? playerDataCenter.getLocal(player) : null;
+              if (profile == null) return;
+              PickaxeDataCenter pickaxeDataCenter =
+                  DataCenterRegistry.getInstance().getPickaxeDataCenter();
+              if (pickaxeDataCenter == null) return;
+              for (String entry : profile.storedPickaxes) {
                 if (entry == null || entry.isEmpty()) continue;
                 String id = entry.split(":", 2)[0];
                 pickaxeDataCenter.tryPreload(player, id);
-            }
-        }, 40L);
+              }
+            },
+            40L);
 
-        // Send skin join message — slight delay so the player's client is fully loaded
-        Bukkit.getScheduler().runTaskLater(plugin, () -> sendJoinMessage(player, firstJoin), 20L);
-    }
+    Bukkit.getScheduler().runTaskLater(plugin, () -> sendJoinMessage(player, firstJoin), 20L);
+  }
 
-    private void sendJoinMessage(Player player, boolean firstJoin)
-    {
-        if (!player.isOnline()) return;
+  private void sendJoinMessage(Player player, boolean firstJoin) {
+    if (!player.isOnline()) return;
 
-        FileConfiguration messages = ConfigRegistry.getInstance().get(ConfigNames.MESSAGES);
-        if (!messages.getBoolean(ConfigPaths.Messages.JoinMessage.ENABLED, true)) return;
+    FileConfiguration messages = ConfigRegistry.getInstance().get(ConfigNames.MESSAGES);
+    if (!messages.getBoolean(ConfigPaths.Messages.JoinMessage.ENABLED, true)) return;
 
-        String padding = messages.getString(ConfigPaths.Messages.JoinMessage.SKIN_PADDING, "  ");
-        List<String> firstJoinLines = firstJoin
-                ? messages.getStringList(ConfigPaths.Messages.JoinMessage.FIRST_JOIN_LINES)
-                : List.of();
-        List<String> textLines = !firstJoinLines.isEmpty()
-                ? firstJoinLines
-                : messages.getStringList(ConfigPaths.Messages.JoinMessage.LINES);
+    String padding = messages.getString(ConfigPaths.Messages.JoinMessage.SKIN_PADDING, "  ");
+    List<String> firstJoinLines =
+        firstJoin
+            ? messages.getStringList(ConfigPaths.Messages.JoinMessage.FIRST_JOIN_LINES)
+            : List.of();
+    List<String> textLines =
+        !firstJoinLines.isEmpty()
+            ? firstJoinLines
+            : messages.getStringList(ConfigPaths.Messages.JoinMessage.LINES);
 
-        SkinRenderer.renderAsync(player, plugin, skinRows -> {
-            if (!player.isOnline()) return;
+    SkinRenderer.renderAsync(
+        player,
+        plugin,
+        skinRows -> {
+          if (!player.isOnline()) return;
 
-            player.sendMessage(Component.empty());
+          player.sendMessage(Component.empty());
 
-            for (int i = 0; i < skinRows.size(); i++) {
-                // Left-indent the skin, then fixed gap to text
-                Component line = Component.text(padding)
-                        .append(skinRows.get(i));
+          for (int i = 0; i < skinRows.size(); i++) {
+            Component line = Component.text(padding).append(skinRows.get(i));
 
-                if (i < textLines.size() && !textLines.get(i).isEmpty()) {
-                    // MatrixColorAPI outputs §-codes, so use legacySection to deserialize
-                    String formatted = Utils.formatMessage(player, textLines.get(i));
-                    Component text = LegacyComponentSerializer.legacySection()
-                            .deserialize(formatted)
-                            .decoration(TextDecoration.ITALIC, false);
-                    line = line
-                            .append(Component.text(padding))
-                            .append(text);
-                }
-
-                player.sendMessage(line);
+            if (i < textLines.size() && !textLines.get(i).isEmpty()) {
+              String formatted = Utils.formatMessage(player, textLines.get(i));
+              Component text =
+                  LegacyComponentSerializer.legacySection()
+                      .deserialize(formatted)
+                      .decoration(TextDecoration.ITALIC, false);
+              line = line.append(Component.text(padding)).append(text);
             }
 
-            player.sendMessage(Component.empty());
+            player.sendMessage(line);
+          }
+
+          player.sendMessage(Component.empty());
         });
+  }
+
+  /**
+   * Handles player quit events. Saves and unloads the player's profile from cache.
+   *
+   * @param event The player quit event.
+   */
+  @EventHandler(priority = EventPriority.HIGHEST)
+  public void onQuitEvent(PlayerQuitEvent event) {
+    Player player = event.getPlayer();
+
+    RankManager.getInstance().revokePermissions(player);
+
+    EnchantSelectionManager.getInstance().handlePlayerQuit(player);
+
+    EvolutionSelectionManager.getInstance().handlePlayerQuit(player);
+
+    ArmorDataCenter armorDataCenter = DataCenterRegistry.getInstance().getArmorDataCenter();
+    PlayerDataCenter playerDataCenter = DataCenterRegistry.getInstance().getPlayerDataCenter();
+
+    if (armorDataCenter != null) {
+      armorDataCenter.unloadProfile(player);
     }
 
-    /**
-     * Handles player quit events.
-     * Saves and unloads the player's profile from cache.
-     *
-     * @param event The player quit event.
-     */
-    @EventHandler(priority = EventPriority.HIGHEST)
-    public void onQuitEvent(PlayerQuitEvent event)
-    {
-        Player player = event.getPlayer();
-
-        // Revoke rank permissions before the player fully disconnects
-        RankManager.getInstance().revokePermissions(player);
-
-        // Save enchant animation state first, while the player is still technically online
-        EnchantSelectionManager.getInstance().handlePlayerQuit(player);
-
-        // Save evolution animation state — must be called before profile unload
-        EvolutionSelectionManager.getInstance().handlePlayerQuit(player);
-
-        ArmorDataCenter armorDataCenter = DataCenterRegistry.getInstance().getArmorDataCenter();
-        PlayerDataCenter playerDataCenter = DataCenterRegistry.getInstance().getPlayerDataCenter();
-
-        if (armorDataCenter != null) {
-            armorDataCenter.unloadProfile(player);
-        }
-
-        if (playerDataCenter != null) {
-            playerDataCenter.unloadProfile(player);
-        }
-
-        // Clean up any stale per-player entries in static enchant maps.
-        // These are normally consumed during block breaks but may linger if the player
-        // disconnects mid-event or if a break was cancelled after NORMAL priority wrote them.
-        java.util.UUID uuid = player.getUniqueId();
-
-        // Clear any in-progress BreakContext captured at NORMAL priority but not yet
-        // consumed at HIGHEST (player disconnected between the two event passes).
-        var breakListener = ListenerRegistry.getInstance().get("break");
-        if (breakListener instanceof BreakListener bl) {
-            bl.clearPendingBreak(uuid);
-        }
-
-        EnchantDropManager.pop(uuid);
-        ExtractionEnchant.popBonus(uuid);
-        RadioactiveEnchant.popBonus(uuid);
-        FortuneEnchant.popDropAmount(uuid);
-        EfficiencyStoneHandler.getInstance().cleanup(uuid);
-        RadioactiveStoneHandler.cleanup(uuid);
-        FortuneStoneHandler.cleanup(uuid);
-        FrostbiteStoneHandler.cleanup(uuid);
-        FurnaceStoneHandler.cleanup(uuid);
-        MerchantStoneHandler.cleanup(uuid);
-        LazerStoneHandler.cleanup(uuid);
-        UnbreakingStoneHandler.getInstance().cleanup(uuid);
-        AutoSellStoneHandler.getInstance().cleanup(uuid);
-        ExplosiveStoneHandler.cleanup(uuid);
-        ExtractionStoneHandler.cleanup(uuid);
-        ScavengerStoneHandler.cleanup(uuid);
-        ThorStoneHandler.cleanup(uuid);
-        VortexStoneHandler.cleanup(uuid);
+    if (playerDataCenter != null) {
+      playerDataCenter.unloadProfile(player);
     }
+
+    java.util.UUID uuid = player.getUniqueId();
+
+    var breakListener = ListenerRegistry.getInstance().get("break");
+    if (breakListener instanceof BreakListener bl) {
+      bl.clearPendingBreak(uuid);
+    }
+
+    EnchantDropManager.pop(uuid);
+    ExtractionEnchant.popBonus(uuid);
+    RadioactiveEnchant.popBonus(uuid);
+    FortuneEnchant.popDropAmount(uuid);
+    EfficiencyStoneHandler.getInstance().cleanup(uuid);
+    RadioactiveStoneHandler.cleanup(uuid);
+    FortuneStoneHandler.cleanup(uuid);
+    FrostbiteStoneHandler.cleanup(uuid);
+    FurnaceStoneHandler.cleanup(uuid);
+    MerchantStoneHandler.cleanup(uuid);
+    LazerStoneHandler.cleanup(uuid);
+    UnbreakingStoneHandler.getInstance().cleanup(uuid);
+    AutoSellStoneHandler.getInstance().cleanup(uuid);
+    ExplosiveStoneHandler.cleanup(uuid);
+    ExtractionStoneHandler.cleanup(uuid);
+    ScavengerStoneHandler.cleanup(uuid);
+    ThorStoneHandler.cleanup(uuid);
+    VortexStoneHandler.cleanup(uuid);
+  }
 }

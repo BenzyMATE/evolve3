@@ -82,7 +82,11 @@
       "Bash(\"C:\\\\Program Files\\\\Java\\\\jdk-21\\\\bin\\\\java.exe\" -version)",
       "Bash(JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64 mvn package -q)",
       "PowerShell(Get-Command *)",
-      "Bash(echo \"EXIT:$?\"0)"
+      "Bash(echo \"EXIT:$?\"0)",
+      "PowerShell(mvn package *)",
+      "PowerShell(mvn compile *)",
+      "PowerShell($content = [System.IO.File]::ReadAllText\\(\"C:\\\\Users\\\\benje\\\\IdeaProjects\\\\evolve3\\\\src\\\\main\\\\java\\\\org\\\\benski\\\\evolv3\\\\enchants\\\\ScavengerEnchant.java\"\\); $lines = $content -split \"`n\"; $line = $lines[239]; [int[]][char[]]$line | Where-Object { $_ -gt 127 } | ForEach-Object { \"U+{0:X4}: {1}\" -f $_, [char]$_ })",
+      "PowerShell($content = [System.IO.File]::ReadAllText\\(\"C:\\\\Users\\\\benje\\\\IdeaProjects\\\\evolve3\\\\src\\\\main\\\\java\\\\org\\\\benski\\\\evolv3\\\\hooks\\\\PlaceholderAPIExpansion.java\"\\); $lines = $content -split \"`n\"; $line = $lines[220]; [int[]][char[]]$line | Where-Object { $_ -gt 127 } | ForEach-Object { \"U+{0:X4}: {1}\" -f $_, [char]$_ })"
     ],
     "deny": [],
     "ask": []

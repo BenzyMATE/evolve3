@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<FindBugsFilter>
+    <!-- Intentional Bukkit singleton pattern: instance = this in constructors -->
+    <Match>
+        <Bug pattern="ST_WRITE_TO_STATIC_FROM_INSTANCE_METHOD"/>
+    </Match>
+
+    <!-- False positives: null checks are present but SpotBugs can't follow the control flow -->
+    <Match>
+        <Class name="org.benski.evolv3.animations.pickup.DissolvePickupAnimation"/>
+        <Bug pattern="NP_NULL_ON_SOME_PATH,NP_NULL_PARAM_DEREF"/>
+    </Match>
+    <Match>
+        <Class name="org.benski.evolv3.menus.FurnaceSmeltMenu"/>
+        <Bug pattern="NP_NULL_PARAM_DEREF"/>
+    </Match>
+</FindBugsFilter>

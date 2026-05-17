@@ -1,5 +1,9 @@
 package org.benski.evolv3.enchants;
 
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ThreadLocalRandom;
 import lombok.experimental.ExtensionMethod;
 import org.benski.evolv3.core.constants.Enchants;
 import org.benski.evolv3.core.helpers.ItemStackExtensions;
@@ -15,121 +19,110 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.inventory.ItemStack;
 
-import java.util.Map;
-import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ThreadLocalRandom;
-
 /**
- * Listener for the Fortune custom enchantment.
- * Passively increases the number of blocks received per block broken.
+ * Listener for the Fortune custom enchantment. Passively increases the number of blocks received
+ * per block broken.
  *
- * <p>Drop amount scales with enchantment level in tiers of 20:</p>
+ * <p>Drop amount scales with enchantment level in tiers of 20:
+ *
  * <ul>
- *   <li>Level  1–19: 2 blocks</li>
- *   <li>Level 20–39: 3 blocks</li>
- *   <li>Level 40–59: 4 blocks</li>
- *   <li>Level 60–79: 5 blocks</li>
- *   <li>Level 80–99: 6 blocks</li>
- *   <li>Level   100: 7 blocks</li>
+ *   <li>Level 1–19: 2 blocks
+ *   <li>Level 20–39: 3 blocks
+ *   <li>Level 40–59: 4 blocks
+ *   <li>Level 60–79: 5 blocks
+ *   <li>Level 80–99: 6 blocks
+ *   <li>Level 100: 7 blocks
  * </ul>
  *
- * <p>At NORMAL priority, writes the fortune drop amount to {@link #pendingDropAmount}
- * so {@code BreakListener} (HIGHEST) can use it as the final drop count.
- * Stacks with Alchemy and Furnace — Fortune controls quantity, those control type.</p>
+ * <p>At NORMAL priority, writes the fortune drop amount to {@link #pendingDropAmount} so {@code
+ * BreakListener} (HIGHEST) can use it as the final drop count. Stacks with Alchemy and Furnace —
+ * Fortune controls quantity, those control type.
  */
 @ExtensionMethod(ItemStackExtensions.class)
-public class FortuneEnchant implements Listener
-{
-    /** Pending fortune drop amount per player, consumed by BreakListener at HIGHEST priority. */
-    private static final Map<UUID, Integer> pendingDropAmount     = new ConcurrentHashMap<>();
-    /** Rare (Gem Seeker): 20% chance per block break to find essence. */
-    private static final Map<UUID, Boolean> pendingGemSeeker = new ConcurrentHashMap<>();
+public class FortuneEnchant implements Listener {
+  /** Pending fortune drop amount per player, consumed by BreakListener at HIGHEST priority. */
+  private static final Map<UUID, Integer> pendingDropAmount = new ConcurrentHashMap<>();
 
-    /**
-     * Returns and removes the pending fortune drop amount for a player.
-     * Called by {@code BreakListener} after all NORMAL/HIGH enchant listeners have fired.
-     *
-     * @param uuid the player's UUID
-     * @return the fortune drop amount, or -1 if Fortune did not apply
-     */
-    public static int popDropAmount(UUID uuid)
-    {
-        Integer amount = pendingDropAmount.remove(uuid);
-        return amount != null ? amount : -1;
+  /** Rare (Gem Seeker): 20% chance per block break to find essence. */
+  private static final Map<UUID, Boolean> pendingGemSeeker = new ConcurrentHashMap<>();
+
+  /**
+   * Returns and removes the pending fortune drop amount for a player. Called by {@code
+   * BreakListener} after all NORMAL/HIGH enchant listeners have fired.
+   *
+   * @param uuid the player's UUID
+   * @return the fortune drop amount, or -1 if Fortune did not apply
+   */
+  public static int popDropAmount(UUID uuid) {
+    Integer amount = pendingDropAmount.remove(uuid);
+    return amount != null ? amount : -1;
+  }
+
+  public static boolean popGemSeeker(UUID uuid) {
+    Boolean flag = pendingGemSeeker.remove(uuid);
+    return flag != null && flag;
+  }
+
+  /**
+   * Computes the drop amount for a given Fortune level.
+   *
+   * @param level the current enchant level
+   * @return blocks per break (2 at level 1, +1 per 20 levels, max 7 at level 100)
+   */
+  public static int getDropAmount(int level) {
+    return 2 + (level / 20);
+  }
+
+  @EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
+  public void onBlockBreak(BlockBreakEvent event) {
+    Player player = event.getPlayer();
+    ItemStack item = player.getInventory().getItemInMainHand();
+
+    if (!Utils.isPickaxe(item.getType())) {
+      return;
     }
 
-    public static boolean popGemSeeker(UUID uuid)
-    {
-        Boolean flag = pendingGemSeeker.remove(uuid);
-        return flag != null && flag;
+    if (!WorldGuardManager.getInstance().isWithinMineRegion(event.getBlock().getLocation())) {
+      return;
     }
 
-    /**
-     * Computes the drop amount for a given Fortune level.
-     *
-     * @param level the current enchant level
-     * @return blocks per break (2 at level 1, +1 per 20 levels, max 7 at level 100)
-     */
-    public static int getDropAmount(int level)
-    {
-        return 2 + (level / 20);
+    String blockName = event.getBlock().getType().name();
+    if (blockName.endsWith("_LOG") || blockName.endsWith("_STEM")) {
+      return;
     }
 
-    @EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
-    public void onBlockBreak(BlockBreakEvent event)
-    {
-        Player player = event.getPlayer();
-        ItemStack item = player.getInventory().getItemInMainHand();
+    PickaxeDataCenter dataCenter = DataCenterRegistry.getInstance().getPickaxeDataCenter();
+    if (dataCenter == null) return;
+    dataCenter.get(
+        player,
+        profile -> {
+          if (profile == null || profile.enchants == null) return;
 
-        if (!Utils.isPickaxe(item.getType())) {
-            return;
-        }
+          EnchantData enchant = profile.enchants.getEnchant(Enchants.FORTUNE);
+          if (enchant == null || !enchant.enabled || enchant.level <= 0) return;
 
-        if (!WorldGuardManager.getInstance().isWithinMineRegion(event.getBlock().getLocation())) {
-            return;
-        }
+          UUID uuid = player.getUniqueId();
+          int drop = getDropAmount(enchant.level);
 
-        String blockName = event.getBlock().getType().name();
-        if (blockName.endsWith("_LOG") || blockName.endsWith("_STEM")) {
-            return;
-        }
+          if (FortuneStoneHandler.hasStone(enchant, "Common")) drop += 1;
 
-        PickaxeDataCenter dataCenter = DataCenterRegistry.getInstance().getPickaxeDataCenter();
-        if (dataCenter == null) return;
-        dataCenter.get(player, profile -> {
-            if (profile == null || profile.enchants == null) return;
+          if (FortuneStoneHandler.hasStone(enchant, "Uncommon")
+              && FortuneStoneHandler.incrementAndCheckStack(uuid)) {
+            drop += 1;
+          }
 
-            EnchantData enchant = profile.enchants.getEnchant(Enchants.FORTUNE);
-            if (enchant == null || !enchant.enabled || enchant.level <= 0) return;
+          if (FortuneStoneHandler.hasStone(enchant, "Epic")
+              && ThreadLocalRandom.current().nextInt(100) < 10) {
+            drop *= 3;
+          }
 
-            UUID uuid = player.getUniqueId();
-            int drop = getDropAmount(enchant.level);
+          if (FortuneStoneHandler.hasStone(enchant, "Legendary")) drop *= 2;
 
-            // Common (Raised Cap): +1 to the drop amount at all levels
-            if (FortuneStoneHandler.hasStone(enchant, "Common")) drop += 1;
+          pendingDropAmount.put(uuid, drop);
 
-            // Uncommon (Stack): every 20 Fortune procs grants +1 bonus block
-            if (FortuneStoneHandler.hasStone(enchant, "Uncommon")
-                    && FortuneStoneHandler.incrementAndCheckStack(uuid)) {
-                drop += 1;
-            }
-
-            // Epic (Wild Strike): 10% chance to triple the drop multiplier for this block
-            if (FortuneStoneHandler.hasStone(enchant, "Epic")
-                    && ThreadLocalRandom.current().nextInt(100) < 10) {
-                drop *= 3;
-            }
-
-            // Legendary (Double Down): doubles the entire Fortune drop multiplier
-            if (FortuneStoneHandler.hasStone(enchant, "Legendary")) drop *= 2;
-
-            pendingDropAmount.put(uuid, drop);
-
-            // Rare (Gem Seeker): 20% chance per block break to find essence — resolved in BreakListener
-            if (FortuneStoneHandler.hasStone(enchant, "Rare")) {
-                pendingGemSeeker.put(uuid, true);
-            }
+          if (FortuneStoneHandler.hasStone(enchant, "Rare")) {
+            pendingGemSeeker.put(uuid, true);
+          }
         });
-    }
+  }
 }

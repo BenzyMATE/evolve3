@@ -10,30 +10,25 @@ import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.plugin.java.JavaPlugin;
 
-/**
- * Opens the custom furnace-smelting menu when a player right-clicks a furnace block.
- */
-public class FurnaceListener extends BaseListener
-{
-    public FurnaceListener(JavaPlugin plugin) {
-        super(plugin);
+/** Opens the custom furnace-smelting menu when a player right-clicks a furnace block. */
+public class FurnaceListener extends BaseListener {
+  public FurnaceListener(JavaPlugin plugin) {
+    super(plugin);
+  }
+
+  @EventHandler
+  public void onFurnaceInteract(PlayerInteractEvent event) {
+    if (event.getHand() != EquipmentSlot.HAND) return;
+    if (event.getAction() != Action.RIGHT_CLICK_BLOCK) return;
+
+    var block = event.getClickedBlock();
+    if (block == null || block.getType() != Material.FURNACE) return;
+
+    event.setCancelled(true);
+
+    var menu = (FurnaceSmeltMenu) MenuRegistry.getInstance().get("furnace-smelt");
+    if (menu != null) {
+      menu.openMenu(event.getPlayer(), block);
     }
-
-    @EventHandler
-    public void onFurnaceInteract(PlayerInteractEvent event) {
-        // Main hand only, right-click only
-        if (event.getHand() != EquipmentSlot.HAND) return;
-        if (event.getAction() != Action.RIGHT_CLICK_BLOCK) return;
-
-        var block = event.getClickedBlock();
-        if (block == null || block.getType() != Material.FURNACE) return;
-
-        // Cancel the vanilla furnace GUI
-        event.setCancelled(true);
-
-        var menu = (FurnaceSmeltMenu) MenuRegistry.getInstance().get("furnace-smelt");
-        if (menu != null) {
-            menu.openMenu(event.getPlayer(), block);
-        }
-    }
+  }
 }
