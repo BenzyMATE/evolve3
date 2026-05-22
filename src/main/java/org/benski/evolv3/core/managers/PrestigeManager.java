@@ -8,11 +8,11 @@ import org.benski.evolv3.core.constants.ConfigNames;
 import org.benski.evolv3.core.constants.ConfigPaths;
 import org.benski.evolv3.core.helpers.Utils;
 import org.benski.evolv3.core.types.RarityConfig;
-import org.benski.evolv3.datacenters.PickaxeDataCenter;
+import org.benski.evolv3.datacenters.PlayerDataCenter;
 import org.benski.evolv3.enums.EvolutionTier;
 import org.benski.evolv3.models.pickaxe.EnchantData;
+import org.benski.evolv3.models.pickaxe.Pickaxe;
 import org.benski.evolv3.models.pickaxe.PickaxeEnchants;
-import org.benski.evolv3.models.pickaxe.PickaxeProfile;
 import org.benski.evolv3.models.player.PlayerProfile;
 import org.benski.evolv3.registry.ConfigRegistry;
 import org.benski.evolv3.registry.DataCenterRegistry;
@@ -104,7 +104,7 @@ public class PrestigeManager {
    */
   @SuppressWarnings("deprecation")
   public void executePrestige(
-      Player player, PickaxeProfile profile, PlayerProfile playerProfile, StoneRoll roll) {
+      Player player, Pickaxe profile, PlayerProfile playerProfile, StoneRoll roll) {
     FileConfiguration defaults = ConfigRegistry.getInstance().get(ConfigNames.DEFAULT);
     FileConfiguration messages = ConfigRegistry.getInstance().get(ConfigNames.MESSAGES);
 
@@ -115,12 +115,12 @@ public class PrestigeManager {
     profile.xp = 0;
     profile.target = defaults.getInt(ConfigPaths.Default.Pickaxe.DEFAULT_TARGET, 100);
     profile.evolution = 1;
-    profile.evolutionAtoms = 0;
-    profile.atomTarget = defaults.getInt(ConfigPaths.Default.Atoms.DEFAULT_ATOM_TARGET, 100);
-    profile.evolutionRolls = 0;
-    profile.enchantRolls = 0;
-    profile.currentEssence = 0;
-    profile.targetEssence =
+    profile.atomVessel.current = 0;
+    profile.atomVessel.target = defaults.getInt(ConfigPaths.Default.Atoms.DEFAULT_ATOM_TARGET, 100);
+    profile.atomVessel.crystals = 0;
+    profile.essenceVessel.crystals = 0;
+    profile.essenceVessel.current = 0;
+    profile.essenceVessel.target =
         defaults.getInt(ConfigPaths.Default.Pickaxe.DEFAULT_ESSENCE_TARGET, 100);
     profile.durability = 0;
     profile.prestige++;
@@ -182,7 +182,7 @@ public class PrestigeManager {
   }
 
   /** Counts how many evolution stones are currently socketed in the player's pickaxe. */
-  public int countSocketedStones(PickaxeProfile profile) {
+  public int countSocketedStones(Pickaxe profile) {
     if (profile == null || profile.enchants == null) return 0;
     int count = 0;
     int unlocked = EnchantData.getUnlockedSlotCount(profile.prestige);
@@ -194,14 +194,14 @@ public class PrestigeManager {
     return count;
   }
 
-  public boolean canPrestige(PickaxeProfile profile) {
+  public boolean canPrestige(Pickaxe profile) {
     return PickaxeManager.getInstance().isPrestigeAvailable(profile);
   }
 
   /**
    * Returns socketed evolution stones to the player's inventory before the enchants are cleared.
    */
-  private void returnSocketedStones(Player player, PickaxeProfile profile) {
+  private void returnSocketedStones(Player player, Pickaxe profile) {
     if (profile.enchants == null) return;
     int unlocked = EnchantData.getUnlockedSlotCount(profile.prestige);
     for (EnchantData enchant : profile.enchants.items) {
@@ -232,8 +232,8 @@ public class PrestigeManager {
     }
   }
 
-  public PickaxeProfile getLocalProfile(Player player) {
-    PickaxeDataCenter dc = DataCenterRegistry.getInstance().getPickaxeDataCenter();
-    return dc != null ? dc.getLocal(player) : null;
+  public Pickaxe getLocalProfile(Player player) {
+    PlayerDataCenter dc = DataCenterRegistry.getInstance().getPlayerDataCenter();
+    return dc != null ? dc.getPickaxeForPlayer(player) : null;
   }
 }

@@ -15,12 +15,11 @@ import org.benski.evolv3.core.helpers.Utils;
 import org.benski.evolv3.core.managers.MineManager;
 import org.benski.evolv3.core.managers.PickaxeManager;
 import org.benski.evolv3.core.managers.WorldGuardManager;
-import org.benski.evolv3.datacenters.PickaxeDataCenter;
 import org.benski.evolv3.datacenters.PlayerDataCenter;
 import org.benski.evolv3.listeners.BackpackListener;
 import org.benski.evolv3.models.backpack.Backpack;
 import org.benski.evolv3.models.pickaxe.EnchantData;
-import org.benski.evolv3.models.pickaxe.PickaxeProfile;
+import org.benski.evolv3.models.pickaxe.Pickaxe;
 import org.benski.evolv3.models.player.EnchantPreference;
 import org.benski.evolv3.models.player.PlayerProfile;
 import org.benski.evolv3.registry.AnimationRegistry;
@@ -65,29 +64,25 @@ public class VortexEnchant implements Listener {
     String blockName = event.getBlock().getType().name();
     if (blockName.endsWith("_LOG") || blockName.endsWith("_STEM")) return;
 
-    PickaxeDataCenter pickaxeDC = DataCenterRegistry.getInstance().getPickaxeDataCenter();
+    PlayerDataCenter pickaxeDC = DataCenterRegistry.getInstance().getPlayerDataCenter();
     if (pickaxeDC == null) return;
 
-    pickaxeDC.get(
-        player,
-        pickaxeProfile -> {
-          if (pickaxeProfile == null || pickaxeProfile.enchants == null) return;
-
-          EnchantData vortex = pickaxeProfile.enchants.getEnchant(Enchants.VORTEX);
-          if (vortex == null || !vortex.enabled || vortex.level <= 0) return;
-
-          double triggerChance = vortex.getCurrentChance();
-          if (VortexStoneHandler.hasStone(vortex, "Common")) triggerChance += 2.0;
-          if (VortexStoneHandler.hasStone(vortex, "Uncommon")) triggerChance += 3.0;
-          if (!Utils.chance(triggerChance)) return;
-
+    Pickaxe pickaxe = pickaxeDC.getPickaxeForPlayer(player);
+    if (pickaxe != null && pickaxe.enchants != null) {
+      EnchantData vortex = pickaxe.enchants.getEnchant(Enchants.VORTEX);
+      if (vortex != null && vortex.enabled && vortex.level > 0) {
+        double triggerChance = vortex.getCurrentChance();
+        if (VortexStoneHandler.hasStone(vortex, "Common")) triggerChance += 2.0;
+        if (VortexStoneHandler.hasStone(vortex, "Uncommon")) triggerChance += 3.0;
+        if (Utils.chance(triggerChance)) {
           Block origin = event.getBlock();
-          triggerVortex(player, origin, pickaxeProfile, vortex);
-        });
+          triggerVortex(player, origin, pickaxe, vortex);
+        }
+      }
+    }
   }
 
-  private void triggerVortex(
-      Player player, Block origin, PickaxeProfile pickaxeProfile, EnchantData vortex) {
+  private void triggerVortex(Player player, Block origin, Pickaxe pickaxe, EnchantData vortex) {
     if (!player.isOnline()) return;
 
     PlayerDataCenter playerDC = DataCenterRegistry.getInstance().getPlayerDataCenter();
@@ -105,7 +100,7 @@ public class VortexEnchant implements Listener {
 
     if (VortexStoneHandler.hasStone(vortex, "Legendary")) radius *= 2;
 
-    int fortuneAmount = resolveFortune(pickaxeProfile);
+    int fortuneAmount = resolveFortune(pickaxe);
     Backpack backpack = playerProfile.backpack;
 
     if (backpack.isFull()) return;
@@ -136,7 +131,7 @@ public class VortexEnchant implements Listener {
 
           Material mat =
               AoEDropResolver.resolve(
-                  block, player.getInventory().getItemInMainHand(), plugin, pickaxeProfile);
+                  block, player.getInventory().getItemInMainHand(), plugin, pickaxe);
           if (mat.isAir()) continue;
 
           entries.add(new VortexAnimation.BlockEntry(block.getLocation().clone(), mat));
@@ -146,7 +141,7 @@ public class VortexEnchant implements Listener {
           int dropCount = Math.min(fortuneAmount > 0 ? fortuneAmount : 1, remaining);
           backpack.addItem(player, mat, dropCount, false);
           PickaxeManager.getInstance().addStatistics(player, mat, playerProfile);
-          AoEDropResolver.rollSideEffects(player, block, pickaxeProfile, playerProfile);
+          AoEDropResolver.rollSideEffects(player, block, pickaxe, playerProfile);
           broken++;
         }
       }
@@ -165,7 +160,7 @@ public class VortexEnchant implements Listener {
 
           Material mat =
               AoEDropResolver.resolve(
-                  armBlock, player.getInventory().getItemInMainHand(), plugin, pickaxeProfile);
+                  armBlock, player.getInventory().getItemInMainHand(), plugin, pickaxe);
           if (mat.isAir()) continue;
 
           entries.add(new VortexAnimation.BlockEntry(armBlock.getLocation().clone(), mat));
@@ -175,7 +170,7 @@ public class VortexEnchant implements Listener {
           int dropCount = Math.min(fortuneAmount > 0 ? fortuneAmount : 1, remaining);
           backpack.addItem(player, mat, dropCount, false);
           PickaxeManager.getInstance().addStatistics(player, mat, playerProfile);
-          AoEDropResolver.rollSideEffects(player, armBlock, pickaxeProfile, playerProfile);
+          AoEDropResolver.rollSideEffects(player, armBlock, pickaxe, playerProfile);
           broken++;
         }
       }
@@ -208,7 +203,7 @@ public class VortexEnchant implements Listener {
     AnimationRegistry.getInstance().play(anim, animCenter, List.of(player));
 
     if (broken > 0) {
-      AoEDropResolver.flushAccumulation(player, origin, pickaxeProfile);
+      AoEDropResolver.flushAccumulation(player, origin, pickaxe);
       showNotification(player, origin, config, pref, broken);
     }
   }
@@ -266,9 +261,9 @@ public class VortexEnchant implements Listener {
     }
   }
 
-  private int resolveFortune(PickaxeProfile pickaxeProfile) {
-    if (pickaxeProfile.enchants == null) return 0;
-    EnchantData fortune = pickaxeProfile.enchants.getEnchant(Enchants.FORTUNE);
+  private int resolveFortune(Pickaxe pickaxe) {
+    if (pickaxe.enchants == null) return 0;
+    EnchantData fortune = pickaxe.enchants.getEnchant(Enchants.FORTUNE);
     if (fortune == null || !fortune.enabled || fortune.level <= 0) return 0;
     return FortuneEnchant.getDropAmount(fortune.level);
   }

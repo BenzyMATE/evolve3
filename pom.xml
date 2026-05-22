@@ -100,6 +100,27 @@
                 </dependencies>
             </plugin>
             <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-antrun-plugin</artifactId>
+                <version>3.1.0</version>
+                <executions>
+                    <execution>
+                        <id>copy-to-local-server</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                        <configuration>
+                            <target>
+                                <copy file="${project.build.directory}/upload/Evolv3.jar"
+                                      todir="C:\Users\benje\OneDrive\Desktop\Minecraft Local\servers\EvolveMC Local\plugins"
+                                      overwrite="true"/>
+                            </target>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
                 <groupId>com.spotify.fmt</groupId>
                 <artifactId>fmt-maven-plugin</artifactId>
                 <version>2.23</version>
@@ -244,9 +265,10 @@
             </exclusions>
         </dependency>
         <dependency>
-            <groupId>org.mongodb</groupId>
-            <artifactId>mongodb-driver-sync</artifactId>
-            <version>5.3.0</version>
+            <groupId>com.google.code.gson</groupId>
+            <artifactId>gson</artifactId>
+            <version>2.10.1</version>
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>io.papermc.paper</groupId>

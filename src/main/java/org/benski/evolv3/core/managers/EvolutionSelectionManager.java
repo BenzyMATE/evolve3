@@ -12,11 +12,11 @@ import org.benski.evolv3.animations.EvolutionAnimation;
 import org.benski.evolv3.animations.EvolutionAnimation3;
 import org.benski.evolv3.core.types.PendingEvolutionData;
 import org.benski.evolv3.core.types.RarityConfig;
-import org.benski.evolv3.datacenters.PickaxeDataCenter;
+import org.benski.evolv3.datacenters.PlayerDataCenter;
 import org.benski.evolv3.enums.EvolutionTier;
 import org.benski.evolv3.items.EvolutionStone;
 import org.benski.evolv3.models.pickaxe.PendingEvolutionDocument;
-import org.benski.evolv3.models.pickaxe.PickaxeProfile;
+import org.benski.evolv3.models.pickaxe.Pickaxe;
 import org.benski.evolv3.registry.DataCenterRegistry;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
@@ -272,55 +272,8 @@ public class EvolutionSelectionManager {
    * EnchantAnimationConfig} has been loaded, and after registering the {@link
    * EvolutionCallbackProvider}.
    */
-  public void loadPendingFromDatabase() {
-    MongoManager.getInstance()
-        .findAllAsync("PendingEvolutions", PendingEvolutionDocument.class)
-        .thenAccept(
-            docs -> {
-              int count = 0;
-              for (PendingEvolutionDocument doc : docs) {
-                if (doc.playerUuid == null) continue;
-
-                RarityConfig rarity = EnchantAnimationConfig.getRarityByName(doc.rarityName);
-                if (rarity == null) {
-                  logger.warning(
-                      "EvolutionSelectionManager: Unknown rarity '"
-                          + doc.rarityName
-                          + "' in pending evolution for "
-                          + doc.playerUuid
-                          + " — skipping.");
-                  continue;
-                }
-
-                EvolutionTier currentTier = EvolutionTier.fromLevel(doc.currentTierLevel);
-                EvolutionTier nextTier = EvolutionTier.fromLevel(doc.nextTierLevel);
-                ItemStack item = PendingEvolutionDocument.deserializeItem(doc.originalItemBase64);
-
-                PendingEvolutionData pending =
-                    new PendingEvolutionData(
-                        item, currentTier, nextTier, rarity, doc.pickaxeKey, null);
-                pending.setCallbackAlreadyApplied(doc.callbackAlreadyApplied);
-
-                UUID uuid = UUID.fromString(doc.playerUuid);
-                pendingEvolutions.put(uuid, pending);
-                count++;
-              }
-              if (count > 0) {
-                logger.info(
-                    "EvolutionSelectionManager: Loaded "
-                        + count
-                        + " pending evolution(s) from database.");
-              }
-            })
-        .exceptionally(
-            t -> {
-              logger.warning(
-                  "EvolutionSelectionManager: Failed to load pending evolutions"
-                      + " from database: "
-                      + t.getMessage());
-              return null;
-            });
-  }
+  /** No-op: pending evolution state is not persisted between server restarts. */
+  public void loadPendingFromDatabase() {}
 
   /**
    * Stops all active animations and clears in-memory state. Called when the plugin is disabled.
@@ -425,9 +378,9 @@ public class EvolutionSelectionManager {
    * none unlocked.
    */
   private static String pickRandomEnchant(Player player) {
-    PickaxeDataCenter pdc = (PickaxeDataCenter) DataCenterRegistry.getInstance().get("pickaxe");
+    PlayerDataCenter pdc = DataCenterRegistry.getInstance().getPlayerDataCenter();
     if (pdc != null) {
-      PickaxeProfile profile = pdc.getLocal(player);
+      Pickaxe profile = pdc.getPickaxeForPlayer(player);
       if (profile != null && !profile.enchants.items.isEmpty()) {
         List<String> displayNames =
             profile.enchants.items.stream()
@@ -456,8 +409,6 @@ public class EvolutionSelectionManager {
     doc.save();
   }
 
-  /** Asynchronously deletes the MongoDB document for the given player UUID. */
-  private void deletePendingFromDatabase(UUID uuid) {
-    MongoManager.getInstance().deleteAsync("PendingEvolutions", "playerUuid", uuid.toString());
-  }
+  /** No-op: pending evolution state is not persisted to the API. */
+  private void deletePendingFromDatabase(UUID uuid) {}
 }

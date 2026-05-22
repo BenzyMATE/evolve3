@@ -15,11 +15,10 @@ import org.benski.evolv3.animations.EnchantAnimation;
 import org.benski.evolv3.core.abstracts.BaseEnchantAnimation;
 import org.benski.evolv3.core.types.EnchantOption;
 import org.benski.evolv3.core.types.PendingEnchantData;
-import org.benski.evolv3.datacenters.PickaxeDataCenter;
 import org.benski.evolv3.datacenters.PlayerDataCenter;
 import org.benski.evolv3.models.pickaxe.EnchantData;
 import org.benski.evolv3.models.pickaxe.PendingEnchantDocument;
-import org.benski.evolv3.models.pickaxe.PickaxeProfile;
+import org.benski.evolv3.models.pickaxe.Pickaxe;
 import org.benski.evolv3.models.player.PlayerProfile;
 import org.benski.evolv3.registry.AnimationRegistry;
 import org.benski.evolv3.registry.DataCenterRegistry;
@@ -288,42 +287,8 @@ public class EnchantSelectionManager {
    * also be set before this call so that players who are already online when the method completes
    * are handled correctly.
    */
-  public void loadPendingFromDatabase() {
-    MongoManager.getInstance()
-        .findAllAsync("PendingEnchants", PendingEnchantDocument.class)
-        .thenAccept(
-            docs -> {
-              int count = 0;
-              for (PendingEnchantDocument doc : docs) {
-                if (doc.playerUuid == null) continue;
-
-                List<EnchantOption> options = reconstructOptions(doc.optionNames);
-                if (options.isEmpty()) continue;
-
-                ItemStack item = PendingEnchantDocument.deserializeItem(doc.originalItemBase64);
-                UUID uuid = UUID.fromString(doc.playerUuid);
-
-                PendingEnchantData pending = new PendingEnchantData(options, null, doc.pickaxeKey);
-                pending.setOriginalItem(item);
-                pendingSelections.put(uuid, pending);
-                count++;
-              }
-              if (count > 0) {
-                logger.info(
-                    "EnchantSelectionManager: Loaded "
-                        + count
-                        + " pending enchant selection(s) from database.");
-              }
-            })
-        .exceptionally(
-            t -> {
-              logger.warning(
-                  "EnchantSelectionManager: Failed to load pending selections"
-                      + " from database: "
-                      + t.getMessage());
-              return null;
-            });
-  }
+  /** No-op: pending enchant selections are not persisted between server restarts. */
+  public void loadPendingFromDatabase() {}
 
   /**
    * Stops all animations and clears all in-memory state. Called when the plugin is disabled.
@@ -345,9 +310,9 @@ public class EnchantSelectionManager {
    * they can no longer upgrade.
    */
   private Set<String> resolveMaxedEnchants(Player player) {
-    PickaxeDataCenter pickaxeDC = DataCenterRegistry.getInstance().getPickaxeDataCenter();
+    PlayerDataCenter pickaxeDC = DataCenterRegistry.getInstance().getPlayerDataCenter();
     if (pickaxeDC == null) return java.util.Collections.emptySet();
-    PickaxeProfile profile = pickaxeDC.getLocal(player);
+    Pickaxe profile = pickaxeDC.getPickaxeForPlayer(player);
     if (profile == null || profile.enchants == null) return java.util.Collections.emptySet();
 
     Set<String> maxed = new HashSet<>();
@@ -435,10 +400,8 @@ public class EnchantSelectionManager {
     doc.save();
   }
 
-  /** Asynchronously deletes the MongoDB document for the given player UUID. */
-  private void deletePendingFromDatabase(UUID uuid) {
-    MongoManager.getInstance().deleteAsync("PendingEnchants", "playerUuid", uuid.toString());
-  }
+  /** No-op: pending enchant state is not persisted to the API. */
+  private void deletePendingFromDatabase(UUID uuid) {}
 
   /**
    * Maps the player's enchant speed preference to a scroll-end tick count. Lower tick count =

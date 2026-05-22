@@ -461,7 +461,7 @@ public class CellMenu extends BaseMenu {
       }
       profile.removeEssence((int) cost);
     } else {
-      if (profile.coins < cost) {
+      if (profile.wallet.coins < cost) {
         Messageable.sendError(
             player, "Not enough coins. Need &#FFD700⛁ " + String.format("%.0f", cost));
         return;
@@ -709,7 +709,7 @@ public class CellMenu extends BaseMenu {
       }
       profile.removeEssence((int) cost);
     } else {
-      if (profile.coins < cost) {
+      if (profile.wallet.coins < cost) {
         Messageable.sendError(
             player, "Not enough coins. Need &#FFD700⛁ " + String.format("%.0f", cost));
         return;

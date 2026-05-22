@@ -60,11 +60,12 @@ public final class RankManager {
 
     FileConfiguration cfg = ConfigRegistry.getInstance().get(ConfigNames.RANKS);
 
-    String rankId = profile.rank != null ? profile.rank : getDefaultRank(cfg);
+    String rankId = profile.getRank() != null ? profile.getRank() : getDefaultRank(cfg);
     applyRankPermissions(attachment, cfg, rankId);
 
-    if (profile.staffRank != null && !profile.staffRank.isEmpty()) {
-      applyStaffPermissions(attachment, cfg, profile.staffRank);
+    String staffRankId = profile.getStaffRank();
+    if (staffRankId != null && !staffRankId.isEmpty()) {
+      applyStaffPermissions(attachment, cfg, staffRankId);
     }
   }
 
@@ -98,7 +99,7 @@ public final class RankManager {
     FileConfiguration cfg = ConfigRegistry.getInstance().get(ConfigNames.RANKS);
     List<String> order = cfg.getStringList(ConfigPaths.Ranks.ORDER);
 
-    String currentRank = profile.rank != null ? profile.rank : getDefaultRank(cfg);
+    String currentRank = profile.getRank() != null ? profile.getRank() : getDefaultRank(cfg);
     int currentIndex = order.indexOf(currentRank);
 
     if (currentIndex == -1 || currentIndex >= order.size() - 1) {
@@ -130,7 +131,7 @@ public final class RankManager {
       return;
     }
 
-    profile.rank = nextRank;
+    profile.setRank(nextRank);
     applyPermissions(player, profile);
     profile.save(null);
     BorderManager.getInstance().updatePlayerBorder(player, nextRank);
@@ -170,7 +171,7 @@ public final class RankManager {
       return;
     }
 
-    profile.rank = rankId;
+    profile.setRank(rankId);
     applyPermissions(target, profile);
     profile.save(null);
     if (target.isOnline()) {
@@ -227,7 +228,7 @@ public final class RankManager {
       }
     }
 
-    profile.staffRank = rankId;
+    profile.setStaffRank(rankId);
     applyPermissions(target, profile);
     profile.save(null);
 
@@ -463,8 +464,8 @@ public final class RankManager {
 
       boolean affected =
           isStaff
-              ? rankId.equalsIgnoreCase(profile.staffRank)
-              : rankId.equalsIgnoreCase(profile.rank);
+              ? rankId.equalsIgnoreCase(profile.getStaffRank())
+              : rankId.equalsIgnoreCase(profile.getRank());
 
       if (affected) applyPermissions(online, profile);
     }

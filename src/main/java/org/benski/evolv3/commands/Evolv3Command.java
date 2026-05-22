@@ -14,9 +14,7 @@ import org.benski.evolv3.core.helpers.ItemStackExtensions;
 import org.benski.evolv3.core.helpers.Messageable;
 import org.benski.evolv3.core.helpers.Utils;
 import org.benski.evolv3.core.managers.EnchantAnimationConfig;
-import org.benski.evolv3.core.managers.MongoManager;
 import org.benski.evolv3.core.types.RarityConfig;
-import org.benski.evolv3.datacenters.PickaxeDataCenter;
 import org.benski.evolv3.datacenters.PlayerDataCenter;
 import org.benski.evolv3.items.EvolutionStone;
 import org.benski.evolv3.items.Scroll;
@@ -302,8 +300,6 @@ public class Evolv3Command extends BaseCommand {
     }
 
     PlayerDataCenter playerDC = DataCenterRegistry.getInstance().getPlayerDataCenter();
-    PickaxeDataCenter pickaxeDC = DataCenterRegistry.getInstance().getPickaxeDataCenter();
-    MongoManager mongo = MongoManager.getInstance();
 
     PlayerProfile profile = playerDC.getLocal(target);
     if (profile == null) {
@@ -327,14 +323,10 @@ public class Evolv3Command extends BaseCommand {
     }
 
     for (String id : pickaxeIds) {
-      mongo.deleteAsync("Pickaxes", "id", id);
-      pickaxeDC.getAll().remove(id);
+      profile.removePickaxe(id);
     }
 
-    for (int i = 0; i < profile.storedPickaxes.size(); i++) {
-      profile.storedPickaxes.set(i, "");
-    }
-    profile.pickaxeLimit = 0;
+    profile.storedPickaxes.replaceAll(ignored -> "");
     profile.save(null);
 
     sendSuccess(
@@ -458,8 +450,6 @@ public class Evolv3Command extends BaseCommand {
     }
 
     PlayerDataCenter playerDC = DataCenterRegistry.getInstance().getPlayerDataCenter();
-    PickaxeDataCenter pickaxeDC = DataCenterRegistry.getInstance().getPickaxeDataCenter();
-    MongoManager mongo = MongoManager.getInstance();
 
     UUID targetUuid = target.getUniqueId();
     List<String> pickaxeIds = new ArrayList<>();
@@ -473,7 +463,7 @@ public class Evolv3Command extends BaseCommand {
       }
     }
 
-    pickaxeDC.getAll().values().stream()
+    playerDC.getAllPickaxes().stream()
         .filter(p -> targetUuid.equals(p.ownerUuid))
         .map(p -> p.key)
         .filter(k -> k != null && !k.isEmpty())
@@ -492,14 +482,18 @@ public class Evolv3Command extends BaseCommand {
       }
     }
 
-    for (String id : pickaxeIds) {
-      mongo.deleteAsync("Pickaxes", "id", id);
-      pickaxeDC.getAll().remove(id);
+    if (profile != null) {
+      for (String id : pickaxeIds) {
+        profile.removePickaxe(id);
+      }
     }
 
+    // Reset to a fresh default profile and persist it to the API
     String playerId = targetUuid.toString();
-    mongo.deleteAsync("Players", "id", playerId);
     playerDC.getAll().remove(playerId);
+    PlayerProfile freshProfile = PlayerProfile.createDefault(target);
+    playerDC.getAll().put(playerId, freshProfile);
+    freshProfile.save(null);
 
     sendSuccess(
         sender,

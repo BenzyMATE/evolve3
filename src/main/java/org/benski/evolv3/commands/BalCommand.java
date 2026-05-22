@@ -76,7 +76,7 @@ public class BalCommand extends BaseCommand {
       }
 
       PlayerProfile targetProfile = dc != null ? dc.getLocal(target) : null;
-      double balance = targetProfile != null ? targetProfile.coins : 0.0;
+      double balance = targetProfile != null ? targetProfile.wallet.coins : 0.0;
       String msg =
           messages.getString(
               ConfigPaths.Messages.Bal.OTHER_BALANCE,
@@ -90,7 +90,7 @@ public class BalCommand extends BaseCommand {
       Player player = (Player) sender;
 
       PlayerProfile profile = dc != null ? dc.getLocal(player) : null;
-      double balance = profile != null ? profile.coins : 0.0;
+      double balance = profile != null ? profile.wallet.coins : 0.0;
       String msg =
           messages.getString(
               ConfigPaths.Messages.Bal.OWN_BALANCE,

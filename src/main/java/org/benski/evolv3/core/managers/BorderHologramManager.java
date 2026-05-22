@@ -521,7 +521,8 @@ public final class BorderHologramManager {
 
     PlayerDataCenter dc = DataCenterRegistry.getInstance().getPlayerDataCenter();
     PlayerProfile profile = (dc != null) ? dc.getLocal(player) : null;
-    String playerRank = (profile != null && profile.rank != null) ? profile.rank : defaultRank;
+    String playerRank =
+        (profile != null && profile.getRank() != null) ? profile.getRank() : defaultRank;
 
     int playerIdx = order.indexOf(playerRank);
     if (playerIdx == -1) playerIdx = 0;

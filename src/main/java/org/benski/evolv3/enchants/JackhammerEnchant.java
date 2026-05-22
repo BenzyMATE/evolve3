@@ -14,12 +14,11 @@ import org.benski.evolv3.core.helpers.Utils;
 import org.benski.evolv3.core.managers.MineManager;
 import org.benski.evolv3.core.managers.PickaxeManager;
 import org.benski.evolv3.core.managers.WorldGuardManager;
-import org.benski.evolv3.datacenters.PickaxeDataCenter;
 import org.benski.evolv3.datacenters.PlayerDataCenter;
 import org.benski.evolv3.listeners.BackpackListener;
 import org.benski.evolv3.models.backpack.Backpack;
 import org.benski.evolv3.models.pickaxe.EnchantData;
-import org.benski.evolv3.models.pickaxe.PickaxeProfile;
+import org.benski.evolv3.models.pickaxe.Pickaxe;
 import org.benski.evolv3.models.player.EnchantPreference;
 import org.benski.evolv3.models.player.PlayerProfile;
 import org.benski.evolv3.registry.AnimationRegistry;
@@ -71,12 +70,10 @@ public class JackhammerEnchant implements Listener {
    * player's own Jackhammer enchant data if available (so Jackhammer stones apply), otherwise falls
    * back to a stone-free break.
    */
-  public void triggerLayerBreak(Player player, Block origin, PickaxeProfile pickaxeProfile) {
+  public void triggerLayerBreak(Player player, Block origin, Pickaxe pickaxe) {
     EnchantData jh =
-        pickaxeProfile.enchants != null
-            ? pickaxeProfile.enchants.getEnchant(Enchants.JACKHAMMER)
-            : null;
-    smashLayer(player, origin, pickaxeProfile, jh);
+        pickaxe.enchants != null ? pickaxe.enchants.getEnchant(Enchants.JACKHAMMER) : null;
+    smashLayer(player, origin, pickaxe, jh);
   }
 
   @EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
@@ -90,35 +87,31 @@ public class JackhammerEnchant implements Listener {
     String blockName = event.getBlock().getType().name();
     if (blockName.endsWith("_LOG") || blockName.endsWith("_STEM")) return;
 
-    PickaxeDataCenter pickaxeDC = DataCenterRegistry.getInstance().getPickaxeDataCenter();
+    PlayerDataCenter pickaxeDC = DataCenterRegistry.getInstance().getPlayerDataCenter();
     if (pickaxeDC == null) return;
 
-    pickaxeDC.get(
-        player,
-        pickaxeProfile -> {
-          if (pickaxeProfile == null || pickaxeProfile.enchants == null) return;
-
-          EnchantData jackhammer = pickaxeProfile.enchants.getEnchant(Enchants.JACKHAMMER);
-          if (jackhammer == null || !jackhammer.enabled || jackhammer.level <= 0) return;
-
-          double triggerChance = jackhammer.getCurrentChance();
-          if (JackhammerStoneHandler.hasStone(jackhammer, "Common")) triggerChance += 1.0;
-          if (JackhammerStoneHandler.hasStone(jackhammer, "Uncommon")) triggerChance += 2.0;
-          if (!Utils.chance(triggerChance)) return;
-
+    Pickaxe pickaxe = pickaxeDC.getPickaxeForPlayer(player);
+    if (pickaxe != null && pickaxe.enchants != null) {
+      EnchantData jackhammer = pickaxe.enchants.getEnchant(Enchants.JACKHAMMER);
+      if (jackhammer != null && jackhammer.enabled && jackhammer.level > 0) {
+        double triggerChance = jackhammer.getCurrentChance();
+        if (JackhammerStoneHandler.hasStone(jackhammer, "Common")) triggerChance += 1.0;
+        if (JackhammerStoneHandler.hasStone(jackhammer, "Uncommon")) triggerChance += 2.0;
+        if (Utils.chance(triggerChance)) {
           Block origin = event.getBlock();
 
           new BukkitRunnable() {
             @Override
             public void run() {
-              smashLayer(player, origin, pickaxeProfile, jackhammer);
+              smashLayer(player, origin, pickaxe, jackhammer);
             }
           }.runTaskLater(plugin, 1L);
-        });
+        }
+      }
+    }
   }
 
-  private void smashLayer(
-      Player player, Block origin, PickaxeProfile pickaxeProfile, EnchantData jackhammer) {
+  private void smashLayer(Player player, Block origin, Pickaxe pickaxe, EnchantData jackhammer) {
     if (!player.isOnline()) return;
 
     PlayerDataCenter playerDC = DataCenterRegistry.getInstance().getPlayerDataCenter();
@@ -161,7 +154,7 @@ public class JackhammerEnchant implements Listener {
     Backpack backpack = playerProfile.backpack;
     if (backpack.isFull()) return;
 
-    int fortuneAmount = resolveFortune(pickaxeProfile);
+    int fortuneAmount = resolveFortune(pickaxe);
     int broken = 0;
 
     int layerCount = 1;
@@ -183,14 +176,14 @@ public class JackhammerEnchant implements Listener {
 
           Material mat =
               AoEDropResolver.resolve(
-                  block, player.getInventory().getItemInMainHand(), plugin, pickaxeProfile);
+                  block, player.getInventory().getItemInMainHand(), plugin, pickaxe);
           if (mat.isAir()) continue;
 
           MineManager.getInstance().trackBlockAtLocation(block.getLocation());
           block.setType(Material.AIR);
 
           if (hasRare && Utils.chance(5.0)) {
-            pickaxeProfile.evolutionAtoms += 1;
+            pickaxe.atomVessel.current += 1;
             AoEDropResolver.addAccumulatedAtoms(player.getUniqueId(), 1);
             broken++;
             continue;
@@ -199,7 +192,7 @@ public class JackhammerEnchant implements Listener {
           int dropCount = Math.min(fortuneAmount > 0 ? fortuneAmount : 1, remaining);
           backpack.addItem(player, mat, dropCount, false);
           PickaxeManager.getInstance().addStatistics(player, mat, playerProfile);
-          AoEDropResolver.rollSideEffects(player, block, pickaxeProfile, playerProfile);
+          AoEDropResolver.rollSideEffects(player, block, pickaxe, playerProfile);
           broken++;
         }
       }
@@ -214,12 +207,11 @@ public class JackhammerEnchant implements Listener {
         && JackhammerStoneHandler.hasStone(jackhammer, "Epic")
         && Utils.chance(50.0)
         && ExplosiveEnchant.getInstance() != null) {
-      ExplosiveEnchant.getInstance()
-          .triggerBlastCombo(player, origin, pickaxeProfile, playerProfile);
+      ExplosiveEnchant.getInstance().triggerBlastCombo(player, origin, pickaxe, playerProfile);
     }
 
     if (broken > 0) {
-      AoEDropResolver.flushAccumulation(player, origin, pickaxeProfile);
+      AoEDropResolver.flushAccumulation(player, origin, pickaxe);
       showNotification(player, origin, config, pref, broken);
     }
   }
@@ -287,9 +279,9 @@ public class JackhammerEnchant implements Listener {
     }
   }
 
-  private int resolveFortune(PickaxeProfile pickaxeProfile) {
-    if (pickaxeProfile.enchants == null) return 0;
-    EnchantData fortune = pickaxeProfile.enchants.getEnchant(Enchants.FORTUNE);
+  private int resolveFortune(Pickaxe pickaxe) {
+    if (pickaxe.enchants == null) return 0;
+    EnchantData fortune = pickaxe.enchants.getEnchant(Enchants.FORTUNE);
     if (fortune == null || !fortune.enabled || fortune.level <= 0) return 0;
     return FortuneEnchant.getDropAmount(fortune.level);
   }

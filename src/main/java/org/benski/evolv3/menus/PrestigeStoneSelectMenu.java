@@ -19,7 +19,7 @@ import org.benski.evolv3.core.managers.PrestigeManager;
 import org.benski.evolv3.core.types.MenuType;
 import org.benski.evolv3.datacenters.PlayerDataCenter;
 import org.benski.evolv3.items.EvolutionStone;
-import org.benski.evolv3.models.pickaxe.PickaxeProfile;
+import org.benski.evolv3.models.pickaxe.Pickaxe;
 import org.benski.evolv3.models.player.PlayerProfile;
 import org.benski.evolv3.registry.ConfigRegistry;
 import org.benski.evolv3.registry.DataCenterRegistry;
@@ -141,7 +141,7 @@ public class PrestigeStoneSelectMenu extends BaseMenu {
   }
 
   private void executePrestige(Player player, PrestigeManager.StoneRoll roll) {
-    PickaxeProfile pickaxeProfile = PrestigeManager.getInstance().getLocalProfile(player);
+    Pickaxe pickaxeProfile = PrestigeManager.getInstance().getLocalProfile(player);
     if (pickaxeProfile == null) {
       String err =
           ConfigRegistry.getInstance()

@@ -13,9 +13,9 @@ import org.benski.evolv3.core.helpers.ItemStackExtensions;
 import org.benski.evolv3.core.helpers.Utils;
 import org.benski.evolv3.core.managers.PickaxeManager;
 import org.benski.evolv3.core.managers.WorldGuardManager;
-import org.benski.evolv3.datacenters.PickaxeDataCenter;
+import org.benski.evolv3.datacenters.PlayerDataCenter;
 import org.benski.evolv3.models.pickaxe.EnchantData;
-import org.benski.evolv3.models.pickaxe.PickaxeProfile;
+import org.benski.evolv3.models.pickaxe.Pickaxe;
 import org.benski.evolv3.models.player.PlayerProfile;
 import org.benski.evolv3.registry.AnimationRegistry;
 import org.benski.evolv3.registry.ConfigRegistry;
@@ -101,40 +101,35 @@ public class RadioactiveEnchant implements Listener {
       return;
     }
 
-    PickaxeDataCenter dataCenter = DataCenterRegistry.getInstance().getPickaxeDataCenter();
-    if (dataCenter == null) return;
-    dataCenter.get(
-        player,
-        profile -> {
-          if (profile == null || profile.enchants == null) return;
+    PlayerDataCenter playerDataCenter = DataCenterRegistry.getInstance().getPlayerDataCenter();
+    if (playerDataCenter == null) return;
+    Pickaxe profile = playerDataCenter.getPickaxeForPlayer(player);
+    if (profile != null && profile.enchants != null) {
+      EnchantData enchant = profile.enchants.getEnchant(Enchants.RADIOACTIVE);
+      if (enchant != null && enchant.enabled && enchant.level > 0) {
+        FileConfiguration enchantsCfg = ConfigRegistry.getInstance().get(ConfigNames.ENCHANTS);
+        double maxChance = enchantsCfg.getDouble(ConfigPaths.Enchants.Radioactive.MAX_CHANCE, 7.5);
+        double maxLevel = enchantsCfg.getDouble(ConfigPaths.Enchants.Radioactive.MAX_LEVEL, 100.0);
 
-          EnchantData enchant = profile.enchants.getEnchant(Enchants.RADIOACTIVE);
-          if (enchant == null || !enchant.enabled || enchant.level <= 0) return;
+        double bonus = (enchant.level / maxLevel) * maxChance;
 
-          FileConfiguration enchantsCfg = ConfigRegistry.getInstance().get(ConfigNames.ENCHANTS);
-          double maxChance =
-              enchantsCfg.getDouble(ConfigPaths.Enchants.Radioactive.MAX_CHANCE, 7.5);
-          double maxLevel =
-              enchantsCfg.getDouble(ConfigPaths.Enchants.Radioactive.MAX_LEVEL, 100.0);
+        if (RadioactiveStoneHandler.hasStone(enchant, "Common")) bonus += 1.0;
+        if (RadioactiveStoneHandler.hasStone(enchant, "Legendary")) bonus += 5.0;
 
-          double bonus = (enchant.level / maxLevel) * maxChance;
+        if (RadioactiveStoneHandler.hasStone(enchant, "Uncommon")
+            && RadioactiveStoneHandler.incrementAndCheckPinpoint(player.getUniqueId())) {
+          bonus += 100.0;
+        }
 
-          if (RadioactiveStoneHandler.hasStone(enchant, "Common")) bonus += 1.0;
-          if (RadioactiveStoneHandler.hasStone(enchant, "Legendary")) bonus += 5.0;
+        pendingBonus.put(player.getUniqueId(), bonus);
 
-          if (RadioactiveStoneHandler.hasStone(enchant, "Uncommon")
-              && RadioactiveStoneHandler.incrementAndCheckPinpoint(player.getUniqueId())) {
-            bonus += 100.0;
-          }
-
-          pendingBonus.put(player.getUniqueId(), bonus);
-
-          if (RadioactiveStoneHandler.hasStone(enchant, "Epic")) {
-            pendingAmountMultiplier.put(player.getUniqueId(), 2);
-          } else if (RadioactiveStoneHandler.hasStone(enchant, "Rare") && Utils.chance(20.0)) {
-            pendingAmountMultiplier.put(player.getUniqueId(), 2);
-          }
-        });
+        if (RadioactiveStoneHandler.hasStone(enchant, "Epic")) {
+          pendingAmountMultiplier.put(player.getUniqueId(), 2);
+        } else if (RadioactiveStoneHandler.hasStone(enchant, "Rare") && Utils.chance(20.0)) {
+          pendingAmountMultiplier.put(player.getUniqueId(), 2);
+        }
+      }
+    }
   }
 
   /**
@@ -142,13 +137,13 @@ public class RadioactiveEnchant implements Listener {
    * base atom chance + Radioactive bonus, awards atoms, and plays animations.
    */
   public void tryTriggerForAoE(
-      Player player, Block block, PickaxeProfile pickaxeProfile, PlayerProfile playerProfile) {
+      Player player, Block block, Pickaxe pickaxe, PlayerProfile playerProfile) {
     FileConfiguration defaultCfg = ConfigRegistry.getInstance().get(ConfigNames.DEFAULT);
     double baseChance = defaultCfg.getDouble(ConfigPaths.Default.Atoms.DISCOVERY_CHANCE, 1.0);
 
     double radioactiveBonus = 0.0;
-    if (pickaxeProfile != null && pickaxeProfile.enchants != null) {
-      EnchantData enchant = pickaxeProfile.enchants.getEnchant(Enchants.RADIOACTIVE);
+    if (pickaxe != null && pickaxe.enchants != null) {
+      EnchantData enchant = pickaxe.enchants.getEnchant(Enchants.RADIOACTIVE);
       if (enchant != null && enchant.enabled && enchant.level > 0) {
         FileConfiguration enchantsCfg = ConfigRegistry.getInstance().get(ConfigNames.ENCHANTS);
         double maxChance = enchantsCfg.getDouble(ConfigPaths.Enchants.Radioactive.MAX_CHANCE, 7.5);
@@ -164,9 +159,7 @@ public class RadioactiveEnchant implements Listener {
     int amount = Utils.amount(min, max);
 
     EnchantData enchantData =
-        pickaxeProfile.enchants != null
-            ? pickaxeProfile.enchants.getEnchant(Enchants.RADIOACTIVE)
-            : null;
+        pickaxe.enchants != null ? pickaxe.enchants.getEnchant(Enchants.RADIOACTIVE) : null;
     if (enchantData != null) {
       if (RadioactiveStoneHandler.hasStone(enchantData, "Epic")) {
         amount *= 2;
@@ -175,8 +168,8 @@ public class RadioactiveEnchant implements Listener {
       }
     }
 
-    pickaxeProfile.evolutionAtoms += amount;
-    PickaxeManager.getInstance().checkAtoms(pickaxeProfile, player);
+    pickaxe.atomVessel.current += amount;
+    PickaxeManager.getInstance().checkAtoms(pickaxe, player);
 
     Location animLoc = block.getLocation().clone().add(0.5, 0.5, 0.5);
     Location hologramLoc = block.getLocation().clone().add(0.5, 1.5, 0.5);
@@ -200,13 +193,13 @@ public class RadioactiveEnchant implements Listener {
    * @return atoms awarded this block, or 0 if not triggered
    */
   public int tryTriggerForAoESilent(
-      Player player, Block block, PickaxeProfile pickaxeProfile, PlayerProfile playerProfile) {
+      Player player, Block block, Pickaxe pickaxe, PlayerProfile playerProfile) {
     FileConfiguration defaultCfg = ConfigRegistry.getInstance().get(ConfigNames.DEFAULT);
     double baseChance = defaultCfg.getDouble(ConfigPaths.Default.Atoms.DISCOVERY_CHANCE, 1.0);
 
     double radioactiveBonus = 0.0;
-    if (pickaxeProfile != null && pickaxeProfile.enchants != null) {
-      EnchantData enchant = pickaxeProfile.enchants.getEnchant(Enchants.RADIOACTIVE);
+    if (pickaxe != null && pickaxe.enchants != null) {
+      EnchantData enchant = pickaxe.enchants.getEnchant(Enchants.RADIOACTIVE);
       if (enchant != null && enchant.enabled && enchant.level > 0) {
         FileConfiguration enchantsCfg = ConfigRegistry.getInstance().get(ConfigNames.ENCHANTS);
         double maxChance = enchantsCfg.getDouble(ConfigPaths.Enchants.Radioactive.MAX_CHANCE, 7.5);
@@ -222,9 +215,7 @@ public class RadioactiveEnchant implements Listener {
     int amount = Utils.amount(min, max);
 
     EnchantData enchantData =
-        pickaxeProfile.enchants != null
-            ? pickaxeProfile.enchants.getEnchant(Enchants.RADIOACTIVE)
-            : null;
+        pickaxe.enchants != null ? pickaxe.enchants.getEnchant(Enchants.RADIOACTIVE) : null;
     if (enchantData != null) {
       if (RadioactiveStoneHandler.hasStone(enchantData, "Epic")) {
         amount *= 2;
@@ -233,7 +224,7 @@ public class RadioactiveEnchant implements Listener {
       }
     }
 
-    pickaxeProfile.evolutionAtoms += amount;
+    pickaxe.atomVessel.current += amount;
     return amount;
   }
 }

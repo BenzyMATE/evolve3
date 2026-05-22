@@ -86,7 +86,18 @@
       "PowerShell(mvn package *)",
       "PowerShell(mvn compile *)",
       "PowerShell($content = [System.IO.File]::ReadAllText\\(\"C:\\\\Users\\\\benje\\\\IdeaProjects\\\\evolve3\\\\src\\\\main\\\\java\\\\org\\\\benski\\\\evolv3\\\\enchants\\\\ScavengerEnchant.java\"\\); $lines = $content -split \"`n\"; $line = $lines[239]; [int[]][char[]]$line | Where-Object { $_ -gt 127 } | ForEach-Object { \"U+{0:X4}: {1}\" -f $_, [char]$_ })",
-      "PowerShell($content = [System.IO.File]::ReadAllText\\(\"C:\\\\Users\\\\benje\\\\IdeaProjects\\\\evolve3\\\\src\\\\main\\\\java\\\\org\\\\benski\\\\evolv3\\\\hooks\\\\PlaceholderAPIExpansion.java\"\\); $lines = $content -split \"`n\"; $line = $lines[220]; [int[]][char[]]$line | Where-Object { $_ -gt 127 } | ForEach-Object { \"U+{0:X4}: {1}\" -f $_, [char]$_ })"
+      "PowerShell($content = [System.IO.File]::ReadAllText\\(\"C:\\\\Users\\\\benje\\\\IdeaProjects\\\\evolve3\\\\src\\\\main\\\\java\\\\org\\\\benski\\\\evolv3\\\\hooks\\\\PlaceholderAPIExpansion.java\"\\); $lines = $content -split \"`n\"; $line = $lines[220]; [int[]][char[]]$line | Where-Object { $_ -gt 127 } | ForEach-Object { \"U+{0:X4}: {1}\" -f $_, [char]$_ })",
+      "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\benje\\\\IdeaProjects\\\\evolve3\\\\src\\\\main\\\\java\\\\org\\\\benski\\\\evolv3\" -Recurse -Force)",
+      "Bash(Select-Object FullName)",
+      "Bash(Sort-Object FullName)",
+      "PowerShell(mvn package)",
+      "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\benje\\\\IdeaProjects\\\\evolve3\" -Recurse -Include \"pom.xml\")",
+      "Bash(Select-Object -ExpandProperty FullName)",
+      "Bash(Remove-Item \"C:\\\\Users\\\\benje\\\\IdeaProjects\\\\evolve3\\\\src\\\\main\\\\java\\\\org\\\\benski\\\\evolv3\\\\models\\\\pickaxe\\\\PickaxeProfile.java\" -Force)",
+      "Bash(Remove-Item \"C:\\\\Users\\\\benje\\\\IdeaProjects\\\\evolve3\\\\src\\\\main\\\\java\\\\org\\\\benski\\\\evolv3\\\\datacenters\\\\PickaxeDataCenter.java\" -Force)",
+      "PowerShell(Get-ChildItem \"C:\\\\Program Files\\\\Java\" -ErrorAction SilentlyContinue | Select-Object Name; Get-ChildItem \"C:\\\\Program Files\\\\Eclipse Adoptium\" -ErrorAction SilentlyContinue | Select-Object Name; Get-ChildItem \"C:\\\\Program Files\\\\Microsoft\" -ErrorAction SilentlyContinue | Select-Object Name; [System.Environment]::GetEnvironmentVariable\\(\"JAVA_HOME\", \"Machine\"\\))",
+      "PowerShell(Test-Path *)",
+      "PowerShell(Get-ChildItem \"HKLM:\\\\SOFTWARE\\\\JavaSoft\\\\JDK\" | ForEach-Object { $_.PSChildName + \" -> \" + $_.GetValue\\(\"JavaHome\"\\) })"
     ],
     "deny": [],
     "ask": []

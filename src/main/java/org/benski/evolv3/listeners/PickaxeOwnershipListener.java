@@ -17,7 +17,7 @@ import org.benski.evolv3.core.helpers.Utils;
 import org.benski.evolv3.core.managers.OmnitoolManager;
 import org.benski.evolv3.core.managers.PickaxeManager;
 import org.benski.evolv3.datacenters.PlayerDataCenter;
-import org.benski.evolv3.models.pickaxe.PickaxeProfile;
+import org.benski.evolv3.models.pickaxe.Pickaxe;
 import org.benski.evolv3.models.player.PlayerProfile;
 import org.benski.evolv3.registry.ConfigRegistry;
 import org.benski.evolv3.registry.DataCenterRegistry;
@@ -110,7 +110,10 @@ public class PickaxeOwnershipListener extends BaseListener {
       playerProfile.save(null);
     }
 
-    pickaxeDataCenter.getAll().remove(pickaxeId);
+    PlayerProfile owner = playerDataCenter.getPlayerOwningPickaxe(pickaxeId);
+    if (owner != null) {
+      owner.removePickaxe(pickaxeId);
+    }
 
     FileConfiguration messages = ConfigRegistry.getInstance().get(ConfigNames.MESSAGES);
     String msg = messages.getString(ConfigPaths.Messages.Pickaxe.PICKAXE_BROKEN, "");
@@ -212,7 +215,7 @@ public class PickaxeOwnershipListener extends BaseListener {
 
     cleanupItemDisplay(item.getUniqueId());
 
-    PickaxeProfile pickaxeProfile = pickaxeDataCenter.getAll().get(pickaxeId);
+    Pickaxe pickaxeProfile = playerDataCenter.getPickaxeByItemId(pickaxeId);
     if (pickaxeProfile != null) {
       if (!player.getUniqueId().equals(pickaxeProfile.ownerUuid)) {
         pickaxeProfile.ownerUuid = player.getUniqueId();
@@ -234,7 +237,7 @@ public class PickaxeOwnershipListener extends BaseListener {
               },
               1L);
     } else {
-      pickaxeDataCenter.loadIntoCache(player, pickaxeId);
+      playerDataCenter.ensurePickaxe(player, pickaxeId);
     }
   }
 
@@ -245,7 +248,7 @@ public class PickaxeOwnershipListener extends BaseListener {
    */
   private boolean hasAvailableSlot(PlayerProfile profile, Player player) {
     int maxEvolution =
-        pickaxeDataCenter.getAll().values().stream()
+        playerDataCenter.getAllPickaxes().stream()
             .filter(p -> player.getUniqueId().equals(p.ownerUuid))
             .mapToInt(p -> p.evolution)
             .max()
@@ -272,7 +275,7 @@ public class PickaxeOwnershipListener extends BaseListener {
    */
   private void addToStoredPickaxes(PlayerProfile profile, String pickaxeId, String material) {
     String entry = pickaxeId + ":" + material;
-    for (int i = 0; i < profile.pickaxeLimit && i < profile.storedPickaxes.size(); i++) {
+    for (int i = 0; i < profile.getPickaxeLimit() && i < profile.storedPickaxes.size(); i++) {
       if (profile.storedPickaxes.get(i).isEmpty()) {
         profile.storedPickaxes.set(i, entry);
         return;
@@ -296,7 +299,7 @@ public class PickaxeOwnershipListener extends BaseListener {
     String pickaxeId = item.getItemStack().getData("id");
     if (pickaxeId == null || pickaxeId.isEmpty()) return;
 
-    PickaxeProfile profile = pickaxeDataCenter.getAll().get(pickaxeId);
+    Pickaxe profile = playerDataCenter.getPickaxeByItemId(pickaxeId);
     if (profile == null) return;
 
     spawnItemDisplay(item, profile);
@@ -407,7 +410,7 @@ public class PickaxeOwnershipListener extends BaseListener {
    * Spawns a floating TextDisplay at the item's current position and starts a repeating task that
    * continuously repositions it to follow the item.
    */
-  private void spawnItemDisplay(Item item, PickaxeProfile profile) {
+  private void spawnItemDisplay(Item item, Pickaxe profile) {
     UUID itemId = item.getUniqueId();
     if (itemToDisplay.containsKey(itemId)) return;
 
@@ -455,7 +458,7 @@ public class PickaxeOwnershipListener extends BaseListener {
    * Builds the Adventure Component text shown in the floating TextDisplay. Template is read from
    * messages.yml to allow server customization.
    */
-  private Component buildDisplayText(PickaxeProfile profile) {
+  private Component buildDisplayText(Pickaxe profile) {
     String template =
         ConfigRegistry.getInstance()
             .get(ConfigNames.MESSAGES)

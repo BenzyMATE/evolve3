@@ -9,8 +9,9 @@ import org.benski.evolv3.core.constants.Enchants;
 import org.benski.evolv3.core.helpers.ItemStackExtensions;
 import org.benski.evolv3.core.helpers.Utils;
 import org.benski.evolv3.core.managers.WorldGuardManager;
-import org.benski.evolv3.datacenters.PickaxeDataCenter;
+import org.benski.evolv3.datacenters.PlayerDataCenter;
 import org.benski.evolv3.models.pickaxe.EnchantData;
+import org.benski.evolv3.models.pickaxe.Pickaxe;
 import org.benski.evolv3.registry.DataCenterRegistry;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -91,38 +92,35 @@ public class FortuneEnchant implements Listener {
       return;
     }
 
-    PickaxeDataCenter dataCenter = DataCenterRegistry.getInstance().getPickaxeDataCenter();
-    if (dataCenter == null) return;
-    dataCenter.get(
-        player,
-        profile -> {
-          if (profile == null || profile.enchants == null) return;
+    PlayerDataCenter playerDataCenter = DataCenterRegistry.getInstance().getPlayerDataCenter();
+    if (playerDataCenter == null) return;
+    Pickaxe profile = playerDataCenter.getPickaxeForPlayer(player);
+    if (profile != null && profile.enchants != null) {
+      EnchantData enchant = profile.enchants.getEnchant(Enchants.FORTUNE);
+      if (enchant != null && enchant.enabled && enchant.level > 0) {
+        UUID uuid = player.getUniqueId();
+        int drop = getDropAmount(enchant.level);
 
-          EnchantData enchant = profile.enchants.getEnchant(Enchants.FORTUNE);
-          if (enchant == null || !enchant.enabled || enchant.level <= 0) return;
+        if (FortuneStoneHandler.hasStone(enchant, "Common")) drop += 1;
 
-          UUID uuid = player.getUniqueId();
-          int drop = getDropAmount(enchant.level);
+        if (FortuneStoneHandler.hasStone(enchant, "Uncommon")
+            && FortuneStoneHandler.incrementAndCheckStack(uuid)) {
+          drop += 1;
+        }
 
-          if (FortuneStoneHandler.hasStone(enchant, "Common")) drop += 1;
+        if (FortuneStoneHandler.hasStone(enchant, "Epic")
+            && ThreadLocalRandom.current().nextInt(100) < 10) {
+          drop *= 3;
+        }
 
-          if (FortuneStoneHandler.hasStone(enchant, "Uncommon")
-              && FortuneStoneHandler.incrementAndCheckStack(uuid)) {
-            drop += 1;
-          }
+        if (FortuneStoneHandler.hasStone(enchant, "Legendary")) drop *= 2;
 
-          if (FortuneStoneHandler.hasStone(enchant, "Epic")
-              && ThreadLocalRandom.current().nextInt(100) < 10) {
-            drop *= 3;
-          }
+        pendingDropAmount.put(uuid, drop);
 
-          if (FortuneStoneHandler.hasStone(enchant, "Legendary")) drop *= 2;
-
-          pendingDropAmount.put(uuid, drop);
-
-          if (FortuneStoneHandler.hasStone(enchant, "Rare")) {
-            pendingGemSeeker.put(uuid, true);
-          }
-        });
+        if (FortuneStoneHandler.hasStone(enchant, "Rare")) {
+          pendingGemSeeker.put(uuid, true);
+        }
+      }
+    }
   }
 }

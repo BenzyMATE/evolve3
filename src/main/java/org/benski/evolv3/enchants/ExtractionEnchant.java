@@ -12,9 +12,9 @@ import org.benski.evolv3.core.constants.Enchants;
 import org.benski.evolv3.core.helpers.ItemStackExtensions;
 import org.benski.evolv3.core.helpers.Utils;
 import org.benski.evolv3.core.managers.WorldGuardManager;
-import org.benski.evolv3.datacenters.PickaxeDataCenter;
+import org.benski.evolv3.datacenters.PlayerDataCenter;
 import org.benski.evolv3.models.pickaxe.EnchantData;
-import org.benski.evolv3.models.pickaxe.PickaxeProfile;
+import org.benski.evolv3.models.pickaxe.Pickaxe;
 import org.benski.evolv3.models.player.PlayerProfile;
 import org.benski.evolv3.registry.AnimationRegistry;
 import org.benski.evolv3.registry.ConfigRegistry;
@@ -114,44 +114,40 @@ public class ExtractionEnchant implements Listener {
       return;
     }
 
-    PickaxeDataCenter dataCenter = DataCenterRegistry.getInstance().getPickaxeDataCenter();
-    if (dataCenter == null) return;
-    dataCenter.get(
-        player,
-        profile -> {
-          if (profile == null || profile.enchants == null) return;
+    PlayerDataCenter playerDataCenter = DataCenterRegistry.getInstance().getPlayerDataCenter();
+    if (playerDataCenter == null) return;
+    Pickaxe profile = playerDataCenter.getPickaxeForPlayer(player);
+    if (profile != null && profile.enchants != null) {
+      EnchantData enchant = profile.enchants.getEnchant(Enchants.EXTRACTION);
+      if (enchant != null && enchant.enabled && enchant.level > 0) {
+        FileConfiguration enchantsCfg = ConfigRegistry.getInstance().get(ConfigNames.ENCHANTS);
+        double maxChance = enchantsCfg.getDouble(ConfigPaths.Enchants.Extraction.MAX_CHANCE, 10.0);
+        double maxLevel = enchantsCfg.getDouble(ConfigPaths.Enchants.Extraction.MAX_LEVEL, 100.0);
 
-          EnchantData enchant = profile.enchants.getEnchant(Enchants.EXTRACTION);
-          if (enchant == null || !enchant.enabled || enchant.level <= 0) return;
+        double bonus = (enchant.level / maxLevel) * maxChance;
 
-          FileConfiguration enchantsCfg = ConfigRegistry.getInstance().get(ConfigNames.ENCHANTS);
-          double maxChance =
-              enchantsCfg.getDouble(ConfigPaths.Enchants.Extraction.MAX_CHANCE, 10.0);
-          double maxLevel = enchantsCfg.getDouble(ConfigPaths.Enchants.Extraction.MAX_LEVEL, 100.0);
+        if (ExtractionStoneHandler.hasStone(enchant, "Common")) bonus *= 1.15;
 
-          double bonus = (enchant.level / maxLevel) * maxChance;
+        if (ExtractionStoneHandler.hasStone(enchant, "Uncommon")
+            && ExtractionStoneHandler.incrementAndCheckSurge(player.getUniqueId())) {
+          bonus *= 3.0;
+        }
 
-          if (ExtractionStoneHandler.hasStone(enchant, "Common")) bonus *= 1.15;
+        pendingBonus.put(player.getUniqueId(), bonus);
 
-          if (ExtractionStoneHandler.hasStone(enchant, "Uncommon")
-              && ExtractionStoneHandler.incrementAndCheckSurge(player.getUniqueId())) {
-            bonus *= 3.0;
-          }
+        if (ExtractionStoneHandler.hasStone(enchant, "Rare")) {
+          pendingEssenceMultiplier.put(player.getUniqueId(), 2);
+        }
 
-          pendingBonus.put(player.getUniqueId(), bonus);
+        if (ExtractionStoneHandler.hasStone(enchant, "Epic")) {
+          pendingEssenceMultiplier.put(player.getUniqueId(), 3);
+        }
 
-          if (ExtractionStoneHandler.hasStone(enchant, "Rare")) {
-            pendingEssenceMultiplier.put(player.getUniqueId(), 2);
-          }
-
-          if (ExtractionStoneHandler.hasStone(enchant, "Epic")) {
-            pendingEssenceMultiplier.put(player.getUniqueId(), 3);
-          }
-
-          if (ExtractionStoneHandler.hasStone(enchant, "Legendary")) {
-            pendingLegendaryActive.put(player.getUniqueId(), true);
-          }
-        });
+        if (ExtractionStoneHandler.hasStone(enchant, "Legendary")) {
+          pendingLegendaryActive.put(player.getUniqueId(), true);
+        }
+      }
+    }
   }
 
   /**
@@ -159,7 +155,7 @@ public class ExtractionEnchant implements Listener {
    * Rolls base essence chance + Extraction bonus, awards essence, and plays animations.
    */
   public void tryTriggerForAoE(
-      Player player, Block block, PickaxeProfile pickaxeProfile, PlayerProfile playerProfile) {
+      Player player, Block block, Pickaxe pickaxe, PlayerProfile playerProfile) {
     FileConfiguration defaultCfg = ConfigRegistry.getInstance().get(ConfigNames.DEFAULT);
     double baseChance = defaultCfg.getDouble(ConfigPaths.Default.Essence.DISCOVERY_CHANCE, 5.0);
 
@@ -167,8 +163,8 @@ public class ExtractionEnchant implements Listener {
     int essenceMultiplier = 1;
     boolean legendaryActive = false;
 
-    if (pickaxeProfile != null && pickaxeProfile.enchants != null) {
-      EnchantData enchant = pickaxeProfile.enchants.getEnchant(Enchants.EXTRACTION);
+    if (pickaxe != null && pickaxe.enchants != null) {
+      EnchantData enchant = pickaxe.enchants.getEnchant(Enchants.EXTRACTION);
       if (enchant != null && enchant.enabled && enchant.level > 0) {
         FileConfiguration enchantsCfg = ConfigRegistry.getInstance().get(ConfigNames.ENCHANTS);
         double maxChance = enchantsCfg.getDouble(ConfigPaths.Enchants.Extraction.MAX_CHANCE, 10.0);
@@ -200,7 +196,7 @@ public class ExtractionEnchant implements Listener {
     int max = defaultCfg.getInt(ConfigPaths.Default.Essence.DISCOVERY_MAX_AMOUNT, 5);
     int amount = Utils.amount(min, max) * essenceMultiplier;
 
-    playerProfile.essence += amount;
+    playerProfile.addEssence(amount);
 
     Location animLoc = block.getLocation().clone().add(0.5, 0.5, 0.5);
     Location hologramLoc = block.getLocation().clone().add(0.5, 1.5, 0.5);
@@ -224,7 +220,7 @@ public class ExtractionEnchant implements Listener {
    * @return essence awarded this block, or 0 if not triggered
    */
   public int tryTriggerForAoESilent(
-      Player player, Block block, PickaxeProfile pickaxeProfile, PlayerProfile playerProfile) {
+      Player player, Block block, Pickaxe pickaxe, PlayerProfile playerProfile) {
     FileConfiguration defaultCfg = ConfigRegistry.getInstance().get(ConfigNames.DEFAULT);
     double baseChance = defaultCfg.getDouble(ConfigPaths.Default.Essence.DISCOVERY_CHANCE, 5.0);
 
@@ -232,8 +228,8 @@ public class ExtractionEnchant implements Listener {
     int essenceMultiplier = 1;
     boolean legendaryActive = false;
 
-    if (pickaxeProfile != null && pickaxeProfile.enchants != null) {
-      EnchantData enchant = pickaxeProfile.enchants.getEnchant(Enchants.EXTRACTION);
+    if (pickaxe != null && pickaxe.enchants != null) {
+      EnchantData enchant = pickaxe.enchants.getEnchant(Enchants.EXTRACTION);
       if (enchant != null && enchant.enabled && enchant.level > 0) {
         FileConfiguration enchantsCfg = ConfigRegistry.getInstance().get(ConfigNames.ENCHANTS);
         double maxChance = enchantsCfg.getDouble(ConfigPaths.Enchants.Extraction.MAX_CHANCE, 10.0);
@@ -264,7 +260,7 @@ public class ExtractionEnchant implements Listener {
     int min = defaultCfg.getInt(ConfigPaths.Default.Essence.DISCOVERY_MIN_AMOUNT, 1);
     int max = defaultCfg.getInt(ConfigPaths.Default.Essence.DISCOVERY_MAX_AMOUNT, 5);
     int amount = Utils.amount(min, max) * essenceMultiplier;
-    playerProfile.essence += amount;
+    playerProfile.addEssence(amount);
     return amount;
   }
 }

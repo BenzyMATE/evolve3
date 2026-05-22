@@ -58,7 +58,9 @@ Scoreboard:
 
 # Database connection string
 Database:
-  MongoDB: "mongodb+srv://<user>:<password>@<cluster>.mongodb.net/"
+  ApiUrl: "https://api.evolvemc.net/"
+  # Set to false to disable SSL certificate verification (for local development only)
+  SslVerify: true
 
 # =====================================================
 # WorldGuard Region Settings

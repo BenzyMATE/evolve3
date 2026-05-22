@@ -8,8 +8,8 @@ import org.benski.evolv3.core.helpers.ItemStackExtensions;
 import org.benski.evolv3.core.helpers.PlayerExtensions;
 import org.benski.evolv3.core.helpers.Utils;
 import org.benski.evolv3.core.managers.PickaxeManager;
-import org.benski.evolv3.datacenters.PickaxeDataCenter;
-import org.benski.evolv3.models.pickaxe.PickaxeProfile;
+import org.benski.evolv3.datacenters.PlayerDataCenter;
+import org.benski.evolv3.models.pickaxe.Pickaxe;
 import org.benski.evolv3.registry.DataCenterRegistry;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
@@ -22,11 +22,9 @@ import org.bukkit.plugin.java.JavaPlugin;
  */
 @ExtensionMethod({ItemStackExtensions.class, PlayerExtensions.class})
 public class PickaxeCheckSchedule extends BaseSchedule {
-  private final PickaxeDataCenter pickaxeDataCenter;
 
   public PickaxeCheckSchedule(JavaPlugin plugin) {
     super(plugin);
-    this.pickaxeDataCenter = (PickaxeDataCenter) DataCenterRegistry.getInstance().get("pickaxe");
   }
 
   /**
@@ -72,9 +70,12 @@ public class PickaxeCheckSchedule extends BaseSchedule {
 
     ItemStack item = player.getInventory().getItemInMainHand();
     String itemId = player.getItemId();
-    if (itemId == null || !pickaxeDataCenter.exists(itemId)) return;
+    if (itemId == null || itemId.isEmpty()) return;
 
-    PickaxeProfile pickaxeProfile = pickaxeDataCenter.getLocal(player);
+    PlayerDataCenter pdc = DataCenterRegistry.getInstance().getPlayerDataCenter();
+    if (pdc == null) return;
+
+    Pickaxe pickaxeProfile = pdc.getPickaxeByItemId(itemId);
     if (pickaxeProfile == null) return;
 
     item.updateLore(pickaxeProfile);
@@ -97,12 +98,14 @@ public class PickaxeCheckSchedule extends BaseSchedule {
     if (pickaxeId == null || pickaxeId.isEmpty()) {
       String newId = UUID.randomUUID().toString();
       mainHand.setData("id", newId);
-      pickaxeDataCenter.loadOrCreate(player, newId);
+      PlayerDataCenter pdc = DataCenterRegistry.getInstance().getPlayerDataCenter();
+      if (pdc != null) pdc.ensurePickaxe(player, newId);
       updatePlayerPickaxe(player);
       return;
     }
 
-    pickaxeDataCenter.loadOrCreate(player, pickaxeId);
+    PlayerDataCenter pdc = DataCenterRegistry.getInstance().getPlayerDataCenter();
+    if (pdc != null) pdc.ensurePickaxe(player, pickaxeId);
   }
 
   private boolean isPickaxe(ItemStack item) {

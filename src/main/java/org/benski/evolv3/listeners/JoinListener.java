@@ -16,7 +16,6 @@ import org.benski.evolv3.core.managers.OmnitoolManager;
 import org.benski.evolv3.core.managers.PickaxeManager;
 import org.benski.evolv3.core.managers.RankManager;
 import org.benski.evolv3.datacenters.ArmorDataCenter;
-import org.benski.evolv3.datacenters.PickaxeDataCenter;
 import org.benski.evolv3.datacenters.PlayerDataCenter;
 import org.benski.evolv3.enchants.AutoSellStoneHandler;
 import org.benski.evolv3.enchants.EfficiencyStoneHandler;
@@ -119,25 +118,6 @@ public class JoinListener extends BaseListener {
               if (player.isOnline()) PickaxeManager.getInstance().updateLoreFromInventory(player);
             },
             5L);
-
-    Bukkit.getScheduler()
-        .runTaskLater(
-            plugin,
-            () -> {
-              if (!player.isOnline()) return;
-              PlayerProfile profile =
-                  playerDataCenter != null ? playerDataCenter.getLocal(player) : null;
-              if (profile == null) return;
-              PickaxeDataCenter pickaxeDataCenter =
-                  DataCenterRegistry.getInstance().getPickaxeDataCenter();
-              if (pickaxeDataCenter == null) return;
-              for (String entry : profile.storedPickaxes) {
-                if (entry == null || entry.isEmpty()) continue;
-                String id = entry.split(":", 2)[0];
-                pickaxeDataCenter.tryPreload(player, id);
-              }
-            },
-            40L);
 
     Bukkit.getScheduler().runTaskLater(plugin, () -> sendJoinMessage(player, firstJoin), 20L);
   }

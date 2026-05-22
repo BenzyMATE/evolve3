@@ -8,21 +8,20 @@ import org.benski.evolv3.core.interfaces.DataCenter;
 import org.benski.evolv3.core.interfaces.Registry;
 import org.benski.evolv3.core.managers.DataCenterRegistryManager;
 import org.benski.evolv3.datacenters.ArmorDataCenter;
-import org.benski.evolv3.datacenters.PickaxeDataCenter;
 import org.benski.evolv3.datacenters.PlayerDataCenter;
 
-/** A registry to register data centers. */
+/** Registry for all data centers. Initializes and provides typed access to each data center. */
 public class DataCenterRegistry implements Registry<DataCenter<?>> {
   @Getter private static final DataCenterRegistry instance = new DataCenterRegistry();
   private final DataCenterRegistryManager registryManager =
       new DataCenterRegistryManager(Main.getInstance());
 
   /**
-   * Register data centers. PlayerDataCenter is registered first as other data centers may depend on
-   * player profiles.
+   * Data center registration order. {@link PlayerDataCenter} must be first because all pickaxe data
+   * is embedded within the player profile and loaded with it on join.
    */
   private final List<Class<? extends BaseDataCenter<?>>> datacenters =
-      List.of(PlayerDataCenter.class, ArmorDataCenter.class, PickaxeDataCenter.class);
+      List.of(PlayerDataCenter.class, ArmorDataCenter.class);
 
   /** {@inheritDoc} */
   @Override
@@ -43,29 +42,12 @@ public class DataCenterRegistry implements Registry<DataCenter<?>> {
     registryManager.cleanup();
   }
 
-  /**
-   * Gets the PickaxeDataCenter instance.
-   *
-   * @return the PickaxeDataCenter
-   */
-  public PickaxeDataCenter getPickaxeDataCenter() {
-    return (PickaxeDataCenter) registryManager.getDataCenter("pickaxe");
-  }
-
-  /**
-   * Gets the PlayerDataCenter instance.
-   *
-   * @return the PlayerDataCenter
-   */
+  /** Returns the {@link PlayerDataCenter} instance. */
   public PlayerDataCenter getPlayerDataCenter() {
     return (PlayerDataCenter) registryManager.getDataCenter("player");
   }
 
-  /**
-   * Gets the ArmorDataCenter instance.
-   *
-   * @return the ArmorDataCenter
-   */
+  /** Returns the {@link ArmorDataCenter} instance. */
   public ArmorDataCenter getArmorDataCenter() {
     return (ArmorDataCenter) registryManager.getDataCenter("armor");
   }

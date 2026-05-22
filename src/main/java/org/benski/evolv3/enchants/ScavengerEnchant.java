@@ -14,11 +14,10 @@ import org.benski.evolv3.core.helpers.ItemStackExtensions;
 import org.benski.evolv3.core.helpers.Utils;
 import org.benski.evolv3.core.managers.PickaxeManager;
 import org.benski.evolv3.core.managers.WorldGuardManager;
-import org.benski.evolv3.datacenters.PickaxeDataCenter;
 import org.benski.evolv3.datacenters.PlayerDataCenter;
 import org.benski.evolv3.listeners.BackpackListener;
 import org.benski.evolv3.models.pickaxe.EnchantData;
-import org.benski.evolv3.models.pickaxe.PickaxeProfile;
+import org.benski.evolv3.models.pickaxe.Pickaxe;
 import org.benski.evolv3.models.player.EnchantPreference;
 import org.benski.evolv3.models.player.PlayerProfile;
 import org.benski.evolv3.registry.AnimationRegistry;
@@ -93,71 +92,68 @@ public class ScavengerEnchant implements Listener {
     PlayerProfile playerProfile = playerDC.getLocal(player);
     if (playerProfile == null) return;
 
-    PickaxeDataCenter dataCenter = DataCenterRegistry.getInstance().getPickaxeDataCenter();
-    if (dataCenter == null) return;
-    dataCenter.get(
-        player,
-        profile -> {
-          if (profile == null || profile.enchants == null) return;
-
-          EnchantData enchant = profile.enchants.getEnchant(Enchants.SCAVENGER);
-          if (enchant == null || !enchant.enabled || enchant.level <= 0) return;
-
-          double triggerChance = enchant.getCurrentChance();
-          if (!Utils.chance(triggerChance)) return;
-
+    PlayerDataCenter pickaxeDC = DataCenterRegistry.getInstance().getPlayerDataCenter();
+    if (pickaxeDC == null) return;
+    Pickaxe profile = pickaxeDC.getPickaxeForPlayer(player);
+    if (profile != null && profile.enchants != null) {
+      EnchantData enchant = profile.enchants.getEnchant(Enchants.SCAVENGER);
+      if (enchant != null && enchant.enabled && enchant.level > 0) {
+        double triggerChance = enchant.getCurrentChance();
+        if (Utils.chance(triggerChance)) {
           if (ScavengerStoneHandler.hasStone(enchant, "Rare") && Utils.chance(10.0)) {
             int atoms = Utils.amount(1, 2);
-            profile.evolutionAtoms += atoms;
+            profile.atomVessel.current += atoms;
             PickaxeManager.getInstance().checkAtoms(profile, player);
             profile.save(null);
-            return;
-          }
+          } else {
+            if (!playerProfile.backpack.isFull()) {
+              int tierCap = getTierCap(player);
+              if (playerProfile.backpack.getMaxSize() < tierCap) {
+                int slotsMin = enchantsConfig.getInt(ConfigPaths.Enchants.Scavenger.SLOTS_MIN, 1);
+                int slotsMax = enchantsConfig.getInt(ConfigPaths.Enchants.Scavenger.SLOTS_MAX, 3);
 
-          if (playerProfile.backpack.isFull()) return;
-          int tierCap = getTierCap(player);
-          if (playerProfile.backpack.getMaxSize() >= tierCap) return;
+                if (ScavengerStoneHandler.hasStone(enchant, "Common")) slotsMin += 1;
 
-          int slotsMin = enchantsConfig.getInt(ConfigPaths.Enchants.Scavenger.SLOTS_MIN, 1);
-          int slotsMax = enchantsConfig.getInt(ConfigPaths.Enchants.Scavenger.SLOTS_MAX, 3);
+                int slotsFound = Utils.amount(slotsMin, slotsMax);
 
-          if (ScavengerStoneHandler.hasStone(enchant, "Common")) slotsMin += 1;
+                if (ScavengerStoneHandler.isDoubleHaulActive(player.getUniqueId())) slotsFound *= 2;
+                if (ScavengerStoneHandler.hasStone(enchant, "Epic")) {
+                  ScavengerStoneHandler.activateDoubleHaul(player.getUniqueId());
+                }
 
-          int slotsFound = Utils.amount(slotsMin, slotsMax);
+                if (ScavengerStoneHandler.hasStone(enchant, "Legendary")) slotsFound *= 2;
 
-          if (ScavengerStoneHandler.isDoubleHaulActive(player.getUniqueId())) slotsFound *= 2;
-          if (ScavengerStoneHandler.hasStone(enchant, "Epic")) {
-            ScavengerStoneHandler.activateDoubleHaul(player.getUniqueId());
-          }
+                slotsFound = Math.min(slotsFound, tierCap - playerProfile.backpack.getMaxSize());
 
-          if (ScavengerStoneHandler.hasStone(enchant, "Legendary")) slotsFound *= 2;
+                playerProfile.backpack.setMaxSize(playerProfile.backpack.getMaxSize() + slotsFound);
+                playerProfile.save(null);
+                BackpackListener.refresh(player);
 
-          slotsFound = Math.min(slotsFound, tierCap - playerProfile.backpack.getMaxSize());
+                if (ScavengerStoneHandler.hasStone(enchant, "Uncommon") && Utils.chance(50.0)) {
+                  int essence = Utils.amount(1, 5);
+                  playerProfile.addEssence(essence);
+                  String essenceText =
+                      enchantsConfig.getString(
+                          ConfigPaths.Enchants.Scavenger.MIXED_BAG_MESSAGE,
+                          "&#AA00FF+%essence% Essence!");
+                  if (essenceText != null && !essenceText.isEmpty()) {
+                    Location hologramLoc = event.getBlock().getLocation().add(0.5, 1.8, 0.5);
+                    AnimationRegistry.getInstance()
+                        .play(
+                            new HologramAnimation(
+                                plugin, essenceText.replace("%essence%", String.valueOf(essence))),
+                            hologramLoc,
+                            List.of(player));
+                  }
+                }
 
-          playerProfile.backpack.setMaxSize(playerProfile.backpack.getMaxSize() + slotsFound);
-          playerProfile.save(null);
-          BackpackListener.refresh(player);
-
-          if (ScavengerStoneHandler.hasStone(enchant, "Uncommon") && Utils.chance(50.0)) {
-            int essence = Utils.amount(1, 5);
-            playerProfile.addEssence(essence);
-            String essenceText =
-                enchantsConfig.getString(
-                    ConfigPaths.Enchants.Scavenger.MIXED_BAG_MESSAGE,
-                    "&#AA00FF+%essence% Essence!");
-            if (essenceText != null && !essenceText.isEmpty()) {
-              Location hologramLoc = event.getBlock().getLocation().add(0.5, 1.8, 0.5);
-              AnimationRegistry.getInstance()
-                  .play(
-                      new HologramAnimation(
-                          plugin, essenceText.replace("%essence%", String.valueOf(essence))),
-                      hologramLoc,
-                      List.of(player));
+                playEffects(event.getBlock(), player, slotsFound);
+              }
             }
           }
-
-          playEffects(event.getBlock(), player, slotsFound);
-        });
+        }
+      }
+    }
   }
 
   /**
@@ -165,18 +161,18 @@ public class ScavengerEnchant implements Listener {
    * as the event-driven handler but works with already-resolved profiles.
    */
   public void tryTriggerForAoE(
-      Player player, Block block, PickaxeProfile pickaxeProfile, PlayerProfile playerProfile) {
-    if (pickaxeProfile == null || pickaxeProfile.enchants == null) return;
+      Player player, Block block, Pickaxe pickaxe, PlayerProfile playerProfile) {
+    if (pickaxe == null || pickaxe.enchants == null) return;
 
-    EnchantData enchant = pickaxeProfile.enchants.getEnchant(Enchants.SCAVENGER);
+    EnchantData enchant = pickaxe.enchants.getEnchant(Enchants.SCAVENGER);
     if (enchant == null || !enchant.enabled || enchant.level <= 0) return;
     if (!Utils.chance(enchant.getCurrentChance())) return;
 
     if (ScavengerStoneHandler.hasStone(enchant, "Rare") && Utils.chance(10.0)) {
       int atoms = Utils.amount(1, 2);
-      pickaxeProfile.evolutionAtoms += atoms;
-      PickaxeManager.getInstance().checkAtoms(pickaxeProfile, player);
-      pickaxeProfile.save(null);
+      pickaxe.atomVessel.current += atoms;
+      PickaxeManager.getInstance().checkAtoms(pickaxe, player);
+      pickaxe.save(null);
       return;
     }
 
@@ -230,18 +226,18 @@ public class ScavengerEnchant implements Listener {
    * @return slots awarded this block, or 0 if not triggered / already at cap
    */
   public int tryTriggerForAoESilent(
-      Player player, Block block, PickaxeProfile pickaxeProfile, PlayerProfile playerProfile) {
-    if (pickaxeProfile == null || pickaxeProfile.enchants == null) return 0;
+      Player player, Block block, Pickaxe pickaxe, PlayerProfile playerProfile) {
+    if (pickaxe == null || pickaxe.enchants == null) return 0;
 
-    EnchantData enchant = pickaxeProfile.enchants.getEnchant(Enchants.SCAVENGER);
+    EnchantData enchant = pickaxe.enchants.getEnchant(Enchants.SCAVENGER);
     if (enchant == null || !enchant.enabled || enchant.level <= 0) return 0;
     if (!Utils.chance(enchant.getCurrentChance())) return 0;
 
     if (ScavengerStoneHandler.hasStone(enchant, "Rare") && Utils.chance(10.0)) {
       int atoms = Utils.amount(1, 2);
-      pickaxeProfile.evolutionAtoms += atoms;
+      pickaxe.atomVessel.current += atoms;
       AoEDropResolver.addAccumulatedAtoms(player.getUniqueId(), atoms);
-      pickaxeProfile.save(null);
+      pickaxe.save(null);
       return 0;
     }
 

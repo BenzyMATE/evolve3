@@ -16,11 +16,10 @@ import org.benski.evolv3.core.helpers.Utils;
 import org.benski.evolv3.core.managers.MineManager;
 import org.benski.evolv3.core.managers.PickaxeManager;
 import org.benski.evolv3.core.managers.WorldGuardManager;
-import org.benski.evolv3.datacenters.PickaxeDataCenter;
 import org.benski.evolv3.datacenters.PlayerDataCenter;
 import org.benski.evolv3.listeners.BackpackListener;
 import org.benski.evolv3.models.pickaxe.EnchantData;
-import org.benski.evolv3.models.pickaxe.PickaxeProfile;
+import org.benski.evolv3.models.pickaxe.Pickaxe;
 import org.benski.evolv3.models.player.EnchantPreference;
 import org.benski.evolv3.models.player.PlayerProfile;
 import org.benski.evolv3.registry.AnimationRegistry;
@@ -83,36 +82,33 @@ public class NuclearShowerEnchant implements Listener {
     String blockName = event.getBlock().getType().name();
     if (blockName.endsWith("_LOG") || blockName.endsWith("_STEM")) return;
 
-    PickaxeDataCenter pickaxeDC = DataCenterRegistry.getInstance().getPickaxeDataCenter();
+    PlayerDataCenter pickaxeDC = DataCenterRegistry.getInstance().getPlayerDataCenter();
     if (pickaxeDC == null) return;
 
-    pickaxeDC.get(
-        player,
-        pickaxeProfile -> {
-          if (pickaxeProfile == null || pickaxeProfile.enchants == null) return;
-
-          EnchantData shower = pickaxeProfile.enchants.getEnchant(Enchants.NUCLEAR_SHOWER);
-          if (shower == null || !shower.enabled || shower.level <= 0) return;
-
-          double triggerChance = shower.getCurrentChance();
-          if (NuclearShowerStoneHandler.hasStone(shower, "Uncommon")) triggerChance += 2.0;
-          if (!Utils.chance(triggerChance)) return;
-
+    Pickaxe pickaxe = pickaxeDC.getPickaxeForPlayer(player);
+    if (pickaxe != null && pickaxe.enchants != null) {
+      EnchantData shower = pickaxe.enchants.getEnchant(Enchants.NUCLEAR_SHOWER);
+      if (shower != null && shower.enabled && shower.level > 0) {
+        double triggerChance = shower.getCurrentChance();
+        if (NuclearShowerStoneHandler.hasStone(shower, "Uncommon")) triggerChance += 2.0;
+        if (Utils.chance(triggerChance)) {
           Block origin = event.getBlock();
 
           new BukkitRunnable() {
             @Override
             public void run() {
-              triggerShower(player, origin, pickaxeProfile, shower.level, shower, 0);
+              triggerShower(player, origin, pickaxe, shower.level, shower, 0);
             }
           }.runTaskLater(plugin, 1L);
-        });
+        }
+      }
+    }
   }
 
   private void triggerShower(
       Player player,
       Block origin,
-      PickaxeProfile pickaxeProfile,
+      Pickaxe pickaxe,
       int enchantLevel,
       EnchantData shower,
       int dominoDepth) {
@@ -197,7 +193,7 @@ public class NuclearShowerEnchant implements Listener {
       streamZ[s] = finalMinZ + rng.nextInt(xzDepth);
     }
 
-    int fortuneAmount = resolveFortune(pickaxeProfile);
+    int fortuneAmount = resolveFortune(pickaxe);
     EnchantPreferenceResult pref = getEnchantPref(player, config);
     AtomicInteger layersDone = new AtomicInteger(0);
     AtomicInteger totalBroken = new AtomicInteger(0);
@@ -231,7 +227,7 @@ public class NuclearShowerEnchant implements Listener {
 
           Material mat =
               AoEDropResolver.resolve(
-                  block, player.getInventory().getItemInMainHand(), plugin, pickaxeProfile);
+                  block, player.getInventory().getItemInMainHand(), plugin, pickaxe);
 
           MineManager.getInstance().trackBlockAtLocation(block.getLocation());
           block.setType(Material.AIR);
@@ -243,7 +239,7 @@ public class NuclearShowerEnchant implements Listener {
               int dropCount = Math.min(fortuneAmount > 0 ? fortuneAmount : 1, remaining);
               playerProfile.backpack.addItem(player, mat, dropCount, false);
               PickaxeManager.getInstance().addStatistics(player, mat, playerProfile);
-              AoEDropResolver.rollSideEffects(player, block, pickaxeProfile, playerProfile);
+              AoEDropResolver.rollSideEffects(player, block, pickaxe, playerProfile);
             }
           }
 
@@ -257,7 +253,7 @@ public class NuclearShowerEnchant implements Listener {
               @Override
               public void run() {
                 if (player.isOnline())
-                  triggerShower(player, dominoOrigin, pickaxeProfile, enchantLevel, shower, 1);
+                  triggerShower(player, dominoOrigin, pickaxe, enchantLevel, shower, 1);
               }
             }.runTaskLater(plugin, 20L);
           }
@@ -272,7 +268,7 @@ public class NuclearShowerEnchant implements Listener {
         playerProfile.save(null);
         int broken = totalBroken.get();
         if (broken > 0) {
-          AoEDropResolver.flushAccumulation(player, origin, pickaxeProfile);
+          AoEDropResolver.flushAccumulation(player, origin, pickaxe);
           showNotification(player, origin, config, pref, broken);
         }
       }
@@ -349,9 +345,9 @@ public class NuclearShowerEnchant implements Listener {
     }
   }
 
-  private int resolveFortune(PickaxeProfile pickaxeProfile) {
-    if (pickaxeProfile.enchants == null) return 0;
-    EnchantData fortune = pickaxeProfile.enchants.getEnchant(Enchants.FORTUNE);
+  private int resolveFortune(Pickaxe pickaxe) {
+    if (pickaxe.enchants == null) return 0;
+    EnchantData fortune = pickaxe.enchants.getEnchant(Enchants.FORTUNE);
     if (fortune == null || !fortune.enabled || fortune.level <= 0) return 0;
     return FortuneEnchant.getDropAmount(fortune.level);
   }

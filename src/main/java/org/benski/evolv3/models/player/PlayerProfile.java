@@ -4,290 +4,180 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.function.Consumer;
-import org.benski.evolv3.core.abstracts.MongoDocument;
 import org.benski.evolv3.core.constants.ConfigNames;
 import org.benski.evolv3.core.constants.ConfigPaths;
+import org.benski.evolv3.core.types.PlayerActivity;
+import org.benski.evolv3.core.types.RankType;
 import org.benski.evolv3.models.backpack.Backpack;
+import org.benski.evolv3.models.pickaxe.Pickaxe;
 import org.benski.evolv3.registry.ConfigRegistry;
-import org.bson.Document;
 import org.bukkit.Bukkit;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.Nullable;
 
-/**
- * Represents a player's profile data stored in MongoDB. Contains player-specific settings,
- * currencies, and embedded preferences.
- */
-public final class PlayerProfile extends MongoDocument {
-  /** The player's unique identifier (UUID as string). */
+/** Root aggregate for all player data. Single source of truth — loaded once on join via API. */
+public final class PlayerProfile {
+
   public String id;
-
-  /** The UUID of the player (stored to prevent memory leaks). */
   public UUID playerUuid;
-
-  /** Flag indicating if the player is currently in an enchanting process. */
-  public boolean isEnchanting;
-
-  /** Flag indicating if the player is currently evolving their pickaxe. */
-  public boolean isEvolving;
-
-  /** Maximum number of pickaxes this player can own. */
-  public int pickaxeLimit;
-
-  /**
-   * The highest evolution level ever reached across all of this player's pickaxes. Persisted so the
-   * pickaxe storage menu shows the correct number of unlocked slots even when the highest-tier
-   * pickaxe is in storage and not loaded into local cache.
-   */
-  public int highestEvolution = 1;
-
-  /** Player's total essence currency. */
-  public int essence;
-
-  /** Player's coin balance (internal currency, independent of Vault). */
-  public double coins;
-
-  /** Player's preferences (embedded sub-document). */
+  public PlayerActivity activity = PlayerActivity.NONE;
+  public Wallet wallet = new Wallet();
   public PlayerPreferences preferences = new PlayerPreferences();
-
-  /** Player's backpack for storing mined items (embedded sub-document). */
   public Backpack backpack = new Backpack();
-
-  /**
-   * Stored pickaxes per slot. Each entry is "" (empty) or "id:MATERIAL" (stored pickaxe). List
-   * always has exactly 9 entries (one per possible storage slot).
-   */
   public List<String> storedPickaxes = new ArrayList<>();
+  public List<Rank> ranks = new ArrayList<>();
 
-  /**
-   * The player's current prison rank id (e.g. "A1", "B3"). Defaults to the configured default rank
-   * on first join.
-   */
-  public String rank;
+  /** All pickaxes owned by this player (embedded in the API document). */
+  public List<Pickaxe> pickaxes = new ArrayList<>();
 
-  /** The player's staff rank id (e.g. "helper", "admin"), or null if not a staff member. */
-  @Nullable public String staffRank;
-
-  /**
-   * Creates a new PlayerProfile with default values from config.
-   *
-   * @param player The player to create the profile for
-   * @return A new PlayerProfile with defaults applied
-   */
+  /** Creates a new profile for the given player using default values from {@code default.yml}. */
   public static PlayerProfile createDefault(Player player) {
     PlayerProfile profile = new PlayerProfile();
     profile.initialize(player);
 
     FileConfiguration config = ConfigRegistry.getInstance().get(ConfigNames.DEFAULT);
-    profile.pickaxeLimit = config.getInt(ConfigPaths.Default.Player.DEFAULT_PICKAXE_LIMIT, 1);
-    profile.highestEvolution = 1;
-    profile.essence = config.getInt(ConfigPaths.Default.Player.DEFAULT_ESSENCE, 0);
-    profile.coins = config.getDouble(ConfigPaths.Default.Player.DEFAULT_COINS, 0.0);
-    profile.isEnchanting = false;
-    profile.isEvolving = false;
+    profile.activity = PlayerActivity.NONE;
+    profile.wallet =
+        new Wallet(
+            config.getDouble(ConfigPaths.Default.Player.DEFAULT_COINS, 0.0),
+            config.getInt(ConfigPaths.Default.Player.DEFAULT_ESSENCE, 0));
     profile.preferences = new PlayerPreferences();
     profile.backpack = Backpack.createDefault();
     profile.storedPickaxes = new ArrayList<>();
-    for (int i = 0; i < 9; i++) {
-      profile.storedPickaxes.add("");
-    }
+    for (int i = 0; i < 9; i++) profile.storedPickaxes.add("");
 
-    profile.rank = config.getString(ConfigPaths.Ranks.DEFAULT_RANK, "A1");
-    profile.staffRank = null;
+    String defaultRank = config.getString(ConfigPaths.Ranks.DEFAULT_RANK, "A1");
+    profile.ranks = new ArrayList<>();
+    profile.ranks.add(new Rank(defaultRank, RankType.DEFAULT));
 
     return profile;
   }
 
-  /**
-   * Gets the Player object. May return null if the player is offline.
-   *
-   * @return The Player object or null if offline
-   */
-  public Player getPlayer() {
-    return Bukkit.getPlayer(playerUuid);
-  }
-
-  /** {@inheritDoc} */
-  @Override
   public void initialize(Player player) {
     this.playerUuid = player.getUniqueId();
     this.id = player.getUniqueId().toString();
   }
 
-  /** {@inheritDoc} */
-  @Override
-  public String getCollectionName() {
-    return "Players";
-  }
-
-  /** {@inheritDoc} */
-  @Override
-  public Document toDocument() {
-    Document doc = new Document();
-    doc.put("id", id);
-    doc.put("isEnchanting", isEnchanting);
-    doc.put("isEvolving", isEvolving);
-    doc.put("pickaxeLimit", pickaxeLimit);
-    doc.put("highestEvolution", highestEvolution);
-    doc.put("essence", essence);
-    doc.put("coins", coins);
-
-    if (preferences != null) {
-      doc.put("preferences", preferences.toDocument());
-    }
-
-    if (backpack != null) {
-      doc.put("backpack", backpack.toDocument());
-    }
-
-    doc.put("storedPickaxes", storedPickaxes);
-    doc.put("rank", rank);
-    if (staffRank != null) {
-      doc.put("staffRank", staffRank);
-    }
-
-    return doc;
-  }
-
-  /** {@inheritDoc} */
-  @Override
-  public void fromDocument(Document document) {
-    this.id = document.getString("id");
-    this.playerUuid = UUID.fromString(this.id);
-    this.isEnchanting = document.getBoolean("isEnchanting", false);
-    this.isEvolving = document.getBoolean("isEvolving", false);
-    int savedLimit = document.getInteger("pickaxeLimit", 0);
-    this.pickaxeLimit =
-        savedLimit > 0
-            ? savedLimit
-            : ConfigRegistry.getInstance()
-                .get(ConfigNames.DEFAULT)
-                .getInt(ConfigPaths.Default.Player.DEFAULT_PICKAXE_LIMIT, 1);
-    this.highestEvolution = Math.max(1, document.getInteger("highestEvolution", 1));
-    this.essence = document.getInteger("essence", 0);
-    Double savedCoins = document.getDouble("coins");
-    this.coins = savedCoins != null ? savedCoins : 0.0;
-
-    Document prefsDoc = document.get("preferences", Document.class);
-    if (prefsDoc != null) {
-      if (this.preferences == null) {
-        this.preferences = new PlayerPreferences();
-      }
-      this.preferences.fromDocument(prefsDoc);
-    }
-
-    Document backpackDoc = document.get("backpack", Document.class);
-    if (backpackDoc != null) {
-      if (this.backpack == null) {
-        this.backpack = Backpack.createDefault();
-      }
-      this.backpack.fromDocument(backpackDoc);
-    }
-
-    List<String> stored = document.getList("storedPickaxes", String.class);
-    this.storedPickaxes = stored != null ? new ArrayList<>(stored) : new ArrayList<>();
-    while (this.storedPickaxes.size() < 9) {
-      this.storedPickaxes.add("");
-    }
-
-    String savedRank = document.getString("rank");
-    this.rank =
-        savedRank != null && !savedRank.isEmpty()
-            ? savedRank
-            : ConfigRegistry.getInstance()
-                .get(ConfigNames.RANKS)
-                .getString(ConfigPaths.Ranks.DEFAULT_RANK, "A1");
-    this.staffRank = document.getString("staffRank");
-  }
-
-  /** {@inheritDoc} */
-  @Override
-  public String getIdField() {
-    return "id";
-  }
-
-  /** {@inheritDoc} */
-  @Override
-  public Object getIdValue() {
-    return this.id;
-  }
-
-  /** {@inheritDoc} */
-  @Override
-  public void save(Consumer<Boolean> callback) {
-    mongoManager
-        .upsertAsync(this)
-        .whenComplete(
-            (result, throwable) -> {
-              if (throwable != null) {
-                LOGGER.severe("Failed to save player profile: " + throwable.getMessage());
-              }
-              if (callback != null) {
-                callback.accept(throwable == null);
-              }
-            });
+  public Player getPlayer() {
+    return Bukkit.getPlayer(playerUuid);
   }
 
   /**
-   * Adds essence to the player's total.
-   *
-   * @param amount The amount to add
+   * Returns the highest evolution level across all of this player's pickaxes, defaulting to {@code
+   * 1} when no pickaxes exist.
    */
-  public void addEssence(int amount) {
-    this.essence += amount;
+  public int getHighestEvolution() {
+    return pickaxes.stream().mapToInt(p -> p.evolution).max().orElse(1);
   }
 
   /**
-   * Removes essence from the player's total.
-   *
-   * @param amount The amount to remove
-   * @return true if the player had enough essence
+   * Returns the maximum number of pickaxes this player may own, sourced from {@code
+   * Default.Player.PickaxeLimit} in {@code default.yml}.
    */
-  public boolean removeEssence(int amount) {
-    if (this.essence < amount) return false;
-    this.essence -= amount;
-    return true;
+  public int getPickaxeLimit() {
+    return ConfigRegistry.getInstance()
+        .get(ConfigNames.DEFAULT)
+        .getInt(ConfigPaths.Default.Player.DEFAULT_PICKAXE_LIMIT, 1);
   }
 
-  /**
-   * Checks if the player has at least the specified amount of essence.
-   *
-   * @param amount The amount to check
-   * @return true if the player has enough
-   */
-  public boolean hasEssence(int amount) {
-    return this.essence >= amount;
-  }
-
-  /**
-   * Adds coins to the player's balance.
-   *
-   * @param amount The amount to add
-   */
-  public void addCoins(double amount) {
-    this.coins += amount;
-  }
-
-  /**
-   * Removes coins from the player's balance.
-   *
-   * @param amount The amount to remove
-   * @return true if the player had enough coins
-   */
-  public boolean removeCoins(double amount) {
-    if (this.coins < amount) return false;
-    this.coins -= amount;
-    return true;
-  }
-
-  /**
-   * Checks if the player can create another pickaxe.
-   *
-   * @param currentPickaxeCount The player's current number of pickaxes
-   * @return true if the player has available slots
-   */
+  /** Returns {@code true} if the player may create another pickaxe given their current count. */
   public boolean canCreatePickaxe(int currentPickaxeCount) {
-    return currentPickaxeCount < pickaxeLimit;
+    return currentPickaxeCount < getPickaxeLimit();
+  }
+
+  /** Finds a pickaxe by its UUID key, or {@code null} if this player does not own it. */
+  @Nullable
+  public Pickaxe getPickaxe(String pickaxeId) {
+    if (pickaxeId == null || pickaxeId.isEmpty()) return null;
+    for (Pickaxe p : pickaxes) {
+      if (pickaxeId.equals(p.key)) return p;
+    }
+    return null;
+  }
+
+  /** Adds or replaces a pickaxe in the embedded list. */
+  public void upsertPickaxe(Pickaxe pickaxe) {
+    pickaxes.removeIf(p -> pickaxe.key.equals(p.key));
+    pickaxes.add(pickaxe);
+  }
+
+  /** Removes the pickaxe with the given key from the embedded list. */
+  public void removePickaxe(String pickaxeId) {
+    pickaxes.removeIf(p -> pickaxeId.equals(p.key));
+  }
+
+  @Nullable
+  public String getRank() {
+    return ranks.stream()
+        .filter(r -> r.type == RankType.DEFAULT)
+        .map(r -> r.prefix)
+        .findFirst()
+        .orElse(null);
+  }
+
+  public void setRank(String prefix) {
+    ranks.removeIf(r -> r.type == RankType.DEFAULT);
+    if (prefix != null && !prefix.isEmpty()) ranks.add(new Rank(prefix, RankType.DEFAULT));
+  }
+
+  @Nullable
+  public String getStaffRank() {
+    return ranks.stream()
+        .filter(r -> r.type == RankType.STAFF)
+        .map(r -> r.prefix)
+        .findFirst()
+        .orElse(null);
+  }
+
+  public void setStaffRank(@Nullable String prefix) {
+    ranks.removeIf(r -> r.type == RankType.STAFF);
+    if (prefix != null && !prefix.isEmpty()) ranks.add(new Rank(prefix, RankType.STAFF));
+  }
+
+  public boolean isEnchanting() {
+    return activity == PlayerActivity.ENCHANTING;
+  }
+
+  public boolean isEvolving() {
+    return activity == PlayerActivity.EVOLVING;
+  }
+
+  /**
+   * Marks this profile as modified. The callback is invoked immediately with {@code true} since
+   * in-memory state is authoritative. The actual API persist happens on player quit or server
+   * shutdown.
+   *
+   * @param callback receives {@code true}; may be {@code null}
+   */
+  public void save(Consumer<Boolean> callback) {
+    if (callback != null) callback.accept(true);
+  }
+
+  /** No-op — profile is persisted on player quit or server shutdown. */
+  public void save() {}
+
+  public void addEssence(int amount) {
+    this.wallet.essence += amount;
+  }
+
+  public boolean removeEssence(int amount) {
+    if (this.wallet.essence < amount) return false;
+    this.wallet.essence -= amount;
+    return true;
+  }
+
+  public boolean hasEssence(int amount) {
+    return this.wallet.essence >= amount;
+  }
+
+  public void addCoins(double amount) {
+    this.wallet.coins += amount;
+  }
+
+  public boolean removeCoins(double amount) {
+    if (this.wallet.coins < amount) return false;
+    this.wallet.coins -= amount;
+    return true;
   }
 }

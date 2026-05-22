@@ -23,8 +23,8 @@ import org.benski.evolv3.core.managers.OmnitoolManager;
 import org.benski.evolv3.core.managers.PickaxeManager;
 import org.benski.evolv3.core.managers.PickupAnimationManager;
 import org.benski.evolv3.core.managers.WorldGuardManager;
+import org.benski.evolv3.core.types.PlayerActivity;
 import org.benski.evolv3.core.types.PreferenceType;
-import org.benski.evolv3.datacenters.PickaxeDataCenter;
 import org.benski.evolv3.datacenters.PlayerDataCenter;
 import org.benski.evolv3.enchants.EfficiencyStoneHandler;
 import org.benski.evolv3.enchants.ExtractionEnchant;
@@ -36,7 +36,7 @@ import org.benski.evolv3.enchants.RadioactiveEnchant;
 import org.benski.evolv3.enchants.UnbreakingStoneHandler;
 import org.benski.evolv3.models.backpack.Backpack;
 import org.benski.evolv3.models.pickaxe.EnchantData;
-import org.benski.evolv3.models.pickaxe.PickaxeProfile;
+import org.benski.evolv3.models.pickaxe.Pickaxe;
 import org.benski.evolv3.models.player.PlayerPreferences;
 import org.benski.evolv3.models.player.PlayerProfile;
 import org.benski.evolv3.registry.AnimationRegistry;
@@ -161,7 +161,7 @@ public class BreakListener extends BaseListener {
 
     ItemStack baseDrop = new ItemStack(dropMaterial);
     int dropAmount = drops.isEmpty() ? 1 : drops.stream().mapToInt(ItemStack::getAmount).sum();
-    boolean isEnchantDrop = playerProfile.isEnchanting;
+    boolean isEnchantDrop = playerProfile.isEnchanting();
 
     pendingBreaks.put(
         player.getUniqueId(),
@@ -237,17 +237,9 @@ public class BreakListener extends BaseListener {
     ctx.backpack().addItem(player, finalDrop.getType(), finalDropAmount, ctx.isEnchantDrop());
     BackpackListener.refresh(player);
 
-    ctx.playerProfile().isEnchanting = false;
+    ctx.playerProfile().activity = PlayerActivity.NONE;
 
-    var pickaxeDataCenter = DataCenterRegistry.getInstance().getPickaxeDataCenter();
-    if (pickaxeDataCenter == null) return;
-    pickaxeDataCenter.get(
-        player,
-        pickaxeProfile -> {
-          if (pickaxeProfile != null) {
-            pickaxeManager.addStatistics(player, ctx.xpMaterial(), ctx.playerProfile());
-          }
-        });
+    pickaxeManager.addStatistics(player, ctx.xpMaterial(), ctx.playerProfile());
 
     boolean isDissolve =
         ctx.playerProfile().preferences.pickupEffect == PreferenceType.PickupEffect.DEFAULT;
@@ -407,18 +399,9 @@ public class BreakListener extends BaseListener {
 
     ctx.backpack().addItem(player, finalDrop.getType(), ctx.dropAmount(), false);
     BackpackListener.refresh(player);
-    ctx.playerProfile().isEnchanting = false;
+    ctx.playerProfile().activity = PlayerActivity.NONE;
 
-    var pickaxeDataCenter = DataCenterRegistry.getInstance().getPickaxeDataCenter();
-    if (pickaxeDataCenter != null) {
-      pickaxeDataCenter.get(
-          player,
-          pickaxeProfile -> {
-            if (pickaxeProfile != null) {
-              pickaxeManager.addStatistics(player, ctx.blockType(), ctx.playerProfile());
-            }
-          });
-    }
+    pickaxeManager.addStatistics(player, ctx.blockType(), ctx.playerProfile());
 
     FileConfiguration config = ConfigRegistry.getInstance().get(ConfigNames.DEFAULT);
     double dropChance = config.getDouble(ConfigPaths.Default.AncientResin.DROP_CHANCE, 25.0);
@@ -442,10 +425,10 @@ public class BreakListener extends BaseListener {
     String pickaxeId = ItemStackExtensions.getData(item, "id");
     if (pickaxeId == null || pickaxeId.isEmpty()) return;
 
-    PickaxeDataCenter dc = DataCenterRegistry.getInstance().getPickaxeDataCenter();
+    PlayerDataCenter dc = DataCenterRegistry.getInstance().getPlayerDataCenter();
     if (dc == null) return;
 
-    PickaxeProfile profile = dc.getAll().get(pickaxeId);
+    Pickaxe profile = dc.getPickaxeByItemId(pickaxeId);
     if (profile == null) return;
 
     EnchantData unbreaking = profile.enchants.getEnchant(Enchants.UNBREAKING);
@@ -599,24 +582,20 @@ public class BreakListener extends BaseListener {
     int rawMultiplier = RadioactiveEnchant.popAmountMultiplier(player.getUniqueId());
     int baseAmount = Utils.amount(minAmount, maxAmount) * Math.max(1, rawMultiplier);
 
-    var pickaxeDataCenter = DataCenterRegistry.getInstance().getPickaxeDataCenter();
-    if (pickaxeDataCenter == null) return;
+    PlayerDataCenter atomDC = DataCenterRegistry.getInstance().getPlayerDataCenter();
+    if (atomDC == null) return;
 
-    PickaxeProfile localProfile = pickaxeDataCenter.getLocal(player);
+    Pickaxe localProfile = atomDC.getPickaxeForPlayer(player);
     double prestigeMultiplier =
         localProfile != null ? pickaxeManager.getPrestigeMultiplier(localProfile.prestige) : 1.0;
     int amount = (int) Math.round(baseAmount * prestigeMultiplier);
 
-    pickaxeDataCenter.get(
-        player,
-        pickaxeProfile -> {
-          if (pickaxeProfile != null) {
-            pickaxeProfile.evolutionAtoms += amount;
-            pickaxeManager.checkAtoms(pickaxeProfile, player);
-            pickaxeProfile.save(null);
-            EfficiencyStoneHandler.getInstance().onAtomPickup(player);
-          }
-        });
+    if (localProfile != null) {
+      localProfile.atomVessel.current += amount;
+      pickaxeManager.checkAtoms(localProfile, player);
+      localProfile.save(null);
+      EfficiencyStoneHandler.getInstance().onAtomPickup(player);
+    }
 
     animationRegistry.play("atom", animLoc, List.of(player), amount);
 
@@ -671,24 +650,20 @@ public class BreakListener extends BaseListener {
     int maxAmount = config.getInt(ConfigPaths.Default.Essence.DISCOVERY_MAX_AMOUNT, 5);
     int baseAmount = Utils.amount(minAmount, maxAmount) * Math.max(1, multiplier);
 
-    var pickaxeDataCenter = DataCenterRegistry.getInstance().getPickaxeDataCenter();
-    if (pickaxeDataCenter == null) return;
+    PlayerDataCenter essenceDC = DataCenterRegistry.getInstance().getPlayerDataCenter();
+    if (essenceDC == null) return;
 
-    PickaxeProfile localProfile = pickaxeDataCenter.getLocal(player);
+    Pickaxe localProfile = essenceDC.getPickaxeForPlayer(player);
     double prestigeMultiplier =
         localProfile != null ? pickaxeManager.getPrestigeMultiplier(localProfile.prestige) : 1.0;
     int amount = (int) Math.round(baseAmount * prestigeMultiplier);
 
-    pickaxeDataCenter.get(
-        player,
-        pickaxeProfile -> {
-          if (pickaxeProfile != null) {
-            playerProfile.essence += amount;
-            pickaxeProfile.currentEssence += amount;
-            pickaxeManager.checkEssence(pickaxeProfile, player);
-            pickaxeProfile.save(null);
-          }
-        });
+    if (localProfile != null) {
+      playerProfile.addEssence(amount);
+      localProfile.essenceVessel.current += amount;
+      pickaxeManager.checkEssence(localProfile, player);
+      localProfile.save(null);
+    }
 
     animationRegistry.play("essence", animLoc, List.of(player), amount);
 

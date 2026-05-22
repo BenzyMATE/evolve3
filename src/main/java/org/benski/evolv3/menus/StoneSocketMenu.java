@@ -17,10 +17,10 @@ import org.benski.evolv3.core.managers.EnchantAnimationConfig;
 import org.benski.evolv3.core.managers.StoneEffectRegistry;
 import org.benski.evolv3.core.types.MenuType;
 import org.benski.evolv3.core.types.RarityConfig;
-import org.benski.evolv3.datacenters.PickaxeDataCenter;
+import org.benski.evolv3.datacenters.PlayerDataCenter;
 import org.benski.evolv3.items.EvolutionStone;
 import org.benski.evolv3.models.pickaxe.EnchantData;
-import org.benski.evolv3.models.pickaxe.PickaxeProfile;
+import org.benski.evolv3.models.pickaxe.Pickaxe;
 import org.benski.evolv3.registry.ConfigRegistry;
 import org.benski.evolv3.registry.DataCenterRegistry;
 import org.benski.evolv3.registry.MenuRegistry;
@@ -67,11 +67,8 @@ public class StoneSocketMenu extends BaseMenu {
   /** Per-player state: which enchant display name this player is currently viewing. */
   private final Map<UUID, String> pendingEnchants = new ConcurrentHashMap<>();
 
-  private final PickaxeDataCenter pickaxeDataCenter;
-
   public StoneSocketMenu(JavaPlugin plugin) {
     super(plugin);
-    pickaxeDataCenter = (PickaxeDataCenter) DataCenterRegistry.getInstance().get("pickaxe");
   }
 
   /**
@@ -112,7 +109,8 @@ public class StoneSocketMenu extends BaseMenu {
     String displayName = pendingEnchants.get(player.getUniqueId());
     if (displayName == null) return;
 
-    PickaxeProfile profile = pickaxeDataCenter.getLocal(player);
+    PlayerDataCenter pdc = DataCenterRegistry.getInstance().getPlayerDataCenter();
+    Pickaxe profile = pdc != null ? pdc.getPickaxeForPlayer(player) : null;
     if (profile == null) return;
 
     EnchantData enchant = profile.enchants.getEnchant(displayName.toLowerCase());
@@ -167,7 +165,8 @@ public class StoneSocketMenu extends BaseMenu {
     String displayName = pendingEnchants.get(player.getUniqueId());
     if (displayName == null) return;
 
-    PickaxeProfile profile = pickaxeDataCenter.getLocal(player);
+    PlayerDataCenter pdc = DataCenterRegistry.getInstance().getPlayerDataCenter();
+    Pickaxe profile = pdc != null ? pdc.getPickaxeForPlayer(player) : null;
     if (profile == null) return;
 
     if (socketIndex >= EnchantData.getUnlockedSlotCount(profile.prestige)) return;

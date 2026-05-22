@@ -17,9 +17,9 @@ import org.benski.evolv3.core.helpers.ItemStackExtensions;
 import org.benski.evolv3.core.helpers.Utils;
 import org.benski.evolv3.core.managers.EnchantDropManager;
 import org.benski.evolv3.core.managers.WorldGuardManager;
-import org.benski.evolv3.datacenters.PickaxeDataCenter;
 import org.benski.evolv3.datacenters.PlayerDataCenter;
 import org.benski.evolv3.models.pickaxe.EnchantData;
+import org.benski.evolv3.models.pickaxe.Pickaxe;
 import org.benski.evolv3.models.player.EnchantPreference;
 import org.benski.evolv3.registry.AnimationRegistry;
 import org.benski.evolv3.registry.ConfigRegistry;
@@ -124,57 +124,46 @@ public class AlchemyEnchant implements Listener {
       if (pp != null && pp.backpack.isFull()) return;
     }
 
-    PickaxeDataCenter dataCenter = DataCenterRegistry.getInstance().getPickaxeDataCenter();
-    if (dataCenter == null) return;
-    dataCenter.get(
-        player,
-        profile -> {
-          if (profile == null || profile.enchants == null) {
-            return;
-          }
+    PlayerDataCenter pickaxeDC = DataCenterRegistry.getInstance().getPlayerDataCenter();
+    if (pickaxeDC == null) return;
+    Pickaxe profile = pickaxeDC.getPickaxeForPlayer(player);
+    if (profile != null && profile.enchants != null) {
+      EnchantData enchant = profile.enchants.getEnchant(Enchants.ALCHEMY);
+      if (enchant != null && enchant.enabled && enchant.level > 0) {
+        double triggerChance = enchant.getCurrentChance();
 
-          EnchantData enchant = profile.enchants.getEnchant(Enchants.ALCHEMY);
-          if (enchant == null || !enchant.enabled || enchant.level <= 0) {
-            return;
-          }
+        if (AlchemyStoneHandler.hasStone(enchant, "Uncommon")) {
+          triggerChance += 10.0;
+        }
 
-          double triggerChance = enchant.getCurrentChance();
-
-          if (AlchemyStoneHandler.hasStone(enchant, "Uncommon")) {
-            triggerChance += 10.0;
-          }
-
-          boolean legendary = AlchemyStoneHandler.hasStone(enchant, "Legendary");
-          if (!legendary && !Utils.chance(triggerChance)) {
-            return;
-          }
-
+        boolean legendary = AlchemyStoneHandler.hasStone(enchant, "Legendary");
+        if (legendary || Utils.chance(triggerChance)) {
           Block block = event.getBlock();
           Material materialToUpgrade = getMaterialToUpgrade(block, player);
 
           Material upgradeResult = upgradeRecipes.get(materialToUpgrade);
-          if (upgradeResult == null) {
-            return;
+          if (upgradeResult != null) {
+            if (AlchemyStoneHandler.hasStone(enchant, "Common") && Utils.chance(15.0)) {
+              Material tier2 = upgradeRecipes.get(upgradeResult);
+              if (tier2 != null) upgradeResult = tier2;
+            }
+
+            if (AlchemyStoneHandler.hasStone(enchant, "Rare") && Utils.chance(20.0)) {
+              Material tier2 = upgradeRecipes.get(upgradeResult);
+              if (tier2 != null) upgradeResult = tier2;
+            }
+
+            if (AlchemyStoneHandler.hasStone(enchant, "Epic") && Utils.chance(30.0)) {
+              upgradeResult = getWithinTwosOfMax(upgradeResult);
+            }
+
+            EnchantDropManager.set(player.getUniqueId(), upgradeResult);
+
+            playUpgradeEffects(block, player, materialToUpgrade, upgradeResult);
           }
-
-          if (AlchemyStoneHandler.hasStone(enchant, "Common") && Utils.chance(15.0)) {
-            Material tier2 = upgradeRecipes.get(upgradeResult);
-            if (tier2 != null) upgradeResult = tier2;
-          }
-
-          if (AlchemyStoneHandler.hasStone(enchant, "Rare") && Utils.chance(20.0)) {
-            Material tier2 = upgradeRecipes.get(upgradeResult);
-            if (tier2 != null) upgradeResult = tier2;
-          }
-
-          if (AlchemyStoneHandler.hasStone(enchant, "Epic") && Utils.chance(30.0)) {
-            upgradeResult = getWithinTwosOfMax(upgradeResult);
-          }
-
-          EnchantDropManager.set(player.getUniqueId(), upgradeResult);
-
-          playUpgradeEffects(block, player, materialToUpgrade, upgradeResult);
-        });
+        }
+      }
+    }
   }
 
   /**

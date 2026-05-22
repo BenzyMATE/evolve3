@@ -19,11 +19,10 @@ import org.benski.evolv3.core.managers.FrostbiteBlockManager;
 import org.benski.evolv3.core.managers.MineManager;
 import org.benski.evolv3.core.managers.PickaxeManager;
 import org.benski.evolv3.core.managers.WorldGuardManager;
-import org.benski.evolv3.datacenters.PickaxeDataCenter;
 import org.benski.evolv3.datacenters.PlayerDataCenter;
 import org.benski.evolv3.listeners.BackpackListener;
 import org.benski.evolv3.models.pickaxe.EnchantData;
-import org.benski.evolv3.models.pickaxe.PickaxeProfile;
+import org.benski.evolv3.models.pickaxe.Pickaxe;
 import org.benski.evolv3.models.player.EnchantPreference;
 import org.benski.evolv3.models.player.PlayerProfile;
 import org.benski.evolv3.registry.AnimationRegistry;
@@ -95,33 +94,22 @@ public class FrostbiteEnchant implements Listener {
       if (pp != null && pp.backpack.isFull()) return;
     }
 
-    PickaxeDataCenter dataCenter = DataCenterRegistry.getInstance().getPickaxeDataCenter();
-    if (dataCenter == null) return;
-    dataCenter.get(
-        player,
-        profile -> {
-          if (profile == null || profile.enchants == null) {
-            return;
-          }
-
-          EnchantData enchant = profile.enchants.getEnchant(Enchants.FROSTBITE);
-          if (enchant == null || !enchant.enabled || enchant.level <= 0) {
-            return;
-          }
-
-          Block block = event.getBlock();
-          if (block.getType() == Material.PACKED_ICE || block.hasMetadata(FROSTBITE_METADATA_KEY)) {
-            return;
-          }
-
+    PlayerDataCenter playerDataCenter = DataCenterRegistry.getInstance().getPlayerDataCenter();
+    if (playerDataCenter == null) return;
+    Pickaxe profile = playerDataCenter.getPickaxeForPlayer(player);
+    if (profile != null && profile.enchants != null) {
+      EnchantData enchant = profile.enchants.getEnchant(Enchants.FROSTBITE);
+      if (enchant != null && enchant.enabled && enchant.level > 0) {
+        Block block = event.getBlock();
+        if (block.getType() != Material.PACKED_ICE && !block.hasMetadata(FROSTBITE_METADATA_KEY)) {
           double triggerChance = enchant.getCurrentChance();
           if (FrostbiteStoneHandler.hasStone(enchant, "Uncommon")) triggerChance += 3.0;
-          if (!Utils.chance(triggerChance)) {
-            return;
+          if (Utils.chance(triggerChance)) {
+            applyFreezingEffect(block, player, enchant);
           }
-
-          applyFreezingEffect(block, player, enchant);
-        });
+        }
+      }
+    }
   }
 
   /**
@@ -137,24 +125,21 @@ public class FrostbiteEnchant implements Listener {
     if (!Utils.isPickaxe(player.getInventory().getItemInMainHand().getType())) return;
     if (!WorldGuardManager.getInstance().isWithinMineRegion(block.getLocation())) return;
 
-    PickaxeDataCenter pickaxeDC = DataCenterRegistry.getInstance().getPickaxeDataCenter();
-    if (pickaxeDC == null) return;
+    PlayerDataCenter frozenPlayerDC = DataCenterRegistry.getInstance().getPlayerDataCenter();
+    if (frozenPlayerDC == null) return;
+    Pickaxe frozenProfile = frozenPlayerDC.getPickaxeForPlayer(player);
+    if (frozenProfile != null && frozenProfile.enchants != null) {
+      EnchantData enchant = frozenProfile.enchants.getEnchant(Enchants.FROSTBITE);
+      if (enchant != null && enchant.enabled) {
+        if (FrostbiteStoneHandler.hasStone(enchant, "Rare")) {
+          triggerIcePick(player, block, enchant, frozenProfile);
+        }
 
-    pickaxeDC.get(
-        player,
-        profile -> {
-          if (profile == null || profile.enchants == null) return;
-          EnchantData enchant = profile.enchants.getEnchant(Enchants.FROSTBITE);
-          if (enchant == null || !enchant.enabled) return;
-
-          if (FrostbiteStoneHandler.hasStone(enchant, "Rare")) {
-            triggerIcePick(player, block, enchant, profile);
-          }
-
-          if (FrostbiteStoneHandler.hasStone(enchant, "Epic") && Utils.chance(5.0)) {
-            awardAtom(player, block);
-          }
-        });
+        if (FrostbiteStoneHandler.hasStone(enchant, "Epic") && Utils.chance(5.0)) {
+          awardAtom(player, block);
+        }
+      }
+    }
   }
 
   /**
@@ -323,8 +308,7 @@ public class FrostbiteEnchant implements Listener {
    * stone's extra 5% atom chance per block.
    */
   @SuppressWarnings("deprecation")
-  private void triggerIcePick(
-      Player player, Block center, EnchantData enchant, PickaxeProfile pickaxeProfile) {
+  private void triggerIcePick(Player player, Block center, EnchantData enchant, Pickaxe pickaxe) {
     int radius = 2;
     List<Location> removed = new ArrayList<>();
 
@@ -370,9 +354,9 @@ public class FrostbiteEnchant implements Listener {
             int min = rollConfig.getInt(ConfigPaths.Default.Essence.DISCOVERY_MIN_AMOUNT, 1);
             int max = rollConfig.getInt(ConfigPaths.Default.Essence.DISCOVERY_MAX_AMOUNT, 5);
             int amount = Utils.amount(min, max);
-            if (pp != null) pp.essence += amount;
-            if (pickaxeProfile != null) {
-              pickaxeProfile.currentEssence += amount;
+            if (pp != null) pp.addEssence(amount);
+            if (pickaxe != null) {
+              pickaxe.essenceVessel.current += amount;
               essenceChanged = true;
             }
             Location animLoc = blockLoc.clone().add(0.5, 0.5, 0.5);
@@ -401,9 +385,9 @@ public class FrostbiteEnchant implements Listener {
       }
     }
 
-    if (essenceChanged && pickaxeProfile != null) {
-      PickaxeManager.getInstance().checkEssence(pickaxeProfile, player);
-      pickaxeProfile.save(null);
+    if (essenceChanged && pickaxe != null) {
+      PickaxeManager.getInstance().checkEssence(pickaxe, player);
+      pickaxe.save(null);
     }
 
     if (!removed.isEmpty()) {
@@ -423,18 +407,15 @@ public class FrostbiteEnchant implements Listener {
     int max = config.getInt(ConfigPaths.Default.Atoms.DISCOVERY_MAX_AMOUNT, 3);
     int amount = Utils.amount(min, max);
 
-    PickaxeDataCenter pickaxeDC = DataCenterRegistry.getInstance().getPickaxeDataCenter();
-    if (pickaxeDC != null) {
-      pickaxeDC.get(
-          player,
-          pickaxeProfile -> {
-            if (pickaxeProfile != null) {
-              pickaxeProfile.evolutionAtoms += amount;
-              PickaxeManager.getInstance().checkAtoms(pickaxeProfile, player);
-              pickaxeProfile.save(null);
-              EfficiencyStoneHandler.getInstance().onAtomPickup(player);
-            }
-          });
+    PlayerDataCenter atomPlayerDC = DataCenterRegistry.getInstance().getPlayerDataCenter();
+    if (atomPlayerDC != null) {
+      Pickaxe atomPickaxe = atomPlayerDC.getPickaxeForPlayer(player);
+      if (atomPickaxe != null) {
+        atomPickaxe.atomVessel.current += amount;
+        PickaxeManager.getInstance().checkAtoms(atomPickaxe, player);
+        atomPickaxe.save(null);
+        EfficiencyStoneHandler.getInstance().onAtomPickup(player);
+      }
     }
 
     Location animLoc = block.getLocation().clone().add(0.5, 0.5, 0.5);

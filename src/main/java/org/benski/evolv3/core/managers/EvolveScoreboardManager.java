@@ -17,9 +17,8 @@ import org.benski.evolv3.core.helpers.FontUtils;
 import org.benski.evolv3.core.helpers.Utils;
 import org.benski.evolv3.core.types.EnchantOption;
 import org.benski.evolv3.core.types.RarityConfig;
-import org.benski.evolv3.datacenters.PickaxeDataCenter;
 import org.benski.evolv3.datacenters.PlayerDataCenter;
-import org.benski.evolv3.models.pickaxe.PickaxeProfile;
+import org.benski.evolv3.models.pickaxe.Pickaxe;
 import org.benski.evolv3.models.player.PlayerProfile;
 import org.benski.evolv3.registry.ConfigRegistry;
 import org.benski.evolv3.registry.DataCenterRegistry;
@@ -658,7 +657,7 @@ public final class EvolveScoreboardManager {
     if (profile == null) return "?";
 
     RankManager rm = RankManager.getInstance();
-    String rankId = profile.rank != null ? profile.rank : rm.getDefaultRank();
+    String rankId = profile.getRank() != null ? profile.getRank() : rm.getDefaultRank();
     String current = rm.getRankPrefix(rankId);
     String nextRank = rm.getNextRank(rankId);
 
@@ -679,7 +678,7 @@ public final class EvolveScoreboardManager {
     if (profile == null) return false;
 
     RankManager rm = RankManager.getInstance();
-    String rankId = profile.rank != null ? profile.rank : rm.getDefaultRank();
+    String rankId = profile.getRank() != null ? profile.getRank() : rm.getDefaultRank();
     String nextRank = rm.getNextRank(rankId);
     if (nextRank == null) return false;
 
@@ -687,7 +686,7 @@ public final class EvolveScoreboardManager {
         ConfigRegistry.getInstance()
             .get(ConfigNames.RANKS)
             .getDouble(ConfigPaths.Ranks.DATA_PREFIX + nextRank + ConfigPaths.Ranks.COST_SUFFIX, 0);
-    return profile.coins >= cost;
+    return profile.wallet.coins >= cost;
   }
 
   /** Pushes a line text to the team prefix, bypassing the diff cache (for animation). */
@@ -707,8 +706,8 @@ public final class EvolveScoreboardManager {
   }
 
   private static boolean isPickaxeLoaded(Player player) {
-    PickaxeDataCenter pkc = DataCenterRegistry.getInstance().getPickaxeDataCenter();
-    return pkc != null && pkc.getLocal(player) != null;
+    PlayerDataCenter pkc = DataCenterRegistry.getInstance().getPlayerDataCenter();
+    return pkc != null && pkc.getPickaxeForPlayer(player) != null;
   }
 
   /**
@@ -1048,8 +1047,8 @@ public final class EvolveScoreboardManager {
    * shown with the configured prestige text.
    */
   private void handlePrestigeLine(Player player, PlayerState state, int lineIndex) {
-    PickaxeDataCenter pkc = DataCenterRegistry.getInstance().getPickaxeDataCenter();
-    PickaxeProfile pk = pkc != null ? pkc.getLocal(player) : null;
+    PlayerDataCenter pkc = DataCenterRegistry.getInstance().getPlayerDataCenter();
+    Pickaxe pk = pkc != null ? pkc.getPickaxeForPlayer(player) : null;
     int prestige = pk != null ? pk.prestige : 0;
 
     if (prestige == 0) {

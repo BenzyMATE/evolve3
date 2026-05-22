@@ -15,7 +15,7 @@ import org.benski.evolv3.core.helpers.Utils;
 import org.benski.evolv3.core.managers.PickaxeManager;
 import org.benski.evolv3.core.managers.PrestigeManager;
 import org.benski.evolv3.core.types.MenuType;
-import org.benski.evolv3.models.pickaxe.PickaxeProfile;
+import org.benski.evolv3.models.pickaxe.Pickaxe;
 import org.benski.evolv3.registry.ConfigRegistry;
 import org.benski.evolv3.registry.MenuRegistry;
 import org.bukkit.Material;
@@ -79,7 +79,7 @@ public class PrestigeConfirmMenu extends BaseMenu {
       }
     }
 
-    PickaxeProfile profile = PrestigeManager.getInstance().getLocalProfile(player);
+    Pickaxe profile = PrestigeManager.getInstance().getLocalProfile(player);
     int currentPrestige = profile != null ? profile.prestige : 0;
     int nextPrestige = currentPrestige + 1;
     int currentCap = PickaxeManager.getInstance().getLevelCap(currentPrestige);
@@ -266,7 +266,7 @@ public class PrestigeConfirmMenu extends BaseMenu {
     }
 
     if (slot == SLOT_CONFIRM) {
-      PickaxeProfile profile = PrestigeManager.getInstance().getLocalProfile(player);
+      Pickaxe profile = PrestigeManager.getInstance().getLocalProfile(player);
       if (profile == null) {
         String err =
             ConfigRegistry.getInstance()

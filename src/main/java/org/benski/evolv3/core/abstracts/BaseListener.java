@@ -1,39 +1,33 @@
 package org.benski.evolv3.core.abstracts;
 
-import org.benski.evolv3.datacenters.PickaxeDataCenter;
+import org.benski.evolv3.datacenters.PlayerDataCenter;
 import org.benski.evolv3.registry.DataCenterRegistry;
 import org.bukkit.event.Listener;
 import org.bukkit.plugin.java.JavaPlugin;
 
 /**
- * Base class for all event listeners in the plugin. Provides common functionality and access to the
- * plugin instance.
+ * Base class for all event listeners. Provides shared access to the {@link PlayerDataCenter} which
+ * is the single source of truth for all player and pickaxe data.
  */
 public abstract class BaseListener implements Listener {
   protected final JavaPlugin plugin;
-  protected final PickaxeDataCenter pickaxeDataCenter;
+  protected final PlayerDataCenter playerDataCenter;
 
   /**
-   * Constructor for BaseListener.
-   *
-   * @param plugin The plugin instance
+   * @param plugin the plugin instance
    */
   public BaseListener(JavaPlugin plugin) {
     this.plugin = plugin;
-    this.pickaxeDataCenter = (PickaxeDataCenter) DataCenterRegistry.getInstance().get("pickaxe");
+    this.playerDataCenter = DataCenterRegistry.getInstance().getPlayerDataCenter();
   }
 
-  /** Called when the listener is registered. Override this to perform initialization logic. */
+  /** Called when the listener is registered. Override to perform initialization logic. */
   public void initialize() {}
 
-  /** Called when the plugin is being disabled. Override this to perform cleanup logic. */
+  /** Called when the plugin is being disabled. Override to perform cleanup logic. */
   public void cleanup() {}
 
-  /**
-   * Gets the plugin instance.
-   *
-   * @return The plugin instance
-   */
+  /** Returns the plugin instance. */
   public JavaPlugin getPlugin() {
     return plugin;
   }

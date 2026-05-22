@@ -40,12 +40,13 @@ public class RankChatListener extends BaseListener {
     if (profile == null) return;
 
     RankManager rankManager = RankManager.getInstance();
-    boolean hasStaffRank = profile.staffRank != null && !profile.staffRank.isEmpty();
+    String staffRankId = profile.getStaffRank();
+    boolean hasStaffRank = staffRankId != null && !staffRankId.isEmpty();
 
     Component prefixComponent = Component.empty();
 
     if (hasStaffRank) {
-      String staffPrefixRaw = rankManager.getStaffPrefix(profile.staffRank);
+      String staffPrefixRaw = rankManager.getStaffPrefix(staffRankId);
       Component staffComponent =
           LegacyComponentSerializer.legacySection()
               .deserialize(MatrixColorAPI.process(staffPrefixRaw));
@@ -54,7 +55,7 @@ public class RankChatListener extends BaseListener {
 
     String rankPrefixRaw =
         rankManager.getRankPrefix(
-            profile.rank != null ? profile.rank : rankManager.getDefaultRank());
+            profile.getRank() != null ? profile.getRank() : rankManager.getDefaultRank());
     Component rankComponent =
         LegacyComponentSerializer.legacySection()
             .deserialize(MatrixColorAPI.process(rankPrefixRaw));

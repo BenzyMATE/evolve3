@@ -238,7 +238,7 @@ public class CellRentInfoMenu extends BaseMenu {
       }
       profile.removeEssence((int) cost);
     } else {
-      if (profile.coins < cost) {
+      if (profile.wallet.coins < cost) {
         player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_AMBIENT, 1f, 1f);
         Messageable.sendError(player, "Not enough coins. Need &#FFD700⛁ " + (int) cost);
         return;

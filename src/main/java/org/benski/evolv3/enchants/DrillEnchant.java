@@ -17,12 +17,11 @@ import org.benski.evolv3.core.helpers.Utils;
 import org.benski.evolv3.core.managers.MineManager;
 import org.benski.evolv3.core.managers.PickaxeManager;
 import org.benski.evolv3.core.managers.WorldGuardManager;
-import org.benski.evolv3.datacenters.PickaxeDataCenter;
 import org.benski.evolv3.datacenters.PlayerDataCenter;
 import org.benski.evolv3.listeners.BackpackListener;
 import org.benski.evolv3.models.backpack.Backpack;
 import org.benski.evolv3.models.pickaxe.EnchantData;
-import org.benski.evolv3.models.pickaxe.PickaxeProfile;
+import org.benski.evolv3.models.pickaxe.Pickaxe;
 import org.benski.evolv3.models.player.PlayerProfile;
 import org.benski.evolv3.registry.AnimationRegistry;
 import org.benski.evolv3.registry.ConfigRegistry;
@@ -70,29 +69,27 @@ public class DrillEnchant implements Listener {
     String blockName = event.getBlock().getType().name();
     if (blockName.endsWith("_LOG") || blockName.endsWith("_STEM")) return;
 
-    PickaxeDataCenter pickaxeDC = DataCenterRegistry.getInstance().getPickaxeDataCenter();
+    PlayerDataCenter pickaxeDC = DataCenterRegistry.getInstance().getPlayerDataCenter();
     if (pickaxeDC == null) return;
 
-    pickaxeDC.get(
-        player,
-        pickaxeProfile -> {
-          if (pickaxeProfile == null || pickaxeProfile.enchants == null) return;
-
-          EnchantData drill = pickaxeProfile.enchants.getEnchant(Enchants.DRILL);
-          if (drill == null || !drill.enabled || drill.level <= 0) return;
-          double procChance = drill.getCurrentChance();
-          if (DrillStoneHandler.hasStone(drill, "Rare")) procChance += 5.0;
-          if (!Utils.chance(procChance)) return;
-
+    Pickaxe pickaxe = pickaxeDC.getPickaxeForPlayer(player);
+    if (pickaxe != null && pickaxe.enchants != null) {
+      EnchantData drill = pickaxe.enchants.getEnchant(Enchants.DRILL);
+      if (drill != null && drill.enabled && drill.level > 0) {
+        double procChance = drill.getCurrentChance();
+        if (DrillStoneHandler.hasStone(drill, "Rare")) procChance += 5.0;
+        if (Utils.chance(procChance)) {
           Block origin = event.getBlock();
 
           new BukkitRunnable() {
             @Override
             public void run() {
-              startDrill(player, origin, pickaxeProfile, drill, 0);
+              startDrill(player, origin, pickaxe, drill, 0);
             }
           }.runTaskLater(plugin, 1L);
-        });
+        }
+      }
+    }
   }
 
   /**
@@ -103,7 +100,7 @@ public class DrillEnchant implements Listener {
    *     effects (Epic, Legendary) are skipped when reDepth > 0
    */
   private void startDrill(
-      Player player, Block origin, PickaxeProfile pickaxeProfile, EnchantData drill, int reDepth) {
+      Player player, Block origin, Pickaxe pickaxe, EnchantData drill, int reDepth) {
     if (!player.isOnline()) return;
 
     PlayerDataCenter playerDC = DataCenterRegistry.getInstance().getPlayerDataCenter();
@@ -127,13 +124,13 @@ public class DrillEnchant implements Listener {
         new BukkitRunnable() {
           @Override
           public void run() {
-            startDrill(player, parallelOrigin, pickaxeProfile, drill, 1);
+            startDrill(player, parallelOrigin, pickaxe, drill, 1);
           }
         }.runTaskLater(plugin, 2L);
       }
     }
 
-    int fortuneAmount = resolveFortune(pickaxeProfile);
+    int fortuneAmount = resolveFortune(pickaxe);
     AtomicInteger totalBroken = new AtomicInteger(0);
 
     if (reDepth > 0
@@ -141,7 +138,7 @@ public class DrillEnchant implements Listener {
         && WorldGuardManager.getInstance().isWithinMineRegion(origin.getLocation())) {
       Material mat =
           AoEDropResolver.resolve(
-              origin, player.getInventory().getItemInMainHand(), plugin, pickaxeProfile);
+              origin, player.getInventory().getItemInMainHand(), plugin, pickaxe);
       if (!mat.isAir()) {
         int remaining =
             playerProfile.backpack.getMaxSize() - playerProfile.backpack.getTotalItems();
@@ -151,7 +148,7 @@ public class DrillEnchant implements Listener {
           playerProfile.backpack.addItem(
               player, mat, Math.min(fortuneAmount > 0 ? fortuneAmount : 1, remaining), false);
           PickaxeManager.getInstance().addStatistics(player, mat, playerProfile);
-          AoEDropResolver.rollSideEffects(player, origin, pickaxeProfile, playerProfile);
+          AoEDropResolver.rollSideEffects(player, origin, pickaxe, playerProfile);
           totalBroken.incrementAndGet();
         }
       }
@@ -163,7 +160,7 @@ public class DrillEnchant implements Listener {
         player,
         origin,
         playerProfile,
-        pickaxeProfile,
+        pickaxe,
         config,
         0,
         depth,
@@ -186,7 +183,7 @@ public class DrillEnchant implements Listener {
       Player player,
       Block origin,
       PlayerProfile playerProfile,
-      PickaxeProfile pickaxeProfile,
+      Pickaxe pickaxe,
       FileConfiguration config,
       int currentLevel,
       int maxLevel,
@@ -197,7 +194,7 @@ public class DrillEnchant implements Listener {
 
     Backpack backpack = playerProfile.backpack;
     if (backpack.isFull()) {
-      AoEDropResolver.flushAccumulation(player, origin, pickaxeProfile);
+      AoEDropResolver.flushAccumulation(player, origin, pickaxe);
       if (totalBroken.get() > 0) showNotification(player, origin, config, totalBroken.get());
       return;
     }
@@ -224,7 +221,7 @@ public class DrillEnchant implements Listener {
 
       Material mat =
           AoEDropResolver.resolve(
-              block, player.getInventory().getItemInMainHand(), plugin, pickaxeProfile);
+              block, player.getInventory().getItemInMainHand(), plugin, pickaxe);
       if (mat.isAir()) continue;
       levelMats.add(mat);
       MineManager.getInstance().trackBlockAtLocation(block.getLocation());
@@ -233,7 +230,7 @@ public class DrillEnchant implements Listener {
       int dropCount = Math.min(fortuneAmount > 0 ? fortuneAmount : 1, remaining);
       backpack.addItem(player, mat, dropCount, false);
       PickaxeManager.getInstance().addStatistics(player, mat, playerProfile);
-      AoEDropResolver.rollSideEffects(player, block, pickaxeProfile, playerProfile);
+      AoEDropResolver.rollSideEffects(player, block, pickaxe, playerProfile);
       totalBroken.incrementAndGet();
     }
 
@@ -257,7 +254,7 @@ public class DrillEnchant implements Listener {
               player,
               origin,
               playerProfile,
-              pickaxeProfile,
+              pickaxe,
               config,
               currentLevel + 1,
               maxLevel,
@@ -267,7 +264,7 @@ public class DrillEnchant implements Listener {
         }
       }.runTaskLater(plugin, LEVEL_DELAY_TICKS);
     } else {
-      AoEDropResolver.flushAccumulation(player, origin, pickaxeProfile);
+      AoEDropResolver.flushAccumulation(player, origin, pickaxe);
       if (totalBroken.get() > 0) showNotification(player, origin, config, totalBroken.get());
     }
   }
@@ -338,9 +335,9 @@ public class DrillEnchant implements Listener {
     }
   }
 
-  private int resolveFortune(PickaxeProfile pickaxeProfile) {
-    if (pickaxeProfile.enchants == null) return 0;
-    EnchantData fortune = pickaxeProfile.enchants.getEnchant(Enchants.FORTUNE);
+  private int resolveFortune(Pickaxe pickaxe) {
+    if (pickaxe.enchants == null) return 0;
+    EnchantData fortune = pickaxe.enchants.getEnchant(Enchants.FORTUNE);
     if (fortune == null || !fortune.enabled || fortune.level <= 0) return 0;
     return FortuneEnchant.getDropAmount(fortune.level);
   }

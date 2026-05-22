@@ -7,9 +7,9 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.benski.evolv3.Main;
 import org.benski.evolv3.core.constants.ConfigNames;
 import org.benski.evolv3.core.constants.ConfigPaths;
-import org.benski.evolv3.datacenters.PickaxeDataCenter;
+import org.benski.evolv3.datacenters.PlayerDataCenter;
 import org.benski.evolv3.models.pickaxe.EnchantData;
-import org.benski.evolv3.models.pickaxe.PickaxeProfile;
+import org.benski.evolv3.models.pickaxe.Pickaxe;
 import org.benski.evolv3.registry.ConfigRegistry;
 import org.benski.evolv3.registry.DataCenterRegistry;
 import org.bukkit.NamespacedKey;
@@ -170,9 +170,9 @@ public final class EfficiencyStoneHandler {
   }
 
   private static EnchantData getEfficiency(Player player) {
-    PickaxeDataCenter pdc = (PickaxeDataCenter) DataCenterRegistry.getInstance().get("pickaxe");
+    PlayerDataCenter pdc = DataCenterRegistry.getInstance().getPlayerDataCenter();
     if (pdc == null) return null;
-    PickaxeProfile profile = pdc.getLocal(player);
+    Pickaxe profile = pdc.getPickaxeForPlayer(player);
     if (profile == null) return null;
     return profile.enchants.getEnchant("efficiency");
   }

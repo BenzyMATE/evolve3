@@ -11,10 +11,10 @@ import net.kyori.adventure.text.format.TextColor;
 import net.kyori.adventure.text.format.TextDecoration;
 import org.benski.evolv3.core.managers.EnchantAnimationConfig;
 import org.benski.evolv3.core.types.RarityConfig;
-import org.benski.evolv3.datacenters.PickaxeDataCenter;
+import org.benski.evolv3.datacenters.PlayerDataCenter;
 import org.benski.evolv3.enums.EvolutionTier;
 import org.benski.evolv3.items.EvolutionStone;
-import org.benski.evolv3.models.pickaxe.PickaxeProfile;
+import org.benski.evolv3.models.pickaxe.Pickaxe;
 import org.benski.evolv3.registry.DataCenterRegistry;
 import org.bukkit.Color;
 import org.bukkit.Location;
@@ -577,9 +577,9 @@ public class EvolutionAnimation3 implements EvolutionAnimation {
   }
 
   private static String pickRandomEnchant(Player player) {
-    PickaxeDataCenter pdc = (PickaxeDataCenter) DataCenterRegistry.getInstance().get("pickaxe");
+    PlayerDataCenter pdc = DataCenterRegistry.getInstance().getPlayerDataCenter();
     if (pdc != null) {
-      PickaxeProfile profile = pdc.getLocal(player);
+      Pickaxe profile = pdc.getPickaxeForPlayer(player);
       if (profile != null && !profile.enchants.items.isEmpty()) {
         List<String> names =
             profile.enchants.items.stream()

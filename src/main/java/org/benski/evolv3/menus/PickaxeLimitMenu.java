@@ -21,10 +21,9 @@ import org.benski.evolv3.core.constants.ConfigPaths;
 import org.benski.evolv3.core.helpers.ItemStackExtensions;
 import org.benski.evolv3.core.managers.PickaxeManager;
 import org.benski.evolv3.core.types.MenuType;
-import org.benski.evolv3.datacenters.PickaxeDataCenter;
 import org.benski.evolv3.datacenters.PlayerDataCenter;
 import org.benski.evolv3.items.AncientResin;
-import org.benski.evolv3.models.pickaxe.PickaxeProfile;
+import org.benski.evolv3.models.pickaxe.Pickaxe;
 import org.benski.evolv3.models.player.PlayerProfile;
 import org.benski.evolv3.registry.ConfigRegistry;
 import org.benski.evolv3.registry.DataCenterRegistry;
@@ -90,12 +89,10 @@ public class PickaxeLimitMenu extends BaseMenu {
   private static final Map<UUID, List<Long>> claimTimestamps = new ConcurrentHashMap<>();
 
   private final PlayerDataCenter playerDataCenter;
-  private final PickaxeDataCenter pickaxeDataCenter;
 
   public PickaxeLimitMenu(JavaPlugin plugin) {
     super(plugin);
     this.playerDataCenter = DataCenterRegistry.getInstance().getPlayerDataCenter();
-    this.pickaxeDataCenter = DataCenterRegistry.getInstance().getPickaxeDataCenter();
   }
 
   @Override
@@ -208,7 +205,7 @@ public class PickaxeLimitMenu extends BaseMenu {
         && pickaxeId.equals(cursor.getData("id"))) {
       ItemMeta depositMeta = cursor.getItemMeta();
       if (depositMeta instanceof Damageable dmg) {
-        PickaxeProfile depositProfile = pickaxeDataCenter.getAll().get(pickaxeId);
+        Pickaxe depositProfile = playerDataCenter.getPickaxeByItemId(pickaxeId);
         if (depositProfile != null) {
           depositProfile.durability = dmg.getDamage();
           depositProfile.save(null);
@@ -230,7 +227,7 @@ public class PickaxeLimitMenu extends BaseMenu {
 
       ItemMeta depositMeta = item.getItemMeta();
       if (depositMeta instanceof Damageable dmg) {
-        PickaxeProfile depositProfile = pickaxeDataCenter.getAll().get(pickaxeId);
+        Pickaxe depositProfile = playerDataCenter.getPickaxeByItemId(pickaxeId);
         if (depositProfile != null) {
           depositProfile.durability = dmg.getDamage();
           depositProfile.save(null);
@@ -271,7 +268,7 @@ public class PickaxeLimitMenu extends BaseMenu {
     ItemStack pickaxeItem = new ItemStack(material);
     pickaxeItem.setData("id", pickaxeId);
 
-    PickaxeProfile withdrawProfile = pickaxeDataCenter.getAll().get(pickaxeId);
+    Pickaxe withdrawProfile = playerDataCenter.getPickaxeByItemId(pickaxeId);
     if (withdrawProfile != null && withdrawProfile.durability > 0) {
       ItemMeta withdrawMeta = pickaxeItem.getItemMeta();
       if (withdrawMeta instanceof Damageable dmg) {
@@ -311,8 +308,10 @@ public class PickaxeLimitMenu extends BaseMenu {
     ItemStack pickaxeItem = new ItemStack(material);
     pickaxeItem.setData("id", pickaxeId);
 
-    PickaxeProfile pickProfile = PickaxeProfile.createDefault(player, pickaxeId);
-    pickaxeDataCenter.getAll().put(pickaxeId, pickProfile);
+    PlayerProfile claimProfile = playerDataCenter.getLocal(player);
+    if (claimProfile == null) return;
+    Pickaxe pickProfile = Pickaxe.createDefault(player, pickaxeId);
+    claimProfile.upsertPickaxe(pickProfile);
     pickProfile.save(null);
 
     setStoredEntry(profile, slotIndex, pickaxeId + ":" + material.name());
@@ -407,7 +406,7 @@ public class PickaxeLimitMenu extends BaseMenu {
     String[] parts = entry.split(":", 2);
     String pickaxeId = parts[0];
     Material material = parts.length > 1 ? parseMaterial(parts[1]) : Material.WOODEN_PICKAXE;
-    PickaxeProfile pickProfile = pickaxeDataCenter.getAll().get(pickaxeId);
+    Pickaxe pickProfile = playerDataCenter.getPickaxeByItemId(pickaxeId);
 
     int damage = 0;
     ItemStack heldPickaxe = findPickaxeInInventory(player, pickaxeId);
@@ -466,7 +465,7 @@ public class PickaxeLimitMenu extends BaseMenu {
     String[] parts = entry.split(":", 2);
     String pickaxeId = parts[0];
     Material material = parts.length > 1 ? parseMaterial(parts[1]) : Material.WOODEN_PICKAXE;
-    PickaxeProfile pickProfile = pickaxeDataCenter.getAll().get(pickaxeId);
+    Pickaxe pickProfile = playerDataCenter.getPickaxeByItemId(pickaxeId);
 
     ItemStack item = new ItemStack(material);
     ItemMeta meta = item.getItemMeta();
@@ -548,7 +547,7 @@ public class PickaxeLimitMenu extends BaseMenu {
 
   private ItemStack buildEvolutionInfoButton(Player player, int unlockedSlots, int maxSlots) {
     PlayerProfile profile = playerDataCenter.getLocal(player);
-    int currentMaxEvolution = profile != null ? profile.highestEvolution : unlockedSlots;
+    int currentMaxEvolution = profile != null ? profile.getHighestEvolution() : unlockedSlots;
     int nextEvolution = unlockedSlots + 1;
 
     List<String> lore = new ArrayList<>();
@@ -609,22 +608,7 @@ public class PickaxeLimitMenu extends BaseMenu {
    */
   private int getUnlockedSlots(Player player) {
     PlayerProfile profile = playerDataCenter.getLocal(player);
-    int stored = profile != null ? profile.highestEvolution : 1;
-
-    int cached =
-        pickaxeDataCenter.getAll().values().stream()
-            .filter(p -> player.getUniqueId().equals(p.ownerUuid))
-            .mapToInt(p -> p.evolution)
-            .max()
-            .orElse(1);
-
-    int maxEvolution = Math.max(stored, cached);
-
-    if (profile != null && cached > stored) {
-      profile.highestEvolution = cached;
-      profile.save(null);
-    }
-
+    int maxEvolution = profile != null ? profile.getHighestEvolution() : 1;
     return Math.min(maxEvolution, getMaxSlots());
   }
 
@@ -732,7 +716,7 @@ public class PickaxeLimitMenu extends BaseMenu {
       ItemMeta m = heldPickaxe.getItemMeta();
       currentDamage = (m instanceof Damageable dmg) ? dmg.getDamage() : 0;
     } else {
-      PickaxeProfile pickProfile = pickaxeDataCenter.getAll().get(pickaxeId);
+      Pickaxe pickProfile = playerDataCenter.getPickaxeByItemId(pickaxeId);
       if (pickProfile == null) return;
       currentDamage = pickProfile.durability;
     }
@@ -764,7 +748,7 @@ public class PickaxeLimitMenu extends BaseMenu {
         heldPickaxe.setItemMeta(m);
       }
     } else {
-      PickaxeProfile pickProfile = pickaxeDataCenter.getAll().get(pickaxeId);
+      Pickaxe pickProfile = playerDataCenter.getPickaxeByItemId(pickaxeId);
       if (pickProfile == null) return;
       pickProfile.durability = 0;
       pickProfile.save(null);

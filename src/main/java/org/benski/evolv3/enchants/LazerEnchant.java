@@ -16,12 +16,11 @@ import org.benski.evolv3.core.helpers.Utils;
 import org.benski.evolv3.core.managers.MineManager;
 import org.benski.evolv3.core.managers.PickaxeManager;
 import org.benski.evolv3.core.managers.WorldGuardManager;
-import org.benski.evolv3.datacenters.PickaxeDataCenter;
 import org.benski.evolv3.datacenters.PlayerDataCenter;
 import org.benski.evolv3.listeners.BackpackListener;
 import org.benski.evolv3.models.backpack.Backpack;
 import org.benski.evolv3.models.pickaxe.EnchantData;
-import org.benski.evolv3.models.pickaxe.PickaxeProfile;
+import org.benski.evolv3.models.pickaxe.Pickaxe;
 import org.benski.evolv3.models.player.EnchantPreference;
 import org.benski.evolv3.models.player.PlayerProfile;
 import org.benski.evolv3.registry.AnimationRegistry;
@@ -98,28 +97,24 @@ public class LazerEnchant implements Listener {
     String blockName = event.getBlock().getType().name();
     if (blockName.endsWith("_LOG") || blockName.endsWith("_STEM")) return;
 
-    PickaxeDataCenter pickaxeDC = DataCenterRegistry.getInstance().getPickaxeDataCenter();
+    PlayerDataCenter pickaxeDC = DataCenterRegistry.getInstance().getPlayerDataCenter();
     if (pickaxeDC == null) return;
 
-    pickaxeDC.get(
-        player,
-        pickaxeProfile -> {
-          if (pickaxeProfile == null || pickaxeProfile.enchants == null) return;
-
-          EnchantData lazer = pickaxeProfile.enchants.getEnchant(Enchants.LAZER);
-          if (lazer == null || !lazer.enabled || lazer.level <= 0) return;
-
-          double triggerChance = lazer.getCurrentChance();
-          if (LazerStoneHandler.hasStone(lazer, "Common")) triggerChance += 2.0;
-          if (!Utils.chance(triggerChance)) return;
-
+    Pickaxe pickaxe = pickaxeDC.getPickaxeForPlayer(player);
+    if (pickaxe != null && pickaxe.enchants != null) {
+      EnchantData lazer = pickaxe.enchants.getEnchant(Enchants.LAZER);
+      if (lazer != null && lazer.enabled && lazer.level > 0) {
+        double triggerChance = lazer.getCurrentChance();
+        if (LazerStoneHandler.hasStone(lazer, "Common")) triggerChance += 2.0;
+        if (Utils.chance(triggerChance)) {
           Block origin = event.getBlock();
-          fireLazer(player, origin, pickaxeProfile, lazer);
-        });
+          fireLazer(player, origin, pickaxe, lazer);
+        }
+      }
+    }
   }
 
-  private void fireLazer(
-      Player player, Block origin, PickaxeProfile pickaxeProfile, EnchantData lazer) {
+  private void fireLazer(Player player, Block origin, Pickaxe pickaxe, EnchantData lazer) {
     if (!player.isOnline()) return;
 
     PlayerDataCenter playerDC = DataCenterRegistry.getInstance().getPlayerDataCenter();
@@ -130,7 +125,7 @@ public class LazerEnchant implements Listener {
 
     FileConfiguration config = ConfigRegistry.getInstance().get(ConfigNames.ENCHANTS);
     int maxRange = config.getInt(ConfigPaths.Enchants.Lazer.MAX_RANGE, 50);
-    int fortuneAmount = resolveFortune(pickaxeProfile);
+    int fortuneAmount = resolveFortune(pickaxe);
 
     boolean hasEpic = LazerStoneHandler.hasStone(lazer, "Epic");
     boolean hasLegendary = LazerStoneHandler.hasStone(lazer, "Legendary");
@@ -164,7 +159,7 @@ public class LazerEnchant implements Listener {
               origin,
               direction,
               maxRange,
-              pickaxeProfile,
+              pickaxe,
               playerProfile,
               fortuneAmount,
               hasUncommon,
@@ -185,11 +180,11 @@ public class LazerEnchant implements Listener {
     if (LazerStoneHandler.hasStone(lazer, "Rare")
         && LazerStoneHandler.incrementAndCheckIronFist(player.getUniqueId())
         && JackhammerEnchant.getInstance() != null) {
-      JackhammerEnchant.getInstance().triggerLayerBreak(player, origin, pickaxeProfile);
+      JackhammerEnchant.getInstance().triggerLayerBreak(player, origin, pickaxe);
     }
 
     if (totalBroken > 0) {
-      AoEDropResolver.flushAccumulation(player, origin, pickaxeProfile);
+      AoEDropResolver.flushAccumulation(player, origin, pickaxe);
       showNotification(player, origin, config, pref, totalBroken);
     }
   }
@@ -205,7 +200,7 @@ public class LazerEnchant implements Listener {
       Block startPos,
       Vector direction,
       int maxSteps,
-      PickaxeProfile pickaxeProfile,
+      Pickaxe pickaxe,
       PlayerProfile playerProfile,
       int fortuneAmount,
       boolean hasUncommon,
@@ -238,7 +233,7 @@ public class LazerEnchant implements Listener {
                       block,
                       newDir,
                       remaining2,
-                      pickaxeProfile,
+                      pickaxe,
                       playerProfile,
                       fortuneAmount,
                       hasUncommon,
@@ -255,7 +250,7 @@ public class LazerEnchant implements Listener {
 
       Material mat =
           AoEDropResolver.resolve(
-              block, player.getInventory().getItemInMainHand(), plugin, pickaxeProfile);
+              block, player.getInventory().getItemInMainHand(), plugin, pickaxe);
       if (mat.isAir()) continue;
 
       shardBlocks.add(new LazerAnimation.ShardBlock(block.getLocation().clone(), mat));
@@ -265,7 +260,7 @@ public class LazerEnchant implements Listener {
       int dropCount = Math.min(fortuneAmount > 0 ? fortuneAmount : 1, remaining);
       backpack.addItem(player, mat, dropCount, false);
       PickaxeManager.getInstance().addStatistics(player, mat, playerProfile);
-      AoEDropResolver.rollSideEffects(player, block, pickaxeProfile, playerProfile);
+      AoEDropResolver.rollSideEffects(player, block, pickaxe, playerProfile);
       broken++;
     }
 
@@ -340,9 +335,9 @@ public class LazerEnchant implements Listener {
     }
   }
 
-  private int resolveFortune(PickaxeProfile pickaxeProfile) {
-    if (pickaxeProfile.enchants == null) return 0;
-    EnchantData fortune = pickaxeProfile.enchants.getEnchant(Enchants.FORTUNE);
+  private int resolveFortune(Pickaxe pickaxe) {
+    if (pickaxe.enchants == null) return 0;
+    EnchantData fortune = pickaxe.enchants.getEnchant(Enchants.FORTUNE);
     if (fortune == null || !fortune.enabled || fortune.level <= 0) return 0;
     return FortuneEnchant.getDropAmount(fortune.level);
   }

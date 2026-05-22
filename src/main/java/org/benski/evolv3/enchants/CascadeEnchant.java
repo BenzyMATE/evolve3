@@ -17,12 +17,11 @@ import org.benski.evolv3.core.helpers.Utils;
 import org.benski.evolv3.core.managers.MineManager;
 import org.benski.evolv3.core.managers.PickaxeManager;
 import org.benski.evolv3.core.managers.WorldGuardManager;
-import org.benski.evolv3.datacenters.PickaxeDataCenter;
 import org.benski.evolv3.datacenters.PlayerDataCenter;
 import org.benski.evolv3.listeners.BackpackListener;
 import org.benski.evolv3.models.backpack.Backpack;
 import org.benski.evolv3.models.pickaxe.EnchantData;
-import org.benski.evolv3.models.pickaxe.PickaxeProfile;
+import org.benski.evolv3.models.pickaxe.Pickaxe;
 import org.benski.evolv3.models.player.EnchantPreference;
 import org.benski.evolv3.models.player.PlayerProfile;
 import org.benski.evolv3.registry.AnimationRegistry;
@@ -81,21 +80,20 @@ public class CascadeEnchant implements Listener {
     String blockName = event.getBlock().getType().name();
     if (blockName.endsWith("_LOG") || blockName.endsWith("_STEM")) return;
 
-    PickaxeDataCenter pickaxeDC = DataCenterRegistry.getInstance().getPickaxeDataCenter();
+    PlayerDataCenter pickaxeDC = DataCenterRegistry.getInstance().getPlayerDataCenter();
     if (pickaxeDC == null) return;
 
-    pickaxeDC.get(
-        player,
-        pickaxeProfile -> {
-          if (pickaxeProfile == null || pickaxeProfile.enchants == null) return;
-
-          EnchantData cascade = pickaxeProfile.enchants.getEnchant(Enchants.CASCADE);
-          if (cascade == null || !cascade.enabled || cascade.level <= 0) return;
-          if (!Utils.chance(cascade.getCurrentChance())) return;
-
-          Block origin = event.getBlock();
-          triggerCascade(player, origin, pickaxeProfile, cascade, 0);
-        });
+    Pickaxe pickaxe = pickaxeDC.getPickaxeForPlayer(player);
+    if (pickaxe != null && pickaxe.enchants != null) {
+      EnchantData cascade = pickaxe.enchants.getEnchant(Enchants.CASCADE);
+      if (cascade != null
+          && cascade.enabled
+          && cascade.level > 0
+          && Utils.chance(cascade.getCurrentChance())) {
+        Block origin = event.getBlock();
+        triggerCascade(player, origin, pickaxe, cascade, 0);
+      }
+    }
   }
 
   /**
@@ -103,11 +101,7 @@ public class CascadeEnchant implements Listener {
    *     Rare Aftershock to prevent uncontrolled recursion; cap is 2)
    */
   private void triggerCascade(
-      Player player,
-      Block origin,
-      PickaxeProfile pickaxeProfile,
-      EnchantData cascade,
-      int reDepth) {
+      Player player, Block origin, Pickaxe pickaxe, EnchantData cascade, int reDepth) {
     if (!player.isOnline()) return;
 
     PlayerDataCenter playerDC = DataCenterRegistry.getInstance().getPlayerDataCenter();
@@ -150,7 +144,7 @@ public class CascadeEnchant implements Listener {
 
     ThreadLocalRandom rng = ThreadLocalRandom.current();
     World world = origin.getWorld();
-    int fortuneAmount = resolveFortune(pickaxeProfile);
+    int fortuneAmount = resolveFortune(pickaxe);
     EnchantPreferenceResult pref = getEnchantPref(player, config);
     AtomicInteger totalBroken = new AtomicInteger(0);
 
@@ -202,20 +196,14 @@ public class CascadeEnchant implements Listener {
 
             int broken =
                 detonateLink(
-                    player,
-                    world,
-                    center,
-                    finalRadius,
-                    pickaxeProfile,
-                    playerProfile,
-                    fortuneAmount);
+                    player, world, center, finalRadius, pickaxe, playerProfile, fortuneAmount);
             totalBroken.addAndGet(broken);
 
             new CascadeAnimation(plugin, pref.sound, pref.particles).play(center, List.of(player));
 
             if (isLast) {
               if (totalBroken.get() > 0) {
-                AoEDropResolver.flushAccumulation(player, origin, pickaxeProfile);
+                AoEDropResolver.flushAccumulation(player, origin, pickaxe);
                 showNotification(player, origin, config, pref, totalBroken.get());
               }
               if (aftershock) {
@@ -225,7 +213,7 @@ public class CascadeEnchant implements Listener {
                 EnchantData afterCascade =
                     new EnchantData(
                         cascade.name, cascade.level, cascade.maxLevel, cascade.maxChance);
-                scheduleAftershot(player, lastBlock, pickaxeProfile, afterCascade, afterLength);
+                scheduleAftershot(player, lastBlock, pickaxe, afterCascade, afterLength);
               }
             }
           }
@@ -239,7 +227,7 @@ public class CascadeEnchant implements Listener {
    * stone effects (to prevent recursive re-triggering).
    */
   private void scheduleAftershot(
-      Player player, Block origin, PickaxeProfile pickaxeProfile, EnchantData cascade, int length) {
+      Player player, Block origin, Pickaxe pickaxe, EnchantData cascade, int length) {
     if (!player.isOnline()) return;
     PlayerDataCenter playerDC = DataCenterRegistry.getInstance().getPlayerDataCenter();
     if (playerDC == null) return;
@@ -252,7 +240,7 @@ public class CascadeEnchant implements Listener {
 
     World world = origin.getWorld();
     ThreadLocalRandom rng = ThreadLocalRandom.current();
-    int fortuneAmount = resolveFortune(pickaxeProfile);
+    int fortuneAmount = resolveFortune(pickaxe);
 
     double yaw = rng.nextDouble() * Math.PI * 2;
     double pitch = (rng.nextDouble() - 0.5) * 0.4;
@@ -284,8 +272,7 @@ public class CascadeEnchant implements Listener {
             cancel();
             return;
           }
-          detonateLink(
-              player, world, center, baseRadius, pickaxeProfile, playerProfile, fortuneAmount);
+          detonateLink(player, world, center, baseRadius, pickaxe, playerProfile, fortuneAmount);
           new CascadeAnimation(plugin, pref.sound, pref.particles).play(center, List.of(player));
         }
       }.runTaskLater(plugin, (long) i * STEP_DELAY_TICKS);
@@ -301,7 +288,7 @@ public class CascadeEnchant implements Listener {
       World world,
       Location center,
       int radius,
-      PickaxeProfile pickaxeProfile,
+      Pickaxe pickaxe,
       PlayerProfile playerProfile,
       int fortuneAmount) {
     Backpack backpack = playerProfile.backpack;
@@ -328,7 +315,7 @@ public class CascadeEnchant implements Listener {
 
           Material mat =
               AoEDropResolver.resolve(
-                  block, player.getInventory().getItemInMainHand(), plugin, pickaxeProfile);
+                  block, player.getInventory().getItemInMainHand(), plugin, pickaxe);
           if (mat.isAir()) continue;
 
           MineManager.getInstance().trackBlockAtLocation(block.getLocation());
@@ -337,7 +324,7 @@ public class CascadeEnchant implements Listener {
           int dropCount = Math.min(fortuneAmount > 0 ? fortuneAmount : 1, remaining);
           backpack.addItem(player, mat, dropCount, false);
           PickaxeManager.getInstance().addStatistics(player, mat, playerProfile);
-          AoEDropResolver.rollSideEffects(player, block, pickaxeProfile, playerProfile);
+          AoEDropResolver.rollSideEffects(player, block, pickaxe, playerProfile);
           broken++;
         }
       }
@@ -404,9 +391,9 @@ public class CascadeEnchant implements Listener {
     }
   }
 
-  private int resolveFortune(PickaxeProfile pickaxeProfile) {
-    if (pickaxeProfile.enchants == null) return 0;
-    EnchantData fortune = pickaxeProfile.enchants.getEnchant(Enchants.FORTUNE);
+  private int resolveFortune(Pickaxe pickaxe) {
+    if (pickaxe.enchants == null) return 0;
+    EnchantData fortune = pickaxe.enchants.getEnchant(Enchants.FORTUNE);
     if (fortune == null || !fortune.enabled || fortune.level <= 0) return 0;
     return FortuneEnchant.getDropAmount(fortune.level);
   }

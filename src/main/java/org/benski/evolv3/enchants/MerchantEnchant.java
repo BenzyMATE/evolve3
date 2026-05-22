@@ -12,9 +12,9 @@ import org.benski.evolv3.core.constants.Enchants;
 import org.benski.evolv3.core.helpers.ItemStackExtensions;
 import org.benski.evolv3.core.helpers.Utils;
 import org.benski.evolv3.core.managers.WorldGuardManager;
-import org.benski.evolv3.datacenters.PickaxeDataCenter;
 import org.benski.evolv3.datacenters.PlayerDataCenter;
 import org.benski.evolv3.models.pickaxe.EnchantData;
+import org.benski.evolv3.models.pickaxe.Pickaxe;
 import org.benski.evolv3.models.player.EnchantPreference;
 import org.benski.evolv3.models.player.PlayerProfile;
 import org.benski.evolv3.registry.AnimationRegistry;
@@ -88,20 +88,15 @@ public class MerchantEnchant implements Listener {
     if (playerProfile == null) return;
     if (playerProfile.backpack.isFull()) return;
 
-    PickaxeDataCenter dataCenter = DataCenterRegistry.getInstance().getPickaxeDataCenter();
-    if (dataCenter == null) return;
-    dataCenter.get(
-        player,
-        profile -> {
-          if (profile == null || profile.enchants == null) return;
-
-          EnchantData enchant = profile.enchants.getEnchant(Enchants.MERCHANT);
-          if (enchant == null || !enchant.enabled || enchant.level <= 0) return;
-
-          double triggerChance = enchant.getCurrentChance();
-          if (MerchantStoneHandler.hasStone(enchant, "Common")) triggerChance += 2.0;
-          if (!Utils.chance(triggerChance)) return;
-
+    PlayerDataCenter pickaxeDC = DataCenterRegistry.getInstance().getPlayerDataCenter();
+    if (pickaxeDC == null) return;
+    Pickaxe profile = pickaxeDC.getPickaxeForPlayer(player);
+    if (profile != null && profile.enchants != null) {
+      EnchantData enchant = profile.enchants.getEnchant(Enchants.MERCHANT);
+      if (enchant != null && enchant.enabled && enchant.level > 0) {
+        double triggerChance = enchant.getCurrentChance();
+        if (MerchantStoneHandler.hasStone(enchant, "Common")) triggerChance += 2.0;
+        if (Utils.chance(triggerChance)) {
           int coinsMin = enchantsConfig.getInt(ConfigPaths.Enchants.Merchant.COINS_MIN, 1);
           int coinsMax = enchantsConfig.getInt(ConfigPaths.Enchants.Merchant.COINS_MAX, 50);
           double coinsFound = Utils.amount(coinsMin, coinsMax);
@@ -137,7 +132,9 @@ public class MerchantEnchant implements Listener {
 
           playerProfile.save(null);
           playEffects(event.getBlock(), player, finalCoins);
-        });
+        }
+      }
+    }
   }
 
   /**
@@ -147,11 +144,11 @@ public class MerchantEnchant implements Listener {
   public void tryTriggerForAoE(
       Player player,
       Block block,
-      org.benski.evolv3.models.pickaxe.PickaxeProfile pickaxeProfile,
+      Pickaxe pickaxe,
       org.benski.evolv3.models.player.PlayerProfile playerProfile) {
-    if (pickaxeProfile == null || pickaxeProfile.enchants == null) return;
+    if (pickaxe == null || pickaxe.enchants == null) return;
 
-    EnchantData enchant = pickaxeProfile.enchants.getEnchant(Enchants.MERCHANT);
+    EnchantData enchant = pickaxe.enchants.getEnchant(Enchants.MERCHANT);
     if (enchant == null || !enchant.enabled || enchant.level <= 0) return;
 
     double triggerChance = enchant.getCurrentChance();
@@ -199,11 +196,11 @@ public class MerchantEnchant implements Listener {
   public int tryTriggerForAoESilent(
       Player player,
       Block block,
-      org.benski.evolv3.models.pickaxe.PickaxeProfile pickaxeProfile,
+      Pickaxe pickaxe,
       org.benski.evolv3.models.player.PlayerProfile playerProfile) {
-    if (pickaxeProfile == null || pickaxeProfile.enchants == null) return 0;
+    if (pickaxe == null || pickaxe.enchants == null) return 0;
 
-    EnchantData enchant = pickaxeProfile.enchants.getEnchant(Enchants.MERCHANT);
+    EnchantData enchant = pickaxe.enchants.getEnchant(Enchants.MERCHANT);
     if (enchant == null || !enchant.enabled || enchant.level <= 0) return 0;
 
     double triggerChance = enchant.getCurrentChance();

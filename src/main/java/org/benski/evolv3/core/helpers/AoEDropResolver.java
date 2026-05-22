@@ -16,7 +16,7 @@ import org.benski.evolv3.enchants.MerchantEnchant;
 import org.benski.evolv3.enchants.RadioactiveEnchant;
 import org.benski.evolv3.enchants.ScavengerEnchant;
 import org.benski.evolv3.models.pickaxe.EnchantData;
-import org.benski.evolv3.models.pickaxe.PickaxeProfile;
+import org.benski.evolv3.models.pickaxe.Pickaxe;
 import org.benski.evolv3.models.player.PlayerProfile;
 import org.benski.evolv3.registry.AnimationRegistry;
 import org.bukkit.Location;
@@ -92,7 +92,7 @@ public final class AoEDropResolver {
    * @return the final {@link Material} — never AIR for a breakable, non-frostbite-stale block
    */
   public static Material resolve(
-      Block block, ItemStack tool, JavaPlugin plugin, PickaxeProfile pickaxeProfile) {
+      Block block, ItemStack tool, JavaPlugin plugin, Pickaxe pickaxeProfile) {
     Material mat = resolveBaseDrop(block, tool, plugin);
     mat = applyAlchemy(mat, pickaxeProfile);
     mat = applyFurnace(mat, pickaxeProfile);
@@ -110,7 +110,7 @@ public final class AoEDropResolver {
    * @param playerProfile the player's player profile
    */
   public static void rollSideEffects(
-      Player player, Block block, PickaxeProfile pickaxeProfile, PlayerProfile playerProfile) {
+      Player player, Block block, Pickaxe pickaxeProfile, PlayerProfile playerProfile) {
     int[] acc = accumulation.get(player.getUniqueId());
     if (acc != null) {
       ExtractionEnchant extraction = ExtractionEnchant.getInstance();
@@ -167,7 +167,7 @@ public final class AoEDropResolver {
    * Ends accumulation, calls {@code checkAtoms} if atoms were found, and shows one combined
    * essence/atom hologram centred on {@code origin}.
    */
-  public static void flushAccumulation(Player player, Block origin, PickaxeProfile pickaxeProfile) {
+  public static void flushAccumulation(Player player, Block origin, Pickaxe pickaxeProfile) {
     int[] acc = accumulation.remove(player.getUniqueId());
     if (acc == null) return;
     int totalEssence = acc[0];
@@ -249,7 +249,7 @@ public final class AoEDropResolver {
     return block.getType();
   }
 
-  private static Material applyAlchemy(Material mat, PickaxeProfile pickaxeProfile) {
+  private static Material applyAlchemy(Material mat, Pickaxe pickaxeProfile) {
     if (pickaxeProfile == null || pickaxeProfile.enchants == null) return mat;
     EnchantData data = pickaxeProfile.enchants.getEnchant(Enchants.ALCHEMY);
     if (data == null || !data.enabled || data.level <= 0) return mat;
@@ -265,7 +265,7 @@ public final class AoEDropResolver {
     return upgraded != null ? upgraded : mat;
   }
 
-  private static Material applyFurnace(Material mat, PickaxeProfile pickaxeProfile) {
+  private static Material applyFurnace(Material mat, Pickaxe pickaxeProfile) {
     if (pickaxeProfile == null || pickaxeProfile.enchants == null) return mat;
     EnchantData data = pickaxeProfile.enchants.getEnchant(Enchants.FURNACE);
     if (data == null || !data.enabled || data.level <= 0) return mat;

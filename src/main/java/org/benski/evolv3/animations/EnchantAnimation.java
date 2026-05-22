@@ -12,12 +12,13 @@ import org.benski.evolv3.core.abstracts.BaseEnchantAnimation;
 import org.benski.evolv3.core.constants.ConfigNames;
 import org.benski.evolv3.core.constants.ConfigPaths;
 import org.benski.evolv3.core.helpers.FontUtils;
+import org.benski.evolv3.core.helpers.ItemStackExtensions;
 import org.benski.evolv3.core.helpers.Utils;
 import org.benski.evolv3.core.managers.EnchantAnimationConfig;
 import org.benski.evolv3.core.types.EnchantOption;
 import org.benski.evolv3.core.types.RarityConfig;
-import org.benski.evolv3.datacenters.PickaxeDataCenter;
-import org.benski.evolv3.models.pickaxe.PickaxeProfile;
+import org.benski.evolv3.datacenters.PlayerDataCenter;
+import org.benski.evolv3.models.pickaxe.Pickaxe;
 import org.benski.evolv3.registry.ConfigRegistry;
 import org.benski.evolv3.registry.DataCenterRegistry;
 import org.bukkit.Color;
@@ -198,9 +199,10 @@ public class EnchantAnimation extends BaseEnchantAnimation {
     }
     player.getInventory().setItemInMainHand(new ItemStack(Material.AIR));
 
-    PickaxeDataCenter pickaxeDC = DataCenterRegistry.getInstance().getPickaxeDataCenter();
-    if (pickaxeDC != null) {
-      PickaxeProfile profile = pickaxeDC.getLocalFromItem(originalItem);
+    String origItemId = ItemStackExtensions.getData(originalItem, "id");
+    PlayerDataCenter pickaxeDC = DataCenterRegistry.getInstance().getPlayerDataCenter();
+    if (pickaxeDC != null && origItemId != null) {
+      Pickaxe profile = pickaxeDC.getPickaxeByItemId(origItemId);
       if (profile != null && profile.enchants != null) {
         for (int r = 0; r < enchantOptions.size(); r++) {
           String internalName = enchantOptions.get(r).name().toLowerCase().replace(" ", "");

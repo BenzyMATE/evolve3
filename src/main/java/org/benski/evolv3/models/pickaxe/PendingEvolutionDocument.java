@@ -3,21 +3,15 @@ package org.benski.evolv3.models.pickaxe;
 import java.util.Base64;
 import java.util.function.Consumer;
 import org.benski.evolv3.Main;
-import org.benski.evolv3.core.interfaces.MongoCollection;
-import org.benski.evolv3.core.managers.MongoManager;
-import org.bson.Document;
 import org.bukkit.inventory.ItemStack;
 
 /**
- * MongoDB document for persisting in-progress evolution animations across server restarts.
- *
- * <p>A document is written when an evolution animation begins and deleted when items are
- * successfully delivered to the player. On restart, all surviving documents are loaded by {@link
- * org.benski.evolv3.core.managers.EvolutionSelectionManager#loadPendingFromDatabase()} so that
- * affected players receive their items when they rejoin.
+ * Holds in-progress evolution animation state for a player. Pending evolutions survive player
+ * disconnects within a session but are not persisted across server restarts.
  */
-public class PendingEvolutionDocument implements MongoCollection {
-  /** The player's UUID string — also the document's primary key. */
+public class PendingEvolutionDocument {
+
+  /** The player's UUID string — primary key. */
   public String playerUuid;
 
   /** Base64-encoded {@link ItemStack#serializeAsBytes()} of the pickaxe. */
@@ -29,10 +23,10 @@ public class PendingEvolutionDocument implements MongoCollection {
   /** {@link org.benski.evolv3.enums.EvolutionTier#level} after evolution. */
   public int nextTierLevel;
 
-  /** {@link org.benski.evolv3.core.types.RarityConfig#displayName()} of the rolled stone. */
+  /** Display name of the rolled rarity stone. */
   public String rarityName;
 
-  /** The pickaxe's item-data key, used to rebuild the callback on restart. */
+  /** The pickaxe's item-data key. */
   public String pickaxeKey;
 
   /**
@@ -41,60 +35,25 @@ public class PendingEvolutionDocument implements MongoCollection {
    */
   public boolean callbackAlreadyApplied;
 
-  @Override
   public String getCollectionName() {
     return "PendingEvolutions";
   }
 
-  @Override
   public String getIdField() {
     return "playerUuid";
   }
 
-  @Override
   public Object getIdValue() {
     return playerUuid;
   }
 
-  @Override
-  public Document toDocument() {
-    Document doc = new Document();
-    doc.put("playerUuid", playerUuid);
-    doc.put("originalItemBase64", originalItemBase64);
-    doc.put("currentTierLevel", currentTierLevel);
-    doc.put("nextTierLevel", nextTierLevel);
-    doc.put("rarityName", rarityName);
-    doc.put("pickaxeKey", pickaxeKey);
-    doc.put("callbackAlreadyApplied", callbackAlreadyApplied);
-    return doc;
-  }
-
-  @Override
-  public void fromDocument(Document document) {
-    this.playerUuid = document.getString("playerUuid");
-    this.originalItemBase64 = document.getString("originalItemBase64");
-    this.currentTierLevel = document.getInteger("currentTierLevel", 1);
-    this.nextTierLevel = document.getInteger("nextTierLevel", 2);
-    this.rarityName = document.getString("rarityName");
-    this.pickaxeKey = document.getString("pickaxeKey");
-    Boolean applied = document.getBoolean("callbackAlreadyApplied");
-    this.callbackAlreadyApplied = applied != null && applied;
-  }
-
-  @Override
+  /** No-op: pending evolution state is not persisted to the API. */
   public void save(Consumer<Boolean> callback) {
-    MongoManager.getInstance()
-        .upsertAsync(this)
-        .whenComplete(
-            (result, throwable) -> {
-              if (callback != null) callback.accept(throwable == null);
-            });
+    if (callback != null) callback.accept(true);
   }
 
-  @Override
-  public void save() {
-    save(null);
-  }
+  /** No-op: pending evolution state is not persisted to the API. */
+  public void save() {}
 
   public static String serializeItem(ItemStack item) {
     if (item == null) return null;

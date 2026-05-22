@@ -27,13 +27,12 @@ import org.benski.evolv3.core.managers.PickaxeManager;
 import org.benski.evolv3.core.managers.StoneEffectRegistry;
 import org.benski.evolv3.core.types.MenuType;
 import org.benski.evolv3.core.types.RarityConfig;
-import org.benski.evolv3.datacenters.PickaxeDataCenter;
 import org.benski.evolv3.datacenters.PlayerDataCenter;
 import org.benski.evolv3.enchants.FortuneEnchant;
 import org.benski.evolv3.enums.EvolutionTier;
 import org.benski.evolv3.items.AncientResin;
 import org.benski.evolv3.models.pickaxe.EnchantData;
-import org.benski.evolv3.models.pickaxe.PickaxeProfile;
+import org.benski.evolv3.models.pickaxe.Pickaxe;
 import org.benski.evolv3.models.player.PlayerProfile;
 import org.benski.evolv3.registry.ConfigRegistry;
 import org.benski.evolv3.registry.DataCenterRegistry;
@@ -159,14 +158,11 @@ public class PickaxeMenu extends BaseMenu {
     19, 20, 21, 22, 23, 24, 25
   };
 
-  private final PickaxeDataCenter pickaxeDataCenter;
-
   /** Per-player animation frame counter so concurrent viewers don't share state. */
   private final Map<UUID, Integer> animationFrames = new ConcurrentHashMap<>();
 
   public PickaxeMenu(JavaPlugin plugin) {
     super(plugin);
-    pickaxeDataCenter = (PickaxeDataCenter) DataCenterRegistry.getInstance().get("pickaxe");
   }
 
   @Override
@@ -200,7 +196,8 @@ public class PickaxeMenu extends BaseMenu {
 
   @Override
   protected String getMenuTitle(Player player) {
-    var pickaxeProfile = pickaxeDataCenter.getLocal(player);
+    PlayerDataCenter pdc = DataCenterRegistry.getInstance().getPlayerDataCenter();
+    var pickaxeProfile = pdc != null ? pdc.getPickaxeForPlayer(player) : null;
     if (pickaxeProfile == null) {
       return "&cLoading...";
     }
@@ -227,7 +224,8 @@ public class PickaxeMenu extends BaseMenu {
 
   @Override
   protected void populateMenu(Player player, Inventory inventory) {
-    PickaxeProfile profile = pickaxeDataCenter.getLocal(player);
+    Pickaxe profile =
+        DataCenterRegistry.getInstance().getPlayerDataCenter().getPickaxeForPlayer(player);
     if (profile == null) return;
 
     buildEnchantSlots(player, inventory, profile);
@@ -276,7 +274,8 @@ public class PickaxeMenu extends BaseMenu {
 
   @Override
   protected boolean handleClick(Player player, int slot, InventoryClickEvent event) {
-    PickaxeProfile clickProfile = pickaxeDataCenter.getLocal(player);
+    Pickaxe clickProfile =
+        DataCenterRegistry.getInstance().getPlayerDataCenter().getPickaxeForPlayer(player);
     if (clickProfile != null) {
       List<EnchantData> sortedEnchants =
           clickProfile.enchants.items.stream()
@@ -347,7 +346,7 @@ public class PickaxeMenu extends BaseMenu {
    * @param inventory the inventory to populate
    * @param profile the player's pickaxe profile
    */
-  private void buildEnchantSlots(Player player, Inventory inventory, PickaxeProfile profile) {
+  private void buildEnchantSlots(Player player, Inventory inventory, Pickaxe profile) {
     List<EnchantData> unlocked =
         profile.enchants.items.stream()
             .sorted(
@@ -608,7 +607,8 @@ public class PickaxeMenu extends BaseMenu {
    * @param displayName the enchant's display name for the clicked slot
    */
   private void handleEnchantSlotClick(Player player, String displayName) {
-    PickaxeProfile profile = pickaxeDataCenter.getLocal(player);
+    Pickaxe profile =
+        DataCenterRegistry.getInstance().getPlayerDataCenter().getPickaxeForPlayer(player);
     if (profile == null) return;
 
     String internalName = displayName.toLowerCase();
@@ -661,7 +661,8 @@ public class PickaxeMenu extends BaseMenu {
    * @param displayName the enchant's display name for the clicked slot
    */
   private void handleEnchantToggle(Player player, String displayName) {
-    PickaxeProfile profile = pickaxeDataCenter.getLocal(player);
+    Pickaxe profile =
+        DataCenterRegistry.getInstance().getPlayerDataCenter().getPickaxeForPlayer(player);
     if (profile == null) return;
 
     String internalName = displayName.toLowerCase();
@@ -743,10 +744,11 @@ public class PickaxeMenu extends BaseMenu {
 
     String pickaxeId = ItemStackExtensions.getData(held, "id");
     if (pickaxeId != null && !pickaxeId.isEmpty()) {
-      PickaxeProfile profile = pickaxeDataCenter.getAll().get(pickaxeId);
-      if (profile != null) {
-        profile.durability = 0;
-        profile.save(null);
+      Pickaxe repairProfile =
+          DataCenterRegistry.getInstance().getPlayerDataCenter().getPickaxeByItemId(pickaxeId);
+      if (repairProfile != null) {
+        repairProfile.durability = 0;
+        repairProfile.save(null);
       }
     }
 
@@ -796,7 +798,8 @@ public class PickaxeMenu extends BaseMenu {
    * @param player the player who clicked
    */
   private void handleEnchantRollClick(Player player) {
-    PickaxeProfile profile = pickaxeDataCenter.getLocal(player);
+    Pickaxe profile =
+        DataCenterRegistry.getInstance().getPlayerDataCenter().getPickaxeForPlayer(player);
     if (profile == null) return;
 
     FileConfiguration messages = ConfigRegistry.getInstance().get(ConfigNames.MESSAGES);
@@ -819,7 +822,7 @@ public class PickaxeMenu extends BaseMenu {
       return;
     }
 
-    if (profile.enchantRolls <= 0) {
+    if (profile.essenceVessel.crystals <= 0) {
       String msg =
           messages.getString(
               ConfigPaths.Messages.Pickaxe.ENCHANT_NO_SPINS,
@@ -828,7 +831,7 @@ public class PickaxeMenu extends BaseMenu {
       return;
     }
 
-    profile.enchantRolls--;
+    profile.essenceVessel.crystals--;
     profile.save();
 
     closeMenu(player);
@@ -838,15 +841,11 @@ public class PickaxeMenu extends BaseMenu {
             player,
             profile.key,
             (p, selected) -> {
-              PickaxeDataCenter dc = DataCenterRegistry.getInstance().getPickaxeDataCenter();
+              PlayerDataCenter dc = DataCenterRegistry.getInstance().getPlayerDataCenter();
               if (dc == null) return;
-              dc.get(
-                  p,
-                  updatedProfile -> {
-                    if (updatedProfile == null) return;
-                    PickaxeManager.getInstance()
-                        .applyEnchantFromSelection(p, selected, updatedProfile);
-                  });
+              Pickaxe updatedProfile = dc.getPickaxeForPlayer(p);
+              if (updatedProfile == null) return;
+              PickaxeManager.getInstance().applyEnchantFromSelection(p, selected, updatedProfile);
             });
   }
 
@@ -856,7 +855,8 @@ public class PickaxeMenu extends BaseMenu {
    * callback applies the actual tier change and stone award when it completes.
    */
   private void handleEvolutionClick(Player player) {
-    PickaxeProfile profile = pickaxeDataCenter.getLocal(player);
+    Pickaxe profile =
+        DataCenterRegistry.getInstance().getPlayerDataCenter().getPickaxeForPlayer(player);
     PlayerDataCenter playerDC = DataCenterRegistry.getInstance().getPlayerDataCenter();
     if (profile == null || playerDC == null) return;
 
@@ -870,7 +870,7 @@ public class PickaxeMenu extends BaseMenu {
     EvolutionTier next = current.next();
     if (next == null) return;
 
-    profile.evolutionRolls--;
+    profile.atomVessel.crystals--;
     profile.save(null);
 
     RarityConfig stone = EnchantAnimationConfig.rollRarity();
@@ -908,8 +908,9 @@ public class PickaxeMenu extends BaseMenu {
         menus.getString(ConfigPaths.Menus.PickaxeMenu.EVOLVE_NAME, "&#00BFFF⭐ &#FFFFFF&lEvolution");
     List<String> rawLore = menus.getStringList(ConfigPaths.Menus.PickaxeMenu.EVOLVE_LORE);
 
-    PickaxeProfile evoProfile = pickaxeDataCenter.getLocal(player);
-    boolean canEvolve = evoProfile != null && evoProfile.evolutionRolls > 0;
+    Pickaxe evoProfile =
+        DataCenterRegistry.getInstance().getPlayerDataCenter().getPickaxeForPlayer(player);
+    boolean canEvolve = evoProfile != null && evoProfile.atomVessel.crystals > 0;
 
     List<String> processedLore = new ArrayList<>(rawLore.size());
     for (String line : rawLore) {
@@ -940,8 +941,9 @@ public class PickaxeMenu extends BaseMenu {
         menus.getString(ConfigPaths.Menus.PickaxeMenu.ESSENCE_NAME, "&#9932CC🔥 &#FFFFFF&lEssence");
     List<String> rawLore = menus.getStringList(ConfigPaths.Menus.PickaxeMenu.ESSENCE_LORE);
 
-    PickaxeProfile essProfile = pickaxeDataCenter.getLocal(player);
-    boolean canRoll = essProfile != null && essProfile.enchantRolls > 0;
+    Pickaxe essProfile =
+        DataCenterRegistry.getInstance().getPlayerDataCenter().getPickaxeForPlayer(player);
+    boolean canRoll = essProfile != null && essProfile.essenceVessel.crystals > 0;
 
     List<String> processedLore = new ArrayList<>(rawLore.size());
     for (String line : rawLore) {
@@ -1002,13 +1004,14 @@ public class PickaxeMenu extends BaseMenu {
    * @param animationFrame the current animation frame (1–5)
    * @return a single Unicode character for the progress icon
    */
-  public String getEssenceProgress(PickaxeProfile profile, int animationFrame) {
-    if (profile.enchantRolls > 0) {
+  public String getEssenceProgress(Pickaxe profile, int animationFrame) {
+    if (profile.essenceVessel.crystals > 0) {
       return getAnimatedProgressIcon(10, animationFrame);
     }
 
     int percentage =
-        (int) Math.round((double) profile.currentEssence / profile.targetEssence * 100);
+        (int)
+            Math.round((double) profile.essenceVessel.current / profile.essenceVessel.target * 100);
     int progressStep = Math.min(percentage / 10, 10);
 
     if (progressStep == 0) {
@@ -1053,12 +1056,13 @@ public class PickaxeMenu extends BaseMenu {
    * @param animationFrame the current animation frame (1–5)
    * @return a single Unicode character for the evolution progress icon
    */
-  private String getEvolveProgress(PickaxeProfile profile, int animationFrame) {
-    if (profile.evolutionRolls > 0) {
+  private String getEvolveProgress(Pickaxe profile, int animationFrame) {
+    if (profile.atomVessel.crystals > 0) {
       return getAnimatedEvolveProgressIcon(10, animationFrame);
     }
 
-    int percentage = (int) Math.round((double) profile.evolutionAtoms / profile.atomTarget * 100);
+    int percentage =
+        (int) Math.round((double) profile.atomVessel.current / profile.atomVessel.target * 100);
     int progressStep = Math.min(percentage / 10, 10);
 
     if (progressStep == 0) {

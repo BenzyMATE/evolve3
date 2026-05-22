@@ -11,7 +11,7 @@ import net.kyori.adventure.text.format.TextDecoration;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.benski.evolv3.Main;
 import org.benski.evolv3.core.constants.ConfigNames;
-import org.benski.evolv3.models.pickaxe.PickaxeProfile;
+import org.benski.evolv3.models.pickaxe.Pickaxe;
 import org.benski.evolv3.registry.ConfigRegistry;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
@@ -160,7 +160,7 @@ public class ItemStackExtensions {
    * @param item The ItemStack to update
    * @param profile The pickaxe profile containing the data
    */
-  public static void updateLore(ItemStack item, PickaxeProfile profile) {
+  public static void updateLore(ItemStack item, Pickaxe profile) {
     if (item == null || item.getType() == Material.AIR || profile == null) return;
     org.benski.evolv3.core.managers.PickaxeManager.getInstance()
         .updateLore(profile.getOwner(), item);
@@ -174,7 +174,7 @@ public class ItemStackExtensions {
    * @param profile The pickaxe profile containing the data
    * @param configPath The config path to the lore list
    */
-  public static void updateLore(ItemStack item, PickaxeProfile profile, String configPath) {
+  public static void updateLore(ItemStack item, Pickaxe profile, String configPath) {
     if (item == null || item.getType() == Material.AIR || profile == null) return;
 
     FileConfiguration config = ConfigRegistry.getInstance().get(ConfigNames.DEFAULT);

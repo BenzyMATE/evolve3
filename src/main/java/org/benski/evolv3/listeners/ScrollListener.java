@@ -8,10 +8,9 @@ import org.benski.evolv3.core.constants.ConfigNames;
 import org.benski.evolv3.core.constants.ConfigPaths;
 import org.benski.evolv3.core.helpers.ItemStackExtensions;
 import org.benski.evolv3.core.managers.PickaxeManager;
-import org.benski.evolv3.datacenters.PickaxeDataCenter;
 import org.benski.evolv3.datacenters.PlayerDataCenter;
 import org.benski.evolv3.items.Scroll;
-import org.benski.evolv3.models.pickaxe.PickaxeProfile;
+import org.benski.evolv3.models.pickaxe.Pickaxe;
 import org.benski.evolv3.models.player.PlayerProfile;
 import org.benski.evolv3.registry.ConfigRegistry;
 import org.benski.evolv3.registry.DataCenterRegistry;
@@ -102,9 +101,8 @@ public class ScrollListener extends BaseListener {
         && isPickaxe(current)) {
       event.setCancelled(true);
 
-      PickaxeDataCenter dc = DataCenterRegistry.getInstance().getPickaxeDataCenter();
-      if (dc == null) return;
-      PickaxeProfile profile = dc.getLocalFromItem(current);
+      String currentId = current != null ? current.getData("id") : null;
+      Pickaxe profile = currentId != null ? playerDataCenter.getPickaxeByItemId(currentId) : null;
       if (profile == null) {
         sendMsg(
             player,
@@ -118,7 +116,7 @@ public class ScrollListener extends BaseListener {
         profile.xp += amount;
         PickaxeManager.getInstance().checkLevel(profile, player);
       } else {
-        profile.evolutionAtoms += amount;
+        profile.atomVessel.current += amount;
         PickaxeManager.getInstance().checkAtoms(profile, player);
       }
       profile.save(null);

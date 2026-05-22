@@ -16,12 +16,11 @@ import org.benski.evolv3.core.helpers.Utils;
 import org.benski.evolv3.core.managers.MineManager;
 import org.benski.evolv3.core.managers.PickaxeManager;
 import org.benski.evolv3.core.managers.WorldGuardManager;
-import org.benski.evolv3.datacenters.PickaxeDataCenter;
 import org.benski.evolv3.datacenters.PlayerDataCenter;
 import org.benski.evolv3.listeners.BackpackListener;
 import org.benski.evolv3.models.backpack.Backpack;
 import org.benski.evolv3.models.pickaxe.EnchantData;
-import org.benski.evolv3.models.pickaxe.PickaxeProfile;
+import org.benski.evolv3.models.pickaxe.Pickaxe;
 import org.benski.evolv3.models.player.EnchantPreference;
 import org.benski.evolv3.models.player.PlayerProfile;
 import org.benski.evolv3.registry.AnimationRegistry;
@@ -63,12 +62,12 @@ public class ExplosiveEnchant implements Listener {
    * in a sphere, adding drops to the backpack with no stone recursion.
    */
   public void triggerBlastCombo(
-      Player player, Block origin, PickaxeProfile pickaxeProfile, PlayerProfile playerProfile) {
+      Player player, Block origin, Pickaxe pickaxe, PlayerProfile playerProfile) {
     if (!player.isOnline()) return;
     Backpack backpack = playerProfile.backpack;
     if (backpack.isFull()) return;
 
-    int fortuneAmount = resolveFortune(pickaxeProfile);
+    int fortuneAmount = resolveFortune(pickaxe);
     int broken = 0;
 
     outer:
@@ -86,7 +85,7 @@ public class ExplosiveEnchant implements Listener {
 
           Material mat =
               AoEDropResolver.resolve(
-                  block, player.getInventory().getItemInMainHand(), plugin, pickaxeProfile);
+                  block, player.getInventory().getItemInMainHand(), plugin, pickaxe);
           if (mat.isAir()) continue;
           MineManager.getInstance().trackBlockAtLocation(block.getLocation());
           block.setType(Material.AIR);
@@ -94,7 +93,7 @@ public class ExplosiveEnchant implements Listener {
           int dropCount = Math.min(fortuneAmount > 0 ? fortuneAmount : 1, remaining);
           backpack.addItem(player, mat, dropCount, false);
           PickaxeManager.getInstance().addStatistics(player, mat, playerProfile);
-          AoEDropResolver.rollSideEffects(player, block, pickaxeProfile, playerProfile);
+          AoEDropResolver.rollSideEffects(player, block, pickaxe, playerProfile);
           broken++;
         }
       }
@@ -123,30 +122,27 @@ public class ExplosiveEnchant implements Listener {
     String blockName = event.getBlock().getType().name();
     if (blockName.endsWith("_LOG") || blockName.endsWith("_STEM")) return;
 
-    PickaxeDataCenter pickaxeDC = DataCenterRegistry.getInstance().getPickaxeDataCenter();
+    PlayerDataCenter pickaxeDC = DataCenterRegistry.getInstance().getPlayerDataCenter();
     if (pickaxeDC == null) return;
 
-    pickaxeDC.get(
-        player,
-        pickaxeProfile -> {
-          if (pickaxeProfile == null || pickaxeProfile.enchants == null) return;
+    Pickaxe pickaxe = pickaxeDC.getPickaxeForPlayer(player);
+    if (pickaxe != null && pickaxe.enchants != null) {
+      EnchantData explosive = pickaxe.enchants.getEnchant(Enchants.EXPLOSIVE);
+      if (explosive != null && explosive.enabled && explosive.level > 0) {
+        double procChance = explosive.getCurrentChance();
+        boolean hasUncommon = ExplosiveStoneHandler.hasStone(explosive, "Uncommon");
+        if (hasUncommon) procChance += ExplosiveStoneHandler.getMissBonus(player.getUniqueId());
 
-          EnchantData explosive = pickaxeProfile.enchants.getEnchant(Enchants.EXPLOSIVE);
-          if (explosive == null || !explosive.enabled || explosive.level <= 0) return;
-
-          double procChance = explosive.getCurrentChance();
-          boolean hasUncommon = ExplosiveStoneHandler.hasStone(explosive, "Uncommon");
-          if (hasUncommon) procChance += ExplosiveStoneHandler.getMissBonus(player.getUniqueId());
-
-          if (!Utils.chance(procChance)) {
-            if (hasUncommon) ExplosiveStoneHandler.incrementMiss(player.getUniqueId());
-            return;
-          }
+        if (!Utils.chance(procChance)) {
+          if (hasUncommon) ExplosiveStoneHandler.incrementMiss(player.getUniqueId());
+        } else {
           if (hasUncommon) ExplosiveStoneHandler.resetMiss(player.getUniqueId());
 
           Block origin = event.getBlock();
-          triggerExplosion(player, origin, pickaxeProfile, explosive, 0);
-        });
+          triggerExplosion(player, origin, pickaxe, explosive, 0);
+        }
+      }
+    }
   }
 
   /**
@@ -154,11 +150,7 @@ public class ExplosiveEnchant implements Listener {
    *     (stones skipped, radius pre-reduced)
    */
   private void triggerExplosion(
-      Player player,
-      Block origin,
-      PickaxeProfile pickaxeProfile,
-      EnchantData explosive,
-      int reDepth) {
+      Player player, Block origin, Pickaxe pickaxe, EnchantData explosive, int reDepth) {
     if (!player.isOnline()) return;
 
     PlayerDataCenter playerDC = DataCenterRegistry.getInstance().getPlayerDataCenter();
@@ -189,7 +181,7 @@ public class ExplosiveEnchant implements Listener {
       radius = Math.max(1, radius - 1);
     }
 
-    int fortuneAmount = resolveFortune(pickaxeProfile);
+    int fortuneAmount = resolveFortune(pickaxe);
     Backpack backpack = playerProfile.backpack;
 
     if (backpack.isFull()) return;
@@ -216,7 +208,7 @@ public class ExplosiveEnchant implements Listener {
 
           Material mat =
               AoEDropResolver.resolve(
-                  block, player.getInventory().getItemInMainHand(), plugin, pickaxeProfile);
+                  block, player.getInventory().getItemInMainHand(), plugin, pickaxe);
           if (mat.isAir()) continue;
           materials.add(mat);
           MineManager.getInstance().trackBlockAtLocation(block.getLocation());
@@ -225,7 +217,7 @@ public class ExplosiveEnchant implements Listener {
           int dropCount = Math.min(fortuneAmount > 0 ? fortuneAmount : 1, remaining);
           backpack.addItem(player, mat, dropCount, false);
           PickaxeManager.getInstance().addStatistics(player, mat, playerProfile);
-          AoEDropResolver.rollSideEffects(player, block, pickaxeProfile, playerProfile);
+          AoEDropResolver.rollSideEffects(player, block, pickaxe, playerProfile);
           broken++;
         }
       }
@@ -244,7 +236,7 @@ public class ExplosiveEnchant implements Listener {
         int cz = (int) Math.round(Math.sin(angle) * 3);
         Block clusterOrigin = origin.getRelative(cx, 0, cz);
         if (WorldGuardManager.getInstance().isWithinMineRegion(clusterOrigin.getLocation())) {
-          triggerExplosion(player, clusterOrigin, pickaxeProfile, explosive, 1);
+          triggerExplosion(player, clusterOrigin, pickaxe, explosive, 1);
         }
       }
     }
@@ -259,7 +251,7 @@ public class ExplosiveEnchant implements Listener {
     }
 
     if (broken > 0) {
-      if (reDepth == 0) AoEDropResolver.flushAccumulation(player, origin, pickaxeProfile);
+      if (reDepth == 0) AoEDropResolver.flushAccumulation(player, origin, pickaxe);
       showNotification(player, origin, config, pref, broken);
     }
   }
@@ -317,9 +309,9 @@ public class ExplosiveEnchant implements Listener {
     }
   }
 
-  private int resolveFortune(PickaxeProfile pickaxeProfile) {
-    if (pickaxeProfile.enchants == null) return 0;
-    EnchantData fortune = pickaxeProfile.enchants.getEnchant(Enchants.FORTUNE);
+  private int resolveFortune(Pickaxe pickaxe) {
+    if (pickaxe.enchants == null) return 0;
+    EnchantData fortune = pickaxe.enchants.getEnchant(Enchants.FORTUNE);
     if (fortune == null || !fortune.enabled || fortune.level <= 0) return 0;
     return FortuneEnchant.getDropAmount(fortune.level);
   }

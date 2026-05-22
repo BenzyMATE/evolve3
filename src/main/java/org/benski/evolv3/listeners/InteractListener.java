@@ -3,7 +3,7 @@ package org.benski.evolv3.listeners;
 import org.benski.evolv3.core.abstracts.BaseListener;
 import org.benski.evolv3.core.managers.PickaxeManager;
 import org.benski.evolv3.core.managers.PrestigeManager;
-import org.benski.evolv3.models.pickaxe.PickaxeProfile;
+import org.benski.evolv3.models.pickaxe.Pickaxe;
 import org.benski.evolv3.registry.MenuRegistry;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.player.PlayerInteractEvent;
@@ -36,7 +36,7 @@ public class InteractListener extends BaseListener {
     if (!player.getInventory().getItemInMainHand().getType().toString().contains("PICKAXE")) return;
 
     if (player.isSneaking()) {
-      PickaxeProfile profile = PrestigeManager.getInstance().getLocalProfile(player);
+      Pickaxe profile = PrestigeManager.getInstance().getLocalProfile(player);
       if (profile != null && PickaxeManager.getInstance().isPrestigeAvailable(profile)) {
         var menu = menuRegistry.get("prestige_confirm");
         if (menu != null) {

@@ -11,109 +11,53 @@ import org.benski.evolv3.registry.ConfigRegistry;
 import org.bukkit.entity.Player;
 
 /**
- * Data center for managing armor profiles. Handles loading, caching, and creating armor profiles
- * from MongoDB.
+ * Local-only cache for armor profiles. Armor is not persisted to the API; data resets on server
+ * restart.
  */
 public class ArmorDataCenter extends BaseDataCenter<ArmorProfile> {
-  /** {@inheritDoc} */
-  @Override
-  protected String getCollectionName() {
-    return "Armor";
-  }
 
-  /** {@inheritDoc} */
-  @Override
-  protected Class<ArmorProfile> getProfileClass() {
-    return ArmorProfile.class;
-  }
-
-  /** {@inheritDoc} */
-  @Override
-  protected void initializeProfile(ArmorProfile profile, Player player) {
-    profile.initialize(player);
-  }
-
-  /** {@inheritDoc} */
   @Override
   protected String getProfileId(ArmorProfile profile) {
     return profile.id;
   }
 
-  /** {@inheritDoc} */
-  @Override
-  protected String getLogPrefix() {
-    return "Armor";
-  }
-
-  /**
-   * Gets the player's armor profile asynchronously. If the profile is cached, it will be returned
-   * immediately via callback.
-   *
-   * @param player The player to get the profile for
-   * @param callback The callback to receive the profile
-   */
   @Override
   public void get(Player player, Consumer<ArmorProfile> callback) {
     callback.accept(data.get(player.getUniqueId().toString()));
   }
 
-  /**
-   * Gets the player's armor profile synchronously from cache.
-   *
-   * @param player The player to get the profile for
-   * @return The player's armor profile, or null if not cached
-   */
   @Override
   public ArmorProfile getLocal(Player player) {
     return data.get(player.getUniqueId().toString());
   }
 
-  /** {@inheritDoc} */
+  /** Creates and caches a default armor profile immediately — no API call needed. */
   @Override
-  protected void createNewProfile(Player player, String id) {
+  public void loadOrCreate(Player player, String id) {
+    if (exists(id)) return;
     ArmorProfile profile = ArmorProfile.createDefault(player);
     profile.id = id;
-
     data.put(id, profile);
-
-    profile.save(
-        result -> {
-          if (result) {
-            player.sendMessage(
-                formatMessage(
-                    player,
-                    ConfigRegistry.getInstance()
-                        .get(ConfigNames.MESSAGES)
-                        .getString(
-                            ConfigPaths.Messages.Armor.PROFILE_CREATED,
-                            "&aYour armor has been forged!")));
-          }
-        });
+    player.sendMessage(
+        formatMessage(
+            player,
+            ConfigRegistry.getInstance()
+                .get(ConfigNames.MESSAGES)
+                .getString(
+                    ConfigPaths.Messages.Armor.PROFILE_CREATED, "&aYour armor has been forged!")));
   }
 
   /**
-   * Removes a player's armor profile from cache. Should be called when a player leaves the server.
-   *
-   * @param player The player whose profile to unload
+   * Removes the armor profile from cache and resets the player's walk speed to the default. Walk
+   * speed must be reset here because it may have been modified by boots multiplier.
    */
   public void unloadProfile(Player player) {
-    String playerId = player.getUniqueId().toString();
-    ArmorProfile profile = data.get(playerId);
-
-    if (profile != null) {
+    String id = player.getUniqueId().toString();
+    if (data.remove(id) != null) {
       player.setWalkSpeed(0.2f);
-
-      profile.save(
-          result -> {
-            data.remove(playerId);
-          });
     }
   }
 
-  /** Saves all cached armor profiles to the database. Should be called during plugin disable. */
-  public void saveAll() {
-    for (ArmorProfile profile : data.values()) {
-      profile.save();
-    }
-  }
+  /** No-op: armor is local-only. */
+  public void saveAll() {}
 }

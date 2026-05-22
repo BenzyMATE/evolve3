@@ -13,12 +13,12 @@ import org.benski.evolv3.core.helpers.ItemStackExtensions;
 import org.benski.evolv3.core.helpers.Utils;
 import org.benski.evolv3.core.managers.WorldGuardManager;
 import org.benski.evolv3.datacenters.ArmorDataCenter;
-import org.benski.evolv3.datacenters.PickaxeDataCenter;
 import org.benski.evolv3.datacenters.PlayerDataCenter;
 import org.benski.evolv3.models.armor.ArmorProfile;
 import org.benski.evolv3.models.backpack.Backpack;
 import org.benski.evolv3.models.backpack.BackpackItem;
 import org.benski.evolv3.models.pickaxe.EnchantData;
+import org.benski.evolv3.models.pickaxe.Pickaxe;
 import org.benski.evolv3.models.player.EnchantPreference;
 import org.benski.evolv3.models.player.PlayerProfile;
 import org.benski.evolv3.registry.AnimationRegistry;
@@ -84,33 +84,30 @@ public class AutoSellEnchant implements Listener {
 
     if (playerProfile.backpack.getItems().isEmpty()) return;
 
-    PickaxeDataCenter dataCenter = DataCenterRegistry.getInstance().getPickaxeDataCenter();
-    if (dataCenter == null) return;
-    dataCenter.get(
-        player,
-        profile -> {
-          if (profile == null || profile.enchants == null) return;
+    PlayerDataCenter pickaxeDC = DataCenterRegistry.getInstance().getPlayerDataCenter();
+    if (pickaxeDC == null) return;
+    Pickaxe profile = pickaxeDC.getPickaxeForPlayer(player);
+    if (profile != null && profile.enchants != null) {
+      EnchantData enchant = profile.enchants.getEnchant(Enchants.AUTO_SELL);
+      if (enchant != null && enchant.enabled && enchant.level > 0) {
+        double triggerChance = enchant.getCurrentChance();
 
-          EnchantData enchant = profile.enchants.getEnchant(Enchants.AUTO_SELL);
-          if (enchant == null || !enchant.enabled || enchant.level <= 0) return;
+        if (AutoSellStoneHandler.hasStone(enchant, "Uncommon")) {
+          triggerChance += 5.0;
+        }
 
-          double triggerChance = enchant.getCurrentChance();
+        boolean hasLegendary = AutoSellStoneHandler.hasStone(enchant, "Legendary");
+        boolean backpackFull = playerProfile.backpack.isFull();
 
-          if (AutoSellStoneHandler.hasStone(enchant, "Uncommon")) {
-            triggerChance += 5.0;
-          }
-
-          boolean hasLegendary = AutoSellStoneHandler.hasStone(enchant, "Legendary");
-          boolean backpackFull = playerProfile.backpack.isFull();
-
-          if (!Utils.chance(triggerChance) && !(hasLegendary && backpackFull)) return;
-
+        if (Utils.chance(triggerChance) || (hasLegendary && backpackFull)) {
           if (AutoSellStoneHandler.hasStone(enchant, "Epic")) {
             AutoSellStoneHandler.getInstance().activateGoldRush(player.getUniqueId());
           }
 
           sellBackpack(player, playerProfile, enchant, event.getBlock());
-        });
+        }
+      }
+    }
   }
 
   private void sellBackpack(

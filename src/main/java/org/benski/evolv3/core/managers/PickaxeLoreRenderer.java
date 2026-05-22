@@ -13,10 +13,10 @@ import org.benski.evolv3.core.constants.Enchants;
 import org.benski.evolv3.core.helpers.ItemStackExtensions;
 import org.benski.evolv3.core.helpers.Utils;
 import org.benski.evolv3.core.types.RarityConfig;
-import org.benski.evolv3.datacenters.PickaxeDataCenter;
+import org.benski.evolv3.datacenters.PlayerDataCenter;
 import org.benski.evolv3.enchants.EfficiencyEnchant;
 import org.benski.evolv3.models.pickaxe.EnchantData;
-import org.benski.evolv3.models.pickaxe.PickaxeProfile;
+import org.benski.evolv3.models.pickaxe.Pickaxe;
 import org.benski.evolv3.registry.ConfigRegistry;
 import org.benski.evolv3.registry.DataCenterRegistry;
 import org.bukkit.Material;
@@ -59,16 +59,13 @@ public final class PickaxeLoreRenderer {
    * @param itemStack the item to update, or null to use main hand
    */
   public void updateLore(Player player, ItemStack itemStack) {
-    PickaxeDataCenter dataCenter = DataCenterRegistry.getInstance().getPickaxeDataCenter();
-    dataCenter.get(
-        player,
-        profile -> {
-          if (profile == null) return;
-          ItemStack item =
-              itemStack != null ? itemStack : player.getInventory().getItemInMainHand();
-          if (item.getType() == Material.AIR) return;
-          applyLoreAndName(player, profile, item);
-        });
+    PlayerDataCenter dataCenter = DataCenterRegistry.getInstance().getPlayerDataCenter();
+    if (dataCenter == null) return;
+    Pickaxe profile = dataCenter.getPickaxeForPlayer(player);
+    if (profile == null) return;
+    ItemStack item = itemStack != null ? itemStack : player.getInventory().getItemInMainHand();
+    if (item.getType() == Material.AIR) return;
+    applyLoreAndName(player, profile, item);
   }
 
   /**
@@ -76,17 +73,15 @@ public final class PickaxeLoreRenderer {
    * player may not be holding the pickaxe in main hand.
    */
   public void updateLoreFromInventory(Player player) {
-    PickaxeDataCenter dataCenter = DataCenterRegistry.getInstance().getPickaxeDataCenter();
+    PlayerDataCenter dataCenter = DataCenterRegistry.getInstance().getPlayerDataCenter();
+    if (dataCenter == null) return;
     for (int slot = 0; slot < player.getInventory().getSize(); slot++) {
       ItemStack item = player.getInventory().getItem(slot);
       if (item == null || item.getType() == Material.AIR) continue;
       if (!item.getType().name().endsWith("_PICKAXE")) continue;
-      dataCenter.get(
-          player,
-          profile -> {
-            if (profile == null) return;
-            applyLoreAndName(player, profile, item);
-          });
+      Pickaxe profile = dataCenter.getPickaxeForPlayer(player);
+      if (profile == null) return;
+      applyLoreAndName(player, profile, item);
       return; // NOPMD - intentional find-first loop
     }
   }
@@ -101,7 +96,7 @@ public final class PickaxeLoreRenderer {
    * @return ready-to-set lore components
    */
   public List<Component> buildLoreComponents(
-      Player player, PickaxeProfile profile, List<String> footerLines) {
+      Player player, Pickaxe profile, List<String> footerLines) {
     return buildLoreComponents(player, profile, footerLines, "");
   }
 
@@ -110,7 +105,7 @@ public final class PickaxeLoreRenderer {
    * string.
    */
   public List<Component> buildLoreComponents(
-      Player player, PickaxeProfile profile, List<String> footerLines, String durabilityBar) {
+      Player player, Pickaxe profile, List<String> footerLines, String durabilityBar) {
     List<String> loreTemplate = defaultConfig().getStringList(ConfigPaths.Default.Pickaxe.LORE);
     List<String> rawLore = buildFormattedLoreStrings(player, profile, loreTemplate, durabilityBar);
 
@@ -131,7 +126,7 @@ public final class PickaxeLoreRenderer {
    * @param item the item to update in place
    */
   @SuppressWarnings("deprecation")
-  public void applyLoreAndName(Player player, PickaxeProfile profile, ItemStack item) {
+  public void applyLoreAndName(Player player, Pickaxe profile, ItemStack item) {
     if (item == null || item.getType() == Material.AIR) return;
     ItemMeta meta = item.getItemMeta();
     if (meta == null) return;
@@ -194,7 +189,7 @@ public final class PickaxeLoreRenderer {
   }
 
   private List<String> buildFormattedLoreStrings(
-      Player player, PickaxeProfile profile, List<String> template, String durabilityBar) {
+      Player player, Pickaxe profile, List<String> template, String durabilityBar) {
     List<String> result = new ArrayList<>();
     for (String line : template) {
       if (line.contains("%evolv3_pickaxe_enchants%")) {
@@ -210,7 +205,7 @@ public final class PickaxeLoreRenderer {
   }
 
   private void appendPrestigeLore(
-      Player player, PickaxeProfile profile, String durabilityBar, List<String> result) {
+      Player player, Pickaxe profile, String durabilityBar, List<String> result) {
     if (profile.prestige <= 0) return;
     String prestigeLine =
         messagesConfig()
@@ -225,7 +220,7 @@ public final class PickaxeLoreRenderer {
         Utils.formatMessage(player, substitutePlaceholders(prestigeLine, profile, durabilityBar)));
   }
 
-  private void appendEnchantsLore(PickaxeProfile profile, List<String> newLore, Player player) {
+  private void appendEnchantsLore(Pickaxe profile, List<String> newLore, Player player) {
     if (profile.enchants == null || profile.enchants.isEmpty()) {
       String noEnchants = enchantsConfig().getString(ConfigPaths.Enchants.NO_ENCHANTS, "&cNone");
       newLore.add(Utils.formatMessage(player, " &8| " + noEnchants));
@@ -246,7 +241,7 @@ public final class PickaxeLoreRenderer {
     }
   }
 
-  private String buildEnchantLoreLine(EnchantData enchant, PickaxeProfile profile, Player player) {
+  private String buildEnchantLoreLine(EnchantData enchant, Pickaxe profile, Player player) {
     String displayName = EnchantAnimationConfig.getDisplayName(enchant.name);
     var option = EnchantAnimationConfig.getOption(displayName);
     String rarityColor =
@@ -285,7 +280,7 @@ public final class PickaxeLoreRenderer {
     return hasSocketed ? builder + " " : "";
   }
 
-  private String substitutePlaceholders(String line, PickaxeProfile profile, String durabilityBar) {
+  private String substitutePlaceholders(String line, Pickaxe profile, String durabilityBar) {
     Player owner = profile.getOwner();
     String ownerName = owner != null ? owner.getName() : "";
     return line.replace("%evolv3_player_name%", ownerName)
@@ -295,12 +290,15 @@ public final class PickaxeLoreRenderer {
         .replace("%evolv3_pickaxe_percentage%", profile.getPercentage())
         .replace("%evolv3_pickaxe_progressbar%", profile.getProgressBar())
         .replace("%evolv3_pickaxe_durability_bar%", durabilityBar)
-        .replace("%evolv3_pickaxe_essence%", Utils.formatNumber(profile.currentEssence))
-        .replace("%evolv3_pickaxe_target_essence%", Utils.formatNumber(profile.targetEssence))
-        .replace("%evolv3_pickaxe_enchant_rolls%", Utils.formatNumber(profile.enchantRolls))
-        .replace("%evolv3_pickaxe_evolution_atoms%", Utils.formatNumber(profile.evolutionAtoms))
-        .replace("%evolv3_pickaxe_atom_target%", Utils.formatNumber(profile.atomTarget))
-        .replace("%evolv3_pickaxe_evolution_rolls%", Utils.formatNumber(profile.evolutionRolls))
+        .replace("%evolv3_pickaxe_essence%", Utils.formatNumber(profile.essenceVessel.current))
+        .replace(
+            "%evolv3_pickaxe_target_essence%", Utils.formatNumber(profile.essenceVessel.target))
+        .replace(
+            "%evolv3_pickaxe_enchant_rolls%", Utils.formatNumber(profile.essenceVessel.crystals))
+        .replace("%evolv3_pickaxe_evolution_atoms%", Utils.formatNumber(profile.atomVessel.current))
+        .replace("%evolv3_pickaxe_atom_target%", Utils.formatNumber(profile.atomVessel.target))
+        .replace(
+            "%evolv3_pickaxe_evolution_rolls%", Utils.formatNumber(profile.atomVessel.crystals))
         .replace("%evolv3_pickaxe_prestige%", String.valueOf(profile.prestige));
   }
 

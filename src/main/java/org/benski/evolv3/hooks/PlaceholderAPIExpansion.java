@@ -9,10 +9,9 @@ import org.benski.evolv3.core.managers.EnchantAnimationConfig;
 import org.benski.evolv3.core.managers.MineManager;
 import org.benski.evolv3.core.managers.OmnitoolManager;
 import org.benski.evolv3.core.managers.RankManager;
-import org.benski.evolv3.datacenters.PickaxeDataCenter;
 import org.benski.evolv3.datacenters.PlayerDataCenter;
 import org.benski.evolv3.models.pickaxe.EnchantData;
-import org.benski.evolv3.models.pickaxe.PickaxeProfile;
+import org.benski.evolv3.models.pickaxe.Pickaxe;
 import org.benski.evolv3.models.player.PlayerProfile;
 import org.benski.evolv3.registry.ConfigRegistry;
 import org.benski.evolv3.registry.DataCenterRegistry;
@@ -186,7 +185,7 @@ public class PlaceholderAPIExpansion extends PlaceholderExpansion {
         PlayerDataCenter dc = DataCenterRegistry.getInstance().getPlayerDataCenter();
         if (dc == null) yield "0";
         PlayerProfile pp = dc.getLocal(player);
-        yield pp != null ? Utils.formatNumber(pp.essence) : "0";
+        yield pp != null ? Utils.formatNumber(pp.wallet.essence) : "0";
       }
       case "backpack_items" -> {
         PlayerDataCenter dc = DataCenterRegistry.getInstance().getPlayerDataCenter();
@@ -204,7 +203,7 @@ public class PlaceholderAPIExpansion extends PlaceholderExpansion {
         PlayerDataCenter dc = DataCenterRegistry.getInstance().getPlayerDataCenter();
         if (dc == null) yield "0";
         PlayerProfile pp = dc.getLocal(player);
-        yield pp != null ? Utils.formatNumber(pp.coins) : "0";
+        yield pp != null ? Utils.formatNumber(pp.wallet.coins) : "0";
       }
       default -> null;
     };
@@ -220,11 +219,10 @@ public class PlaceholderAPIExpansion extends PlaceholderExpansion {
   private String handlePickaxePlaceholder(Player player, String param) {
     if (param.equals("blank")) return "";
 
-    PickaxeDataCenter dataCenter =
-        (PickaxeDataCenter) DataCenterRegistry.getInstance().get("pickaxe");
+    PlayerDataCenter dataCenter = DataCenterRegistry.getInstance().getPlayerDataCenter();
     if (dataCenter == null) return null;
 
-    PickaxeProfile profile = dataCenter.getLocal(player);
+    Pickaxe profile = dataCenter.getPickaxeForPlayer(player);
     if (profile == null) return "0";
 
     return switch (param) {
@@ -232,22 +230,23 @@ public class PlaceholderAPIExpansion extends PlaceholderExpansion {
       case "xp" -> Utils.formatNumber(profile.xp);
       case "target" -> Utils.formatNumber(profile.target);
       case "evolution" -> String.valueOf(profile.evolution);
-      case "essence" -> Utils.formatNumber(profile.currentEssence);
-      case "target_essence" -> Utils.formatNumber(profile.targetEssence);
-      case "enchant_rolls" -> String.valueOf(profile.enchantRolls);
-      case "evolution_rolls" -> String.valueOf(profile.evolutionRolls);
-      case "evolution_atoms" -> Utils.formatNumber(profile.evolutionAtoms);
+      case "essence" -> Utils.formatNumber(profile.essenceVessel.current);
+      case "target_essence" -> Utils.formatNumber(profile.essenceVessel.target);
+      case "enchant_rolls" -> String.valueOf(profile.essenceVessel.crystals);
+      case "evolution_rolls" -> String.valueOf(profile.atomVessel.crystals);
+      case "evolution_atoms" -> Utils.formatNumber(profile.atomVessel.current);
       case "enchants" -> formatEnchantsList(profile);
       case "percentage" -> calculatePercentage(profile.xp, profile.target);
       case "progressbar" -> Utils.generateProgressBar(profile.xp, profile.target);
       case "essence_percentage" ->
-          calculatePercentage(profile.currentEssence, profile.targetEssence);
+          calculatePercentage(profile.essenceVessel.current, profile.essenceVessel.target);
       case "essence_progressbar" ->
-          Utils.generateProgressBar(profile.currentEssence, profile.targetEssence);
-      case "atom_target" -> String.valueOf(profile.atomTarget);
-      case "atom_percentage" -> calculatePercentage(profile.evolutionAtoms, profile.atomTarget);
+          Utils.generateProgressBar(profile.essenceVessel.current, profile.essenceVessel.target);
+      case "atom_target" -> String.valueOf(profile.atomVessel.target);
+      case "atom_percentage" ->
+          calculatePercentage(profile.atomVessel.current, profile.atomVessel.target);
       case "atom_progressbar" ->
-          Utils.generateProgressBar(profile.evolutionAtoms, profile.atomTarget);
+          Utils.generateProgressBar(profile.atomVessel.current, profile.atomVessel.target);
       case "prestige" -> String.valueOf(profile.prestige);
       case "blank" -> "";
       default -> null;
@@ -260,7 +259,7 @@ public class PlaceholderAPIExpansion extends PlaceholderExpansion {
    * @param profile The pickaxe profile
    * @return Formatted string of enchants, or "None" message
    */
-  private String formatEnchantsList(PickaxeProfile profile) {
+  private String formatEnchantsList(Pickaxe profile) {
     FileConfiguration enchantsConfig = ConfigRegistry.getInstance().get(ConfigNames.ENCHANTS);
 
     if (profile.enchants == null || profile.enchants.isEmpty()) {
@@ -333,14 +332,16 @@ public class PlaceholderAPIExpansion extends PlaceholderExpansion {
     if (pp == null) return "";
 
     RankManager rm = RankManager.getInstance();
-    String rankId = pp.rank != null ? pp.rank : rm.getDefaultRank();
+    String rankId = pp.getRank() != null ? pp.getRank() : rm.getDefaultRank();
 
     return switch (param) {
       case "rank" -> rm.getRankPrefix(rankId);
       case "rank_id" -> rankId;
       case "rank_staff" ->
-          pp.staffRank != null && !pp.staffRank.isEmpty() ? rm.getStaffPrefix(pp.staffRank) : "";
-      case "rank_staff_id" -> pp.staffRank != null ? pp.staffRank : "";
+          pp.getStaffRank() != null && !pp.getStaffRank().isEmpty()
+              ? rm.getStaffPrefix(pp.getStaffRank())
+              : "";
+      case "rank_staff_id" -> pp.getStaffRank() != null ? pp.getStaffRank() : "";
       default -> null;
     };
   }
@@ -388,10 +389,10 @@ public class PlaceholderAPIExpansion extends PlaceholderExpansion {
    * @return The placeholder value, or null if not found
    */
   private String handleEnchantPlaceholder(Player player, String param) {
-    PickaxeDataCenter dataCenter = DataCenterRegistry.getInstance().getPickaxeDataCenter();
+    PlayerDataCenter dataCenter = DataCenterRegistry.getInstance().getPlayerDataCenter();
     if (dataCenter == null) return null;
 
-    PickaxeProfile profile = dataCenter.getLocal(player);
+    Pickaxe profile = dataCenter.getPickaxeForPlayer(player);
     if (profile == null || profile.enchants == null) return "0";
 
     int lastUnderscore = param.lastIndexOf('_');

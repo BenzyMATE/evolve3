@@ -19,13 +19,13 @@ import org.benski.evolv3.core.helpers.ItemStackExtensions;
 import org.benski.evolv3.core.helpers.Utils;
 import org.benski.evolv3.core.types.EnchantOption;
 import org.benski.evolv3.datacenters.ArmorDataCenter;
-import org.benski.evolv3.datacenters.PickaxeDataCenter;
+import org.benski.evolv3.datacenters.PlayerDataCenter;
 import org.benski.evolv3.enums.ArmorType;
 import org.benski.evolv3.enums.EvolutionTier;
 import org.benski.evolv3.models.armor.ArmorItem;
 import org.benski.evolv3.models.armor.ArmorProfile;
 import org.benski.evolv3.models.pickaxe.EnchantData;
-import org.benski.evolv3.models.pickaxe.PickaxeProfile;
+import org.benski.evolv3.models.pickaxe.Pickaxe;
 import org.benski.evolv3.models.player.PlayerProfile;
 import org.benski.evolv3.registry.ConfigRegistry;
 import org.benski.evolv3.registry.DataCenterRegistry;
@@ -119,7 +119,7 @@ public class PickaxeManager {
    * @param profile the pickaxe profile to test
    * @return true when prestige &lt; max and level &gt;= level cap
    */
-  public boolean isPrestigeAvailable(PickaxeProfile profile) {
+  public boolean isPrestigeAvailable(Pickaxe profile) {
     int maxPrestige = getMaxPrestige();
     if (profile.prestige >= maxPrestige) return false;
     int cap = getLevelCap(profile.prestige);
@@ -137,25 +137,23 @@ public class PickaxeManager {
   public void addStatistics(Player player, Material blockType, PlayerProfile playerProfile) {
     if (blockType == Material.AIR) return;
 
-    PickaxeDataCenter dataCenter = DataCenterRegistry.getInstance().getPickaxeDataCenter();
-    dataCenter.get(
-        player,
-        profile -> {
-          if (profile == null) return;
+    PlayerDataCenter dataCenter = DataCenterRegistry.getInstance().getPlayerDataCenter();
+    if (dataCenter == null) return;
+    Pickaxe profile = dataCenter.getPickaxeForPlayer(player);
+    if (profile == null) return;
 
-          String xpPath = ConfigPaths.Default.BLOCK_DEFAULTS + "." + blockType.name() + ".XP";
-          int xpToAdd = defaultConfig().getInt(xpPath, 0);
-          if (xpToAdd <= 0) return;
+    String xpPath = ConfigPaths.Default.BLOCK_DEFAULTS + "." + blockType.name() + ".XP";
+    int xpToAdd = defaultConfig().getInt(xpPath, 0);
+    if (xpToAdd <= 0) return;
 
-          xpToAdd = (int) Math.round(xpToAdd * leggingsMultiplier(player));
-          profile.xp += xpToAdd;
+    xpToAdd = (int) Math.round(xpToAdd * leggingsMultiplier(player));
+    profile.xp += xpToAdd;
 
-          checkLevel(profile, player, playerProfile);
-          sendMiningActionBar(player, profile);
-        });
+    checkLevel(profile, player, playerProfile);
+    sendMiningActionBar(player, profile);
   }
 
-  private void sendMiningActionBar(Player player, PickaxeProfile profile) {
+  private void sendMiningActionBar(Player player, Pickaxe profile) {
     if (isPrestigeAvailable(profile)) {
       String prestigeBar =
           messagesConfig()
@@ -182,8 +180,9 @@ public class PickaxeManager {
    * @param amount the XP amount to add
    */
   public void addXp(Player player, int amount) {
-    PickaxeDataCenter dc = DataCenterRegistry.getInstance().getPickaxeDataCenter();
-    PickaxeProfile profile = dc.getLocal(player);
+    PlayerDataCenter dc = DataCenterRegistry.getInstance().getPlayerDataCenter();
+    if (dc == null) return;
+    Pickaxe profile = dc.getPickaxeForPlayer(player);
     if (profile == null) return;
     profile.xp += amount;
     checkLevel(profile, player);
@@ -207,7 +206,7 @@ public class PickaxeManager {
    * @param profile the pickaxe profile
    * @param player the owner player
    */
-  public void checkLevel(PickaxeProfile profile, Player player) {
+  public void checkLevel(Pickaxe profile, Player player) {
     checkLevel(profile, player, null);
   }
 
@@ -218,7 +217,7 @@ public class PickaxeManager {
    * @param player the owner player
    * @param playerProfile the player's profile for armor integration (optional)
    */
-  public void checkLevel(PickaxeProfile profile, Player player, PlayerProfile playerProfile) {
+  public void checkLevel(Pickaxe profile, Player player, PlayerProfile playerProfile) {
     int levelCap = getLevelCap(profile.prestige);
     if (levelCap > 0 && profile.level >= levelCap) {
       profile.xp = profile.target - 1;
@@ -248,10 +247,10 @@ public class PickaxeManager {
       essenceReward =
           (int) Math.round(essenceReward * chestplateMultiplier(player) * prestigeMultiplier);
 
-      profile.currentEssence += essenceReward;
+      profile.essenceVessel.current += essenceReward;
 
       if (playerProfile != null) {
-        playerProfile.essence += essenceReward;
+        playerProfile.addEssence(essenceReward);
         awardChestplateXp(player, essenceReward);
       }
 
@@ -262,7 +261,7 @@ public class PickaxeManager {
               Math.round(
                   defaultConfig().getInt(ConfigPaths.Default.Atoms.LEVEL_UP_REWARD, 2)
                       * prestigeMultiplier);
-      profile.evolutionAtoms += atomReward;
+      profile.atomVessel.current += atomReward;
 
       checkAtoms(profile, player);
 
@@ -293,7 +292,7 @@ public class PickaxeManager {
   }
 
   private void sendLevelUpMessages(
-      Player player, PickaxeProfile profile, int oldLevel, int essenceReward, int atomReward) {
+      Player player, Pickaxe profile, int oldLevel, int essenceReward, int atomReward) {
     List<String> levelUpLines =
         messagesConfig().getStringList(ConfigPaths.Messages.Pickaxe.LEVEL_UP);
     if (levelUpLines.isEmpty()) {
@@ -318,18 +317,18 @@ public class PickaxeManager {
    * @param profile the pickaxe profile
    * @param player the owner player
    */
-  public void checkEssence(PickaxeProfile profile, Player player) {
-    if (profile.currentEssence < profile.targetEssence) return;
+  public void checkEssence(Pickaxe profile, Player player) {
+    if (profile.essenceVessel.current < profile.essenceVessel.target) return;
 
     double multiplier =
         defaultConfig().getDouble(ConfigPaths.Default.Pickaxe.ESSENCE_MULTIPLIER, 1.5);
     int cap = defaultConfig().getInt(ConfigPaths.Default.Pickaxe.ESSENCE_TARGET_CAP, 10000);
 
-    while (profile.currentEssence >= profile.targetEssence) {
-      profile.enchantRolls++;
-      profile.currentEssence -= profile.targetEssence;
-      profile.targetEssence =
-          Math.min(cap, Math.max(1, (int) (profile.targetEssence * multiplier)));
+    while (profile.essenceVessel.current >= profile.essenceVessel.target) {
+      profile.essenceVessel.crystals++;
+      profile.essenceVessel.current -= profile.essenceVessel.target;
+      profile.essenceVessel.target =
+          Math.min(cap, Math.max(1, (int) (profile.essenceVessel.target * multiplier)));
       player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.5f);
       showPickaxeTitle(
           player,
@@ -346,16 +345,16 @@ public class PickaxeManager {
    * @param profile the pickaxe profile
    * @param player the owner player
    */
-  public void checkAtoms(PickaxeProfile profile, Player player) {
-    if (profile.evolutionAtoms < profile.atomTarget) return;
+  public void checkAtoms(Pickaxe profile, Player player) {
+    if (profile.atomVessel.current < profile.atomVessel.target) return;
 
     double multiplier =
         defaultConfig().getDouble(ConfigPaths.Default.Atoms.ATOM_TARGET_MULTIPLIER, 1.5);
 
-    while (profile.evolutionAtoms >= profile.atomTarget) {
-      profile.evolutionRolls++;
-      profile.evolutionAtoms -= profile.atomTarget;
-      profile.atomTarget = Math.max(1, (int) (profile.atomTarget * multiplier));
+    while (profile.atomVessel.current >= profile.atomVessel.target) {
+      profile.atomVessel.crystals++;
+      profile.atomVessel.current -= profile.atomVessel.target;
+      profile.atomVessel.target = Math.max(1, (int) (profile.atomVessel.target * multiplier));
       player.playSound(player.getLocation(), Sound.UI_TOAST_CHALLENGE_COMPLETE, 1.0f, 1.0f);
       showPickaxeTitle(
           player,
@@ -399,7 +398,7 @@ public class PickaxeManager {
    */
   public boolean validateEvolution(
       @org.jetbrains.annotations.NotNull Player player,
-      @org.jetbrains.annotations.NotNull PickaxeProfile profile) {
+      @org.jetbrains.annotations.NotNull Pickaxe profile) {
     FileConfiguration messages = messagesConfig();
     EvolutionTier current = EvolutionTier.fromLevel(profile.evolution);
 
@@ -413,7 +412,7 @@ public class PickaxeManager {
       return false;
     }
 
-    if (profile.evolutionRolls <= 0) {
+    if (profile.atomVessel.crystals <= 0) {
       String msg =
           messages.getString(
               ConfigPaths.Messages.Pickaxe.EVOLVE_INSUFFICIENT_SPINS,
@@ -438,15 +437,11 @@ public class PickaxeManager {
   @SuppressWarnings("deprecation")
   public void applyEvolutionResult(
       @org.jetbrains.annotations.NotNull Player player,
-      @org.jetbrains.annotations.NotNull PickaxeProfile profile,
+      @org.jetbrains.annotations.NotNull Pickaxe profile,
       @org.jetbrains.annotations.NotNull PlayerProfile playerProfile,
       @org.jetbrains.annotations.NotNull EvolutionTier next,
       @org.jetbrains.annotations.NotNull org.benski.evolv3.core.types.RarityConfig stone) {
     profile.evolution = next.level;
-
-    if (next.level > playerProfile.highestEvolution) {
-      playerProfile.highestEvolution = next.level;
-    }
 
     updateStoredPickaxeMaterial(playerProfile, profile.key, next.material);
 
@@ -459,8 +454,8 @@ public class PickaxeManager {
 
     int essenceReward =
         defaultConfig().getInt(ConfigPaths.Messages.Pickaxe.EVOLVE_ESSENCE_REWARD, 250);
-    profile.currentEssence += essenceReward;
-    playerProfile.essence += essenceReward;
+    profile.essenceVessel.current += essenceReward;
+    playerProfile.addEssence(essenceReward);
     checkEssence(profile, player);
 
     profile.save(null);
@@ -472,7 +467,7 @@ public class PickaxeManager {
 
   private void sendEvolutionResultMessages(
       Player player,
-      PickaxeProfile profile,
+      Pickaxe profile,
       PlayerProfile playerProfile,
       EvolutionTier next,
       org.benski.evolv3.core.types.RarityConfig stone,
@@ -529,8 +524,7 @@ public class PickaxeManager {
    * @param selected the enchant option returned by the animation
    * @param profile the player's current pickaxe profile
    */
-  public void applyEnchantFromSelection(
-      Player player, EnchantOption selected, PickaxeProfile profile) {
+  public void applyEnchantFromSelection(Player player, EnchantOption selected, Pickaxe profile) {
     String internalName = selected.name().toLowerCase().replace(" ", "");
     int maxLevel = EnchantAnimationConfig.getEnchantMaxLevel(selected.name());
 
@@ -568,7 +562,7 @@ public class PickaxeManager {
    * @return {@code true} if the upgrade succeeded
    */
   public boolean upgradeEnchantWithEssence(
-      Player player, PickaxeProfile profile, PlayerProfile playerProfile, String displayName) {
+      Player player, Pickaxe profile, PlayerProfile playerProfile, String displayName) {
     String internalName = displayName.toLowerCase().replace(" ", "");
     EnchantData enchant = profile.enchants.getEnchant(internalName);
     FileConfiguration messages = messagesConfig();
@@ -597,7 +591,7 @@ public class PickaxeManager {
 
     int cost = EnchantAnimationConfig.getEnchantCost(displayName) * enchant.level;
 
-    if (playerProfile.essence < cost) {
+    if (playerProfile.wallet.essence < cost) {
       String msg =
           messages
               .getString(
@@ -610,7 +604,7 @@ public class PickaxeManager {
       return false;
     }
 
-    playerProfile.essence -= cost;
+    playerProfile.wallet.essence -= cost;
     enchant.level++;
 
     profile.save(null);
@@ -631,21 +625,18 @@ public class PickaxeManager {
   }
 
   /**
-   * @see PickaxeLoreRenderer#buildLoreComponents(Player, PickaxeProfile, List)
+   * @see PickaxeLoreRenderer#buildLoreComponents(Player, Pickaxe, List)
    */
   public java.util.List<net.kyori.adventure.text.Component> buildLoreComponents(
-      Player player, PickaxeProfile profile, java.util.List<String> footerLines) {
+      Player player, Pickaxe profile, java.util.List<String> footerLines) {
     return PickaxeLoreRenderer.getInstance().buildLoreComponents(player, profile, footerLines);
   }
 
   /**
-   * @see PickaxeLoreRenderer#buildLoreComponents(Player, PickaxeProfile, List, String)
+   * @see PickaxeLoreRenderer#buildLoreComponents(Player, Pickaxe, List, String)
    */
   public java.util.List<net.kyori.adventure.text.Component> buildLoreComponents(
-      Player player,
-      PickaxeProfile profile,
-      java.util.List<String> footerLines,
-      String durabilityBar) {
+      Player player, Pickaxe profile, java.util.List<String> footerLines, String durabilityBar) {
     return PickaxeLoreRenderer.getInstance()
         .buildLoreComponents(player, profile, footerLines, durabilityBar);
   }
@@ -665,9 +656,9 @@ public class PickaxeManager {
   }
 
   /**
-   * @see PickaxeLoreRenderer#applyLoreAndName(Player, PickaxeProfile, ItemStack)
+   * @see PickaxeLoreRenderer#applyLoreAndName(Player, Pickaxe, ItemStack)
    */
-  public void applyLoreAndName(Player player, PickaxeProfile profile, ItemStack item) {
+  public void applyLoreAndName(Player player, Pickaxe profile, ItemStack item) {
     PickaxeLoreRenderer.getInstance().applyLoreAndName(player, profile, item);
   }
 }

@@ -15,12 +15,11 @@ import org.benski.evolv3.core.helpers.Utils;
 import org.benski.evolv3.core.managers.MineManager;
 import org.benski.evolv3.core.managers.PickaxeManager;
 import org.benski.evolv3.core.managers.WorldGuardManager;
-import org.benski.evolv3.datacenters.PickaxeDataCenter;
 import org.benski.evolv3.datacenters.PlayerDataCenter;
 import org.benski.evolv3.listeners.BackpackListener;
 import org.benski.evolv3.models.backpack.Backpack;
 import org.benski.evolv3.models.pickaxe.EnchantData;
-import org.benski.evolv3.models.pickaxe.PickaxeProfile;
+import org.benski.evolv3.models.pickaxe.Pickaxe;
 import org.benski.evolv3.models.player.EnchantPreference;
 import org.benski.evolv3.models.player.PlayerProfile;
 import org.benski.evolv3.registry.AnimationRegistry;
@@ -71,27 +70,22 @@ public class ThorEnchant implements Listener {
     if (blockName.endsWith("_LOG") || blockName.endsWith("_STEM")) return;
     if (event.getBlock().getType() == Material.SCULK) return;
 
-    PickaxeDataCenter pickaxeDC = DataCenterRegistry.getInstance().getPickaxeDataCenter();
+    PlayerDataCenter pickaxeDC = DataCenterRegistry.getInstance().getPlayerDataCenter();
     if (pickaxeDC == null) return;
 
-    pickaxeDC.get(
-        player,
-        pickaxeProfile -> {
-          if (pickaxeProfile == null || pickaxeProfile.enchants == null) return;
-
-          EnchantData thor = pickaxeProfile.enchants.getEnchant(Enchants.THOR);
-          if (thor == null || !thor.enabled || thor.level <= 0) return;
-
-          double triggerChance = thor.getCurrentChance();
-          if (ThorStoneHandler.hasStone(thor, "Common")) triggerChance += 2.0;
-          if (!Utils.chance(triggerChance)) return;
-
+    Pickaxe pickaxe = pickaxeDC.getPickaxeForPlayer(player);
+    if (pickaxe != null && pickaxe.enchants != null) {
+      EnchantData thor = pickaxe.enchants.getEnchant(Enchants.THOR);
+      if (thor != null && thor.enabled && thor.level > 0) {
+        double triggerChance = thor.getCurrentChance();
+        if (ThorStoneHandler.hasStone(thor, "Common")) triggerChance += 2.0;
+        if (Utils.chance(triggerChance)) {
           Block origin = event.getBlock();
 
           new BukkitRunnable() {
             @Override
             public void run() {
-              strikeThor(player, origin, pickaxeProfile, thor, false);
+              strikeThor(player, origin, pickaxe, thor, false);
             }
           }.runTaskLater(plugin, 1L);
 
@@ -99,15 +93,17 @@ public class ThorEnchant implements Listener {
             new BukkitRunnable() {
               @Override
               public void run() {
-                strikeThor(player, origin, pickaxeProfile, thor, true);
+                strikeThor(player, origin, pickaxe, thor, true);
               }
             }.runTaskLater(plugin, 4L);
           }
 
           if (ThorStoneHandler.hasStone(thor, "Legendary") && Utils.chance(15.0)) {
-            triggerThunderstorm(player, origin, pickaxeProfile, thor);
+            triggerThunderstorm(player, origin, pickaxe, thor);
           }
-        });
+        }
+      }
+    }
   }
 
   /**
@@ -141,17 +137,15 @@ public class ThorEnchant implements Listener {
         showSculkReward(player, block, "&#B366D9ðŸ”¥ &#FFFFFF&l+1 &#B366D9Essence");
       }
       case 2 -> {
-        PickaxeDataCenter pickaxeDC = DataCenterRegistry.getInstance().getPickaxeDataCenter();
-        if (pickaxeDC != null) {
-          pickaxeDC.get(
-              player,
-              pp -> {
-                if (pp == null) return;
-                pp.evolutionAtoms += 1;
-                PickaxeManager.getInstance().checkAtoms(pp, player);
-                pp.save(null);
-                showSculkReward(player, block, "&#FFEE00âš› &#FFFFFF&l+1 &#FFEE00Atom");
-              });
+        PlayerDataCenter sculkPlayerDC = DataCenterRegistry.getInstance().getPlayerDataCenter();
+        if (sculkPlayerDC != null) {
+          Pickaxe pp = sculkPlayerDC.getPickaxeForPlayer(player);
+          if (pp != null) {
+            pp.atomVessel.current += 1;
+            PickaxeManager.getInstance().checkAtoms(pp, player);
+            pp.save(null);
+            showSculkReward(player, block, "&#FFEE00âš› &#FFFFFF&l+1 &#FFEE00Atom");
+          }
         }
       }
       case 3 -> {
@@ -201,11 +195,7 @@ public class ThorEnchant implements Listener {
    *     chained Mjolnir procs and recursive Thunderstorms.
    */
   private void strikeThor(
-      Player player,
-      Block origin,
-      PickaxeProfile pickaxeProfile,
-      EnchantData thor,
-      boolean isSubStrike) {
+      Player player, Block origin, Pickaxe pickaxe, EnchantData thor, boolean isSubStrike) {
     if (!player.isOnline()) return;
 
     PlayerDataCenter playerDC = DataCenterRegistry.getInstance().getPlayerDataCenter();
@@ -237,7 +227,7 @@ public class ThorEnchant implements Listener {
       bottomY--;
     }
 
-    int fortuneAmount = resolveFortune(pickaxeProfile);
+    int fortuneAmount = resolveFortune(pickaxe);
     Backpack backpack = playerProfile.backpack;
     if (backpack.isFull()) return;
 
@@ -272,7 +262,7 @@ public class ThorEnchant implements Listener {
 
         Material mat =
             AoEDropResolver.resolve(
-                block, player.getInventory().getItemInMainHand(), plugin, pickaxeProfile);
+                block, player.getInventory().getItemInMainHand(), plugin, pickaxe);
         if (mat.isAir()) continue;
 
         if (iceOriginY < 0 && off[0] == 0 && off[1] == 0) iceOriginY = y;
@@ -283,7 +273,7 @@ public class ThorEnchant implements Listener {
         int dropCount = Math.min(fortuneAmount > 0 ? fortuneAmount : 1, remaining);
         backpack.addItem(player, mat, dropCount, false);
         PickaxeManager.getInstance().addStatistics(player, mat, playerProfile);
-        AoEDropResolver.rollSideEffects(player, block, pickaxeProfile, playerProfile);
+        AoEDropResolver.rollSideEffects(player, block, pickaxe, playerProfile);
         broken++;
       }
     }
@@ -319,7 +309,7 @@ public class ThorEnchant implements Listener {
     AnimationRegistry.getInstance().play(anim, strikeOrigin, List.of(player));
 
     if (broken > 0) {
-      AoEDropResolver.flushAccumulation(player, origin, pickaxeProfile);
+      AoEDropResolver.flushAccumulation(player, origin, pickaxe);
       showNotification(player, origin, config, pref, broken);
     }
   }
@@ -328,8 +318,7 @@ public class ThorEnchant implements Listener {
    * Legendary (Thunderstorm): scatters 10 sub-strikes at random X/Z positions within the mine
    * bounds, staggered 2 ticks apart.
    */
-  private void triggerThunderstorm(
-      Player player, Block origin, PickaxeProfile pickaxeProfile, EnchantData thor) {
+  private void triggerThunderstorm(Player player, Block origin, Pickaxe pickaxe, EnchantData thor) {
     int[] bounds = WorldGuardManager.getInstance().getMineRegionXZBounds(origin.getLocation());
     int minX, minZ, maxX, maxZ;
     if (bounds != null) {
@@ -359,7 +348,7 @@ public class ThorEnchant implements Listener {
         @Override
         public void run() {
           if (!player.isOnline()) return;
-          strikeThor(player, finalBlock, pickaxeProfile, thor, true);
+          strikeThor(player, finalBlock, pickaxe, thor, true);
         }
       }.runTaskLater(plugin, 2L + i * 2L);
     }
@@ -417,9 +406,9 @@ public class ThorEnchant implements Listener {
     }
   }
 
-  private int resolveFortune(PickaxeProfile pickaxeProfile) {
-    if (pickaxeProfile.enchants == null) return 0;
-    EnchantData fortune = pickaxeProfile.enchants.getEnchant(Enchants.FORTUNE);
+  private int resolveFortune(Pickaxe pickaxe) {
+    if (pickaxe.enchants == null) return 0;
+    EnchantData fortune = pickaxe.enchants.getEnchant(Enchants.FORTUNE);
     if (fortune == null || !fortune.enabled || fortune.level <= 0) return 0;
     return FortuneEnchant.getDropAmount(fortune.level);
   }

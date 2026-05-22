@@ -10,9 +10,9 @@ import org.benski.evolv3.core.managers.EnchantSelectionManager;
 import org.benski.evolv3.core.managers.EvolutionSelectionManager;
 import org.benski.evolv3.core.managers.PickaxeManager;
 import org.benski.evolv3.core.types.RarityConfig;
-import org.benski.evolv3.datacenters.PickaxeDataCenter;
 import org.benski.evolv3.datacenters.PlayerDataCenter;
 import org.benski.evolv3.enums.EvolutionTier;
+import org.benski.evolv3.models.pickaxe.Pickaxe;
 import org.benski.evolv3.models.player.PlayerProfile;
 import org.benski.evolv3.registry.DataCenterRegistry;
 import org.benski.evolv3.registry.MenuRegistry;
@@ -141,48 +141,43 @@ public class TestCommand extends BaseCommand {
       case "evolve":
         {
           DataCenterRegistry dcr = DataCenterRegistry.getInstance();
-          PickaxeDataCenter pickaxeDC = dcr.getPickaxeDataCenter();
           PlayerDataCenter playerDC = dcr.getPlayerDataCenter();
 
-          pickaxeDC.get(
-              player,
-              profile -> {
-                if (profile == null) {
-                  sendError(player, "No pickaxe found in hand — hold your pickaxe first.");
-                  return;
-                }
-                PlayerProfile playerProfile = playerDC.getLocal(player);
-                if (playerProfile == null) {
-                  sendError(player, "Player profile not loaded.");
-                  return;
-                }
+          Pickaxe profile = playerDC != null ? playerDC.getPickaxeForPlayer(player) : null;
+          if (profile == null) {
+            sendError(player, "No pickaxe found in hand — hold your pickaxe first.");
+            break;
+          }
+          PlayerProfile playerProfile = playerDC.getLocal(player);
+          if (playerProfile == null) {
+            sendError(player, "Player profile not loaded.");
+            break;
+          }
 
-                EvolutionTier from = EvolutionTier.fromLevel(profile.evolution);
-                EvolutionTier to = from.next();
-                if (to == null) {
-                  sendError(player, "Pickaxe is already at max tier (" + from.displayName + ").");
-                  return;
-                }
+          EvolutionTier from = EvolutionTier.fromLevel(profile.evolution);
+          EvolutionTier to = from.next();
+          if (to == null) {
+            sendError(player, "Pickaxe is already at max tier (" + from.displayName + ").");
+            break;
+          }
 
-                RarityConfig stone = EnchantAnimationConfig.rollRarity();
-                if (stone == null) {
-                  sendError(player, "No rarities loaded — check enchants.yml.");
-                  return;
-                }
+          RarityConfig stone = EnchantAnimationConfig.rollRarity();
+          if (stone == null) {
+            sendError(player, "No rarities loaded — check enchants.yml.");
+            break;
+          }
 
-                EvolutionTier finalTo = to;
-                EvolutionSelectionManager.getInstance()
-                    .startEvolution(
-                        player,
-                        profile.key,
-                        from,
-                        finalTo,
-                        stone,
-                        () ->
-                            PickaxeManager.getInstance()
-                                .applyEvolutionResult(
-                                    player, profile, playerProfile, finalTo, stone));
-              });
+          EvolutionTier finalTo = to;
+          EvolutionSelectionManager.getInstance()
+              .startEvolution(
+                  player,
+                  profile.key,
+                  from,
+                  finalTo,
+                  stone,
+                  () ->
+                      PickaxeManager.getInstance()
+                          .applyEvolutionResult(player, profile, playerProfile, finalTo, stone));
           break;
         }
       default:

@@ -19,10 +19,10 @@ import org.benski.evolv3.core.managers.EnchantDropManager;
 import org.benski.evolv3.core.managers.MineManager;
 import org.benski.evolv3.core.managers.PickaxeManager;
 import org.benski.evolv3.core.managers.WorldGuardManager;
-import org.benski.evolv3.datacenters.PickaxeDataCenter;
 import org.benski.evolv3.datacenters.PlayerDataCenter;
 import org.benski.evolv3.listeners.BackpackListener;
 import org.benski.evolv3.models.pickaxe.EnchantData;
+import org.benski.evolv3.models.pickaxe.Pickaxe;
 import org.benski.evolv3.models.player.EnchantPreference;
 import org.benski.evolv3.registry.AnimationRegistry;
 import org.benski.evolv3.registry.ConfigRegistry;
@@ -156,28 +156,14 @@ public class FurnaceEnchant implements Listener {
       if (pp != null && pp.backpack.isFull()) return;
     }
 
-    PickaxeDataCenter dataCenter = DataCenterRegistry.getInstance().getPickaxeDataCenter();
-    if (dataCenter == null) return;
-    dataCenter.get(
-        player,
-        profile -> {
-          if (profile == null || profile.enchants == null) {
-            return;
-          }
-
-          EnchantData enchant = profile.enchants.getEnchant(Enchants.FURNACE);
-          if (enchant == null || !enchant.enabled || enchant.level <= 0) {
-            return;
-          }
-
-          boolean hasLegendary = FurnaceStoneHandler.hasStone(enchant, "Legendary");
-          if (!hasLegendary) {
-            double triggerChance = enchant.getCurrentChance();
-            if (!Utils.chance(triggerChance)) {
-              return;
-            }
-          }
-
+    PlayerDataCenter pickaxeDC = DataCenterRegistry.getInstance().getPlayerDataCenter();
+    if (pickaxeDC == null) return;
+    Pickaxe profile = pickaxeDC.getPickaxeForPlayer(player);
+    if (profile != null && profile.enchants != null) {
+      EnchantData enchant = profile.enchants.getEnchant(Enchants.FURNACE);
+      if (enchant != null && enchant.enabled && enchant.level > 0) {
+        boolean hasLegendary = FurnaceStoneHandler.hasStone(enchant, "Legendary");
+        if (hasLegendary || Utils.chance(enchant.getCurrentChance())) {
           Block block = event.getBlock();
           Material materialToSmelt = getMaterialToSmelt(player, block);
 
@@ -187,43 +173,43 @@ public class FurnaceEnchant implements Listener {
             smeltResult = materialToSmelt;
           }
 
-          if (smeltResult == null) {
-            return;
+          if (smeltResult != null) {
+            if (FurnaceStoneHandler.hasStone(enchant, "Rare") && Utils.chance(20.0)) {
+              Material chainResult = alchemicalForgeChain.get(smeltResult);
+              if (chainResult != null) smeltResult = chainResult;
+            }
+
+            EnchantDropManager.set(player.getUniqueId(), smeltResult);
+
+            if (FurnaceStoneHandler.hasStone(enchant, "Common") && Utils.chance(20.0)) {
+              FurnaceStoneHandler.setDoubleSmelt(player.getUniqueId());
+            }
+
+            if (FurnaceStoneHandler.hasStone(enchant, "Uncommon")) {
+              String xpPath =
+                  org.benski.evolv3.core.constants.ConfigPaths.Default.BLOCK_DEFAULTS
+                      + "."
+                      + block.getType().name()
+                      + ".XP";
+              int blockXp =
+                  org.benski.evolv3.registry.ConfigRegistry.getInstance()
+                      .get(org.benski.evolv3.core.constants.ConfigNames.DEFAULT)
+                      .getInt(xpPath, 0);
+              int bonus = (int) Math.max(1, blockXp * 0.10);
+              profile.xp += bonus;
+              PickaxeManager.getInstance().checkLevel(profile, player);
+              profile.save(null);
+            }
+
+            if (FurnaceStoneHandler.hasStone(enchant, "Epic")) {
+              applyFireChain(player, block, hasLegendary);
+            }
+
+            playSmeltEffects(block, player, materialToSmelt, smeltResult);
           }
-
-          if (FurnaceStoneHandler.hasStone(enchant, "Rare") && Utils.chance(20.0)) {
-            Material chainResult = alchemicalForgeChain.get(smeltResult);
-            if (chainResult != null) smeltResult = chainResult;
-          }
-
-          EnchantDropManager.set(player.getUniqueId(), smeltResult);
-
-          if (FurnaceStoneHandler.hasStone(enchant, "Common") && Utils.chance(20.0)) {
-            FurnaceStoneHandler.setDoubleSmelt(player.getUniqueId());
-          }
-
-          if (FurnaceStoneHandler.hasStone(enchant, "Uncommon")) {
-            String xpPath =
-                org.benski.evolv3.core.constants.ConfigPaths.Default.BLOCK_DEFAULTS
-                    + "."
-                    + block.getType().name()
-                    + ".XP";
-            int blockXp =
-                org.benski.evolv3.registry.ConfigRegistry.getInstance()
-                    .get(org.benski.evolv3.core.constants.ConfigNames.DEFAULT)
-                    .getInt(xpPath, 0);
-            int bonus = (int) Math.max(1, blockXp * 0.10);
-            profile.xp += bonus;
-            PickaxeManager.getInstance().checkLevel(profile, player);
-            profile.save(null);
-          }
-
-          if (FurnaceStoneHandler.hasStone(enchant, "Epic")) {
-            applyFireChain(player, block, hasLegendary);
-          }
-
-          playSmeltEffects(block, player, materialToSmelt, smeltResult);
-        });
+        }
+      }
+    }
   }
 
   /**

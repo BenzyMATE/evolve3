@@ -1,11 +1,11 @@
 package org.benski.evolv3;
 
+import org.benski.evolv3.api.EvolveApiClient;
 import org.benski.evolv3.core.constants.ConfigNames;
 import org.benski.evolv3.core.constants.ConfigPaths;
 import org.benski.evolv3.core.helpers.Utils;
 import org.benski.evolv3.core.managers.*;
 import org.benski.evolv3.datacenters.ArmorDataCenter;
-import org.benski.evolv3.datacenters.PickaxeDataCenter;
 import org.benski.evolv3.datacenters.PlayerDataCenter;
 import org.benski.evolv3.hooks.PlaceholderAPIExpansion;
 import org.benski.evolv3.menus.*;
@@ -47,7 +47,7 @@ public final class Main extends JavaPlugin {
     this.sendConsoleMessage("Evolv3 is starting up...");
     FrostbiteBlockManager.getInstance().initialize(this);
     this.useRegistry();
-    this.useMongo();
+    this.useApi();
     this.useHooks();
     this.initializeBlackholes();
     this.initializeZoneBorders();
@@ -72,7 +72,9 @@ public final class Main extends JavaPlugin {
     this.cleanupHolograms();
     TaskManager.getInstance().cancelAllTasks();
     this.cleanupRegistries();
-    MongoManager.getInstance().close();
+    if (EvolveApiClient.getInstance() != null) {
+      EvolveApiClient.getInstance().shutdown();
+    }
     this.sendConsoleMessage("Evolv3 has been disabled. Goodbye!");
   }
 
@@ -84,10 +86,6 @@ public final class Main extends JavaPlugin {
     PlayerDataCenter playerDataCenter = DataCenterRegistry.getInstance().getPlayerDataCenter();
     if (playerDataCenter != null) {
       playerDataCenter.saveAll();
-    }
-    PickaxeDataCenter pickaxeDataCenter = DataCenterRegistry.getInstance().getPickaxeDataCenter();
-    if (pickaxeDataCenter != null) {
-      pickaxeDataCenter.saveAll();
     }
   }
 
@@ -198,15 +196,11 @@ public final class Main extends JavaPlugin {
         .registerCallbackProvider(
             pickaxeKey ->
                 (player, selected) -> {
-                  var dc = DataCenterRegistry.getInstance().getPickaxeDataCenter();
+                  var dc = DataCenterRegistry.getInstance().getPlayerDataCenter();
                   if (dc == null) return;
-                  dc.get(
-                      player,
-                      profile -> {
-                        if (profile == null) return;
-                        PickaxeManager.getInstance()
-                            .applyEnchantFromSelection(player, selected, profile);
-                      });
+                  var profile = dc.getPickaxeForPlayer(player);
+                  if (profile == null) return;
+                  PickaxeManager.getInstance().applyEnchantFromSelection(player, selected, profile);
                 });
   }
 
@@ -220,26 +214,26 @@ public final class Main extends JavaPlugin {
         .registerCallbackProvider(
             (player, pickaxeKey, nextTier, winningRarity) ->
                 () -> {
-                  var dc = DataCenterRegistry.getInstance().getPickaxeDataCenter();
                   var playerDC = DataCenterRegistry.getInstance().getPlayerDataCenter();
-                  if (dc == null || playerDC == null) return;
-                  dc.get(
-                      player,
-                      profile -> {
-                        if (profile == null) return;
-                        var playerProfile = playerDC.getLocal(player);
-                        if (playerProfile == null) return;
-                        PickaxeManager.getInstance()
-                            .applyEvolutionResult(
-                                player, profile, playerProfile, nextTier, winningRarity);
-                      });
+                  if (playerDC == null) return;
+                  var profile = playerDC.getPickaxeForPlayer(player);
+                  if (profile == null) return;
+                  var playerProfile = playerDC.getLocal(player);
+                  if (playerProfile == null) return;
+                  PickaxeManager.getInstance()
+                      .applyEvolutionResult(
+                          player, profile, playerProfile, nextTier, winningRarity);
                 });
   }
 
-  private void useMongo() {
+  private void useApi() {
     var defaultConfig = ConfigRegistry.getInstance().get(ConfigNames.DEFAULT);
-    MongoManager.getInstance()
-        .initConnection(defaultConfig.getString(ConfigPaths.Default.DATABASE_MONGODB));
+    String apiUrl =
+        defaultConfig.getString(
+            ConfigPaths.Default.API_URL,
+            "https://evolvemc-d2bjaqeceugth0bw.ukwest-01.azurewebsites.net");
+    boolean sslVerify = defaultConfig.getBoolean(ConfigPaths.Default.API_SSL_VERIFY, true);
+    new EvolveApiClient(apiUrl, sslVerify);
   }
 
   private void useHooks() {

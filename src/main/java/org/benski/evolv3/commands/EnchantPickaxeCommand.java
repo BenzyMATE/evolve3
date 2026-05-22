@@ -7,9 +7,9 @@ import org.benski.evolv3.core.abstracts.BaseCommand;
 import org.benski.evolv3.core.helpers.ItemStackExtensions;
 import org.benski.evolv3.core.managers.EnchantAnimationConfig;
 import org.benski.evolv3.core.managers.PickaxeManager;
-import org.benski.evolv3.datacenters.PickaxeDataCenter;
+import org.benski.evolv3.datacenters.PlayerDataCenter;
 import org.benski.evolv3.models.pickaxe.EnchantData;
-import org.benski.evolv3.models.pickaxe.PickaxeProfile;
+import org.benski.evolv3.models.pickaxe.Pickaxe;
 import org.benski.evolv3.registry.DataCenterRegistry;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
@@ -109,13 +109,13 @@ public class EnchantPickaxeCommand extends BaseCommand {
       return true;
     }
 
-    PickaxeDataCenter dc = DataCenterRegistry.getInstance().getPickaxeDataCenter();
+    PlayerDataCenter dc = DataCenterRegistry.getInstance().getPlayerDataCenter();
     if (dc == null) {
       sendError(player, "Pickaxe data centre unavailable.");
       return true;
     }
 
-    PickaxeProfile profile = dc.getAll().get(pickaxeId);
+    Pickaxe profile = dc.getPickaxeByItemId(pickaxeId);
     if (profile == null) {
       sendError(player, "Could not find a profile for this pickaxe.");
       return true;

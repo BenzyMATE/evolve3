@@ -70,7 +70,7 @@ public class BorderListener extends BaseListener {
 
     Player player = event.getPlayer();
     PlayerProfile profile = getProfile(player);
-    String rankId = (profile != null) ? profile.rank : null;
+    String rankId = (profile != null) ? profile.getRank() : null;
 
     BorderWall blocking =
         BorderManager.getInstance()
@@ -102,7 +102,7 @@ public class BorderListener extends BaseListener {
 
     for (Player player : Bukkit.getOnlinePlayers()) {
       PlayerProfile profile = getProfile(player);
-      String rankId = (profile != null) ? profile.rank : null;
+      String rankId = (profile != null) ? profile.getRank() : null;
       String resolvedRank = (rankId != null) ? rankId : defaultRank;
 
       int playerIndex = order.indexOf(resolvedRank);

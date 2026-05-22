@@ -11,8 +11,16 @@ public final class ConfigPaths {
   public static final class Default {
     private Default() {}
 
-    /** MongoDB connection string path. Example: "mongodb+srv://user:pass@cluster.mongodb.net/" */
-    public static final String DATABASE_MONGODB = "Database.MongoDB";
+    /** Base URL for the Evolve HTTP API. Example: "https://evolvemc-xxx.azurewebsites.net" */
+    public static final String API_URL = "Database.ApiUrl";
+
+    /** When false, SSL certificate verification is skipped (local development only). */
+    public static final String API_SSL_VERIFY = "Database.SslVerify";
+
+    /**
+     * @deprecated Replaced by {@link #API_URL}. Will be removed once MongoDB is fully stripped.
+     */
+    @Deprecated public static final String DATABASE_MONGODB = "Database.MongoDB";
 
     /** Schedule interval configuration paths. Intervals are in ticks (20 ticks = 1 second). */
     public static final class Schedules {

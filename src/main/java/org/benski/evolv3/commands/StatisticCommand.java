@@ -3,9 +3,8 @@ package org.benski.evolv3.commands;
 import java.util.List;
 import org.benski.evolv3.core.abstracts.BaseCommand;
 import org.benski.evolv3.core.managers.PickaxeManager;
-import org.benski.evolv3.datacenters.PickaxeDataCenter;
 import org.benski.evolv3.datacenters.PlayerDataCenter;
-import org.benski.evolv3.models.pickaxe.PickaxeProfile;
+import org.benski.evolv3.models.pickaxe.Pickaxe;
 import org.benski.evolv3.models.player.PlayerProfile;
 import org.benski.evolv3.registry.DataCenterRegistry;
 import org.bukkit.Bukkit;
@@ -23,7 +22,7 @@ import org.jetbrains.annotations.Nullable;
  *
  * <p>Pickaxe stats: xp, level, prestige, essence, atoms, evolution, enchantrolls, evolutionrolls
  *
- * <p>Player stats: essence, coins, pickaxelimit
+ * <p>Player stats: essence, coins
  */
 public class StatisticCommand extends BaseCommand {
   private static final List<String> PICKAXE_STATS =
@@ -37,7 +36,7 @@ public class StatisticCommand extends BaseCommand {
           "enchantrolls",
           "evolutionrolls");
 
-  private static final List<String> PLAYER_STATS = List.of("essence", "coins", "pickaxelimit");
+  private static final List<String> PLAYER_STATS = List.of("essence", "coins");
 
   public StatisticCommand(JavaPlugin plugin) {
     super(plugin);
@@ -99,13 +98,13 @@ public class StatisticCommand extends BaseCommand {
   }
 
   private void handlePickaxe(CommandSender sender, Player target, String stat, String rawAmt) {
-    PickaxeDataCenter dc = DataCenterRegistry.getInstance().getPickaxeDataCenter();
+    PlayerDataCenter dc = DataCenterRegistry.getInstance().getPlayerDataCenter();
     if (dc == null) {
       sendError(sender, "Pickaxe data center not available.");
       return;
     }
 
-    PickaxeProfile profile = dc.getLocal(target);
+    Pickaxe profile = dc.getPickaxeForPlayer(target);
     if (profile == null) {
       sendError(sender, "&#FFFFFF" + target.getName() + " &cdoes not have a pickaxe loaded.");
       return;
@@ -123,11 +122,11 @@ public class StatisticCommand extends BaseCommand {
       case "xp" -> profile.xp = amount;
       case "level" -> profile.level = amount;
       case "prestige" -> profile.prestige = amount;
-      case "essence" -> profile.currentEssence = amount;
-      case "atoms" -> profile.evolutionAtoms = amount;
+      case "essence" -> profile.essenceVessel.current = amount;
+      case "atoms" -> profile.atomVessel.current = amount;
       case "evolution" -> profile.evolution = amount;
-      case "enchantrolls" -> profile.enchantRolls = amount;
-      case "evolutionrolls" -> profile.evolutionRolls = amount;
+      case "enchantrolls" -> profile.essenceVessel.crystals = amount;
+      case "evolutionrolls" -> profile.atomVessel.crystals = amount;
       default -> {
         sendError(
             sender,
@@ -169,7 +168,7 @@ public class StatisticCommand extends BaseCommand {
       case "essence" -> {
         int amount = parseInteger(sender, rawAmt);
         if (amount < 0) return;
-        profile.essence = amount;
+        profile.wallet.essence = amount;
         profile.save(null);
         sendSuccess(
             sender,
@@ -182,26 +181,13 @@ public class StatisticCommand extends BaseCommand {
       case "coins" -> {
         double amount = parseDouble(sender, rawAmt);
         if (amount < 0) return;
-        profile.coins = amount;
+        profile.wallet.coins = amount;
         profile.save(null);
         sendSuccess(
             sender,
             "Set &#FFFFFF"
                 + target.getName()
                 + "&#00FFFF's coins to &#FFFFFF"
-                + amount
-                + "&#00FFFF.");
-      }
-      case "pickaxelimit" -> {
-        int amount = parseInteger(sender, rawAmt);
-        if (amount < 0) return;
-        profile.pickaxeLimit = amount;
-        profile.save(null);
-        sendSuccess(
-            sender,
-            "Set &#FFFFFF"
-                + target.getName()
-                + "&#00FFFF's pickaxe limit to &#FFFFFF"
                 + amount
                 + "&#00FFFF.");
       }
