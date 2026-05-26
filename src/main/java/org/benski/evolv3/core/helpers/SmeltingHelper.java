@@ -14,6 +14,7 @@ import org.bukkit.inventory.Recipe;
  * static fuel burn-time map.
  */
 public final class SmeltingHelper {
+  /** Creates a new SmeltingHelper instance. */
   private SmeltingHelper() {}
 
   /** Ticks required to smelt one item in a vanilla furnace. */

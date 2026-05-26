@@ -67,23 +67,23 @@ public class Pickaxe {
     return pickaxe;
   }
 
-  public void initialize(Player player) {
-    this.ownerUuid = player.getUniqueId();
-  }
-
+  /** Returns the online player who owns this pickaxe, or null if they are offline. */
   public Player getOwner() {
     return Bukkit.getPlayer(ownerUuid);
   }
 
+  /** Returns a formatted progress bar string for the current XP vs target. */
   public String getProgressBar() {
     return Utils.generateProgressBar(this.xp, this.target);
   }
 
+  /** Returns the current XP progress as a percentage string (e.g. "42%"). */
   public String getPercentage() {
     if (target <= 0) return "0%";
     return Math.round((double) xp / target * 100) + "%";
   }
 
+  /** Returns the current XP progress as a value between 0.0 and 1.0. */
   public double getProgress() {
     if (target <= 0) return 0.0;
     return (double) xp / target;
@@ -113,6 +113,7 @@ public class Pickaxe {
     if (callback != null) callback.accept(true);
   }
 
+  /** Convenience overload of {@link #save(java.util.function.Consumer)} with no callback. */
   public void save() {
     save(null);
   }

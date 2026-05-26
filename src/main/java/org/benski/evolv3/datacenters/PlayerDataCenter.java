@@ -17,8 +17,8 @@ import org.benski.evolv3.core.abstracts.BaseDataCenter;
 import org.benski.evolv3.core.constants.ConfigNames;
 import org.benski.evolv3.core.constants.ConfigPaths;
 import org.benski.evolv3.core.helpers.ItemStackExtensions;
-import org.benski.evolv3.core.managers.OmnitoolManager;
-import org.benski.evolv3.core.managers.TaskManager;
+import org.benski.evolv3.core.managers.pickaxe.OmnitoolManager;
+import org.benski.evolv3.core.managers.world.TaskManager;
 import org.benski.evolv3.models.pickaxe.Pickaxe;
 import org.benski.evolv3.models.player.PlayerProfile;
 import org.benski.evolv3.registry.ConfigRegistry;
@@ -36,19 +36,16 @@ public class PlayerDataCenter extends BaseDataCenter<PlayerProfile> {
 
   private final Logger logger = Main.getInstance().getLogger();
 
+  /** Returns the profile id. */
   @Override
   protected String getProfileId(PlayerProfile profile) {
     return profile.id;
   }
 
+  /** {@inheritDoc} Retrieves the cached profile synchronously and passes it to the callback. */
   @Override
   public void get(Player player, java.util.function.Consumer<PlayerProfile> callback) {
     callback.accept(data.get(player.getUniqueId().toString()));
-  }
-
-  @Override
-  public PlayerProfile getLocal(Player player) {
-    return data.get(player.getUniqueId().toString());
   }
 
   /** Looks up a cached profile directly by its string UUID for cross-data-center delegation. */
@@ -140,6 +137,10 @@ public class PlayerDataCenter extends BaseDataCenter<PlayerProfile> {
         });
   }
 
+  /**
+   * Loads the player profile from the API, or creates a new one if none exists. No-op if the
+   * profile is already cached or a load is already in-flight for this ID.
+   */
   @Override
   public void loadOrCreate(Player player, String id) {
     if (exists(id)) return;
@@ -180,7 +181,17 @@ public class PlayerDataCenter extends BaseDataCenter<PlayerProfile> {
                 clearInFlight(id);
               }
             },
-            EvolveApiClient.getInstance().getExecutor());
+            EvolveApiClient.getInstance().getExecutor())
+        .exceptionally(
+            e -> {
+              clearInFlight(id);
+              logger.severe(
+                  "Unexpected error loading profile for "
+                      + player.getName()
+                      + ": "
+                      + e.getMessage());
+              return null;
+            });
   }
 
   /**

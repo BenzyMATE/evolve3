@@ -54,11 +54,13 @@ public final class PlayerProfile {
     return profile;
   }
 
+  /** Binds this profile to a player by setting their UUID and string ID. */
   public void initialize(Player player) {
     this.playerUuid = player.getUniqueId();
     this.id = player.getUniqueId().toString();
   }
 
+  /** Returns the online player for this profile, or null if they are offline. */
   public Player getPlayer() {
     return Bukkit.getPlayer(playerUuid);
   }
@@ -107,6 +109,7 @@ public final class PlayerProfile {
     pickaxes.removeIf(p -> pickaxeId.equals(p.key));
   }
 
+  /** Returns the player's current default rank prefix, or null if none is set. */
   @Nullable
   public String getRank() {
     return ranks.stream()
@@ -116,11 +119,13 @@ public final class PlayerProfile {
         .orElse(null);
   }
 
+  /** Replaces the player's default rank with the given prefix, or removes it if null/empty. */
   public void setRank(String prefix) {
     ranks.removeIf(r -> r.type == RankType.DEFAULT);
     if (prefix != null && !prefix.isEmpty()) ranks.add(new Rank(prefix, RankType.DEFAULT));
   }
 
+  /** Returns the player's staff rank prefix, or null if they have no staff rank. */
   @Nullable
   public String getStaffRank() {
     return ranks.stream()
@@ -130,15 +135,18 @@ public final class PlayerProfile {
         .orElse(null);
   }
 
+  /** Replaces the player's staff rank with the given prefix, or removes it if null/empty. */
   public void setStaffRank(@Nullable String prefix) {
     ranks.removeIf(r -> r.type == RankType.STAFF);
     if (prefix != null && !prefix.isEmpty()) ranks.add(new Rank(prefix, RankType.STAFF));
   }
 
+  /** Returns {@code true} if the player is currently in the enchanting activity state. */
   public boolean isEnchanting() {
     return activity == PlayerActivity.ENCHANTING;
   }
 
+  /** Returns {@code true} if the player is currently in the evolving activity state. */
   public boolean isEvolving() {
     return activity == PlayerActivity.EVOLVING;
   }
@@ -157,24 +165,29 @@ public final class PlayerProfile {
   /** No-op — profile is persisted on player quit or server shutdown. */
   public void save() {}
 
+  /** Adds the given amount to the player's essence balance. */
   public void addEssence(int amount) {
     this.wallet.essence += amount;
   }
 
+  /** Deducts essence if the player has enough. Returns {@code false} if insufficient. */
   public boolean removeEssence(int amount) {
     if (this.wallet.essence < amount) return false;
     this.wallet.essence -= amount;
     return true;
   }
 
+  /** Returns {@code true} if the player has at least {@code amount} essence. */
   public boolean hasEssence(int amount) {
     return this.wallet.essence >= amount;
   }
 
+  /** Adds the given amount to the player's coin balance. */
   public void addCoins(double amount) {
     this.wallet.coins += amount;
   }
 
+  /** Deducts coins if the player has enough. Returns {@code false} if insufficient. */
   public boolean removeCoins(double amount) {
     if (this.wallet.coins < amount) return false;
     this.wallet.coins -= amount;

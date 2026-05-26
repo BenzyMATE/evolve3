@@ -26,8 +26,10 @@ public final class AncientResin {
 
   private static final LegacyComponentSerializer LEGACY = LegacyComponentSerializer.legacySection();
 
+  /** Creates a new AncientResin instance. */
   private AncientResin() {}
 
+  /** Ds. */
   private static Component ds(String message) {
     return LEGACY
         .deserialize(MatrixColorAPI.process(FontUtils.toSmallCaps(message)))

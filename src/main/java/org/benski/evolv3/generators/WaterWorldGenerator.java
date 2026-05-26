@@ -13,6 +13,7 @@ import org.jetbrains.annotations.NotNull;
 public final class WaterWorldGenerator extends ChunkGenerator {
   private static final int SEA_LEVEL = 62;
 
+  /** Generate noise. */
   @Override
   public void generateNoise(
       @NotNull WorldInfo worldInfo,
@@ -32,31 +33,37 @@ public final class WaterWorldGenerator extends ChunkGenerator {
     }
   }
 
+  /** Should generate noise. */
   @Override
   public boolean shouldGenerateNoise() {
     return false;
   }
 
+  /** Should generate surface. */
   @Override
   public boolean shouldGenerateSurface() {
     return false;
   }
 
+  /** Should generate caves. */
   @Override
   public boolean shouldGenerateCaves() {
     return false;
   }
 
+  /** Should generate decorations. */
   @Override
   public boolean shouldGenerateDecorations() {
     return false;
   }
 
+  /** Should generate mobs. */
   @Override
   public boolean shouldGenerateMobs() {
     return false;
   }
 
+  /** Should generate structures. */
   @Override
   public boolean shouldGenerateStructures() {
     return false;

@@ -3,21 +3,20 @@ package org.benski.evolv3.registry;
 import java.util.List;
 import lombok.Getter;
 import org.benski.evolv3.Main;
-import org.benski.evolv3.commands.BackpackCommand;
-import org.benski.evolv3.commands.BalCommand;
-import org.benski.evolv3.commands.CellPlayerCommand;
-import org.benski.evolv3.commands.EnchantPickaxeCommand;
-import org.benski.evolv3.commands.Evolv3Command;
-import org.benski.evolv3.commands.IslandCommand;
-import org.benski.evolv3.commands.PickaxeCommand;
-import org.benski.evolv3.commands.PickupAnimationCommand;
-import org.benski.evolv3.commands.PreferencesCommand;
-import org.benski.evolv3.commands.RankupCommand;
-import org.benski.evolv3.commands.SkinCommand;
-import org.benski.evolv3.commands.TestCommand;
+import org.benski.evolv3.commands.admin.EnchantPickaxeCommand;
+import org.benski.evolv3.commands.admin.Evolv3Command;
+import org.benski.evolv3.commands.player.BackpackCommand;
+import org.benski.evolv3.commands.player.BalCommand;
+import org.benski.evolv3.commands.player.CellPlayerCommand;
+import org.benski.evolv3.commands.player.IslandCommand;
+import org.benski.evolv3.commands.player.PickaxeCommand;
+import org.benski.evolv3.commands.player.PickupAnimationCommand;
+import org.benski.evolv3.commands.player.PreferencesCommand;
+import org.benski.evolv3.commands.player.RankupCommand;
+import org.benski.evolv3.commands.player.SkinCommand;
 import org.benski.evolv3.core.abstracts.BaseCommand;
 import org.benski.evolv3.core.interfaces.Registry;
-import org.benski.evolv3.core.managers.CommandRegistryManager;
+import org.benski.evolv3.core.managers.registry.CommandRegistryManager;
 
 /** A registry to register commands. */
 public class CommandRegistry implements Registry<BaseCommand> {
@@ -28,7 +27,6 @@ public class CommandRegistry implements Registry<BaseCommand> {
   /** Register commands. */
   private final List<Class<? extends BaseCommand>> commands =
       List.of(
-          TestCommand.class,
           PickupAnimationCommand.class,
           Evolv3Command.class,
           PickaxeCommand.class,

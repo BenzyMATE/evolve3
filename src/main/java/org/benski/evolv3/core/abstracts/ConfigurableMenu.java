@@ -54,6 +54,11 @@ public abstract class ConfigurableMenu extends BaseMenu {
   protected final FileConfiguration menusConfig;
   protected final Map<Integer, String> slotActions = new HashMap<>();
 
+  /**
+   * Creates a new configurable menu and loads the menus configuration file.
+   *
+   * @param plugin the owning plugin
+   */
   public ConfigurableMenu(JavaPlugin plugin) {
     super(plugin);
     this.menusConfig = ConfigRegistry.getInstance().get(ConfigNames.MENUS);

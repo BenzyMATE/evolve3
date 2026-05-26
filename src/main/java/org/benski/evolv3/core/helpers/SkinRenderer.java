@@ -33,6 +33,7 @@ public final class SkinRenderer {
 
   private static final String PIXEL = "█";
 
+  /** Creates a new SkinRenderer instance. */
   private SkinRenderer() {}
 
   /**
@@ -58,6 +59,7 @@ public final class SkinRenderer {
             });
   }
 
+  /** Renders visuals. */
   @SuppressWarnings("deprecation")
   private static List<Component> render(org.bukkit.profile.PlayerProfile profile) {
     try {

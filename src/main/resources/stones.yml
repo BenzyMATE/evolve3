@@ -12,8 +12,8 @@
 # =====================================================
 
 Item:
-  Name: "&#{hex}◆ &l{stone_name}"
-  RarityLine: " &#{hex}&l{rarity} &#888888Evolution Stone"
+  Name: "&#{hex}◆ &l{stone_name} &7Evolution stone"
+  RarityLine: "&#{hex}{rarity}"
   BoundTo: " &#888888Bound to &#{enchant_hex}&l{enchant}"
   EffectHeader: " &#FFFFFF&lEffect"
   EffectLine: " &8| &#CCCCCC{effect}"

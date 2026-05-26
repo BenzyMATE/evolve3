@@ -4,17 +4,17 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 import org.benski.evolv3.core.constants.Enchants;
-import org.benski.evolv3.core.managers.FrostbiteBlockManager;
-import org.benski.evolv3.core.managers.PickaxeManager;
-import org.benski.evolv3.enchants.AlchemyEnchant;
-import org.benski.evolv3.enchants.AlchemyStoneHandler;
-import org.benski.evolv3.enchants.ExtractionEnchant;
-import org.benski.evolv3.enchants.FrostbiteEnchant;
-import org.benski.evolv3.enchants.FurnaceEnchant;
-import org.benski.evolv3.enchants.FurnaceStoneHandler;
-import org.benski.evolv3.enchants.MerchantEnchant;
-import org.benski.evolv3.enchants.RadioactiveEnchant;
-import org.benski.evolv3.enchants.ScavengerEnchant;
+import org.benski.evolv3.core.managers.mine.FrostbiteBlockManager;
+import org.benski.evolv3.core.managers.pickaxe.PickaxeManager;
+import org.benski.evolv3.enchants.mining.FrostbiteEnchant;
+import org.benski.evolv3.enchants.passive.AlchemyEnchant;
+import org.benski.evolv3.enchants.passive.AlchemyStoneHandler;
+import org.benski.evolv3.enchants.passive.ExtractionEnchant;
+import org.benski.evolv3.enchants.passive.FurnaceEnchant;
+import org.benski.evolv3.enchants.passive.FurnaceStoneHandler;
+import org.benski.evolv3.enchants.passive.MerchantEnchant;
+import org.benski.evolv3.enchants.passive.RadioactiveEnchant;
+import org.benski.evolv3.enchants.passive.ScavengerEnchant;
 import org.benski.evolv3.models.pickaxe.EnchantData;
 import org.benski.evolv3.models.pickaxe.Pickaxe;
 import org.benski.evolv3.models.player.PlayerProfile;
@@ -41,6 +41,7 @@ import org.bukkit.plugin.java.JavaPlugin;
  * </ol>
  */
 public final class AoEDropResolver {
+  /** Creates a new AoEDropResolver instance. */
   private AoEDropResolver() {}
 
   /**
@@ -229,6 +230,7 @@ public final class AoEDropResolver {
   private static final java.util.Map<java.util.UUID, int[]> accumulation =
       new java.util.concurrent.ConcurrentHashMap<>();
 
+  /** Resolves base drop. */
   @SuppressWarnings("deprecation")
   private static Material resolveBaseDrop(Block block, ItemStack tool, JavaPlugin plugin) {
     if (block.hasMetadata(FrostbiteEnchant.FROSTBITE_METADATA_KEY)) {
@@ -249,6 +251,7 @@ public final class AoEDropResolver {
     return block.getType();
   }
 
+  /** Applies alchemy. */
   private static Material applyAlchemy(Material mat, Pickaxe pickaxeProfile) {
     if (pickaxeProfile == null || pickaxeProfile.enchants == null) return mat;
     EnchantData data = pickaxeProfile.enchants.getEnchant(Enchants.ALCHEMY);
@@ -265,6 +268,7 @@ public final class AoEDropResolver {
     return upgraded != null ? upgraded : mat;
   }
 
+  /** Applies furnace. */
   private static Material applyFurnace(Material mat, Pickaxe pickaxeProfile) {
     if (pickaxeProfile == null || pickaxeProfile.enchants == null) return mat;
     EnchantData data = pickaxeProfile.enchants.getEnchant(Enchants.FURNACE);

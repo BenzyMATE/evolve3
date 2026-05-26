@@ -4,11 +4,16 @@ import org.benski.evolv3.api.EvolveApiClient;
 import org.benski.evolv3.core.constants.ConfigNames;
 import org.benski.evolv3.core.constants.ConfigPaths;
 import org.benski.evolv3.core.helpers.Utils;
-import org.benski.evolv3.core.managers.*;
+import org.benski.evolv3.core.managers.enchant.EnchantSelectionManager;
+import org.benski.evolv3.core.managers.enchant.EvolutionSelectionManager;
+import org.benski.evolv3.core.managers.mine.FrostbiteBlockManager;
+import org.benski.evolv3.core.managers.pickaxe.PickaxeManager;
+import org.benski.evolv3.core.managers.player.PickupAnimationManager;
+import org.benski.evolv3.core.managers.world.TaskManager;
+import org.benski.evolv3.core.managers.world.WorldGuardManager;
 import org.benski.evolv3.datacenters.ArmorDataCenter;
 import org.benski.evolv3.datacenters.PlayerDataCenter;
 import org.benski.evolv3.hooks.PlaceholderAPIExpansion;
-import org.benski.evolv3.menus.*;
 import org.benski.evolv3.registry.*;
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -30,7 +35,7 @@ public final class Main extends JavaPlugin {
    * @return The blue color code
    */
   public static String getBlue() {
-    return "\u001B[34m";
+    return "[34m";
   }
 
   /**
@@ -39,38 +44,31 @@ public final class Main extends JavaPlugin {
    * @return The reset code
    */
   public static String getReset() {
-    return "\u001B[0m";
+    return "[0m";
   }
 
+  /** Called when the plugin enables. */
   @Override
   public void onEnable() {
     this.sendConsoleMessage("Evolv3 is starting up...");
-    FrostbiteBlockManager.getInstance().initialize(this);
+    FrostbiteBlockManager.getInstance().initialize();
     this.useRegistry();
     this.useApi();
     this.useHooks();
-    this.initializeBlackholes();
-    this.initializeZoneBorders();
-    BeamManager.getInstance().loadFromConfig();
-    LaunchPadManager.getInstance().loadFromConfig();
-    this.initializeMines();
-    this.initializeSpawners();
-    this.restoreEnchantSelections();
-    this.restoreEvolutionSelections();
-    this.initializeCells();
+    this.registerCallbackProviders();
+    ManagerRegistry.getInstance().initialize();
     Bukkit.getScheduler().runTask(this, this::clearAllMobs);
     this.sendConsoleMessage("Evolv3 has been enabled successfully!");
   }
 
+  /** Called when the plugin disables. */
   @Override
   public void onDisable() {
     this.sendConsoleMessage("Evolv3 is shutting down...");
     clearAllMobs();
     this.saveAllProfiles();
-    OmnitoolManager.getInstance().cleanup();
-    this.cleanupCells();
-    this.cleanupHolograms();
     TaskManager.getInstance().cancelAllTasks();
+    ManagerRegistry.getInstance().cleanup();
     this.cleanupRegistries();
     if (EvolveApiClient.getInstance() != null) {
       EvolveApiClient.getInstance().shutdown();
@@ -78,6 +76,7 @@ public final class Main extends JavaPlugin {
     this.sendConsoleMessage("Evolv3 has been disabled. Goodbye!");
   }
 
+  /** Saves all profiles. */
   private void saveAllProfiles() {
     ArmorDataCenter armorDataCenter = DataCenterRegistry.getInstance().getArmorDataCenter();
     if (armorDataCenter != null) {
@@ -89,89 +88,7 @@ public final class Main extends JavaPlugin {
     }
   }
 
-  private void cleanupCells() {
-    CellHologramManager.getInstance().cleanup();
-    CellRentManager.getInstance().cleanup();
-    IslandWorldManager.getInstance().cleanup();
-    IslandManager.getInstance().cleanup();
-    CellManager.getInstance().cleanup();
-  }
-
-  private void cleanupHolograms() {
-    BlackholeHologramManager.getInstance().cleanup();
-    BlackholeManager.getInstance().cleanup();
-    MineHologramManager.getInstance().cleanup();
-    SpawnerHologramManager.getInstance().cleanup();
-    BorderHologramManager.getInstance().cleanup();
-    SpawnerManager.getInstance().cleanup();
-  }
-
-  /** Cleans up registries in reverse order of initialization. */
-  private void cleanupRegistries() {
-    EvolutionSelectionManager.getInstance().cleanup();
-    EnchantSelectionManager.getInstance().cleanup();
-    ScheduleRegistry.getInstance().cleanup();
-    PickupAnimationManager.getInstance().cleanup();
-    AnimationRegistry.getInstance().cleanup();
-    ListenerRegistry.getInstance().cleanup();
-    DataCenterRegistry.getInstance().cleanup();
-    MenuRegistry.getInstance().cleanup();
-    CommandRegistry.getInstance().cleanup();
-    EnchantRegistry.getInstance().cleanup();
-    ConfigRegistry.getInstance().cleanup();
-  }
-
-  private void initializeBlackholes() {
-    BlackholeManager.getInstance().initialize();
-    BlackholeHologramManager.getInstance().initialize();
-  }
-
-  /** Initializes zone borders, then holograms (holograms require borders loaded first). */
-  private void initializeZoneBorders() {
-    BorderManager.getInstance().loadFromConfig();
-    BorderHologramManager.getInstance().initialize();
-  }
-
-  private void initializeMines() {
-    this.extractSchematic("cave.schem");
-    CaveManager.getInstance().loadCaveData();
-    MineManager.getInstance().loadFromConfig();
-  }
-
-  private void initializeSpawners() {
-    SpawnerManager.getInstance().initialize();
-    SpawnerHologramManager.getInstance().initialize();
-  }
-
-  /** Registers the callback provider then restores any in-progress enchant selections. */
-  private void restoreEnchantSelections() {
-    this.registerEnchantCallbackProvider();
-    EnchantSelectionManager.getInstance().loadPendingFromDatabase();
-  }
-
-  /** Registers the callback provider then restores any in-progress evolution animations. */
-  private void restoreEvolutionSelections() {
-    this.registerEvolutionCallbackProvider();
-    EvolutionSelectionManager.getInstance().loadPendingFromDatabase();
-  }
-
-  private void initializeCells() {
-    CellWorldGuardManager.getInstance().initialize();
-    CellManager.getInstance().initialize();
-    CellRentManager.getInstance().initialize();
-    IslandManager.getInstance().initialize();
-    IslandWorldManager.getInstance().initialize();
-    CellHologramManager.getInstance().initialize();
-    new CellMenu(this);
-    new CellEvolveConfirmMenu(this);
-    new CellAbandonConfirmMenu(this);
-    new CellRentInfoMenu(this);
-    new CellMemberMenu(this);
-    new CellMemberPermMenu(this);
-    new IslandMenu(this);
-    new IslandsMenu(this);
-  }
-
+  /** Use registry. */
   private void useRegistry() {
     ConfigRegistry.getInstance().initialize();
     Utils.loadProgressBarSymbols();
@@ -187,11 +104,11 @@ public final class Main extends JavaPlugin {
   }
 
   /**
-   * Registers the enchant callback provider with {@link EnchantSelectionManager} so that pending
-   * enchant selections can be restored after a server restart. Must be called after DataCenters are
-   * initialised (i.e. after {@link #useRegistry()}).
+   * Registers callback providers for {@link EnchantSelectionManager} and {@link
+   * EvolutionSelectionManager} so that pending selections can be restored after a server restart.
+   * Must be called after DataCenters are initialised (i.e. after {@link #useRegistry()}).
    */
-  private void registerEnchantCallbackProvider() {
+  private void registerCallbackProviders() {
     EnchantSelectionManager.getInstance()
         .registerCallbackProvider(
             pickaxeKey ->
@@ -202,14 +119,6 @@ public final class Main extends JavaPlugin {
                   if (profile == null) return;
                   PickaxeManager.getInstance().applyEnchantFromSelection(player, selected, profile);
                 });
-  }
-
-  /**
-   * Registers the evolution callback provider with {@link EvolutionSelectionManager} so that
-   * pending evolution animations can be restored after a server restart. Must be called after
-   * DataCenters are initialised (i.e. after {@link #useRegistry()}).
-   */
-  private void registerEvolutionCallbackProvider() {
     EvolutionSelectionManager.getInstance()
         .registerCallbackProvider(
             (player, pickaxeKey, nextTier, winningRarity) ->
@@ -226,6 +135,7 @@ public final class Main extends JavaPlugin {
                 });
   }
 
+  /** Use api. */
   private void useApi() {
     var defaultConfig = ConfigRegistry.getInstance().get(ConfigNames.DEFAULT);
     String apiUrl =
@@ -236,6 +146,7 @@ public final class Main extends JavaPlugin {
     new EvolveApiClient(apiUrl, sslVerify);
   }
 
+  /** Use hooks. */
   private void useHooks() {
     if (Bukkit.getPluginManager().getPlugin("PlaceholderAPI") != null) {
       new PlaceholderAPIExpansion(this).register();
@@ -243,41 +154,17 @@ public final class Main extends JavaPlugin {
     }
   }
 
-  /**
-   * Extracts a schematic from the plugin jar's resources/schematics/ directory into the plugin data
-   * folder (plugins/Evolv3/schematics/) if it doesn't already exist.
-   *
-   * @param fileName the schematic file name (e.g. "cave.schem")
-   */
-  private void extractSchematic(String fileName) {
-    java.io.File schematicsDir = new java.io.File(getDataFolder(), "schematics");
-    if (!schematicsDir.exists()) schematicsDir.mkdirs();
-
-    java.io.File target = new java.io.File(schematicsDir, fileName);
-    if (target.exists()) return;
-
-    java.io.InputStream stream = findSchematicResourceCaseInsensitive(fileName);
-
-    if (stream == null) {
-      getLogger().warning("Schematic resource not found in JAR: " + fileName);
-      return;
-    }
-
-    try (java.io.InputStream in = stream) {
-      java.nio.file.Files.copy(in, target.toPath());
-      getLogger().info("Extracted schematic: " + fileName);
-    } catch (java.io.IOException e) {
-      getLogger().warning("Failed to extract schematic " + fileName + ": " + e.getMessage());
-    }
-  }
-
-  /**
-   * Resolves a schematic resource from either "schematics/" or "Schematics/" — JAR resources are
-   * case-sensitive and the folder casing varies by build OS.
-   */
-  private java.io.InputStream findSchematicResourceCaseInsensitive(String fileName) {
-    java.io.InputStream stream = getResource("schematics/" + fileName);
-    return stream != null ? stream : getResource("Schematics/" + fileName);
+  /** Cleans up registries in reverse order of initialization. */
+  private void cleanupRegistries() {
+    ScheduleRegistry.getInstance().cleanup();
+    PickupAnimationManager.getInstance().cleanup();
+    AnimationRegistry.getInstance().cleanup();
+    ListenerRegistry.getInstance().cleanup();
+    DataCenterRegistry.getInstance().cleanup();
+    MenuRegistry.getInstance().cleanup();
+    CommandRegistry.getInstance().cleanup();
+    EnchantRegistry.getInstance().cleanup();
+    ConfigRegistry.getInstance().cleanup();
   }
 
   /** Removes every living entity except players from all worlds. */

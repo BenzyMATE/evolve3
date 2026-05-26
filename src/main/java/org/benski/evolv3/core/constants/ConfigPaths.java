@@ -5,6 +5,7 @@ package org.benski.evolv3.core.constants;
  * and improve refactoring. Organized by configuration file for easy navigation.
  */
 public final class ConfigPaths {
+  /** Creates a new ConfigPaths instance. */
   private ConfigPaths() {}
 
   /** Paths for the default configuration file. */

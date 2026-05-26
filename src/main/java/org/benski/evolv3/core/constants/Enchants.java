@@ -11,6 +11,7 @@ package org.benski.evolv3.core.constants;
  * {@link ConfigPaths.Enchants}.
  */
 public final class Enchants {
+  /** Creates a new Enchants instance. */
   private Enchants() {}
 
   /** Internal key for the Efficiency enchantment. */

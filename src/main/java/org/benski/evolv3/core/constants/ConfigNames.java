@@ -5,6 +5,7 @@ package org.benski.evolv3.core.constants;
  * and improve refactoring.
  */
 public final class ConfigNames {
+  /** Creates a new ConfigNames instance. */
   private ConfigNames() {}
 
   /** Main configuration file containing database settings and general plugin configuration. */

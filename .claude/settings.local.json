@@ -97,7 +97,16 @@
       "Bash(Remove-Item \"C:\\\\Users\\\\benje\\\\IdeaProjects\\\\evolve3\\\\src\\\\main\\\\java\\\\org\\\\benski\\\\evolv3\\\\datacenters\\\\PickaxeDataCenter.java\" -Force)",
       "PowerShell(Get-ChildItem \"C:\\\\Program Files\\\\Java\" -ErrorAction SilentlyContinue | Select-Object Name; Get-ChildItem \"C:\\\\Program Files\\\\Eclipse Adoptium\" -ErrorAction SilentlyContinue | Select-Object Name; Get-ChildItem \"C:\\\\Program Files\\\\Microsoft\" -ErrorAction SilentlyContinue | Select-Object Name; [System.Environment]::GetEnvironmentVariable\\(\"JAVA_HOME\", \"Machine\"\\))",
       "PowerShell(Test-Path *)",
-      "PowerShell(Get-ChildItem \"HKLM:\\\\SOFTWARE\\\\JavaSoft\\\\JDK\" | ForEach-Object { $_.PSChildName + \" -> \" + $_.GetValue\\(\"JavaHome\"\\) })"
+      "PowerShell(Get-ChildItem \"HKLM:\\\\SOFTWARE\\\\JavaSoft\\\\JDK\" | ForEach-Object { $_.PSChildName + \" -> \" + $_.GetValue\\(\"JavaHome\"\\) })",
+      "PowerShell(Get-ChildItem -Path \"C:\\\\Users\\\\benje\\\\IdeaProjects\\\\Evolv3\" -Recurse -Force | Select-Object -Property FullName, @{Name=\"Type\";Expression={if\\($_.PSIsContainer\\){\"DIR\"}else{\"FILE\"}}}, @{Name=\"Size\";Expression={if\\(-not $_.PSIsContainer\\){$_.Length}else{$null}}} | Format-Table -AutoSize)",
+      "PowerShell(tree \"C:\\\\Users\\\\benje\\\\IdeaProjects\\\\Evolv3\\\\src\" -L 5)",
+      "Bash(python scripts/refactor_packages.py)",
+      "Bash(py --version)",
+      "Read(//usr/**)",
+      "Bash(/usr/bin/python3 --version)",
+      "Bash(/c/Users/benje/AppData/Local/Programs/Python/Python312/python.exe *)",
+      "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\benje\\\\IdeaProjects\\\\Evolv3\\\\src\\\\main\\\\java\\\\org\\\\benski\\\\evolv3\" -Recurse -File)",
+      "PowerShell(Split-Path *)"
     ],
     "deny": [],
     "ask": []

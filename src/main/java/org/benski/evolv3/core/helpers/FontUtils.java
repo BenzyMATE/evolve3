@@ -35,6 +35,7 @@ package org.benski.evolv3.core.helpers;
  * }</pre>
  */
 public final class FontUtils {
+  /** Creates a new FontUtils instance. */
   private FontUtils() {}
 
   /**

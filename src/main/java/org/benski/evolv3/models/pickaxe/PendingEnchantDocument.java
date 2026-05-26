@@ -25,14 +25,17 @@ public class PendingEnchantDocument {
   /** The pickaxe's item-data key. */
   public String pickaxeKey;
 
+  /** Returns the database collection name for this document type. */
   public String getCollectionName() {
     return "PendingEnchants";
   }
 
+  /** Returns the name of the field used as the primary key. */
   public String getIdField() {
     return "playerUuid";
   }
 
+  /** Returns the primary key value (the player UUID string). */
   public Object getIdValue() {
     return playerUuid;
   }
@@ -45,6 +48,7 @@ public class PendingEnchantDocument {
   /** No-op: pending enchant state is not persisted to the API. */
   public void save() {}
 
+  /** Serializes an ItemStack to a Base64 string, or returns null on failure. */
   public static String serializeItem(ItemStack item) {
     if (item == null) return null;
     try {
@@ -57,6 +61,7 @@ public class PendingEnchantDocument {
     }
   }
 
+  /** Deserializes an ItemStack from a Base64 string, or returns null on failure. */
   public static ItemStack deserializeItem(String base64) {
     if (base64 == null || base64.isEmpty()) return null;
     try {

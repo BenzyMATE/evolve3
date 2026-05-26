@@ -35,14 +35,17 @@ public class PendingEvolutionDocument {
    */
   public boolean callbackAlreadyApplied;
 
+  /** Returns the database collection name for this document type. */
   public String getCollectionName() {
     return "PendingEvolutions";
   }
 
+  /** Returns the name of the field used as the primary key. */
   public String getIdField() {
     return "playerUuid";
   }
 
+  /** Returns the primary key value (the player UUID string). */
   public Object getIdValue() {
     return playerUuid;
   }
@@ -55,6 +58,7 @@ public class PendingEvolutionDocument {
   /** No-op: pending evolution state is not persisted to the API. */
   public void save() {}
 
+  /** Serializes an ItemStack to a Base64 string, or returns null on failure. */
   public static String serializeItem(ItemStack item) {
     if (item == null) return null;
     try {
@@ -67,6 +71,7 @@ public class PendingEvolutionDocument {
     }
   }
 
+  /** Deserializes an ItemStack from a Base64 string, or returns null on failure. */
   public static ItemStack deserializeItem(String base64) {
     if (base64 == null || base64.isEmpty()) return null;
     try {

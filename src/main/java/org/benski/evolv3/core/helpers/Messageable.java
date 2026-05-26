@@ -24,6 +24,7 @@ import org.bukkit.entity.Player;
  * </ul>
  */
 public final class Messageable {
+  /** Creates a new Messageable instance. */
   private Messageable() {}
 
   private static final LegacyComponentSerializer SERIALIZER =

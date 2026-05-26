@@ -30,10 +30,17 @@ public class PlayerPreferences {
 
   public Map<String, EnchantPreference> enchantPrefs = new HashMap<>();
 
+  /**
+   * Returns the enchant preference for the given display name, creating a default one if absent.
+   */
   public EnchantPreference getOrCreateEnchantPref(String enchantDisplayName) {
     return enchantPrefs.computeIfAbsent(enchantDisplayName, k -> new EnchantPreference());
   }
 
+  /**
+   * Returns the enchant preference for the given display name, creating one with the specified
+   * hologram default if absent.
+   */
   public EnchantPreference getOrCreateEnchantPref(
       String enchantDisplayName, boolean defaultHologram) {
     return enchantPrefs.computeIfAbsent(
@@ -45,6 +52,10 @@ public class PlayerPreferences {
         });
   }
 
+  /**
+   * Returns the enchant preference for the given display name, creating one with the specified
+   * hologram and message defaults if absent.
+   */
   public EnchantPreference getOrCreateEnchantPref(
       String enchantDisplayName, boolean defaultHologram, boolean defaultMessage) {
     return enchantPrefs.computeIfAbsent(
@@ -57,18 +68,22 @@ public class PlayerPreferences {
         });
   }
 
+  /** Returns {@code true} if pickup/enchant animations are enabled for this player. */
   public boolean isAnimationsEnabled() {
     return animation == PreferenceType.Animation.ENABLED;
   }
 
+  /** Returns {@code true} if enchant trigger messages are not disabled. */
   public boolean isMessagesEnabled() {
     return message != PreferenceType.Message.DISABLED;
   }
 
+  /** Returns {@code true} if the player prefers title-style enchant messages. */
   public boolean usesTitleMessages() {
     return message == PreferenceType.Message.TITLE;
   }
 
+  /** Returns {@code true} if the player prefers chat-style enchant messages. */
   public boolean usesChatMessages() {
     return message == PreferenceType.Message.CHAT;
   }

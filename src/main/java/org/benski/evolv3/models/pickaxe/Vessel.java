@@ -10,8 +10,10 @@ public class Vessel {
   public int target;
   public int crystals;
 
+  /** Creates a new Vessel instance. */
   public Vessel() {}
 
+  /** Creates a new Vessel instance. */
   public Vessel(VesselType type, int current, int target, int crystals) {
     this.type = type;
     this.current = current;

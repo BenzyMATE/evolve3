@@ -21,6 +21,7 @@ import org.jetbrains.annotations.NotNull;
 @SuppressWarnings("UnstableApiUsage")
 public class Bootstrap implements PluginBootstrap {
 
+  /** Bootstrap. */
   @Override
   public void bootstrap(@NotNull BootstrapContext context) {
     context

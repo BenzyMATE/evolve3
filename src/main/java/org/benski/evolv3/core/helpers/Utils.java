@@ -7,7 +7,7 @@ import net.kyori.adventure.text.format.NamedTextColor;
 import net.matrixcreations.libraries.MatrixColorAPI;
 import org.benski.evolv3.core.constants.ConfigNames;
 import org.benski.evolv3.core.constants.ConfigPaths;
-import org.benski.evolv3.core.managers.OmnitoolManager;
+import org.benski.evolv3.core.managers.pickaxe.OmnitoolManager;
 import org.benski.evolv3.registry.ConfigRegistry;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
@@ -71,6 +71,7 @@ public class Utils {
     return message;
   }
 
+  /** Resolves tool label. */
   private static String resolveToolLabel(Player player) {
     OmnitoolManager omni = OmnitoolManager.getInstance();
     if (!omni.isInOmnitoolMode(player)) return "Pickaxe";
@@ -351,6 +352,7 @@ public class Utils {
             durationTicks);
   }
 
+  /** Adds to glow team. */
   private static void addToGlowTeam(
       Scoreboard scoreboard, String teamName, NamedTextColor color, Player player) {
     Team team = scoreboard.getTeam(teamName);
@@ -361,6 +363,7 @@ public class Utils {
     team.addEntity(player);
   }
 
+  /** Remove from glow team. */
   private static void removeFromGlowTeam(Scoreboard scoreboard, String teamName, Player player) {
     Team team = scoreboard.getTeam(teamName);
     if (team != null) team.removeEntity(player);

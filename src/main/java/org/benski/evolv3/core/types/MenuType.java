@@ -12,6 +12,7 @@ public class MenuType {
 
   private final String identifier;
 
+  /** Creates a new MenuType with the given identifier. */
   private MenuType(String identifier) {
     this.identifier = identifier;
   }
@@ -55,11 +56,13 @@ public class MenuType {
     return REGISTRY.values().toArray(new MenuType[0]);
   }
 
+  /** To string. */
   @Override
   public String toString() {
     return identifier;
   }
 
+  /** Equals. */
   @Override
   public boolean equals(Object obj) {
     if (this == obj) return true;
@@ -68,6 +71,7 @@ public class MenuType {
     return identifier.equals(other.identifier);
   }
 
+  /** Returns {@code true} if this has h code. */
   @Override
   public int hashCode() {
     return identifier.hashCode();

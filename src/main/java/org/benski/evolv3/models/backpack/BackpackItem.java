@@ -19,6 +19,7 @@ public class BackpackItem {
   private int amount;
   private boolean evolveItem;
 
+  /** Creates an empty BackpackItem with a new random UUID and deletion flag cleared. */
   public static BackpackItem create() {
     BackpackItem item = new BackpackItem();
     item.id = UUID.randomUUID().toString();
@@ -26,6 +27,7 @@ public class BackpackItem {
     return item;
   }
 
+  /** Creates a BackpackItem with the given material, amount, and evolve flag. */
   public static BackpackItem create(Material material, int amount, boolean evolveItem) {
     BackpackItem item = new BackpackItem();
     item.id = UUID.randomUUID().toString();
@@ -36,15 +38,21 @@ public class BackpackItem {
     return item;
   }
 
+  /** Increases the stack amount by the given value. */
   public void addAmount(int additionalAmount) {
     this.amount += additionalAmount;
   }
 
+  /**
+   * Decreases the stack amount by the given value. Returns {@code true} if the amount dropped to
+   * zero or below.
+   */
   public boolean removeAmount(int removeAmount) {
     this.amount -= removeAmount;
     return this.amount <= 0;
   }
 
+  /** Flags this item for removal on the next {@link Backpack#removeMarkedItems()} call. */
   public void markForDeletion() {
     this.markedForDeletion = true;
   }

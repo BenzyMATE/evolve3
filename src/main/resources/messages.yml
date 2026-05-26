@@ -102,7 +102,7 @@ pickaxe:
     not-available: "  %evolv3_prefix% &#CCCCCCThat enchant is not available."
     unlocked: "  %evolv3_prefix% &#B366D9&l[Enchant Unlocked] &#FFFFFF%enchant_name%&#CCCCCC."
     not-unlocked: "  %evolv3_prefix% &#FFFFFF%enchant_name% &#CCCCCChasn't been unlocked yet."
-    no-spins: "  %evolv3_prefix% &#CCCCCCNo Enchant Rolls available. Keep mining to earn one."
+    no-spins: "  %evolv3_prefix% &#CCCCCCNot enough &#B366D9🔥 Essence &#CCCCCCto evolve your pickaxe."
     area-secured: "  %evolv3_prefix% &#00FFFFArea secured."
     access-denied: "  %evolv3_prefix% &#CCCCCCYou can't use that here."
     confirm-selection: "  %evolv3_prefix% &#00FFFFEnchant selected!"
@@ -114,7 +114,7 @@ pickaxe:
 
   evolve:
     not-available: "  %evolv3_prefix% &#CCCCCCEvolution is not yet available."
-    insufficient-spins: "  %evolv3_prefix% &#CCCCCCNot enough Evolution Rolls."
+    insufficient-spins: "  %evolv3_prefix% &#CCCCCCNot enough &#FFD700⚛ Atoms &#CCCCCCto evolve your pickaxe."
     success: "  %evolv3_prefix% &#FFD700&l[Evolution Roll] &#CCCCCCYou earned an Evolution Roll!"
     success-title: "&#FFD700&l⚛ Evolution Roll"
     success-subtitle: "&#CCCCCCYou earned an Evolution Roll"
@@ -132,13 +132,13 @@ pickaxe:
     # Action bar shown while mining when prestige is available
     action-bar: "&#55FF55&lPRESTIGE AVAILABLE &#888888(Shift+Right-Click)"
     # Lore line displayed on the pickaxe when prestige > 0 (shown in Statistics section)
-    lore-line: " &8| &#FFD700✪ &#FFD700&lPrestige %prestige% &#888888(x%multiplier%)"
+    lore-line: " &8| &#FFD700★ &#FFD700&lPrestige %prestige% &#888888(x%multiplier%)"
     # Scoreboard line displayed when prestige > 0
-    scoreboard-line: " &8| &#FFD700✪ &#FFD700Prestige %prestige%"
+    scoreboard-line: " &8| &#FFD700★ &#FFD700Prestige %prestige%"
     # Broadcast/chat messages shown after a successful prestige
     success:
       - ""
-      - "  &#FFD700✪ &lPrestige &F&l%prestige_number%"
+      - "  &#FFD700★ &lPrestige &F&l%prestige_number%"
       - "  &#888888Your pickaxe has transcended."
       - ""
       - "  &#FFFFFF&lRewards"
@@ -151,7 +151,7 @@ pickaxe:
     # Confirmation GUI title
     confirm-title: "&8Confirm Prestige"
     # Stone selection GUI title
-    stone-select-title: "&f&l✪ Choose Your Stone"
+    stone-select-title: "&f&l★ Choose Your Stone"
     # Shown when player is already at max prestige
     already-max: "  %evolv3_prefix% &#CCCCCCYour pickaxe is already at maximum prestige."
     # Shown when player tries to prestige without meeting the level requirement
@@ -566,13 +566,13 @@ launchpad:
 # Scroll Messages
 # =====================================================
 scroll:
-  redeemed:           "  %evolv3_prefix% &#CCCCCCRedeemed %reward%&#CCCCCC."
-  combined:           "  %evolv3_prefix% &#FFD700Combined into &#FFFFFF%amount% %type%&#FFD700."
-  applied-xp:         "  %evolv3_prefix% &#00FFFFApplied &#FFFFFF+%amount% XP &#00FFFFto your pickaxe."
-  applied-atoms:      "  %evolv3_prefix% &#FFEE00Applied &#FFFFFF+%amount% Atoms &#FFEE00to your pickaxe."
-  use-on-pickaxe:     "  %evolv3_prefix% &#888888Drag this scroll onto a pickaxe in your inventory to apply it."
+  redeemed: "  %evolv3_prefix% &#CCCCCCRedeemed %reward%&#CCCCCC."
+  combined: "  %evolv3_prefix% &#FFD700Combined into &#FFFFFF%amount% %type%&#FFD700."
+  applied-xp: "  %evolv3_prefix% &#00FFFFApplied &#FFFFFF+%amount% XP &#00FFFFto your pickaxe."
+  applied-atoms: "  %evolv3_prefix% &#FFEE00Applied &#FFFFFF+%amount% Atoms &#FFEE00to your pickaxe."
+  use-on-pickaxe: "  %evolv3_prefix% &#888888Drag this scroll onto a pickaxe in your inventory to apply it."
   pickaxe-not-loaded: "  %evolv3_prefix% &cPickaxe not loaded — hold it in your main hand first."
-  given:              "  %evolv3_prefix% &#00FFFFGiven &#FFFFFF%player% &#00FFFFa &#FFFFFF%type% &#00FFFFscroll &#888888(x%amount%)&#00FFFF."
+  given: "  %evolv3_prefix% &#00FFFFGiven &#FFFFFF%player% &#00FFFFa &#FFFFFF%type% &#00FFFFscroll &#888888(x%amount%)&#00FFFF."
   no-pad-at-location: "  %evolv3_prefix% &cNo launch pad exists at that location."
   create-failed: "  %evolv3_prefix% &cFailed to create launch pad."
   no-pads: "  %evolv3_prefix% &#CCCCCCNo launch pads configured."

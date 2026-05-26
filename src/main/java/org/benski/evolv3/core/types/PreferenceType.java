@@ -30,10 +30,12 @@ public class PreferenceType {
       this.description = description;
     }
 
+    /** Returns the display name. */
     public String getDisplayName() {
       return displayName;
     }
 
+    /** Returns the description. */
     public String getDescription() {
       return description;
     }
@@ -56,10 +58,12 @@ public class PreferenceType {
       this.description = description;
     }
 
+    /** Returns the display name. */
     public String getDisplayName() {
       return displayName;
     }
 
+    /** Returns the description. */
     public String getDescription() {
       return description;
     }
@@ -81,6 +85,7 @@ public class PreferenceType {
       this.displayName = displayName;
     }
 
+    /** Returns the display name. */
     public String getDisplayName() {
       return displayName;
     }
@@ -99,10 +104,12 @@ public class PreferenceType {
       this.description = description;
     }
 
+    /** Returns the display name. */
     public String getDisplayName() {
       return displayName;
     }
 
+    /** Returns the description. */
     public String getDescription() {
       return description;
     }
@@ -122,10 +129,12 @@ public class PreferenceType {
       this.description = description;
     }
 
+    /** Returns the display name. */
     public String getDisplayName() {
       return displayName;
     }
 
+    /** Returns the description. */
     public String getDescription() {
       return description;
     }
@@ -145,10 +154,12 @@ public class PreferenceType {
       this.description = description;
     }
 
+    /** Returns the display name. */
     public String getDisplayName() {
       return displayName;
     }
 
+    /** Returns the description. */
     public String getDescription() {
       return description;
     }

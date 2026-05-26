@@ -17,21 +17,25 @@ public abstract class BaseDataCenter<T> implements DataCenter<T> {
    */
   private final Set<String> inFlight = ConcurrentHashMap.newKeySet();
 
+  /** Returns the all. */
   @Override
   public Map<String, T> getAll() {
     return data;
   }
 
+  /** Exists. */
   @Override
   public boolean exists(String id) {
     return data.containsKey(id);
   }
 
+  /** Returns the local. */
   @Override
   public T getLocal(Player player) {
     return data.get(player.getUniqueId().toString());
   }
 
+  /** Updates local. */
   @Override
   public void updateLocal(T profile, boolean save) {
     data.put(getProfileId(profile), profile);
@@ -42,9 +46,13 @@ public abstract class BaseDataCenter<T> implements DataCenter<T> {
     return inFlight.add(id);
   }
 
+  /** Removes the given ID from the in-flight set so future requests can proceed. */
   protected void clearInFlight(String id) {
     inFlight.remove(id);
   }
 
+  /**
+   * Returns the unique string identifier for the given profile (typically the player UUID string).
+   */
   protected abstract String getProfileId(T profile);
 }

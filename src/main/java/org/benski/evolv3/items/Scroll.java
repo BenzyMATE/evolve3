@@ -36,32 +36,40 @@ public final class Scroll {
 
   private static final LegacyComponentSerializer LEGACY = LegacyComponentSerializer.legacySection();
 
+  /** Creates a new Scroll instance. */
   private Scroll() {}
 
+  /** Creates a Coin Scroll ItemStack redeemable for the given coin amount. */
   public static ItemStack createCoins(int amount) {
     return buildFromConfig(COINS, amount);
   }
 
+  /** Creates an Essence Scroll ItemStack redeemable for the given essence amount. */
   public static ItemStack createEssence(int amount) {
     return buildFromConfig(ESSENCE, amount);
   }
 
+  /** Creates an Atom Scroll ItemStack redeemable for the given atom amount. */
   public static ItemStack createAtoms(int amount) {
     return buildFromConfig(ATOMS, amount);
   }
 
+  /** Creates a Pickaxe XP Scroll ItemStack redeemable for the given XP amount. */
   public static ItemStack createPickaxeXP(int amount) {
     return buildFromConfig(PICKAXE_XP, amount);
   }
 
+  /** Creates a Backpack Slot Scroll ItemStack redeemable for the given number of slots. */
   public static ItemStack createBackpackSlots(int amount) {
     return buildFromConfig(BACKPACK_SLOTS, amount);
   }
 
+  /** Returns true if the given ItemStack is a Scroll. */
   public static boolean isScroll(ItemStack item) {
     return getType(item) != null;
   }
 
+  /** Returns the scroll type string (e.g. {@code "COINS"}) or null if the item is not a scroll. */
   public static String getType(ItemStack item) {
     if (item == null || item.getType() == Material.AIR) return null;
     ItemMeta meta = item.getItemMeta();
@@ -69,6 +77,7 @@ public final class Scroll {
     return meta.getPersistentDataContainer().get(TYPE_KEY, PersistentDataType.STRING);
   }
 
+  /** Returns the reward amount encoded in the scroll's PDC, or 0 if absent. */
   public static int getAmount(ItemStack item) {
     if (item == null) return 0;
     ItemMeta meta = item.getItemMeta();
@@ -91,6 +100,7 @@ public final class Scroll {
     };
   }
 
+  /** Builds from config. */
   private static ItemStack buildFromConfig(String type, int amount) {
     FileConfiguration cfg = ConfigRegistry.getInstance().get(ConfigNames.SCROLLS);
     String key = typeConfigKey(type);
@@ -115,6 +125,7 @@ public final class Scroll {
     return build(name, type, amount, loreLines);
   }
 
+  /** Type config key. */
   private static String typeConfigKey(String type) {
     return switch (type) {
       case COINS -> "coins";
@@ -126,6 +137,7 @@ public final class Scroll {
     };
   }
 
+  /** Fallback name. */
   private static String fallbackName(String type) {
     return switch (type) {
       case COINS -> "&#FFD700&lCoin Scroll";
@@ -137,6 +149,7 @@ public final class Scroll {
     };
   }
 
+  /** Fallback lore. */
   private static List<String> fallbackLore(String type, int amount) {
     return switch (type) {
       case COINS ->
@@ -179,6 +192,7 @@ public final class Scroll {
     };
   }
 
+  /** Builds the result. */
   private static ItemStack build(String displayName, String type, int amount, String... loreLines) {
     ItemStack item = new ItemStack(Material.PAPER, 1);
     ItemMeta meta = item.getItemMeta();
@@ -201,6 +215,7 @@ public final class Scroll {
     return item;
   }
 
+  /** Ds. */
   private static Component ds(String raw) {
     return LEGACY
         .deserialize(MatrixColorAPI.process(FontUtils.toSmallCaps(raw)))

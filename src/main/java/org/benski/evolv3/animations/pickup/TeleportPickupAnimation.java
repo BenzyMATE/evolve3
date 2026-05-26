@@ -54,6 +54,7 @@ public class TeleportPickupAnimation extends BasePickupAnimation {
   private final List<TeleportItem> teleportItems = new ArrayList<>();
   @Nullable private Team glowTeam;
 
+  /** Creates a TeleportPickupAnimation. @param plugin the owning plugin */
   public TeleportPickupAnimation(JavaPlugin plugin) {
     super(plugin, DEFAULT_DURATION);
   }
@@ -242,6 +243,7 @@ public class TeleportPickupAnimation extends BasePickupAnimation {
     return Math.max(2, items != null ? items.size() * 2 : 2);
   }
 
+  /** Applies viewers. */
   private static <T extends org.bukkit.entity.Entity> void applyViewers(
       T entity, Collection<Player> viewers, JavaPlugin plugin) {
     if (viewers == null) return;

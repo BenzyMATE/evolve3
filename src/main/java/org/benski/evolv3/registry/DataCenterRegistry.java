@@ -6,7 +6,7 @@ import org.benski.evolv3.Main;
 import org.benski.evolv3.core.abstracts.BaseDataCenter;
 import org.benski.evolv3.core.interfaces.DataCenter;
 import org.benski.evolv3.core.interfaces.Registry;
-import org.benski.evolv3.core.managers.DataCenterRegistryManager;
+import org.benski.evolv3.core.managers.registry.DataCenterRegistryManager;
 import org.benski.evolv3.datacenters.ArmorDataCenter;
 import org.benski.evolv3.datacenters.PlayerDataCenter;
 

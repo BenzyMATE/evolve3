@@ -6,7 +6,7 @@
 # =====================================================
 
 # Example configuration menu
-example_config_menu:
+example_confing_menu:
   title: "&f七七七七七七七七七七七七七七七七七七七七七七七七七七七七七七七七七七七七七七七七七七七七七七七七七七七七七七七七⒑"
   size: 54  # Must be multiple of 9 (9, 18, 27, 36, 45, 54)
 
@@ -84,14 +84,14 @@ Pickaxe Menu:
       - ''
       - ' &#FFFFFF&lDescription'
       - ' &8| &#CCCCCCMine blocks to build up &#B366D9Essence&#CCCCCC.'
-      - ' &8| &#CCCCCCOnce your threshold is reached'
-      - ' &8| &#CCCCCCyou earn an &#00FFFFEnchant Roll&#CCCCCC,'
+      - ' &8| &#CCCCCCOnce your canister is full'
+      - ' &8| &#CCCCCCyou earn an &#00FFFFEnchant Shard&#CCCCCC,'
       - ' &8| &#CCCCCCwhich can be spent to unlock or'
       - ' &8| &#CCCCCCupgrade enchantments.'
       - ''
       - ' &#FFFFFF&lStatistics'
       - ' &8| &#B366D9Essence: 🔥 &#FFFFFF%evolv3_pickaxe_essence%&#888888/&#FFFFFF%evolv3_pickaxe_target_essence%'
-      - ' &8| &#B366D9Enchant Rolls: &#00FFFF%evolv3_pickaxe_enchant_rolls%'
+      - ' &8| &#B366D9Enchant Shards: &#00FFFF%evolv3_pickaxe_enchant_rolls%'
       - ' &8| &#B366D9Progress: &#00FF88%evolv3_pickaxe_essence_percentage%'
       - ' &8| %evolv3_pickaxe_essence_progressbar%'
       - ''
@@ -122,14 +122,14 @@ Pickaxe Menu:
       - ''
       - ' &#FFFFFF&lDescription'
       - ' &8| &#CCCCCCRare &#FFEE00Atoms&#CCCCCC surface as you break'
-      - ' &8| &#CCCCCCblocks. Fill the meter to earn'
-      - ' &8| &#CCCCCCan &#00FFFFEvolution Roll&#CCCCCC, then spend'
+      - ' &8| &#CCCCCCblocks. Fill the canister to earn'
+      - ' &8| &#CCCCCCan &#00FFFFEvolution shard&#CCCCCC, then spend'
       - ' &8| &#CCCCCCit to push your pickaxe to the'
       - ' &8| &#CCCCCCnext stage.'
       - ''
       - ' &#FFFFFF&lStatistics'
       - ' &8| &#FFEE00Atoms: ⚛ &#FFFFFF%evolv3_pickaxe_evolution_atoms%&#888888/&#FFFFFF%evolv3_pickaxe_atom_target%'
-      - ' &8| &#FFEE00Evolution Rolls: &#00FFFF%evolv3_pickaxe_evolution_rolls%'
+      - ' &8| &#FFEE00Evolution Shards: &#00FFFF%evolv3_pickaxe_evolution_rolls%'
       - ' &8| &#FFEE00Progress: &#00FF88%evolv3_pickaxe_atom_percentage%'
       - ' &8| %evolv3_pickaxe_atom_progressbar%'
       - ''
@@ -754,7 +754,7 @@ Prestige Confirm Menu:
       - ""
       - " &aLeft-click &#888888to confirm your prestige."
   Info:
-    Name: "&#FFD700✪ &lPrestige {next_prestige}"
+    Name: "&#FFD700★ &lPrestige {next_prestige}"
     Lore:
       - ""
       - " &#FFD700&lInformation"

@@ -350,38 +350,8 @@ public class ItemBuilder {
     return text.replace('&', '§');
   }
 
+  /** Deserialize. */
   private Component deserialize(String text) {
     return LEGACY.deserialize(text).decoration(TextDecoration.ITALIC, false);
-  }
-
-  /**
-   * Creates a new ItemBuilder instance (alternative to constructor).
-   *
-   * @param material the material
-   * @return a new ItemBuilder
-   */
-  public static ItemBuilder of(Material material) {
-    return new ItemBuilder(material);
-  }
-
-  /**
-   * Creates a new ItemBuilder instance with amount (alternative to constructor).
-   *
-   * @param material the material
-   * @param amount the stack size
-   * @return a new ItemBuilder
-   */
-  public static ItemBuilder of(Material material, int amount) {
-    return new ItemBuilder(material, amount);
-  }
-
-  /**
-   * Creates a new ItemBuilder from an existing ItemStack (alternative to constructor).
-   *
-   * @param itemStack the base item
-   * @return a new ItemBuilder
-   */
-  public static ItemBuilder from(ItemStack itemStack) {
-    return new ItemBuilder(itemStack);
   }
 }

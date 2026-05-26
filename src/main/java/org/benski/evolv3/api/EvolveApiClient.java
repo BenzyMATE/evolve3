@@ -52,33 +52,33 @@ public class EvolveApiClient {
    */
   public EvolveApiClient(String baseUrl, boolean sslVerify) {
     this.baseUrl = baseUrl.endsWith("/") ? baseUrl.substring(0, baseUrl.length() - 1) : baseUrl;
+    this.executor =
+        Executors.newFixedThreadPool(Math.max(4, Runtime.getRuntime().availableProcessors()));
     HttpClient.Builder builder =
-        HttpClient.newBuilder()
-            .connectTimeout(Duration.ofSeconds(10))
-            .executor(
-                Executors.newFixedThreadPool(
-                    Math.max(4, Runtime.getRuntime().availableProcessors())));
+        HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(10)).executor(this.executor);
     if (!sslVerify) {
       builder.sslContext(buildTrustAllSslContext());
     }
     this.http = builder.build();
     this.gson = new GsonBuilder().serializeNulls().create();
-    this.executor =
-        Executors.newFixedThreadPool(Math.max(4, Runtime.getRuntime().availableProcessors()));
     instance = this;
   }
 
+  /** Builds trust all ssl context. */
   private static SSLContext buildTrustAllSslContext() {
     try {
       TrustManager[] trustAll =
           new TrustManager[] {
             new X509TrustManager() {
+              /** Returns the accepted issuers. */
               public X509Certificate[] getAcceptedIssuers() {
                 return new X509Certificate[0];
               }
 
+              /** Checks client trusted. */
               public void checkClientTrusted(X509Certificate[] c, String a) {}
 
+              /** Checks server trusted. */
               public void checkServerTrusted(X509Certificate[] c, String a) {}
             }
           };

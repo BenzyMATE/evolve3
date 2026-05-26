@@ -17,6 +17,7 @@ import org.jetbrains.annotations.Nullable;
  * and selection methods return null.
  */
 public final class WorldEditSelection {
+  /** Creates a new WorldEditSelection instance. */
   private WorldEditSelection() {}
 
   /** Returns true if WorldEdit is loaded on this server. */

@@ -7,7 +7,7 @@ import org.benski.evolv3.core.constants.ConfigPaths;
 import org.benski.evolv3.core.helpers.ItemStackExtensions;
 import org.benski.evolv3.core.helpers.PlayerExtensions;
 import org.benski.evolv3.core.helpers.Utils;
-import org.benski.evolv3.core.managers.PickaxeManager;
+import org.benski.evolv3.core.managers.pickaxe.PickaxeManager;
 import org.benski.evolv3.datacenters.PlayerDataCenter;
 import org.benski.evolv3.models.pickaxe.Pickaxe;
 import org.benski.evolv3.registry.DataCenterRegistry;
@@ -23,6 +23,11 @@ import org.bukkit.plugin.java.JavaPlugin;
 @ExtensionMethod({ItemStackExtensions.class, PlayerExtensions.class})
 public class PickaxeCheckSchedule extends BaseSchedule {
 
+  /**
+   * Creates and registers the PickaxeCheckSchedule.
+   *
+   * @param plugin the owning plugin
+   */
   public PickaxeCheckSchedule(JavaPlugin plugin) {
     super(plugin);
   }
@@ -108,6 +113,7 @@ public class PickaxeCheckSchedule extends BaseSchedule {
     if (pdc != null) pdc.ensurePickaxe(player, pickaxeId);
   }
 
+  /** Returns {@code true} if pickaxe. */
   private boolean isPickaxe(ItemStack item) {
     return item != null && Utils.isPickaxe(item.getType());
   }

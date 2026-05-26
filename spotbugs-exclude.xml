@@ -11,7 +11,7 @@
         <Bug pattern="NP_NULL_ON_SOME_PATH,NP_NULL_PARAM_DEREF"/>
     </Match>
     <Match>
-        <Class name="org.benski.evolv3.menus.FurnaceSmeltMenu"/>
+        <Class name="org.benski.evolv3.menus.pickaxe.FurnaceSmeltMenu"/>
         <Bug pattern="NP_NULL_PARAM_DEREF"/>
     </Match>
 </FindBugsFilter>

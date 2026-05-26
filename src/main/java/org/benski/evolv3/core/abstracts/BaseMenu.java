@@ -32,6 +32,11 @@ public abstract class BaseMenu implements Menu, InventoryHolder, Listener {
   protected final Map<UUID, Inventory> openInventories = new ConcurrentHashMap<>();
   private final Map<UUID, BukkitTask> titleUpdateTasks = new ConcurrentHashMap<>();
 
+  /**
+   * Constructs a BaseMenu and registers this instance as a Bukkit event listener.
+   *
+   * @param plugin the owning plugin
+   */
   @SuppressWarnings("this-escape")
   public BaseMenu(JavaPlugin plugin) {
     this.plugin = plugin;

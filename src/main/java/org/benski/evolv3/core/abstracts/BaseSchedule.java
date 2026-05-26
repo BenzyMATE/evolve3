@@ -13,6 +13,11 @@ public abstract class BaseSchedule {
   protected final FileConfiguration config;
   private BukkitTask task;
 
+  /**
+   * Creates a new schedule bound to the given plugin instance.
+   *
+   * @param plugin the owning plugin
+   */
   public BaseSchedule(JavaPlugin plugin) {
     this.plugin = plugin;
     this.config = plugin.getConfig();

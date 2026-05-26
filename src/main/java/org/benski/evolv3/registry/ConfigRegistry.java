@@ -4,7 +4,7 @@ import java.util.List;
 import lombok.Getter;
 import org.benski.evolv3.Main;
 import org.benski.evolv3.core.interfaces.Registry;
-import org.benski.evolv3.core.managers.StorageRegistryManager;
+import org.benski.evolv3.core.managers.registry.StorageRegistryManager;
 import org.bukkit.configuration.file.FileConfiguration;
 
 /** A registry to register config files. */

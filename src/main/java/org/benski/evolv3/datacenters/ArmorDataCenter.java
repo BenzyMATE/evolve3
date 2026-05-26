@@ -1,13 +1,8 @@
 package org.benski.evolv3.datacenters;
 
-import static org.benski.evolv3.core.helpers.Utils.formatMessage;
-
 import java.util.function.Consumer;
 import org.benski.evolv3.core.abstracts.BaseDataCenter;
-import org.benski.evolv3.core.constants.ConfigNames;
-import org.benski.evolv3.core.constants.ConfigPaths;
 import org.benski.evolv3.models.armor.ArmorProfile;
-import org.benski.evolv3.registry.ConfigRegistry;
 import org.bukkit.entity.Player;
 
 /**
@@ -16,19 +11,16 @@ import org.bukkit.entity.Player;
  */
 public class ArmorDataCenter extends BaseDataCenter<ArmorProfile> {
 
+  /** Returns the profile id. */
   @Override
   protected String getProfileId(ArmorProfile profile) {
     return profile.id;
   }
 
+  /** {@inheritDoc} Retrieves the cached profile synchronously and passes it to the callback. */
   @Override
   public void get(Player player, Consumer<ArmorProfile> callback) {
     callback.accept(data.get(player.getUniqueId().toString()));
-  }
-
-  @Override
-  public ArmorProfile getLocal(Player player) {
-    return data.get(player.getUniqueId().toString());
   }
 
   /** Creates and caches a default armor profile immediately — no API call needed. */
@@ -38,13 +30,6 @@ public class ArmorDataCenter extends BaseDataCenter<ArmorProfile> {
     ArmorProfile profile = ArmorProfile.createDefault(player);
     profile.id = id;
     data.put(id, profile);
-    player.sendMessage(
-        formatMessage(
-            player,
-            ConfigRegistry.getInstance()
-                .get(ConfigNames.MESSAGES)
-                .getString(
-                    ConfigPaths.Messages.Armor.PROFILE_CREATED, "&aYour armor has been forged!")));
   }
 
   /**

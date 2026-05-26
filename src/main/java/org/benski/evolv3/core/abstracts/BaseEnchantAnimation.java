@@ -104,10 +104,12 @@ public abstract class BaseEnchantAnimation extends BaseAnimation {
     doComplete();
   }
 
+  /** Starts click detector. */
   private void startClickDetector() {
     final BaseEnchantAnimation self = this;
     clickDetector =
         new BukkitRunnable() {
+          /** Executes this scheduled task. */
           @Override
           public void run() {
             if (!self.isPlaying() || selectionMade || !player.isOnline()) {
@@ -325,20 +327,24 @@ public abstract class BaseEnchantAnimation extends BaseAnimation {
     return getCurrentTick() >= getSelectionReadyTick();
   }
 
+  /** Ease out back. */
   protected double easeOutBack(double x) {
     double c1 = 1.70158;
     double c3 = c1 + 1;
     return 1 + c3 * Math.pow(x - 1, 3) + c1 * Math.pow(x - 1, 2);
   }
 
+  /** Ease out cubic. */
   protected double easeOutCubic(double x) {
     return 1 - Math.pow(1 - x, 3);
   }
 
+  /** Ease in out cubic. */
   protected double easeInOutCubic(double x) {
     return x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2;
   }
 
+  /** Ease in cubic. */
   protected double easeInCubic(double x) {
     return x * x * x;
   }

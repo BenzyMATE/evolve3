@@ -19,6 +19,11 @@ import org.jetbrains.annotations.Nullable;
 public abstract class BaseCommand {
   protected final JavaPlugin plugin;
 
+  /**
+   * Creates a new command bound to the given plugin instance.
+   *
+   * @param plugin the owning plugin
+   */
   public BaseCommand(JavaPlugin plugin) {
     this.plugin = plugin;
   }

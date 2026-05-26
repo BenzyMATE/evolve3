@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.benski.evolv3.api.dto.*;
-import org.benski.evolv3.core.managers.EnchantAnimationConfig;
+import org.benski.evolv3.core.managers.enchant.EnchantAnimationConfig;
 import org.benski.evolv3.core.types.PlayerActivity;
 import org.benski.evolv3.core.types.PreferenceType;
 import org.benski.evolv3.core.types.RankType;
@@ -65,11 +65,13 @@ public final class ProfileMapper {
     return profile;
   }
 
+  /** Wallet from dto. */
   private static Wallet walletFromDto(WalletDto dto) {
     if (dto == null) return new Wallet();
     return new Wallet(dto.coins, (int) dto.essence);
   }
 
+  /** Ranks from dto. */
   private static List<Rank> ranksFromDto(List<RankDto> dtos) {
     List<Rank> ranks = new ArrayList<>();
     if (dtos == null) return ranks;
@@ -80,6 +82,7 @@ public final class ProfileMapper {
     return ranks;
   }
 
+  /** Backpack from dto. */
   private static Backpack backpackFromDto(BackpackDto dto) {
     Backpack backpack = Backpack.createDefault();
     if (dto == null) return backpack;
@@ -99,6 +102,7 @@ public final class ProfileMapper {
     return backpack;
   }
 
+  /** Pickaxes from dto. */
   private static List<Pickaxe> pickaxesFromDto(List<PickaxeDto> dtos) {
     List<Pickaxe> pickaxes = new ArrayList<>();
     if (dtos == null) return pickaxes;
@@ -126,12 +130,14 @@ public final class ProfileMapper {
     return pickaxe;
   }
 
+  /** Vessel from dto. */
   private static Vessel vesselFromDto(VesselDto dto, VesselType defaultType) {
     if (dto == null) return new Vessel(defaultType, 0, 100, 0);
     VesselType type = dto.type == 0 ? VesselType.ESSENCE : VesselType.ATOMS;
     return new Vessel(type, dto.current, dto.target, dto.crystals);
   }
 
+  /** Enchants from dto. */
   private static PickaxeEnchants enchantsFromDto(List<EnchantDto> dtos) {
     PickaxeEnchants enchants = new PickaxeEnchants();
     if (dtos == null) return enchants;
@@ -143,7 +149,7 @@ public final class ProfileMapper {
       if (dto.stones != null) {
         for (int i = 0; i < EnchantData.MAX_SOCKET_COUNT && i < dto.stones.size(); i++) {
           String stone = dto.stones.get(i);
-          data.socketStones[i] = (stone != null && stone.isEmpty()) ? null : stone;
+          data.socketStones[i] = (stone == null || stone.isEmpty()) ? null : stone;
         }
       }
       hydrateEnchantConfig(data);
@@ -152,6 +158,7 @@ public final class ProfileMapper {
     return enchants;
   }
 
+  /** Hydrate enchant config. */
   private static void hydrateEnchantConfig(EnchantData enchant) {
     String displayName =
         EnchantAnimationConfig.getDisplayName(enchant.name != null ? enchant.name : "");
@@ -159,6 +166,7 @@ public final class ProfileMapper {
     enchant.maxChance = EnchantAnimationConfig.getEnchantMaxChance(displayName);
   }
 
+  /** Applies preferences. */
   private static void applyPreferences(PlayerProfile profile, List<PreferenceDto> prefs) {
     if (prefs == null || prefs.isEmpty()) return;
 
@@ -217,6 +225,7 @@ public final class ProfileMapper {
     while (profile.storedPickaxes.size() < 9) profile.storedPickaxes.add("");
   }
 
+  /** Applies enchant pref. */
   private static void applyEnchantPref(PlayerPreferences prefs, String subKey, String val) {
     int lastUnderscore = subKey.lastIndexOf('_');
     if (lastUnderscore == -1) return;
@@ -258,6 +267,7 @@ public final class ProfileMapper {
     return dto;
   }
 
+  /** Wallet to dto. */
   private static WalletDto walletToDto(Wallet wallet) {
     WalletDto dto = new WalletDto();
     if (wallet == null) return dto;
@@ -266,6 +276,7 @@ public final class ProfileMapper {
     return dto;
   }
 
+  /** Ranks to dto. */
   private static List<RankDto> ranksToDto(List<Rank> ranks) {
     List<RankDto> dtos = new ArrayList<>();
     if (ranks == null) return dtos;
@@ -278,6 +289,7 @@ public final class ProfileMapper {
     return dtos;
   }
 
+  /** Backpack to dto. */
   private static BackpackDto backpackToDto(Backpack backpack) {
     BackpackDto dto = new BackpackDto();
     if (backpack == null) return dto;
@@ -294,6 +306,7 @@ public final class ProfileMapper {
     return dto;
   }
 
+  /** Pickaxes to dto. */
   private static List<PickaxeDto> pickaxesToDto(List<Pickaxe> pickaxes) {
     List<PickaxeDto> dtos = new ArrayList<>();
     if (pickaxes == null) return dtos;
@@ -321,6 +334,7 @@ public final class ProfileMapper {
     return dto;
   }
 
+  /** Vessel to dto. */
   private static VesselDto vesselToDto(Vessel vessel) {
     VesselDto dto = new VesselDto();
     if (vessel == null) return dto;
@@ -331,6 +345,7 @@ public final class ProfileMapper {
     return dto;
   }
 
+  /** Enchants to dto. */
   private static List<EnchantDto> enchantsToDto(PickaxeEnchants enchants) {
     List<EnchantDto> dtos = new ArrayList<>();
     if (enchants == null) return dtos;
@@ -349,6 +364,7 @@ public final class ProfileMapper {
     return dtos;
   }
 
+  /** Preferences to dto. */
   private static List<PreferenceDto> preferencesToDto(PlayerProfile profile) {
     List<PreferenceDto> prefs = new ArrayList<>();
     PlayerPreferences p = profile.preferences;
@@ -387,6 +403,7 @@ public final class ProfileMapper {
     return prefs;
   }
 
+  /** Pref. */
   private static PreferenceDto pref(String option, String value) {
     PreferenceDto dto = new PreferenceDto();
     dto.option = option;
@@ -396,6 +413,7 @@ public final class ProfileMapper {
 
   // ── Enum helpers ──────────────────────────────────────────────────────────
 
+  /** Activity from int. */
   private static PlayerActivity activityFromInt(int value) {
     return switch (value) {
       case 1 -> PlayerActivity.ENCHANTING;
@@ -404,6 +422,7 @@ public final class ProfileMapper {
     };
   }
 
+  /** Activity to int. */
   private static int activityToInt(PlayerActivity activity) {
     if (activity == null) return 0;
     return switch (activity) {
@@ -413,6 +432,7 @@ public final class ProfileMapper {
     };
   }
 
+  /** Rank type from int. */
   private static RankType rankTypeFromInt(int value) {
     return switch (value) {
       case 1 -> RankType.STAFF;
@@ -421,6 +441,7 @@ public final class ProfileMapper {
     };
   }
 
+  /** Rank type to int. */
   private static int rankTypeToInt(RankType type) {
     if (type == null) return 0;
     return switch (type) {
@@ -430,6 +451,7 @@ public final class ProfileMapper {
     };
   }
 
+  /** Safe enum. */
   private static <E extends Enum<E>> E safeEnum(String value, Class<E> type, E fallback) {
     if (value == null) return fallback;
     try {

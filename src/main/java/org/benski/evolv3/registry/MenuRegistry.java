@@ -5,23 +5,29 @@ import lombok.Getter;
 import org.benski.evolv3.Main;
 import org.benski.evolv3.core.interfaces.Menu;
 import org.benski.evolv3.core.interfaces.Registry;
-import org.benski.evolv3.core.managers.MenuRegistryManager;
+import org.benski.evolv3.core.managers.registry.MenuRegistryManager;
 import org.benski.evolv3.core.types.MenuType;
-import org.benski.evolv3.menus.AnimationsMenu;
-import org.benski.evolv3.menus.ArmorMenu;
-import org.benski.evolv3.menus.BackpackMenu;
-import org.benski.evolv3.menus.EnchantOptionMenu;
-import org.benski.evolv3.menus.EnchantsPreferencesMenu;
-import org.benski.evolv3.menus.ExampleConfigMenu;
-import org.benski.evolv3.menus.ExperimentalPreferencesMenu;
-import org.benski.evolv3.menus.FurnaceSmeltMenu;
-import org.benski.evolv3.menus.PickaxeLimitMenu;
-import org.benski.evolv3.menus.PickaxeMenu;
-import org.benski.evolv3.menus.PreferencesMenu;
-import org.benski.evolv3.menus.PrestigeConfirmMenu;
-import org.benski.evolv3.menus.PrestigeStoneSelectMenu;
-import org.benski.evolv3.menus.StoneSocketMenu;
-import org.benski.evolv3.menus.TestMenu;
+import org.benski.evolv3.menus.cell.CellAbandonConfirmMenu;
+import org.benski.evolv3.menus.cell.CellEvolveConfirmMenu;
+import org.benski.evolv3.menus.cell.CellMemberMenu;
+import org.benski.evolv3.menus.cell.CellMemberPermMenu;
+import org.benski.evolv3.menus.cell.CellMenu;
+import org.benski.evolv3.menus.cell.CellRentInfoMenu;
+import org.benski.evolv3.menus.island.IslandMenu;
+import org.benski.evolv3.menus.island.IslandsMenu;
+import org.benski.evolv3.menus.pickaxe.EnchantOptionMenu;
+import org.benski.evolv3.menus.pickaxe.EnchantsPreferencesMenu;
+import org.benski.evolv3.menus.pickaxe.FurnaceSmeltMenu;
+import org.benski.evolv3.menus.pickaxe.PickaxeLimitMenu;
+import org.benski.evolv3.menus.pickaxe.PickaxeMenu;
+import org.benski.evolv3.menus.pickaxe.PrestigeConfirmMenu;
+import org.benski.evolv3.menus.pickaxe.PrestigeStoneSelectMenu;
+import org.benski.evolv3.menus.pickaxe.StoneSocketMenu;
+import org.benski.evolv3.menus.player.AnimationsMenu;
+import org.benski.evolv3.menus.player.ArmorMenu;
+import org.benski.evolv3.menus.player.BackpackMenu;
+import org.benski.evolv3.menus.player.ExperimentalPreferencesMenu;
+import org.benski.evolv3.menus.player.PreferencesMenu;
 
 /** A registry to register menus/guis. */
 public class MenuRegistry implements Registry<Menu> {
@@ -31,8 +37,6 @@ public class MenuRegistry implements Registry<Menu> {
   /** Register menus. Add your menu classes here. */
   private final List<Class<? extends Menu>> menus =
       List.of(
-          TestMenu.class,
-          ExampleConfigMenu.class,
           PickaxeMenu.class,
           ArmorMenu.class,
           BackpackMenu.class,
@@ -45,7 +49,15 @@ public class MenuRegistry implements Registry<Menu> {
           StoneSocketMenu.class,
           ExperimentalPreferencesMenu.class,
           PrestigeConfirmMenu.class,
-          PrestigeStoneSelectMenu.class);
+          PrestigeStoneSelectMenu.class,
+          CellMenu.class,
+          CellEvolveConfirmMenu.class,
+          CellAbandonConfirmMenu.class,
+          CellRentInfoMenu.class,
+          CellMemberMenu.class,
+          CellMemberPermMenu.class,
+          IslandMenu.class,
+          IslandsMenu.class);
 
   /** {@inheritDoc} */
   @Override

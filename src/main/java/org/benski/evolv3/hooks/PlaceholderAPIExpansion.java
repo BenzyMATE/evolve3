@@ -5,10 +5,10 @@ import org.benski.evolv3.Main;
 import org.benski.evolv3.core.constants.ConfigNames;
 import org.benski.evolv3.core.constants.ConfigPaths;
 import org.benski.evolv3.core.helpers.Utils;
-import org.benski.evolv3.core.managers.EnchantAnimationConfig;
-import org.benski.evolv3.core.managers.MineManager;
-import org.benski.evolv3.core.managers.OmnitoolManager;
-import org.benski.evolv3.core.managers.RankManager;
+import org.benski.evolv3.core.managers.enchant.EnchantAnimationConfig;
+import org.benski.evolv3.core.managers.mine.MineManager;
+import org.benski.evolv3.core.managers.pickaxe.OmnitoolManager;
+import org.benski.evolv3.core.managers.player.RankManager;
 import org.benski.evolv3.datacenters.PlayerDataCenter;
 import org.benski.evolv3.models.pickaxe.EnchantData;
 import org.benski.evolv3.models.pickaxe.Pickaxe;
@@ -86,6 +86,11 @@ import org.jetbrains.annotations.Nullable;
 public class PlaceholderAPIExpansion extends PlaceholderExpansion {
   private final Main plugin;
 
+  /**
+   * Creates the expansion and binds it to the plugin instance.
+   *
+   * @param plugin the main plugin instance
+   */
   public PlaceholderAPIExpansion(Main plugin) {
     this.plugin = plugin;
   }
@@ -105,6 +110,7 @@ public class PlaceholderAPIExpansion extends PlaceholderExpansion {
     return plugin.getPluginMeta().getVersion();
   }
 
+  /** Persist. */
   @Override
   public boolean persist() {
     return true;

@@ -77,25 +77,30 @@ public class DissolvePickupAnimation extends BasePickupAnimation {
   private boolean glowRemoved = false;
   private double spinAngle = 0;
 
+  /** Creates a DissolvePickupAnimation. @param plugin the owning plugin */
   public DissolvePickupAnimation(JavaPlugin plugin) {
     super(plugin, DURATION);
   }
 
+  /** Returns the animation id. */
   @Override
   public String getAnimationId() {
     return "dissolve";
   }
 
+  /** Returns the display name. */
   @Override
   public String getDisplayName() {
     return "Dissolve";
   }
 
+  /** Returns the description. */
   @Override
   public String getDescription() {
     return "Block drops, floats up spinning, then dissolves";
   }
 
+  /** Called when this schedule starts. */
   @Override
   protected void onStart() {
     Location origin = getOrigin();
@@ -119,6 +124,7 @@ public class DissolvePickupAnimation extends BasePickupAnimation {
     }
   }
 
+  /** Called when tick occurs. */
   @Override
   protected void onTick(double progress) {
     if (style == PreferenceType.PickupAnimation.TEXT_ONLY) {
@@ -143,6 +149,7 @@ public class DissolvePickupAnimation extends BasePickupAnimation {
     }
   }
 
+  /** Called when complete occurs. */
   @Override
   protected void onComplete() {
     if (!glowRemoved && itemDisplay != null && glowTeam != null) {
@@ -157,11 +164,13 @@ public class DissolvePickupAnimation extends BasePickupAnimation {
     glowTeam = null;
   }
 
+  /** Returns the resource cost. */
   @Override
   public int getResourceCost() {
     return 4;
   }
 
+  /** Do transition. */
   private void doTransition() {
     if (droppedItem != null && !droppedItem.isDead()) {
       floatOrigin = droppedItem.getLocation().clone();
@@ -242,6 +251,7 @@ public class DissolvePickupAnimation extends BasePickupAnimation {
             });
   }
 
+  /** Ticks float. */
   private void tickFloat(int localTick) {
     if (floatOrigin == null || itemDisplay == null || itemDisplay.isDead()) return;
     World world = floatOrigin.getWorld();
@@ -332,6 +342,7 @@ public class DissolvePickupAnimation extends BasePickupAnimation {
     }
   }
 
+  /** Ticks dissolve. */
   private void tickDissolve(int localTick) {
     if (itemDisplay == null || itemDisplay.isDead() || floatOrigin == null) return;
     World world = floatOrigin.getWorld();
@@ -376,6 +387,7 @@ public class DissolvePickupAnimation extends BasePickupAnimation {
     }
   }
 
+  /** Fire dissolve burst. */
   private void fireDissolveBurst(Location pos, World world) {
     Color effectColor = categoryColor();
     Particle.DustOptions dust = new Particle.DustOptions(effectColor, 1.2f);
@@ -407,6 +419,7 @@ public class DissolvePickupAnimation extends BasePickupAnimation {
     }
   }
 
+  /** Ticks text only. */
   private void tickTextOnly(double progress) {
     Location origin = getOrigin();
     if (origin == null) return;
@@ -450,6 +463,7 @@ public class DissolvePickupAnimation extends BasePickupAnimation {
             new AxisAngle4f(0, 0, 1, 0)));
   }
 
+  /** Remove glow. */
   private void removeGlow() {
     if (glowRemoved) return;
     glowRemoved = true;
@@ -458,6 +472,7 @@ public class DissolvePickupAnimation extends BasePickupAnimation {
       glowTeam.removeEntry(itemDisplay.getUniqueId().toString());
   }
 
+  /** Spawns spiral particle. */
   private void spawnSpiralParticle(
       World world, Location from, double t, Particle.DustOptions dust) {
     if (targetPlayer == null || !targetPlayer.isOnline()) return;
@@ -477,6 +492,7 @@ public class DissolvePickupAnimation extends BasePickupAnimation {
         dust);
   }
 
+  /** Category color. */
   private Color categoryColor() {
     return switch (dropCategory) {
       case ESSENCE -> ESSENCE_COLOR;
@@ -485,6 +501,7 @@ public class DissolvePickupAnimation extends BasePickupAnimation {
     };
   }
 
+  /** First item. */
   @Nullable
   private ItemStack firstItem() {
     if (items == null) return null;
@@ -492,6 +509,7 @@ public class DissolvePickupAnimation extends BasePickupAnimation {
     return null;
   }
 
+  /** Total xp. */
   private int totalXp() {
     if (xpOverride >= 0) return xpOverride;
     if (blockMaterial == null) return 0;
@@ -499,12 +517,14 @@ public class DissolvePickupAnimation extends BasePickupAnimation {
     return ConfigRegistry.getInstance().get(ConfigNames.DEFAULT).getInt(xpPath, 0);
   }
 
+  /** Applies viewers. */
   private <E extends Entity> void applyViewers(E entity, @Nullable Collection<Player> viewers) {
     if (viewers == null) return;
     entity.setVisibleByDefault(false);
     for (Player viewer : viewers) viewer.showEntity(plugin, entity);
   }
 
+  /** Spawns particle. */
   private <D> void spawnParticle(
       World world,
       Particle particle,
@@ -525,6 +545,7 @@ public class DissolvePickupAnimation extends BasePickupAnimation {
     }
   }
 
+  /** Plays sound. */
   private void playSound(Location loc, Sound sound, float volume, float pitch) {
     Collection<Player> viewers = getViewers();
     if (viewers == null) {
@@ -536,6 +557,7 @@ public class DissolvePickupAnimation extends BasePickupAnimation {
     }
   }
 
+  /** Lerp loc. */
   private Location lerpLoc(Location a, Location b, double t) {
     return new Location(
         a.getWorld(),
@@ -544,6 +566,7 @@ public class DissolvePickupAnimation extends BasePickupAnimation {
         lerp(a.getZ(), b.getZ(), t));
   }
 
+  /** Remove entity. */
   private static void removeEntity(@Nullable Entity e) {
     if (e != null && !e.isDead()) e.remove();
   }

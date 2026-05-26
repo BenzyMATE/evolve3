@@ -57,26 +57,32 @@ public class PendingEnchantData {
     this.pickaxeKey = pickaxeKey;
   }
 
+  /** Returns the options. */
   public List<EnchantOption> getOptions() {
     return options;
   }
 
+  /** Returns the on select. */
   public BiConsumer<Player, EnchantOption> getOnSelect() {
     return onSelect;
   }
 
+  /** Returns the original item. */
   public ItemStack getOriginalItem() {
     return originalItem;
   }
 
+  /** Sets the original item. */
   public void setOriginalItem(ItemStack item) {
     this.originalItem = item;
   }
 
+  /** Returns the pickaxe key. */
   public String getPickaxeKey() {
     return pickaxeKey;
   }
 
+  /** Sets the pickaxe key. */
   public void setPickaxeKey(String key) {
     this.pickaxeKey = key;
   }

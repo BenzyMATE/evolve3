@@ -11,8 +11,8 @@ import net.matrixcreations.libraries.MatrixColorAPI;
 import org.benski.evolv3.core.constants.ConfigNames;
 import org.benski.evolv3.core.constants.ConfigPaths;
 import org.benski.evolv3.core.helpers.FontUtils;
-import org.benski.evolv3.core.managers.EnchantAnimationConfig;
-import org.benski.evolv3.core.managers.StoneEffectRegistry;
+import org.benski.evolv3.core.managers.enchant.EnchantAnimationConfig;
+import org.benski.evolv3.core.managers.enchant.StoneEffectRegistry;
 import org.benski.evolv3.core.types.RarityConfig;
 import org.benski.evolv3.registry.ConfigRegistry;
 import org.bukkit.Material;
@@ -55,6 +55,7 @@ public final class EvolutionStone {
   private static final NamespacedKey KEY_RARITY = new NamespacedKey("evolv3", PDC_RARITY_KEY);
   private static final NamespacedKey KEY_ENCHANT = new NamespacedKey("evolv3", PDC_ENCHANT_KEY);
 
+  /** Creates a new EvolutionStone instance. */
   private EvolutionStone() {}
 
   /**

@@ -5,7 +5,7 @@ import lombok.Getter;
 import org.benski.evolv3.Main;
 import org.benski.evolv3.core.abstracts.BaseSchedule;
 import org.benski.evolv3.core.interfaces.Registry;
-import org.benski.evolv3.core.managers.ScheduleRegistryManager;
+import org.benski.evolv3.core.managers.registry.ScheduleRegistryManager;
 import org.benski.evolv3.schedules.PickaxeCheckSchedule;
 
 /** A registry to register scheduled/repeating tasks. */

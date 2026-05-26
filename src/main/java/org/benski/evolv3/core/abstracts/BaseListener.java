@@ -1,5 +1,6 @@
 package org.benski.evolv3.core.abstracts;
 
+import lombok.Getter;
 import org.benski.evolv3.datacenters.PlayerDataCenter;
 import org.benski.evolv3.registry.DataCenterRegistry;
 import org.bukkit.event.Listener;
@@ -10,7 +11,9 @@ import org.bukkit.plugin.java.JavaPlugin;
  * is the single source of truth for all player and pickaxe data.
  */
 public abstract class BaseListener implements Listener {
-  protected final JavaPlugin plugin;
+  /** -- GETTER -- Returns the plugin instance. */
+  @Getter protected final JavaPlugin plugin;
+
   protected final PlayerDataCenter playerDataCenter;
 
   /**
@@ -26,9 +29,4 @@ public abstract class BaseListener implements Listener {
 
   /** Called when the plugin is being disabled. Override to perform cleanup logic. */
   public void cleanup() {}
-
-  /** Returns the plugin instance. */
-  public JavaPlugin getPlugin() {
-    return plugin;
-  }
 }
