@@ -16,6 +16,7 @@ import org.benski.evolv3.core.constants.ConfigNames;
 import org.benski.evolv3.core.constants.ConfigPaths;
 import org.benski.evolv3.core.helpers.Utils;
 import org.benski.evolv3.core.managers.pickaxe.PrestigeManager;
+import org.benski.evolv3.core.managers.pickaxe.PrestigeSelectionManager;
 import org.benski.evolv3.core.types.MenuType;
 import org.benski.evolv3.datacenters.PlayerDataCenter;
 import org.benski.evolv3.items.EvolutionStone;
@@ -122,9 +123,17 @@ public class PrestigeStoneSelectMenu extends BaseMenu {
     }
 
     PrestigeManager.StoneRoll chosen = null;
-    if (slot == SLOT_STONE_1) chosen = stones.get(0);
-    else if (slot == SLOT_STONE_2) chosen = stones.get(1);
-    else if (slot == SLOT_STONE_3) chosen = stones.get(2);
+    int stoneIndex = -1;
+    if (slot == SLOT_STONE_1) {
+      chosen = stones.get(0);
+      stoneIndex = 0;
+    } else if (slot == SLOT_STONE_2) {
+      chosen = stones.get(1);
+      stoneIndex = 1;
+    } else if (slot == SLOT_STONE_3) {
+      chosen = stones.get(2);
+      stoneIndex = 2;
+    }
 
     if (chosen == null) return true;
 
@@ -132,11 +141,16 @@ public class PrestigeStoneSelectMenu extends BaseMenu {
     pendingStones.remove(player.getUniqueId());
     closeMenu(player);
 
+    PrestigeSelectionManager.getInstance().onStoneSelected(player, stoneIndex);
+
     PrestigeStoneFlightAnimation.play(
         player,
         EvolutionStone.create(finalChosen.rarity(), finalChosen.enchantName()),
         finalChosen.rarity(),
-        () -> executePrestige(player, finalChosen));
+        () -> {
+          executePrestige(player, finalChosen);
+          PrestigeSelectionManager.getInstance().onPrestigeComplete(player);
+        });
     return true;
   }
 

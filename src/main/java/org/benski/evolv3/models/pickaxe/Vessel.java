@@ -3,7 +3,7 @@ package org.benski.evolv3.models.pickaxe;
 import org.benski.evolv3.core.types.VesselType;
 
 /** Tracks progress toward a threshold (essence or atoms) and accumulated crystals. */
-public class Vessel {
+public final class Vessel {
 
   public VesselType type;
   public int current;

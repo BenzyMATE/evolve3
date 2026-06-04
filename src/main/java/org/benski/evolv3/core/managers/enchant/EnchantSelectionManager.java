@@ -1,5 +1,6 @@
 package org.benski.evolv3.core.managers.enchant;
 
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -11,6 +12,9 @@ import java.util.logging.Logger;
 import lombok.Getter;
 import org.benski.evolv3.Main;
 import org.benski.evolv3.animations.progression.EnchantAnimation;
+import org.benski.evolv3.api.EvolveApiClient;
+import org.benski.evolv3.api.dto.PendingDataDto;
+import org.benski.evolv3.api.dto.PendingType;
 import org.benski.evolv3.core.abstracts.BaseEnchantAnimation;
 import org.benski.evolv3.core.types.EnchantOption;
 import org.benski.evolv3.core.types.PendingEnchantData;
@@ -40,7 +44,7 @@ import org.bukkit.scheduler.BukkitRunnable;
  *       it is saved into {@link PendingEnchantData} and restored to their hand the next time they
  *       join the server.
  *   <li><b>Server-restart recovery</b> — when a pickaxe key is supplied, the pending selection is
- *       persisted to MongoDB so it survives a full server restart. The options and pickaxe are
+ *       persisted to the API so it survives a full server restart. The options and pickaxe are
  *       restored automatically when the player rejoins.
  *   <li><b>Selection on disconnect</b> — if the player already clicked an enchant but the
  *       animation's callback hadn't fired yet when they disconnected, the callback is fired
@@ -112,7 +116,7 @@ public class EnchantSelectionManager {
   /**
    * Starts an enchant selection animation for a player, generating fresh options.
    *
-   * <p>This overload does <em>not</em> persist to MongoDB — suitable for testing or any non-pickaxe
+   * <p>This overload does <em>not</em> persist to the API — suitable for testing or any non-pickaxe
    * context. The enchant roll should be deducted by the caller <em>before</em> this method is
    * invoked.
    *
@@ -130,7 +134,7 @@ public class EnchantSelectionManager {
    * Starts an enchant selection animation for a player, generating fresh options.
    *
    * <p>Passing a {@code pickaxeKey} enables full server-restart persistence — the pending selection
-   * is written to MongoDB and restored automatically when the player reconnects, even after a full
+   * is written to the API and restored automatically when the player reconnects, even after a full
    * server restart. The enchant roll should be deducted by the caller <em>before</em> this method
    * is invoked.
    *
@@ -216,7 +220,7 @@ public class EnchantSelectionManager {
    *   <li>If the player already clicked an enchant, the callback is fired immediately so the
    *       enchant is applied before they leave.
    *   <li>Otherwise, the current options and pickaxe are saved in {@link PendingEnchantData} so
-   *       they can be restored on rejoin. The MongoDB document is already up-to-date from when the
+   *       they can be restored on rejoin. The the API document is already up-to-date from when the
    *       animation started, so no additional DB write is needed here.
    * </ul>
    *
@@ -247,7 +251,7 @@ public class EnchantSelectionManager {
    * Called when a player joins the server.
    *
    * <p>If a pending selection exists for this player (in memory from a recent disconnect, or loaded
-   * from MongoDB after a server restart), their pickaxe is restored and the animation is re-shown
+   * from the API after a server restart), their pickaxe is restored and the animation is re-shown
    * with the <em>exact same options</em>.
    *
    * @param player the joining player
@@ -280,20 +284,47 @@ public class EnchantSelectionManager {
   }
 
   /**
-   * Loads all pending enchant selections from MongoDB and places them into {@link
+   * Loads all pending enchant selections from the API and places them into {@link
    * #pendingSelections} so they are ready when players rejoin.
    *
-   * <p>Call this once during {@code onEnable()}, after MongoDB has connected and {@link
+   * <p>Call this once during {@code onEnable()}, after the API client is initialised and {@link
    * EnchantAnimationConfig} has been loaded. Any registered {@link EnchantCallbackProvider} should
-   * also be set before this call so that players who are already online when the method completes
-   * are handled correctly.
+   * also be set before this call.
    */
-  /** No-op: pending enchant selections are not persisted between server restarts. */
-  public void loadPendingFromDatabase() {}
+  public void loadPendingFromDatabase() {
+    EvolveApiClient api = EvolveApiClient.getInstance();
+    if (api == null) return;
+    api.getAllPendingDataAsync()
+        .thenAccept(
+            dtos -> {
+              if (dtos == null) return;
+              for (PendingDataDto dto : dtos) {
+                if (dto.type != PendingType.ENCHANT || dto.playerUuid == null) continue;
+                UUID uuid;
+                try {
+                  uuid = UUID.fromString(dto.playerUuid);
+                } catch (IllegalArgumentException e) {
+                  logger.warning("Invalid UUID in pending enchant: " + dto.playerUuid);
+                  continue;
+                }
+                List<EnchantOption> options = new ArrayList<>();
+                if (dto.optionNames != null) {
+                  for (String name : dto.optionNames) {
+                    EnchantOption opt = EnchantAnimationConfig.getOption(name);
+                    if (opt != null) options.add(opt);
+                  }
+                }
+                PendingEnchantData pending = new PendingEnchantData(options, null, dto.pickaxeKey);
+                ItemStack item = PendingEnchantDocument.deserializeItem(dto.originalItemBase64);
+                if (item != null) pending.setOriginalItem(item);
+                pendingSelections.put(uuid, pending);
+              }
+            });
+  }
 
   /**
-   * Stops all animations and clears all in-memory state. Called when the plugin is disabled.
-   * MongoDB documents are left intact so they can be restored on the next server start.
+   * Stops all animations and clears all in-memory state. Called when the plugin is disabled. the
+   * API documents are left intact so they can be restored on the next server start.
    */
   public void cleanup() {
     for (BaseEnchantAnimation animation : activeAnimations.values()) {
@@ -329,7 +360,7 @@ public class EnchantSelectionManager {
    * Launches an enchant selection animation using a pre-determined option list. Used both for fresh
    * starts and for restoring a session after reconnect.
    *
-   * <p>A {@link PendingEnchantDocument} is always upserted to MongoDB after the animation starts,
+   * <p>A {@link PendingEnchantDocument} is always upserted to the API after the animation starts,
    * ensuring the pickaxe item and options survive a server restart regardless of whether a {@code
    * pickaxeKey} was provided.
    */
@@ -389,20 +420,25 @@ public class EnchantSelectionManager {
     return true;
   }
 
-  /** Upserts a {@link PendingEnchantDocument} for the given player to MongoDB. */
+  /** Upserts a pending enchant record for the given player to the API. */
   private void savePendingToDatabase(UUID uuid, PendingEnchantData pending) {
-    PendingEnchantDocument doc = new PendingEnchantDocument();
-    doc.playerUuid = uuid.toString();
-    doc.pickaxeKey = pending.getPickaxeKey();
-    for (EnchantOption opt : pending.getOptions()) {
-      doc.optionNames.add(opt.name());
-    }
-    doc.originalItemBase64 = PendingEnchantDocument.serializeItem(pending.getOriginalItem());
-    doc.save();
+    EvolveApiClient api = EvolveApiClient.getInstance();
+    if (api == null) return;
+    PendingDataDto dto = new PendingDataDto();
+    dto.type = PendingType.ENCHANT;
+    dto.playerUuid = uuid.toString();
+    dto.pickaxeKey = pending.getPickaxeKey();
+    dto.optionNames = pending.getOptions().stream().map(EnchantOption::name).toList();
+    dto.originalItemBase64 = PendingEnchantDocument.serializeItem(pending.getOriginalItem());
+    api.upsertPendingDataAsync(dto);
   }
 
-  /** No-op: pending enchant state is not persisted to the API. */
-  private void deletePendingFromDatabase(UUID uuid) {}
+  /** Deletes the pending enchant record for the given player from the API. */
+  private void deletePendingFromDatabase(UUID uuid) {
+    EvolveApiClient api = EvolveApiClient.getInstance();
+    if (api == null) return;
+    api.deletePendingDataAsync(uuid, PendingType.ENCHANT);
+  }
 
   /**
    * Maps the player's enchant speed preference to a scroll-end tick count. Lower tick count =

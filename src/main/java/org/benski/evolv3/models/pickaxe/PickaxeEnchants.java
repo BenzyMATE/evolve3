@@ -10,7 +10,7 @@ import org.benski.evolv3.core.managers.enchant.EnchantAnimationConfig;
  * Container for all enchantments on a pickaxe. Manages the ordered list and provides O(1) lookup
  * via an internal index.
  */
-public class PickaxeEnchants {
+public final class PickaxeEnchants {
 
   private final Map<String, EnchantData> index = new HashMap<>();
   public List<EnchantData> items = new ArrayList<>();

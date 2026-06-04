@@ -106,7 +106,15 @@
       "Bash(/usr/bin/python3 --version)",
       "Bash(/c/Users/benje/AppData/Local/Programs/Python/Python312/python.exe *)",
       "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\benje\\\\IdeaProjects\\\\Evolv3\\\\src\\\\main\\\\java\\\\org\\\\benski\\\\evolv3\" -Recurse -File)",
-      "PowerShell(Split-Path *)"
+      "PowerShell(Split-Path *)",
+      "Bash(dotnet build *)",
+      "WebFetch(domain:repo.papermc.io)",
+      "WebFetch(domain:papermc.io)",
+      "WebFetch(domain:api.papermc.io)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:docs.papermc.io)",
+      "WebFetch(domain:jd.papermc.io)",
+      "WebFetch(domain:raw.githubusercontent.com)"
     ],
     "deny": [],
     "ask": []

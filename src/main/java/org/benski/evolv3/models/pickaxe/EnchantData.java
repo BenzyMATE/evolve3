@@ -4,7 +4,7 @@ package org.benski.evolv3.models.pickaxe;
  * Represents a single enchantment on a pickaxe. Stores name, level, config data, and up to 5
  * evolution stone sockets.
  */
-public class EnchantData {
+public final class EnchantData {
 
   public static final int MAX_SOCKET_COUNT = 5;
 

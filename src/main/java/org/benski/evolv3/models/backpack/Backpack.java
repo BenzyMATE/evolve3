@@ -17,7 +17,7 @@ import org.bukkit.entity.Player;
 /** Represents a player's backpack for storing mined items. */
 @Getter
 @Setter
-public class Backpack {
+public final class Backpack {
 
   private int maxSize;
   private int totalItems;

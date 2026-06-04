@@ -13,6 +13,7 @@ import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.security.cert.X509Certificate;
 import java.time.Duration;
+import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
@@ -24,6 +25,8 @@ import javax.net.ssl.X509TrustManager;
 import lombok.Getter;
 import org.benski.evolv3.Main;
 import org.benski.evolv3.api.dto.ApiResponseDto;
+import org.benski.evolv3.api.dto.PendingDataDto;
+import org.benski.evolv3.api.dto.PendingType;
 import org.benski.evolv3.api.dto.PlayerProfileDto;
 
 /**
@@ -31,10 +34,13 @@ import org.benski.evolv3.api.dto.PlayerProfileDto;
  * CompletableFuture} that complete on the background executor thread. Callers that require main
  * thread callbacks should chain {@code .thenAcceptAsync(cb, TaskManager.getInstance()::runSync)}.
  */
-public class EvolveApiClient {
+public final class EvolveApiClient {
 
   private static final Type PLAYER_RESPONSE_TYPE =
       new TypeToken<ApiResponseDto<PlayerProfileDto>>() {}.getType();
+
+  private static final Type PENDING_DATA_LIST_TYPE =
+      new TypeToken<ApiResponseDto<List<PendingDataDto>>>() {}.getType();
 
   @Getter private static EvolveApiClient instance;
 
@@ -201,6 +207,128 @@ public class EvolveApiClient {
             return true;
           } catch (Exception e) {
             logger.severe("Failed to PUT player: " + e.getMessage());
+            return false;
+          }
+        },
+        executor);
+  }
+
+  /**
+   * Fetches all pending animation records via {@code GET /api/pending}. Returns every type
+   * (enchant, evolution, prestige) in a single call; callers filter by {@link PendingDataDto#type}.
+   *
+   * @return a future resolving to the full list, or {@code null} on error
+   */
+  public CompletableFuture<List<PendingDataDto>> getAllPendingDataAsync() {
+    return CompletableFuture.supplyAsync(
+        () -> {
+          try {
+            HttpRequest request =
+                HttpRequest.newBuilder()
+                    .uri(URI.create(baseUrl + "/api/pending"))
+                    .GET()
+                    .timeout(Duration.ofSeconds(60))
+                    .header("Content-Type", "application/json")
+                    .build();
+
+            HttpResponse<String> response =
+                http.send(request, HttpResponse.BodyHandlers.ofString());
+
+            if (response.statusCode() == 404 || response.statusCode() == 204) return null;
+
+            if (response.statusCode() != 200) {
+              logger.warning("GET /api/pending returned " + response.statusCode());
+              return null;
+            }
+
+            ApiResponseDto<List<PendingDataDto>> apiResponse =
+                gson.fromJson(response.body(), PENDING_DATA_LIST_TYPE);
+
+            return (apiResponse == null || !apiResponse.success) ? null : apiResponse.data;
+          } catch (Exception e) {
+            logger.severe("Failed to GET pending data: " + e.getMessage());
+            return null;
+          }
+        },
+        executor);
+  }
+
+  /**
+   * Upserts a pending animation record via {@code PUT /api/pending}. The record is identified on
+   * the server by the composite key ({@link PendingDataDto#playerUuid}, {@link
+   * PendingDataDto#type}).
+   *
+   * @param dto the pending record to save
+   * @return a future resolving to {@code true} on success
+   */
+  public CompletableFuture<Boolean> upsertPendingDataAsync(PendingDataDto dto) {
+    return CompletableFuture.supplyAsync(
+        () -> {
+          try {
+            String body = gson.toJson(dto);
+            HttpRequest request =
+                HttpRequest.newBuilder()
+                    .uri(URI.create(baseUrl + "/api/pending"))
+                    .PUT(HttpRequest.BodyPublishers.ofString(body))
+                    .timeout(Duration.ofSeconds(60))
+                    .header("Content-Type", "application/json")
+                    .build();
+
+            HttpResponse<String> response =
+                http.send(request, HttpResponse.BodyHandlers.ofString());
+
+            if (response.statusCode() != 200) {
+              logger.warning(
+                  "PUT /api/pending returned " + response.statusCode() + ": " + response.body());
+              return false;
+            }
+
+            return true;
+          } catch (Exception e) {
+            logger.severe("Failed to PUT pending data: " + e.getMessage());
+            return false;
+          }
+        },
+        executor);
+  }
+
+  /**
+   * Deletes a pending animation record via {@code DELETE /api/pending/{playerUuid}/{type}}.
+   *
+   * @param playerUuid the player's UUID
+   * @param type the pending type to delete (e.g. {@link PendingType#ENCHANT})
+   * @return a future resolving to {@code true} on success or 404
+   */
+  public CompletableFuture<Boolean> deletePendingDataAsync(UUID playerUuid, PendingType type) {
+    return CompletableFuture.supplyAsync(
+        () -> {
+          try {
+            HttpRequest request =
+                HttpRequest.newBuilder()
+                    .uri(URI.create(baseUrl + "/api/pending/" + playerUuid + "/" + type.name()))
+                    .DELETE()
+                    .timeout(Duration.ofSeconds(60))
+                    .header("Content-Type", "application/json")
+                    .build();
+
+            HttpResponse<String> response =
+                http.send(request, HttpResponse.BodyHandlers.ofString());
+
+            if (response.statusCode() != 200 && response.statusCode() != 404) {
+              logger.warning(
+                  "DELETE /api/pending/"
+                      + playerUuid
+                      + "/"
+                      + type.name()
+                      + " returned "
+                      + response.statusCode());
+              return false;
+            }
+
+            return true;
+          } catch (Exception e) {
+            logger.severe(
+                "Failed to DELETE pending " + type + " for " + playerUuid + ": " + e.getMessage());
             return false;
           }
         },

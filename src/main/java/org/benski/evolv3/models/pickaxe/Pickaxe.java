@@ -16,7 +16,7 @@ import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
 
 /** Represents a player-owned pickaxe. Embedded within {@link PlayerProfile}. */
-public class Pickaxe {
+public final class Pickaxe {
 
   private static final Logger LOGGER = Main.getInstance().getLogger();
 

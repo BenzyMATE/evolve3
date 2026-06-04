@@ -11,7 +11,7 @@ import org.bukkit.inventory.ItemStack;
  * Holds in-progress enchant selection state for a player. Pending selections survive player
  * disconnects within a session but are not persisted across server restarts.
  */
-public class PendingEnchantDocument {
+public final class PendingEnchantDocument {
 
   /** The player's UUID string — primary key. */
   public String playerUuid;

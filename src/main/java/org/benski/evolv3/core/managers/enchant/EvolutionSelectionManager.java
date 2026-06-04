@@ -10,6 +10,9 @@ import lombok.Getter;
 import org.benski.evolv3.Main;
 import org.benski.evolv3.animations.progression.EvolutionAnimation;
 import org.benski.evolv3.animations.progression.EvolutionAnimation3;
+import org.benski.evolv3.api.EvolveApiClient;
+import org.benski.evolv3.api.dto.PendingDataDto;
+import org.benski.evolv3.api.dto.PendingType;
 import org.benski.evolv3.core.types.PendingEvolutionData;
 import org.benski.evolv3.core.types.RarityConfig;
 import org.benski.evolv3.datacenters.PlayerDataCenter;
@@ -36,7 +39,7 @@ import org.bukkit.scheduler.BukkitRunnable;
  *   <li><b>Pickaxe recovery</b> — if a player disconnects while the animation holds their pickaxe,
  *       it is saved in {@link PendingEvolutionData} and restored to their inventory the next time
  *       they join the server.
- *   <li><b>Server-restart recovery</b> — the pending state is persisted to MongoDB so it survives a
+ *   <li><b>Server-restart recovery</b> — the pending state is persisted to the API so it survives a
  *       full server restart. Affected players receive their items on rejoin.
  *   <li><b>Mid-callback disconnect</b> — if the tier change callback already fired (evolution
  *       applied) but items were not yet delivered, the {@code callbackAlreadyApplied} flag is set.
@@ -104,7 +107,7 @@ public class EvolutionSelectionManager {
    * Starts an evolution animation for a player with the given pre-rolled rarity.
    *
    * <p>The evolution roll must be deducted by the caller <em>before</em> this method is invoked.
-   * Passing a non-null {@code pickaxeKey} enables full MongoDB persistence across server restarts.
+   * Passing a non-null {@code pickaxeKey} enables full the API persistence across server restarts.
    *
    * @param player the player
    * @param pickaxeKey the pickaxe's item-data key (for DB persistence)
@@ -174,7 +177,7 @@ public class EvolutionSelectionManager {
   /**
    * Called when a player joins the server.
    *
-   * <p>If a pending evolution exists (in memory from a recent disconnect, or loaded from MongoDB
+   * <p>If a pending evolution exists (in memory from a recent disconnect, or loaded from the API
    * after a server restart):
    *
    * <ul>
@@ -230,19 +233,57 @@ public class EvolutionSelectionManager {
   }
 
   /**
-   * Loads all pending evolution entries from MongoDB into memory so they are ready when players
+   * Loads all pending evolution entries from the API into memory so they are ready when players
    * rejoin.
    *
-   * <p>Call this once during {@code onEnable()}, after MongoDB has connected and {@link
+   * <p>Call this once during {@code onEnable()}, after the API client is initialised and {@link
    * EnchantAnimationConfig} has been loaded, and after registering the {@link
    * EvolutionCallbackProvider}.
    */
-  /** No-op: pending evolution state is not persisted between server restarts. */
-  public void loadPendingFromDatabase() {}
+  public void loadPendingFromDatabase() {
+    EvolveApiClient api = EvolveApiClient.getInstance();
+    if (api == null) return;
+    api.getAllPendingDataAsync()
+        .thenAccept(
+            dtos -> {
+              if (dtos == null) return;
+              for (PendingDataDto dto : dtos) {
+                if (dto.type != PendingType.EVOLUTION || dto.playerUuid == null) continue;
+                UUID uuid;
+                try {
+                  uuid = UUID.fromString(dto.playerUuid);
+                } catch (IllegalArgumentException e) {
+                  logger.warning("Invalid UUID in pending evolution: " + dto.playerUuid);
+                  continue;
+                }
+                EvolutionTier current = EvolutionTier.fromLevel(dto.currentTierLevel);
+                EvolutionTier next = EvolutionTier.fromLevel(dto.nextTierLevel);
+                if (current == null || next == null) {
+                  logger.warning("Unknown tier levels in pending evolution for " + dto.playerUuid);
+                  continue;
+                }
+                RarityConfig rarity = EnchantAnimationConfig.getRarityByName(dto.rarityName);
+                if (rarity == null) {
+                  logger.warning(
+                      "Unknown rarity '"
+                          + dto.rarityName
+                          + "' in pending evolution for "
+                          + dto.playerUuid);
+                  continue;
+                }
+                PendingEvolutionData pending =
+                    new PendingEvolutionData(null, current, next, rarity, dto.pickaxeKey, null);
+                ItemStack item = PendingEvolutionDocument.deserializeItem(dto.originalItemBase64);
+                if (item != null) pending.setOriginalItem(item);
+                pending.setCallbackAlreadyApplied(dto.callbackAlreadyApplied);
+                pendingEvolutions.put(uuid, pending);
+              }
+            });
+  }
 
   /**
-   * Stops all active animations and clears in-memory state. Called when the plugin is disabled.
-   * MongoDB documents are left intact so they can be restored on next start.
+   * Stops all active animations and clears in-memory state. Called when the plugin is disabled. the
+   * API documents are left intact so they can be restored on next start.
    */
   public void cleanup() {
     for (EvolutionAnimation animation : activeAnimations.values()) {
@@ -349,19 +390,26 @@ public class EvolutionSelectionManager {
     return all.get(ThreadLocalRandom.current().nextInt(all.size()));
   }
 
-  /** Upserts a {@link PendingEvolutionDocument} for the given player to MongoDB. */
+  /** Upserts a pending evolution record for the given player to the API. */
   private void savePendingToDatabase(UUID uuid, PendingEvolutionData pending) {
-    PendingEvolutionDocument doc = new PendingEvolutionDocument();
-    doc.playerUuid = uuid.toString();
-    doc.originalItemBase64 = PendingEvolutionDocument.serializeItem(pending.getOriginalItem());
-    doc.currentTierLevel = pending.getCurrentTier().level;
-    doc.nextTierLevel = pending.getNextTier().level;
-    doc.rarityName = pending.getWinningRarity().displayName();
-    doc.pickaxeKey = pending.getPickaxeKey();
-    doc.callbackAlreadyApplied = pending.isCallbackAlreadyApplied();
-    doc.save();
+    EvolveApiClient api = EvolveApiClient.getInstance();
+    if (api == null) return;
+    PendingDataDto dto = new PendingDataDto();
+    dto.type = PendingType.EVOLUTION;
+    dto.playerUuid = uuid.toString();
+    dto.originalItemBase64 = PendingEvolutionDocument.serializeItem(pending.getOriginalItem());
+    dto.currentTierLevel = pending.getCurrentTier().level;
+    dto.nextTierLevel = pending.getNextTier().level;
+    dto.rarityName = pending.getWinningRarity().displayName();
+    dto.pickaxeKey = pending.getPickaxeKey();
+    dto.callbackAlreadyApplied = pending.isCallbackAlreadyApplied();
+    api.upsertPendingDataAsync(dto);
   }
 
-  /** No-op: pending evolution state is not persisted to the API. */
-  private void deletePendingFromDatabase(UUID uuid) {}
+  /** Deletes the pending evolution record for the given player from the API. */
+  private void deletePendingFromDatabase(UUID uuid) {
+    EvolveApiClient api = EvolveApiClient.getInstance();
+    if (api == null) return;
+    api.deletePendingDataAsync(uuid, PendingType.EVOLUTION);
+  }
 }

@@ -8,6 +8,8 @@ import org.benski.evolv3.core.managers.enchant.EnchantSelectionManager;
 import org.benski.evolv3.core.managers.enchant.EvolutionSelectionManager;
 import org.benski.evolv3.core.managers.mine.FrostbiteBlockManager;
 import org.benski.evolv3.core.managers.pickaxe.PickaxeManager;
+import org.benski.evolv3.core.managers.pickaxe.PrestigeManager;
+import org.benski.evolv3.core.managers.pickaxe.PrestigeSelectionManager;
 import org.benski.evolv3.core.managers.player.PickupAnimationManager;
 import org.benski.evolv3.core.managers.world.TaskManager;
 import org.benski.evolv3.core.managers.world.WorldGuardManager;
@@ -20,32 +22,6 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 /** The main class connecting the plugin together. */
 public final class Main extends JavaPlugin {
-  /**
-   * Returns the active plugin instance.
-   *
-   * @return the Main plugin instance
-   */
-  public static Main getInstance() {
-    return getPlugin(Main.class);
-  }
-
-  /**
-   * Gets the blue ANSI color code for console logging.
-   *
-   * @return The blue color code
-   */
-  public static String getBlue() {
-    return "[34m";
-  }
-
-  /**
-   * Gets the ANSI reset code for console logging.
-   *
-   * @return The reset code
-   */
-  public static String getReset() {
-    return "[0m";
-  }
 
   /** Called when the plugin enables. */
   @Override
@@ -133,6 +109,19 @@ public final class Main extends JavaPlugin {
                       .applyEvolutionResult(
                           player, profile, playerProfile, nextTier, winningRarity);
                 });
+    PrestigeSelectionManager.getInstance()
+        .registerCallbackProvider(
+            (player, pickaxeKey, roll) ->
+                () -> {
+                  var playerDC = DataCenterRegistry.getInstance().getPlayerDataCenter();
+                  if (playerDC == null) return;
+                  var pickaxeProfile = PrestigeManager.getInstance().getLocalProfile(player);
+                  if (pickaxeProfile == null) return;
+                  var playerProfile = playerDC.getLocal(player);
+                  if (playerProfile == null) return;
+                  PrestigeManager.getInstance()
+                      .executePrestige(player, pickaxeProfile, playerProfile, roll);
+                });
   }
 
   /** Use api. */
@@ -182,6 +171,11 @@ public final class Main extends JavaPlugin {
     getLogger().info("[Evolv3] Cleared " + cleared + " entities.");
   }
 
+  /** Gets the plugin instance. */
+  public static Main getInstance() {
+    return getPlugin(Main.class);
+  }
+
   /**
    * Sends a console message.
    *
@@ -191,5 +185,23 @@ public final class Main extends JavaPlugin {
     getLogger().info(getBlue() + "========================================" + getReset());
     getLogger().info(getBlue() + message + getReset());
     getLogger().info(getBlue() + "========================================" + getReset());
+  }
+
+  /**
+   * Gets the blue ANSI color code for console logging.
+   *
+   * @return The blue color code
+   */
+  private static String getBlue() {
+    return "[34m";
+  }
+
+  /**
+   * Gets the ANSI reset code for console logging.
+   *
+   * @return The reset code
+   */
+  private static String getReset() {
+    return "[0m";
   }
 }

@@ -6,7 +6,6 @@ import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.TextDecoration;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import net.matrixcreations.libraries.MatrixColorAPI;
-import org.benski.evolv3.animations.progression.PrestigeAnimation;
 import org.benski.evolv3.core.abstracts.BaseMenu;
 import org.benski.evolv3.core.constants.ConfigNames;
 import org.benski.evolv3.core.constants.ConfigPaths;
@@ -14,10 +13,10 @@ import org.benski.evolv3.core.helpers.FontUtils;
 import org.benski.evolv3.core.helpers.Utils;
 import org.benski.evolv3.core.managers.pickaxe.PickaxeManager;
 import org.benski.evolv3.core.managers.pickaxe.PrestigeManager;
+import org.benski.evolv3.core.managers.pickaxe.PrestigeSelectionManager;
 import org.benski.evolv3.core.types.MenuType;
 import org.benski.evolv3.models.pickaxe.Pickaxe;
 import org.benski.evolv3.registry.ConfigRegistry;
-import org.benski.evolv3.registry.MenuRegistry;
 import org.bukkit.Material;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
@@ -308,15 +307,8 @@ public class PrestigeConfirmMenu extends BaseMenu {
       closeMenu(player);
 
       int nextPrestige = profile.prestige + 1;
-      PrestigeAnimation.play(
-          player,
-          nextPrestige,
-          () -> {
-            if (!player.isOnline()) return;
-            PrestigeStoneSelectMenu stoneMenu =
-                (PrestigeStoneSelectMenu) MenuRegistry.getInstance().get("prestige_stone_select");
-            if (stoneMenu != null) stoneMenu.openForStones(player, stones);
-          });
+      PrestigeSelectionManager.getInstance()
+          .startPrestige(player, profile.key, nextPrestige, stones);
 
       return true;
     }

@@ -11,7 +11,7 @@ import org.bukkit.Material;
  */
 @Getter
 @Setter
-public class BackpackItem {
+public final class BackpackItem {
 
   public boolean markedForDeletion;
   private String id;

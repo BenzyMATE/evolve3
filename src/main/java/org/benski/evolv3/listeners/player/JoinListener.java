@@ -14,6 +14,7 @@ import org.benski.evolv3.core.managers.enchant.EnchantSelectionManager;
 import org.benski.evolv3.core.managers.enchant.EvolutionSelectionManager;
 import org.benski.evolv3.core.managers.pickaxe.OmnitoolManager;
 import org.benski.evolv3.core.managers.pickaxe.PickaxeManager;
+import org.benski.evolv3.core.managers.pickaxe.PrestigeSelectionManager;
 import org.benski.evolv3.core.managers.player.RankManager;
 import org.benski.evolv3.datacenters.ArmorDataCenter;
 import org.benski.evolv3.datacenters.PlayerDataCenter;
@@ -99,6 +100,8 @@ public class JoinListener extends BaseListener {
 
     EvolutionSelectionManager.getInstance().handlePlayerJoin(player);
 
+    PrestigeSelectionManager.getInstance().handlePlayerJoin(player);
+
     Bukkit.getScheduler()
         .runTaskLater(
             plugin,
@@ -181,6 +184,8 @@ public class JoinListener extends BaseListener {
     EnchantSelectionManager.getInstance().handlePlayerQuit(player);
 
     EvolutionSelectionManager.getInstance().handlePlayerQuit(player);
+
+    PrestigeSelectionManager.getInstance().handlePlayerQuit(player);
 
     ArmorDataCenter armorDataCenter = DataCenterRegistry.getInstance().getArmorDataCenter();
     PlayerDataCenter playerDataCenter = DataCenterRegistry.getInstance().getPlayerDataCenter();
