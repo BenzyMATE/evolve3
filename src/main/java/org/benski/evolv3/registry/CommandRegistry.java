@@ -14,6 +14,7 @@ import org.benski.evolv3.commands.player.PickupAnimationCommand;
 import org.benski.evolv3.commands.player.PreferencesCommand;
 import org.benski.evolv3.commands.player.RankupCommand;
 import org.benski.evolv3.commands.player.SkinCommand;
+import org.benski.evolv3.commands.player.TestCommand;
 import org.benski.evolv3.core.abstracts.BaseCommand;
 import org.benski.evolv3.core.interfaces.Registry;
 import org.benski.evolv3.core.managers.registry.CommandRegistryManager;
@@ -37,7 +38,8 @@ public class CommandRegistry implements Registry<BaseCommand> {
           SkinCommand.class,
           RankupCommand.class,
           CellPlayerCommand.class,
-          IslandCommand.class);
+          IslandCommand.class,
+          TestCommand.class);
 
   /** {@inheritDoc} */
   @Override

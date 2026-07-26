@@ -383,7 +383,7 @@ public class BackpackMenu extends BaseMenu {
               .replace("%total_amount%", String.format("%.2f", finalValue));
       player.sendMessage(formatMessage(player, line));
     }
-    player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.0f);
+    player.playSound(player.getLocation(), "custom.coins", 1.0f, 1.0f);
 
     selected.clear();
     profile.save(null);

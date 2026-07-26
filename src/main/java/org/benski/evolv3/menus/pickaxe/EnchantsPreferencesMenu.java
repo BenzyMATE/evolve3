@@ -11,6 +11,7 @@ import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.benski.evolv3.core.abstracts.BaseMenu;
 import org.benski.evolv3.core.constants.ConfigNames;
 import org.benski.evolv3.core.constants.ConfigPaths;
+import org.benski.evolv3.core.helpers.ItemTagHelper;
 import org.benski.evolv3.core.managers.enchant.EnchantAnimationConfig;
 import org.benski.evolv3.core.types.EnchantOption;
 import org.benski.evolv3.core.types.MenuType;
@@ -246,12 +247,20 @@ public class EnchantsPreferencesMenu extends BaseMenu {
     String rarityHex = option != null ? option.rarity().textColor().asHexString() : "#AAAAAA";
     String displayName = "&" + rarityHex + enchantName;
 
+    String rGlyph =
+        option != null
+            ? ItemTagHelper.getRarityGlyph(option.rarity().displayName().toLowerCase())
+            : null;
+    String glyphPrefix = rGlyph != null ? rGlyph : "";
+    String otherGlyph = ItemTagHelper.getTypeGlyph("other");
+
     List<String> lore =
         loreTpl.stream()
             .map(
                 line -> {
                   if (option != null) {
-                    String rarityLabel = "&" + rarityHex + option.rarity().displayName();
+                    String rarityLabel =
+                        "&f" + glyphPrefix + (otherGlyph != null ? otherGlyph : "");
                     return line.replace("{rarity}", rarityLabel);
                   }
                   return line.replace("{rarity}", "&#888888Unknown");
@@ -267,6 +276,9 @@ public class EnchantsPreferencesMenu extends BaseMenu {
       }
       meta.lore(loreComponents);
       base.setItemMeta(meta);
+    }
+    if (option != null) {
+      ItemTagHelper.applyTooltipStyle(base, option.rarity().displayName().toLowerCase());
     }
     return base;
   }

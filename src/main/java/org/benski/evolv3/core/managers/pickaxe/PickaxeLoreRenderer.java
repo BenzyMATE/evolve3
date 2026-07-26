@@ -11,6 +11,7 @@ import org.benski.evolv3.core.constants.ConfigNames;
 import org.benski.evolv3.core.constants.ConfigPaths;
 import org.benski.evolv3.core.constants.Enchants;
 import org.benski.evolv3.core.helpers.ItemStackExtensions;
+import org.benski.evolv3.core.helpers.ItemTagHelper;
 import org.benski.evolv3.core.helpers.Utils;
 import org.benski.evolv3.core.managers.enchant.EnchantAnimationConfig;
 import org.benski.evolv3.core.types.RarityConfig;
@@ -146,9 +147,11 @@ public final class PickaxeLoreRenderer {
     List<String> formattedLore =
         buildFormattedLoreStrings(player, profile, loreTemplate, durabilityBar);
 
-    String omnitoolTag =
-        defaultConfig().getString(ConfigPaths.Default.Pickaxe.OMNITOOL_LORE_TAG, "&7omnitool");
-    formattedLore.add(0, Utils.formatMessage(player, omnitoolTag));
+    String artifactGlyph = ItemTagHelper.getRarityGlyph("artifact");
+    String toolGlyph = ItemTagHelper.getTypeGlyph("tool");
+    String tagLine =
+        "&f " + (artifactGlyph != null ? artifactGlyph : "") + (toolGlyph != null ? toolGlyph : "");
+    formattedLore.add(0, Utils.formatMessage(player, tagLine));
 
     formattedLore.add("");
     String durabilityLabel =
@@ -191,6 +194,7 @@ public final class PickaxeLoreRenderer {
 
     meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES);
     item.setItemMeta(meta);
+    ItemTagHelper.applyTooltipStyle(item, "artifact");
   }
 
   /** Builds formatted lore strings. */

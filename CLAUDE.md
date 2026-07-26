@@ -2,8 +2,8 @@
 
 ## Development Environment
 
-- **Server Platform**: Paper 1.21.1
-- **Plugin Target**: Minecraft 1.21.1
+- **Server Platform**: Paper 26.1.2
+- **Plugin Target**: Minecraft 26.1.2
 - **Build Tool**: Maven (not Gradle)
 
 ## Code Standards

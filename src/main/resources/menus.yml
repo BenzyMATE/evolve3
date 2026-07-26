@@ -103,7 +103,7 @@ Pickaxe Menu:
     Header: " &#FFFFFF&lStones"
     FilledLine: " &8| &#{hex}{effect}"
     EmptyLine: " &8| &#333333Empty Socket"
-    ActionLine: " &8| &aShift+Right-Click &#AAAAAAto manage stones."
+    ActionLine: " &aShift+Right-Click &#AAAAAAto manage stones."
   LockedEnchant:
     Name: "&8&l⬡ &#666666Locked Enchant"
     Lore:

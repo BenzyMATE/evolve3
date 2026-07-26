@@ -11,6 +11,7 @@ import net.matrixcreations.libraries.MatrixColorAPI;
 import org.benski.evolv3.core.constants.ConfigNames;
 import org.benski.evolv3.core.constants.ConfigPaths;
 import org.benski.evolv3.core.helpers.FontUtils;
+import org.benski.evolv3.core.helpers.ItemTagHelper;
 import org.benski.evolv3.core.managers.enchant.EnchantAnimationConfig;
 import org.benski.evolv3.core.managers.enchant.StoneEffectRegistry;
 import org.benski.evolv3.core.types.RarityConfig;
@@ -66,6 +67,8 @@ public final class EvolutionStone {
    * @return a new {@link ItemStack} representing the stone
    */
   public static ItemStack create(RarityConfig rarity, String enchantDisplayName) {
+    String rarityKey = rarity.displayName().toLowerCase();
+    String rarityGlyph = ItemTagHelper.getRarityGlyph(rarityKey);
     String rarityHex = String.format("%06X", rarity.textColor().value());
 
     var enchantOption = EnchantAnimationConfig.getOption(enchantDisplayName);
@@ -118,11 +121,8 @@ public final class EvolutionStone {
         ds(stoneNameTemplate.replace("{hex}", rarityHex).replace("{stone_name}", stoneName)));
 
     List<Component> lore = new ArrayList<>();
-    lore.add(
-        ds(
-            rarityLineTemplate
-                .replace("{hex}", rarityHex)
-                .replace("{rarity}", rarity.displayName())));
+    String rarityLabel = (rarityGlyph != null ? rarityGlyph + " " : "") + rarity.displayName();
+    lore.add(ds(rarityLineTemplate.replace("{hex}", rarityHex).replace("{rarity}", rarityLabel)));
     lore.add(
         ds(
             boundTemplate
@@ -156,6 +156,7 @@ public final class EvolutionStone {
     meta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
 
     item.setItemMeta(meta);
+    ItemTagHelper.applyTooltipStyle(item, rarityKey);
     return item;
   }
 
@@ -167,6 +168,8 @@ public final class EvolutionStone {
    * @return a new {@link ItemStack} representing the unbound prestige stone
    */
   public static ItemStack createUnbound(RarityConfig rarity) {
+    String rarityKey = rarity.displayName().toLowerCase();
+    String rarityGlyph = ItemTagHelper.getRarityGlyph(rarityKey);
     String rarityHex = String.format("%06X", rarity.textColor().value());
     FileConfiguration cfg = ConfigRegistry.getInstance().get(ConfigNames.STONES);
 
@@ -195,11 +198,8 @@ public final class EvolutionStone {
         ds(stoneNameTemplate.replace("{hex}", rarityHex).replace("{stone_name}", stoneName)));
 
     List<Component> lore = new ArrayList<>();
-    lore.add(
-        ds(
-            rarityLineTemplate
-                .replace("{hex}", rarityHex)
-                .replace("{rarity}", rarity.displayName())));
+    String rarityLabel = (rarityGlyph != null ? rarityGlyph + " " : "") + rarity.displayName();
+    lore.add(ds(rarityLineTemplate.replace("{hex}", rarityHex).replace("{rarity}", rarityLabel)));
     lore.add(ds(" &#888888Prestige Reward &#444444— &#888888Any Enchant"));
     lore.add(Component.empty());
     for (String hint : applyHint) {
@@ -221,6 +221,7 @@ public final class EvolutionStone {
     meta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
 
     item.setItemMeta(meta);
+    ItemTagHelper.applyTooltipStyle(item, rarityKey);
     return item;
   }
 

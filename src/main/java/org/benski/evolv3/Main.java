@@ -15,6 +15,7 @@ import org.benski.evolv3.core.managers.world.TaskManager;
 import org.benski.evolv3.core.managers.world.WorldGuardManager;
 import org.benski.evolv3.datacenters.ArmorDataCenter;
 import org.benski.evolv3.datacenters.PlayerDataCenter;
+import org.benski.evolv3.hooks.EvolveTagExpansion;
 import org.benski.evolv3.hooks.PlaceholderAPIExpansion;
 import org.benski.evolv3.registry.*;
 import org.bukkit.Bukkit;
@@ -73,6 +74,7 @@ public final class Main extends JavaPlugin {
     CommandRegistry.getInstance().initialize();
     DataCenterRegistry.getInstance().initialize();
     MenuRegistry.getInstance().initialize();
+    DialogRegistry.getInstance().initialize();
     ListenerRegistry.getInstance().initialize();
     AnimationRegistry.getInstance().initialize();
     PickupAnimationManager.getInstance().initialize();
@@ -139,7 +141,8 @@ public final class Main extends JavaPlugin {
   private void useHooks() {
     if (Bukkit.getPluginManager().getPlugin("PlaceholderAPI") != null) {
       new PlaceholderAPIExpansion(this).register();
-      getLogger().info("PlaceholderAPI expansion registered.");
+      new EvolveTagExpansion(this).register();
+      getLogger().info("PlaceholderAPI expansions registered.");
     }
   }
 
@@ -150,6 +153,7 @@ public final class Main extends JavaPlugin {
     AnimationRegistry.getInstance().cleanup();
     ListenerRegistry.getInstance().cleanup();
     DataCenterRegistry.getInstance().cleanup();
+    DialogRegistry.getInstance().cleanup();
     MenuRegistry.getInstance().cleanup();
     CommandRegistry.getInstance().cleanup();
     EnchantRegistry.getInstance().cleanup();

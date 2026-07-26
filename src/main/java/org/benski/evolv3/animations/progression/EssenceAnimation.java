@@ -91,8 +91,7 @@ public class EssenceAnimation extends BaseAnimation {
     }
 
     if (!prefSound) return;
-    targetPlayer.playSound(centerLocation, Sound.ENTITY_VEX_AMBIENT, 0.8f, 1.5f);
-    targetPlayer.playSound(centerLocation, Sound.ENTITY_PHANTOM_FLAP, 0.6f, 2.0f);
+    targetPlayer.playSound(centerLocation, "custom.burstessence", 1.0f, 1.0f);
   }
 
   /** {@inheritDoc} */
@@ -118,6 +117,10 @@ public class EssenceAnimation extends BaseAnimation {
         && currentTick < FLY_UP_DURATION + LOOP_DURATION
         && currentTick % 3 == 0) {
       spawnParticle(particleLocation, Particle.ENCHANT, 2, 0.05, 0.05, 0.05, 0.3);
+    }
+
+    if (currentTick == FLY_UP_DURATION + LOOP_DURATION && prefSound) {
+      targetPlayer.playSound(centerLocation, "custom.flyingtowardsessence", 1.0f, 1.0f);
     }
   }
 

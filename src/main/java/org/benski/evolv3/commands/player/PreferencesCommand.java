@@ -2,7 +2,7 @@ package org.benski.evolv3.commands.player;
 
 import java.util.List;
 import org.benski.evolv3.core.abstracts.BaseCommand;
-import org.benski.evolv3.registry.MenuRegistry;
+import org.benski.evolv3.registry.DialogRegistry;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
@@ -10,7 +10,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-/** Command for managing player preferences. Usage: /preferences [setting] [value] */
+/** Command for managing player preferences. Usage: /preferences */
 public class PreferencesCommand extends BaseCommand {
   /** Creates and registers the PreferencesCommand. @param plugin the owning plugin */
   public PreferencesCommand(JavaPlugin plugin) {
@@ -32,7 +32,7 @@ public class PreferencesCommand extends BaseCommand {
   /** {@inheritDoc} */
   @Override
   public @Nullable String getUsage() {
-    return "/preferences [animation|message|enchantstyle] [value]";
+    return "/preferences";
   }
 
   /** {@inheritDoc} */
@@ -51,12 +51,7 @@ public class PreferencesCommand extends BaseCommand {
     if (!requirePlayer(sender)) {
       return true;
     }
-    var menu = MenuRegistry.getInstance().get("preferences");
-    if (menu != null) {
-      menu.openMenu((Player) sender);
-    } else {
-      sendError(sender, "Preferences menu is not available.");
-    }
+    DialogRegistry.getInstance().open((Player) sender, "preferences");
     return true;
   }
 

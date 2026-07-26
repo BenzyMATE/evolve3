@@ -43,11 +43,11 @@ import org.bukkit.util.Vector;
  * as the essence animation, but structured.
  */
 public class AtomAnimation extends BaseAnimation {
-  private static final int DEFAULT_DURATION = 105;
+  private static final int DEFAULT_DURATION = 60;
 
-  private static final int ORBITAL_START = 8;
-  private static final int ORBITAL_END = 83;
-  private static final int COLLAPSE_END = 88;
+  private static final int ORBITAL_START = 6;
+  private static final int ORBITAL_END = 41;
+  private static final int COLLAPSE_END = 46;
 
   private static final Particle.DustOptions GOLD =
       new Particle.DustOptions(Color.fromRGB(255, 238, 0), 1.3f);
@@ -114,8 +114,7 @@ public class AtomAnimation extends BaseAnimation {
     ringAngles[2] = Math.PI * 4.0 / 3.0;
 
     if (!prefSound) return;
-    targetPlayer.playSound(centerLocation, Sound.ENTITY_ENDER_DRAGON_AMBIENT, 0.4f, 1.6f);
-    targetPlayer.playSound(centerLocation, Sound.BLOCK_AMETHYST_CLUSTER_BREAK, 0.6f, 0.8f);
+    targetPlayer.playSound(centerLocation, "custom.burstatoms", 0.5f, 1.0f);
   }
 
   /** Called when tick occurs. */
@@ -147,7 +146,7 @@ public class AtomAnimation extends BaseAnimation {
     if (targetPlayer == null || !targetPlayer.isOnline()) return;
     if (prefSound) {
       targetPlayer.playSound(
-          targetPlayer.getLocation(), Sound.BLOCK_AMETHYST_BLOCK_CHIME, 1.0f, 0.8f);
+          targetPlayer.getLocation(), Sound.BLOCK_AMETHYST_BLOCK_CHIME, 0.5f, 0.8f);
     }
   }
 
@@ -199,8 +198,8 @@ public class AtomAnimation extends BaseAnimation {
       targetPlayer.spawnParticle(Particle.END_ROD, ambient, 1, 0, 0, 0, 0.005);
     }
 
-    if (localTick == 37 && prefSound) {
-      targetPlayer.playSound(centerLocation, Sound.BLOCK_AMETHYST_BLOCK_CHIME, 0.35f, 1.9f);
+    if (localTick == 17 && prefSound) {
+      targetPlayer.playSound(centerLocation, Sound.BLOCK_AMETHYST_BLOCK_CHIME, 0.2f, 1.9f);
     }
   }
 
@@ -218,8 +217,8 @@ public class AtomAnimation extends BaseAnimation {
         targetPlayer.spawnParticle(Particle.END_ROD, apex, 10, 0.18, 0.18, 0.18, 0.06);
       }
       if (prefSound) {
-        targetPlayer.playSound(centerLocation, Sound.BLOCK_AMETHYST_CLUSTER_BREAK, 0.9f, 2.0f);
-        targetPlayer.playSound(centerLocation, Sound.ENTITY_PLAYER_LEVELUP, 0.4f, 1.8f);
+        targetPlayer.playSound(centerLocation, Sound.BLOCK_AMETHYST_CLUSTER_BREAK, 0.5f, 2.0f);
+        targetPlayer.playSound(centerLocation, Sound.ENTITY_PLAYER_LEVELUP, 0.2f, 1.8f);
       }
     }
 
@@ -230,6 +229,10 @@ public class AtomAnimation extends BaseAnimation {
 
   /** Ticks launch. */
   private void tickLaunch(int localTick) {
+    if (localTick == 0 && prefSound) {
+      targetPlayer.playSound(centerLocation, "custom.flyingtowardsatom", 0.5f, 1.0f);
+    }
+
     int duration = DEFAULT_DURATION - COLLAPSE_END;
     double t = (double) localTick / duration;
     double eased = t * t;

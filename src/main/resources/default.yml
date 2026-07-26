@@ -121,7 +121,7 @@ Pickaxe:
   Progressbar Symbol 2: "&#444444▄"
 
   # Pickaxe display name (supports PlaceholderAPI)
-  Name: '&#00FFFF⛏ &#FFFFFF&l%evolv3_player_name% &#00FFFFPickaxe'
+  Name: '&#FFFFFF&l %evolv3_player_name% &#00FFFFPickaxe'
 
   # Action bar displayed while mining
   ActionBar: '&#00FFFF⭐ &#FFFFFF&lLevel &#00FFFF%evolv3_pickaxe_level% &#00FFFF📊 &#FFFFFF&lXP &#00FFFF%evolv3_pickaxe_xp%&#888888/&#00FFFF%evolv3_pickaxe_target%'
@@ -144,7 +144,7 @@ Pickaxe:
   # Footer lore (usage instructions)
   LoreFooter:
     - ''
-    - ' &8| &aRight-Click &#AAAAAAto open menu'
+    - ' &8| &aRight-Click &#AAAAAAto open menu '
     - ''
 
   # XP Hologram settings (displayed when mining blocks)

@@ -20,6 +20,7 @@ import org.benski.evolv3.core.constants.ConfigNames;
 import org.benski.evolv3.core.constants.ConfigPaths;
 import org.benski.evolv3.core.constants.Enchants;
 import org.benski.evolv3.core.helpers.ItemStackExtensions;
+import org.benski.evolv3.core.helpers.ItemTagHelper;
 import org.benski.evolv3.core.managers.enchant.EnchantAnimationConfig;
 import org.benski.evolv3.core.managers.enchant.EnchantSelectionManager;
 import org.benski.evolv3.core.managers.enchant.EvolutionSelectionManager;
@@ -403,8 +404,11 @@ public class PickaxeMenu extends BaseMenu {
 
     String rarityHex = rarity != null ? rarity.textColor().asHexString().toUpperCase() : "#CCCCCC";
     String rarityColor = "&" + rarityHex;
-    String rarityName = rarity != null ? rarity.displayName() : "Unknown";
-    String rarityStr = rarityColor + rarityName;
+    String rarityGlyph =
+        rarity != null ? ItemTagHelper.getRarityGlyph(rarity.displayName().toLowerCase()) : null;
+    String otherGlyph = ItemTagHelper.getTypeGlyph("other");
+    String rarityStr =
+        "&f" + (rarityGlyph != null ? rarityGlyph : "") + (otherGlyph != null ? otherGlyph : "");
 
     int level = enchant.level;
     int maxLevel = enchant.maxLevel;
@@ -489,7 +493,7 @@ public class PickaxeMenu extends BaseMenu {
     String stonesActionLine =
         menusConfig.getString(
             ConfigPaths.Menus.PickaxeMenu.STONES_ACTION_LINE,
-            " &8| &aShift+Right-Click &#AAAAAAto manage stones.");
+            " &aShift+Right-Click &#AAAAAAto manage stones.");
     for (String line : rawLore) {
       if (isMax && line.contains("{cost}")) {
         continue;
@@ -564,7 +568,8 @@ public class PickaxeMenu extends BaseMenu {
               .replace("{chance}%", String.format("%.1f", chance) + "%" + stoneChanceIndicator)
               .replace("{chance}", String.format("%.1f", chance))
               .replace("{speed}", String.format("%.0f%%", speedBonus) + stoneSpeedIndicator)
-              .replace("{drops}", String.valueOf(fortuneDrops) + "x" + stoneDropsIndicator);
+              .replace("{drops}", String.valueOf(fortuneDrops) + "x" + stoneDropsIndicator)
+              .replace("{status}", enchant.enabled ? "&#00FF88Enabled ✔" : "&#FF5555Disabled ✖");
       lore.add(deserialize(formatMessage(player, processed)));
     }
 
@@ -584,16 +589,13 @@ public class PickaxeMenu extends BaseMenu {
     ItemStack item = EnchantAnimationConfig.createEnchantItem(displayName);
     ItemMeta meta = item.getItemMeta();
     if (meta == null) return item;
-    if (enchant.enabled) {
-      meta.displayName(
-          deserialize(
-              formatMessage(player, stoneIcons + "&#00FF88✔ " + rarityColor + "&l" + displayName)));
-    } else {
-      meta.displayName(
-          deserialize(formatMessage(player, stoneIcons + "&#FF5555✖ &#FF5555&l" + displayName)));
-    }
+    meta.displayName(
+        deserialize(formatMessage(player, stoneIcons + rarityColor + "&l " + displayName)));
     meta.lore(lore);
     item.setItemMeta(meta);
+    if (rarity != null) {
+      ItemTagHelper.applyTooltipStyle(item, rarity.displayName().toLowerCase());
+    }
     return item;
   }
 

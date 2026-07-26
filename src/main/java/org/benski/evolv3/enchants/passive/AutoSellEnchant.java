@@ -26,7 +26,6 @@ import org.benski.evolv3.registry.ConfigRegistry;
 import org.benski.evolv3.registry.DataCenterRegistry;
 import org.bukkit.Location;
 import org.bukkit.Particle;
-import org.bukkit.Sound;
 import org.bukkit.block.Block;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
@@ -167,7 +166,7 @@ public class AutoSellEnchant implements Listener {
     }
 
     if (pref.sound) {
-      player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.0f);
+      player.playSound(player.getLocation(), "custom.coins", 1.0f, 1.0f);
     }
 
     if (pref.hologram

@@ -689,7 +689,6 @@ public final class ConfigPaths {
       public static final String PICKUP_NO_SLOTS = "pickaxe-limit.pickup-no-slots";
     }
 
-    /** Pickup animation command messages. */
     /** Enchant animation action bar messages. */
     public static final class EnchantAnimation {
       private EnchantAnimation() {}
