@@ -19,6 +19,7 @@ import org.benski.evolv3.core.abstracts.BaseMenu;
 import org.benski.evolv3.core.constants.ConfigNames;
 import org.benski.evolv3.core.constants.ConfigPaths;
 import org.benski.evolv3.core.constants.Enchants;
+import org.benski.evolv3.core.constants.ShutterFrames;
 import org.benski.evolv3.core.helpers.ItemStackExtensions;
 import org.benski.evolv3.core.helpers.ItemTagHelper;
 import org.benski.evolv3.core.managers.enchant.EnchantAnimationConfig;
@@ -162,6 +163,22 @@ public class PickaxeMenu extends BaseMenu {
   /** Per-player animation frame counter so concurrent viewers don't share state. */
   private final Map<UUID, Integer> animationFrames = new ConcurrentHashMap<>();
 
+  /**
+   * Per-player shutter animation frame (1-{@value ShutterFrames#FRAME_COUNT}), present only while a
+   * socket-menu transition is covering/uncovering this menu. Absent means no shutter is active and
+   * the normal title (with the essence/evolve progress icons) is shown.
+   */
+  private final Map<UUID, Integer> shutterFrame = new ConcurrentHashMap<>();
+
+  /** Ticks between shutter animation frames. */
+  private static final int SHUTTER_STEP_TICKS = 2;
+
+  /**
+   * Spacer count (in {@code 七} characters) before the shutter glyph, positioning it over the
+   * pickaxe frame art. Placeholder — needs in-game tuning against the real texture.
+   */
+  private static final int SHUTTER_OFFSET = 187;
+
   /** Creates and registers the PickaxeMenu. @param plugin the owning plugin */
   public PickaxeMenu(JavaPlugin plugin) {
     super(plugin);
@@ -178,6 +195,7 @@ public class PickaxeMenu extends BaseMenu {
   protected void onClose(Player player) {
     player.playSound(player.getLocation(), Sound.ENTITY_ENDERMAN_TELEPORT, 0.5f, 1.2f);
     animationFrames.remove(player.getUniqueId());
+    shutterFrame.remove(player.getUniqueId());
   }
 
   /** Returns {@code true} if dynamic title. */
@@ -204,6 +222,15 @@ public class PickaxeMenu extends BaseMenu {
   /** Returns the menu title. */
   @Override
   protected String getMenuTitle(Player player) {
+    Integer shutter = shutterFrame.get(player.getUniqueId());
+    if (shutter != null) {
+      return "&f"
+          + "七".repeat(52)
+          + "⒑"
+          + "七".repeat(SHUTTER_OFFSET)
+          + ShutterFrames.glyph(shutter);
+    }
+
     PlayerDataCenter pdc = DataCenterRegistry.getInstance().getPlayerDataCenter();
     var pickaxeProfile = pdc != null ? pdc.getPickaxeForPlayer(player) : null;
     if (pickaxeProfile == null) {
@@ -663,10 +690,56 @@ public class PickaxeMenu extends BaseMenu {
    */
   private void handleEnchantSocketOpen(Player player, String displayName) {
     StoneSocketMenu socketMenu = (StoneSocketMenu) MenuRegistry.getInstance().get("stone_socket");
-    if (socketMenu != null) {
-      closeMenu(player);
-      socketMenu.openForEnchant(player, displayName);
-    }
+    if (socketMenu == null) return;
+
+    UUID uuid = player.getUniqueId();
+    runFrameRamp(
+        player,
+        1,
+        ShutterFrames.FRAME_COUNT,
+        SHUTTER_STEP_TICKS,
+        frame -> {
+          shutterFrame.put(uuid, frame);
+          updateTitle(player);
+        },
+        () -> {
+          shutterFrame.remove(uuid);
+          socketMenu.openForEnchant(player, displayName);
+        });
+  }
+
+  /**
+   * Opens this menu already covered by the fully-closed shutter frame, then ramps the shutter open
+   * to reveal the enchant grid. Used when returning from {@link StoneSocketMenu} so the transition
+   * reads as one continuous animation instead of an instant cut.
+   *
+   * @param player the player to open the menu for
+   */
+  public void openWithEntranceShutter(Player player) {
+    shutterFrame.put(player.getUniqueId(), ShutterFrames.FRAME_COUNT);
+    openMenu(player);
+    playOpeningShutter(player);
+  }
+
+  /**
+   * Ramps the shutter from fully closed down to fully open, revealing the already-populated menu
+   * underneath. Assumes {@link #shutterFrame} is currently set to {@link ShutterFrames#FRAME_COUNT}
+   * for this player.
+   *
+   * @param player the player to animate for
+   */
+  private void playOpeningShutter(Player player) {
+    UUID uuid = player.getUniqueId();
+    runFrameRamp(
+        player,
+        ShutterFrames.FRAME_COUNT,
+        1,
+        SHUTTER_STEP_TICKS,
+        frame -> {
+          shutterFrame.put(uuid, frame);
+          updateTitle(player);
+        },
+        () -> shutterFrame.remove(uuid));
   }
 
   /**

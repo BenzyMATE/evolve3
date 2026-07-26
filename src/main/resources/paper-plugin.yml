@@ -2,7 +2,7 @@ name: Evolv3
 version: '1.0-SNAPSHOT'
 main: org.benski.evolv3.Main
 bootstrapper: org.benski.evolv3.Bootstrap
-api-version: '26.1'
+api-version: '26.2'
 
 dependencies:
   server:

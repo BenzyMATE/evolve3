@@ -13,6 +13,8 @@ import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.benski.evolv3.core.abstracts.BaseMenu;
 import org.benski.evolv3.core.constants.ConfigNames;
 import org.benski.evolv3.core.constants.ConfigPaths;
+import org.benski.evolv3.core.constants.ShutterFrames;
+import org.benski.evolv3.core.helpers.ItemStackExtensions;
 import org.benski.evolv3.core.managers.enchant.EnchantAnimationConfig;
 import org.benski.evolv3.core.managers.enchant.StoneEffectRegistry;
 import org.benski.evolv3.core.types.MenuType;
@@ -67,6 +69,38 @@ public class StoneSocketMenu extends BaseMenu {
   /** Per-player state: which enchant display name this player is currently viewing. */
   private final Map<UUID, String> pendingEnchants = new ConcurrentHashMap<>();
 
+  /**
+   * Per-player shutter animation frame (1-{@value ShutterFrames#FRAME_COUNT}), present only while a
+   * transition to/from {@link PickaxeMenu} is covering/uncovering this menu.
+   */
+  private final Map<UUID, Integer> shutterFrame = new ConcurrentHashMap<>();
+
+  /** Ticks between shutter animation frames. */
+  private static final int SHUTTER_STEP_TICKS = 2;
+
+  /**
+   * Spacer count (in {@code 七} characters) before the shutter glyph and before the socket icon
+   * segment, positioning them over the socket frame art. Placeholders — need in-game tuning.
+   */
+  private static final int BACKGROUND_OFFSET = 52;
+
+  private static final int SHUTTER_OFFSET = 187;
+
+  /**
+   * Spacer count (in {@code 七} characters) between each of the 5 socket icons, left to right.
+   * Placeholder even-spacing guess — tune in-game.
+   */
+  private static final int[] SOCKET_ICON_GAPS = {80, 20, 20, 20, 20};
+
+  /**
+   * Shutter frame at which the header row (slot {@value SLOT_ENCHANT_HEADER}) is cleared while
+   * closing.
+   */
+  private static final int HEADER_CLEAR_FRAME = 10;
+
+  /** Shutter frame at which the socket row ({@link #SOCKET_SLOTS}) is cleared while closing. */
+  private static final int SOCKETS_CLEAR_FRAME = 20;
+
   /** Creates and registers the StoneSocketMenu. @param plugin the owning plugin */
   public StoneSocketMenu(JavaPlugin plugin) {
     super(plugin);
@@ -80,20 +114,100 @@ public class StoneSocketMenu extends BaseMenu {
    * @param displayName the enchant's display name (e.g. "Efficiency", "Nuclear Shower")
    */
   public void openForEnchant(Player player, String displayName) {
-    pendingEnchants.put(player.getUniqueId(), displayName);
+    UUID uuid = player.getUniqueId();
+    pendingEnchants.put(uuid, displayName);
+    shutterFrame.put(uuid, ShutterFrames.FRAME_COUNT);
     openMenu(player);
+    playOpeningShutter(player);
+  }
+
+  /**
+   * Ramps the shutter from fully closed down to fully open, revealing the already-populated menu
+   * underneath. Assumes {@link #shutterFrame} is currently set to {@link ShutterFrames#FRAME_COUNT}
+   * for this player.
+   *
+   * @param player the player to animate for
+   */
+  private void playOpeningShutter(Player player) {
+    UUID uuid = player.getUniqueId();
+    runFrameRamp(
+        player,
+        ShutterFrames.FRAME_COUNT,
+        1,
+        SHUTTER_STEP_TICKS,
+        frame -> {
+          shutterFrame.put(uuid, frame);
+          updateTitle(player);
+        },
+        () -> shutterFrame.remove(uuid));
   }
 
   /** Returns the menu title. */
   @Override
   protected String getMenuTitle(Player player) {
-    return "&8Sockets";
+    Integer shutter = shutterFrame.get(player.getUniqueId());
+    if (shutter != null) {
+      return "&f"
+          + "七".repeat(BACKGROUND_OFFSET)
+          + "⠣"
+          + "七".repeat(SHUTTER_OFFSET)
+          + ShutterFrames.glyph(shutter);
+    }
+    return "&f" + "七".repeat(BACKGROUND_OFFSET) + "⠣" + buildSocketIconsSegment(player);
+  }
+
+  /**
+   * Builds the segment of the title string that draws each socket's icon (rarity gem or locked) at
+   * its position over the socket frame art. Unlocked-but-empty sockets contribute no glyph — just
+   * the bare socket frame art shows through.
+   *
+   * @param player the player viewing the menu
+   * @return the composed icon segment
+   */
+  private String buildSocketIconsSegment(Player player) {
+    String displayName = pendingEnchants.get(player.getUniqueId());
+    if (displayName == null) return "";
+
+    PlayerDataCenter pdc = DataCenterRegistry.getInstance().getPlayerDataCenter();
+    Pickaxe profile = pdc != null ? pdc.getPickaxeForPlayer(player) : null;
+    if (profile == null) return "";
+
+    EnchantData enchant = profile.enchants.getEnchant(displayName.toLowerCase());
+    int unlockedSlots = EnchantData.getUnlockedSlotCount(profile.prestige);
+
+    StringBuilder segment = new StringBuilder();
+    for (int i = 0; i < SOCKET_SLOTS.length; i++) {
+      segment.append("七".repeat(SOCKET_ICON_GAPS[i]));
+      segment.append(resolveSocketGlyph(enchant, i, unlockedSlots));
+    }
+    return segment.toString();
+  }
+
+  /**
+   * Resolves the font glyph for a single socket: the locked icon if beyond the unlocked count, the
+   * rarity gem icon if a stone is socketed, or empty (just the socket frame art, no overlay) for an
+   * unlocked-but-empty socket.
+   */
+  private String resolveSocketGlyph(EnchantData enchant, int socketIndex, int unlockedSlots) {
+    if (socketIndex >= unlockedSlots) return "⠤";
+
+    String rarity = enchant != null ? enchant.socketStones[socketIndex] : null;
+    if (rarity == null) return "";
+
+    return switch (rarity) {
+      case "Common" -> "Ⅰ";
+      case "Uncommon" -> "Ⅱ";
+      case "Rare" -> "Ⅲ";
+      case "Epic" -> "Ⅳ";
+      case "Legendary" -> "Ⅴ";
+      default -> "⁘";
+    };
   }
 
   /** Returns the menu size. */
   @Override
   protected int getMenuSize() {
-    return 27;
+    return 54;
   }
 
   /** Called when open occurs. */
@@ -106,7 +220,15 @@ public class StoneSocketMenu extends BaseMenu {
   @Override
   protected void onClose(Player player) {
     pendingEnchants.remove(player.getUniqueId());
+    shutterFrame.remove(player.getUniqueId());
     player.playSound(player.getLocation(), Sound.BLOCK_AMETHYST_BLOCK_HIT, 0.5f, 1.1f);
+  }
+
+  /** Refreshes the menu contents and re-renders the title so socket icon changes are reflected. */
+  @Override
+  public void refresh(Player player) {
+    super.refresh(player);
+    updateTitle(player);
   }
 
   /** Populate menu. */
@@ -122,7 +244,7 @@ public class StoneSocketMenu extends BaseMenu {
     EnchantData enchant = profile.enchants.getEnchant(displayName.toLowerCase());
 
     ItemStack filler = buildFiller();
-    for (int i = 0; i < 27; i++) {
+    for (int i = 0; i < getMenuSize(); i++) {
       inventory.setItem(i, filler);
     }
 
@@ -145,11 +267,7 @@ public class StoneSocketMenu extends BaseMenu {
   @Override
   protected boolean handleClick(Player player, int slot, InventoryClickEvent event) {
     if (slot == SLOT_BACK) {
-      closeMenu(player);
-      PickaxeMenu pickaxeMenu = (PickaxeMenu) MenuRegistry.getInstance().get("pickaxe");
-      if (pickaxeMenu != null) {
-        pickaxeMenu.openMenu(player);
-      }
+      handleBackButton(player);
       return true;
     }
 
@@ -161,6 +279,53 @@ public class StoneSocketMenu extends BaseMenu {
     }
 
     return true;
+  }
+
+  /**
+   * Plays the closing shutter animation over this menu, clearing the header and socket rows in sync
+   * with the shutter's sweep so they appear to vanish behind it, then hands off to {@link
+   * PickaxeMenu} with its own entrance shutter animation. No {@code closeInventory()} call is made
+   * anywhere in this path — {@link PickaxeMenu#openWithEntranceShutter} opens the next inventory
+   * directly, which is what avoids the close/reopen flicker.
+   *
+   * @param player the player who clicked back
+   */
+  private void handleBackButton(Player player) {
+    PickaxeMenu pickaxeMenu = (PickaxeMenu) MenuRegistry.getInstance().get("pickaxe");
+    if (pickaxeMenu == null) return;
+
+    UUID uuid = player.getUniqueId();
+    ItemStack filler = buildFiller();
+    boolean[] headerCleared = {false};
+    boolean[] socketsCleared = {false};
+
+    runFrameRamp(
+        player,
+        1,
+        ShutterFrames.FRAME_COUNT,
+        SHUTTER_STEP_TICKS,
+        frame -> {
+          shutterFrame.put(uuid, frame);
+          updateTitle(player);
+
+          Inventory inventory = openInventories.get(uuid);
+          if (inventory == null) return;
+
+          if (!headerCleared[0] && frame >= HEADER_CLEAR_FRAME) {
+            inventory.setItem(SLOT_ENCHANT_HEADER, filler);
+            headerCleared[0] = true;
+          }
+          if (!socketsCleared[0] && frame >= SOCKETS_CLEAR_FRAME) {
+            for (int socketSlot : SOCKET_SLOTS) {
+              inventory.setItem(socketSlot, filler);
+            }
+            socketsCleared[0] = true;
+          }
+        },
+        () -> {
+          shutterFrame.remove(uuid);
+          pickaxeMenu.openWithEntranceShutter(player);
+        });
   }
 
   /** Returns the menu type. */
@@ -361,36 +526,30 @@ public class StoneSocketMenu extends BaseMenu {
                     " &8| &cRight-Click &#AAAAAAto remove this stone.")
                 : " &8| &cRight-Click &#AAAAAAto remove this stone.";
 
-        ItemStack item = new ItemStack(org.bukkit.Material.END_CRYSTAL);
-        ItemMeta meta = item.getItemMeta();
-        if (meta != null) {
-          meta.displayName(
-              format(
-                  player,
-                  nameTemplate.replace("{hex}", rarityHex).replace("{stone_name}", stoneName)));
-          List<Component> lore = new ArrayList<>();
+        Component name =
+            format(
+                player,
+                nameTemplate.replace("{hex}", rarityHex).replace("{stone_name}", stoneName));
+        List<Component> lore = new ArrayList<>();
+        lore.add(
+            format(
+                player,
+                rarityTemplate
+                    .replace("{hex}", rarityHex)
+                    .replace("{rarity}", storedRarity)
+                    .replace("{enchant_hex}", enchantRarityHex)
+                    .replace("{enchant}", enchantDisplayName)));
+        lore.add(Component.empty());
+        lore.add(format(player, effectHeader));
+        for (String chunk : org.benski.evolv3.core.helpers.Utils.wrapWords(effectText, 5)) {
           lore.add(
               format(
-                  player,
-                  rarityTemplate
-                      .replace("{hex}", rarityHex)
-                      .replace("{rarity}", storedRarity)
-                      .replace("{enchant_hex}", enchantRarityHex)
-                      .replace("{enchant}", enchantDisplayName)));
-          lore.add(Component.empty());
-          lore.add(format(player, effectHeader));
-          for (String chunk : org.benski.evolv3.core.helpers.Utils.wrapWords(effectText, 5)) {
-            lore.add(
-                format(
-                    player, effectTemplate.replace("{hex}", rarityHex).replace("{effect}", chunk)));
-          }
-          lore.add(Component.empty());
-          lore.add(format(player, removeHint));
-          lore.add(Component.empty());
-          meta.lore(lore);
-          item.setItemMeta(meta);
+                  player, effectTemplate.replace("{hex}", rarityHex).replace("{effect}", chunk)));
         }
-        return item;
+        lore.add(Component.empty());
+        lore.add(format(player, removeHint));
+        lore.add(Component.empty());
+        return buildInvisibleMapItem(name, lore);
       }
     }
 
@@ -412,41 +571,51 @@ public class StoneSocketMenu extends BaseMenu {
                 " &8| &#888888Hold an &#00FFFFEvolution Stone",
                 " &8| &#888888in your cursor and left-click.");
 
-    ItemStack item = new ItemStack(Material.GLASS_PANE);
-    ItemMeta meta = item.getItemMeta();
-    if (meta != null) {
-      meta.displayName(
-          format(player, emptyName.replace("{index}", String.valueOf(socketIndex + 1))));
-      List<Component> lore = new ArrayList<>();
-      lore.add(Component.empty());
-      lore.add(format(player, howToHeader));
-      for (String line : howToLines) {
-        lore.add(format(player, line));
-      }
-      lore.add(Component.empty());
-      meta.lore(lore);
-      item.setItemMeta(meta);
+    Component name = format(player, emptyName.replace("{index}", String.valueOf(socketIndex + 1)));
+    List<Component> lore = new ArrayList<>();
+    lore.add(Component.empty());
+    lore.add(format(player, howToHeader));
+    for (String line : howToLines) {
+      lore.add(format(player, line));
     }
-    return item;
+    lore.add(Component.empty());
+    return buildInvisibleMapItem(name, lore);
   }
 
   /** Builds locked socket item. */
   private ItemStack buildLockedSocketItem(Player player, int socketIndex) {
     int requiredPrestige = socketIndex;
-    ItemStack item = new ItemStack(Material.RED_STAINED_GLASS_PANE);
+    Component name = format(player, "&#FF4444&lLocked Socket");
+    List<Component> lore = new ArrayList<>();
+    lore.add(Component.empty());
+    lore.add(format(player, " &#888888Requires &#FFD700Prestige " + requiredPrestige));
+    lore.add(Component.empty());
+    lore.add(format(player, " &#888888Prestige your pickaxe to"));
+    lore.add(format(player, " &#888888unlock this socket slot."));
+    lore.add(Component.empty());
+    return buildInvisibleMapItem(name, lore);
+  }
+
+  /**
+   * Creates a MAP item with custom model data 1 (invisible via resource pack). The real graphic is
+   * drawn by the menu title at this socket's position; this item only carries the hover lore,
+   * mirroring the vessel items in {@link PickaxeMenu}.
+   *
+   * @param displayName the display name component
+   * @param lore the lore lines to apply
+   * @return the configured ItemStack
+   */
+  @SuppressWarnings("deprecation")
+  private ItemStack buildInvisibleMapItem(Component displayName, List<Component> lore) {
+    ItemStack item = new ItemStack(Material.MAP);
     ItemMeta meta = item.getItemMeta();
-    if (meta != null) {
-      meta.displayName(format(player, "&#FF4444&lLocked Socket"));
-      List<Component> lore = new ArrayList<>();
-      lore.add(Component.empty());
-      lore.add(format(player, " &#888888Requires &#FFD700Prestige " + requiredPrestige));
-      lore.add(Component.empty());
-      lore.add(format(player, " &#888888Prestige your pickaxe to"));
-      lore.add(format(player, " &#888888unlock this socket slot."));
-      lore.add(Component.empty());
-      meta.lore(lore);
-      item.setItemMeta(meta);
-    }
+
+    meta.displayName(displayName);
+    meta.setCustomModelData(1);
+    meta.lore(lore);
+
+    item.setItemMeta(meta);
+    ItemStackExtensions.setData(item, "id", "1");
     return item;
   }
 

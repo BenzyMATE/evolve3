@@ -81,7 +81,7 @@
                         </goals>
                         <configuration>
                             <fromFile>${project.build.directory}/upload/Evolv3.jar</fromFile>
-                            <url>sftp://uk-1p.witherpanel.com:2022/plugins</url>
+                            <url>sftp://nl-3.panelapi.net:2022/plugins</url>
                             <serverId>sftp-server</serverId>
                         </configuration>
                     </execution>

@@ -5,6 +5,7 @@ import static org.benski.evolv3.core.helpers.Utils.formatMessage;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.IntConsumer;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.benski.evolv3.core.constants.ConfigNames;
 import org.benski.evolv3.core.constants.ConfigPaths;
@@ -20,6 +21,7 @@ import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scheduler.BukkitTask;
 
 /**
@@ -236,6 +238,55 @@ public abstract class BaseMenu implements Menu, InventoryHolder, Listener {
     } catch (Exception e) {
       plugin.getLogger().warning("Error setting title: " + e.getMessage());
     }
+  }
+
+  /**
+   * Runs a one-shot frame ramp from {@code startFrame} to {@code endFrame} (inclusive), invoking
+   * {@code onFrame} every {@code stepTicks} and {@code onComplete} once after the final frame is
+   * processed. Used to drive multi-step title animations (e.g. a shutter transition) — unlike
+   * {@link #startTitleUpdateTask}, this is a finite ramp rather than an infinite fixed-interval
+   * loop, and the caller controls exactly what happens each frame instead of it always calling
+   * {@link #getMenuTitle}.
+   *
+   * @param player the player to animate for
+   * @param startFrame the first frame value passed to {@code onFrame}
+   * @param endFrame the last frame value passed to {@code onFrame} (inclusive); may be less than
+   *     {@code startFrame} to ramp downward
+   * @param stepTicks ticks between frames
+   * @param onFrame invoked with the current frame number on every step, including the first
+   * @param onComplete invoked once after the final frame has been processed
+   * @return the scheduled task
+   */
+  protected BukkitTask runFrameRamp(
+      Player player,
+      int startFrame,
+      int endFrame,
+      int stepTicks,
+      IntConsumer onFrame,
+      Runnable onComplete) {
+    int direction = endFrame >= startFrame ? 1 : -1;
+
+    return new BukkitRunnable() {
+      int frame = startFrame;
+
+      @Override
+      public void run() {
+        if (!player.isOnline()) {
+          cancel();
+          return;
+        }
+
+        onFrame.accept(frame);
+
+        if (frame == endFrame) {
+          cancel();
+          onComplete.run();
+          return;
+        }
+
+        frame += direction;
+      }
+    }.runTaskTimer(plugin, 0L, stepTicks);
   }
 
   /**
