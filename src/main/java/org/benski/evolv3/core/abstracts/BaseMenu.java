@@ -176,11 +176,14 @@ public abstract class BaseMenu implements Menu, InventoryHolder, Listener {
   }
 
   /**
-   * Starts the dynamic title update task for a player.
+   * Starts the dynamic title update task for a player. Exposed as {@code protected} so subclasses
+   * driving their own short-lived animation (e.g. a shutter transition) can pause this periodic
+   * task first with {@link #stopTitleUpdateTask} and restart it afterward, instead of having both
+   * run concurrently and fight over the title.
    *
    * @param player the player to start updates for
    */
-  private void startTitleUpdateTask(Player player) {
+  protected void startTitleUpdateTask(Player player) {
     stopTitleUpdateTask(player);
 
     int interval = getTitleUpdateInterval();
@@ -204,11 +207,12 @@ public abstract class BaseMenu implements Menu, InventoryHolder, Listener {
   }
 
   /**
-   * Stops the dynamic title update task for a player.
+   * Stops the dynamic title update task for a player. See {@link #startTitleUpdateTask} for why
+   * this is {@code protected}.
    *
    * @param player the player to stop updates for
    */
-  private void stopTitleUpdateTask(Player player) {
+  protected void stopTitleUpdateTask(Player player) {
     BukkitTask task = titleUpdateTasks.remove(player.getUniqueId());
     if (task != null && !task.isCancelled()) {
       task.cancel();
@@ -319,8 +323,25 @@ public abstract class BaseMenu implements Menu, InventoryHolder, Listener {
   }
 
   /**
-   * Event handler for inventory clicks. Cancels ALL interactions (including the player's own
-   * inventory) while this menu is open, then routes top-inventory clicks to handleClick.
+   * Determines whether clicks in the player's own (bottom) inventory should be cancelled while this
+   * menu is open. Defaults to {@code true} — the menu is fully locked down, which is correct for
+   * almost every menu. Override to return {@code false} for a menu that needs the player to pick
+   * up/place items from their own inventory while it's open (e.g. dragging an item onto the cursor
+   * to socket it). Shift-clicks in the player's own inventory are always cancelled regardless,
+   * since Bukkit's default shift-click handling would otherwise quick-move the item into an
+   * arbitrary top-inventory slot, bypassing {@link #handleClick} entirely.
+   *
+   * @return {@code true} to cancel all bottom-inventory clicks (default), {@code false} to allow
+   *     plain (non-shift) pickup/place clicks there
+   */
+  protected boolean cancelPlayerInventoryClicks() {
+    return true;
+  }
+
+  /**
+   * Event handler for inventory clicks. Always cancels top-inventory interaction and routes it to
+   * {@link #handleClick}. Bottom (player) inventory clicks are cancelled too unless {@link
+   * #cancelPlayerInventoryClicks} opts out for this menu.
    */
   @EventHandler
   public void onInventoryClick(InventoryClickEvent event) {
@@ -356,6 +377,10 @@ public abstract class BaseMenu implements Menu, InventoryHolder, Listener {
         player.sendMessage(formatMessage(player, msg));
         plugin.getLogger().log(java.util.logging.Level.SEVERE, "Error handling menu click", e);
       }
+    } else if (event.getClickedInventory() != null
+        && !cancelPlayerInventoryClicks()
+        && !event.isShiftClick()) {
+      event.setCancelled(false);
     }
   }
 

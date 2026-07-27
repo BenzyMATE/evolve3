@@ -35,3 +35,12 @@ Socket Menu:
     HowToLines:
       - " &8| &#888888Hold an &#00FFFFEvolution Stone"
       - " &8| &#888888in your cursor and left-click."
+  Info Button:
+    Name: "&#00BFFF&lEvolution Sockets"
+    Lore:
+      - " &#888888Evolution Stones socket into your"
+      - " &#888888enchants, granting passive bonuses"
+      - " &#888888that scale with the stone's rarity."
+      - ""
+      - " &#888888Sockets unlock as you prestige your"
+      - " &#888888pickaxe \u2014 up to {max} per enchant."

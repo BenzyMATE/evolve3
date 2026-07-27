@@ -1386,6 +1386,11 @@ public final class ConfigPaths {
 
       /** String list — each entry is one how-to line. */
       public static final String EMPTY_HOW_TO_LINES = "Socket Menu.Empty Socket.HowToLines";
+
+      public static final String INFO_NAME = "Socket Menu.Info Button.Name";
+
+      /** String list — each entry is one lore line. */
+      public static final String INFO_LORE = "Socket Menu.Info Button.Lore";
     }
   }
 }

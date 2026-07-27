@@ -14,14 +14,18 @@ import org.benski.evolv3.core.constants.ConfigPaths;
 import org.benski.evolv3.core.helpers.ItemStackExtensions;
 import org.benski.evolv3.core.helpers.Messageable;
 import org.benski.evolv3.core.helpers.Utils;
+import org.benski.evolv3.core.interfaces.Menu;
 import org.benski.evolv3.core.managers.enchant.EnchantAnimationConfig;
 import org.benski.evolv3.core.types.RarityConfig;
 import org.benski.evolv3.datacenters.PlayerDataCenter;
 import org.benski.evolv3.items.EvolutionStone;
 import org.benski.evolv3.items.Scroll;
+import org.benski.evolv3.menus.pickaxe.PickaxeMenu;
+import org.benski.evolv3.menus.pickaxe.StoneSocketMenu;
 import org.benski.evolv3.models.player.PlayerProfile;
 import org.benski.evolv3.registry.ConfigRegistry;
 import org.benski.evolv3.registry.DataCenterRegistry;
+import org.benski.evolv3.registry.MenuRegistry;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
@@ -143,6 +147,8 @@ public class Evolv3Command extends BaseCommand {
       case "stone" -> handleGiveStone(sender, args);
       case "setbackpack" -> handleSetBackpack(sender, args);
       case "scroll" -> handleScroll(sender, args);
+      case "socketcalib" -> handleSocketCalib(sender, args);
+      case "vesselcalib" -> handleVesselCalib(sender, args);
       default -> {
         sendError(sender, "Unknown subcommand: &#FFFFFF" + args[0]);
         sendInfo(sender, "Use &#FFFFFF/e help &#CCCCCCfor available commands.");
@@ -675,6 +681,156 @@ public class Evolv3Command extends BaseCommand {
     Messageable.sendRaw(sender, "");
   }
 
+  /**
+   * Temporary calibration command for {@link StoneSocketMenu}'s pixel-exact socket icon positions.
+   * With no args, prints the current values. With {@code <index> <value>}, updates {@link
+   * StoneSocketMenu#setSocketCenterX} in memory and refreshes the sender's open socket menu, if
+   * any, so the change is visible instantly with no rebuild/restart. Remove this subcommand once
+   * alignment is finalized and the printed values are copied into {@link StoneSocketMenu}'s {@code
+   * SOCKET_CENTER_X} source.
+   */
+  private void handleSocketCalib(CommandSender sender, String[] args) {
+    int[] centerX = StoneSocketMenu.getSocketCenterX();
+
+    if (args.length < 3) {
+      Messageable.sendRaw(sender, "");
+      Messageable.sendRaw(sender, "  &#00FFFF&l⚙ Socket CenterX Calibration");
+      Messageable.sendRaw(sender, "  &#444444&m                                    ");
+      Messageable.sendRaw(sender, "");
+      for (int i = 0; i < centerX.length; i++) {
+        Messageable.sendRaw(
+            sender, "  &#888888Socket " + (i + 1) + " &#444444» &#FFFFFF" + centerX[i]);
+      }
+      Messageable.sendRaw(sender, "");
+      Messageable.sendRaw(
+          sender, "  &#888888Usage: &#FFFFFF/e socketcalib <1-" + centerX.length + "> <value>");
+      Messageable.sendRaw(sender, "");
+      return;
+    }
+
+    int index;
+    int value;
+    try {
+      index = Integer.parseInt(args[1]) - 1;
+      value = Integer.parseInt(args[2]);
+    } catch (NumberFormatException e) {
+      sendError(sender, "Socket index and value must both be whole numbers.");
+      return;
+    }
+
+    if (index < 0 || index >= centerX.length) {
+      sendError(
+          sender, "Socket index must be between &#FFFFFF1 &cand &#FFFFFF" + centerX.length + "&c.");
+      return;
+    }
+
+    StoneSocketMenu.setSocketCenterX(index, value);
+
+    if (sender instanceof Player player) {
+      Menu socketMenu = MenuRegistry.getInstance().get("stone_socket");
+      if (socketMenu != null && socketMenu.isMenuOpen(player)) {
+        socketMenu.refresh(player);
+      }
+    }
+
+    sendSuccess(
+        sender,
+        "Socket &#FFFFFF" + (index + 1) + " &#00FFFFcenterX set to &#FFFFFF" + value + "&#00FFFF.");
+  }
+
+  /**
+   * Temporary calibration command for the exact-pixel essence/evolve vessel icon offsets and
+   * shutter offset in {@link PickaxeMenu} and {@link StoneSocketMenu}. With no args, prints all 6
+   * current values. With {@code <pickaxe|socket> <essence|evolve|shutter> <value>}, updates the
+   * matching menu's static offset in memory and refreshes the sender's open menu, if any, so the
+   * change is visible instantly with no rebuild/restart. Remove this subcommand once alignment is
+   * finalized and the printed values are copied into each menu's source.
+   */
+  private void handleVesselCalib(CommandSender sender, String[] args) {
+    if (args.length < 4) {
+      Messageable.sendRaw(sender, "");
+      Messageable.sendRaw(sender, "  &#00FFFF&l⚙ Vessel/Shutter Calibration");
+      Messageable.sendRaw(sender, "  &#444444&m                                    ");
+      Messageable.sendRaw(sender, "");
+      Messageable.sendRaw(sender, "  &#FFFFFF&lPickaxe Menu");
+      Messageable.sendRaw(
+          sender, "  &#888888Essence &#444444» &#FFFFFF" + PickaxeMenu.getEssenceIconOffset());
+      Messageable.sendRaw(
+          sender, "  &#888888Evolve &#444444» &#FFFFFF" + PickaxeMenu.getEvolveIconOffset());
+      Messageable.sendRaw(
+          sender, "  &#888888Shutter &#444444» &#FFFFFF" + PickaxeMenu.getShutterOffset());
+      Messageable.sendRaw(sender, "");
+      Messageable.sendRaw(sender, "  &#FFFFFF&lSocket Menu");
+      Messageable.sendRaw(
+          sender, "  &#888888Essence &#444444» &#FFFFFF" + StoneSocketMenu.getEssenceIconOffset());
+      Messageable.sendRaw(
+          sender, "  &#888888Evolve &#444444» &#FFFFFF" + StoneSocketMenu.getEvolveIconOffset());
+      Messageable.sendRaw(
+          sender, "  &#888888Shutter &#444444» &#FFFFFF" + StoneSocketMenu.getShutterOffset());
+      Messageable.sendRaw(sender, "");
+      Messageable.sendRaw(
+          sender,
+          "  &#888888Usage: &#FFFFFF/e vesselcalib <pickaxe|socket> <essence|evolve|shutter>"
+              + " <value>");
+      Messageable.sendRaw(sender, "");
+      return;
+    }
+
+    String menuArg = args[1].toLowerCase();
+    String fieldArg = args[2].toLowerCase();
+
+    if (!menuArg.equals("pickaxe") && !menuArg.equals("socket")) {
+      sendError(sender, "Menu must be &#FFFFFFpickaxe &cor &#FFFFFFsocket&c.");
+      return;
+    }
+    if (!fieldArg.equals("essence") && !fieldArg.equals("evolve") && !fieldArg.equals("shutter")) {
+      sendError(sender, "Field must be &#FFFFFFessence&c, &#FFFFFFevolve&c, or &#FFFFFFshutter&c.");
+      return;
+    }
+
+    int value;
+    try {
+      value = Integer.parseInt(args[3]);
+    } catch (NumberFormatException e) {
+      sendError(sender, "Value must be a whole number.");
+      return;
+    }
+
+    String menuType;
+    if (menuArg.equals("pickaxe")) {
+      switch (fieldArg) {
+        case "essence" -> PickaxeMenu.setEssenceIconOffset(value);
+        case "evolve" -> PickaxeMenu.setEvolveIconOffset(value);
+        default -> PickaxeMenu.setShutterOffset(value);
+      }
+      menuType = "pickaxe";
+    } else {
+      switch (fieldArg) {
+        case "essence" -> StoneSocketMenu.setEssenceIconOffset(value);
+        case "evolve" -> StoneSocketMenu.setEvolveIconOffset(value);
+        default -> StoneSocketMenu.setShutterOffset(value);
+      }
+      menuType = "stone_socket";
+    }
+
+    if (sender instanceof Player player) {
+      Menu menu = MenuRegistry.getInstance().get(menuType);
+      if (menu != null && menu.isMenuOpen(player)) {
+        menu.refresh(player);
+      }
+    }
+
+    sendSuccess(
+        sender,
+        "&#FFFFFF"
+            + menuArg
+            + " "
+            + fieldArg
+            + " &#00FFFFoffset set to &#FFFFFF"
+            + value
+            + "&#00FFFF.");
+  }
+
   /** Formats message. */
   private String formatMessage(CommandSender sender, String message) {
     if (sender instanceof Player player) {
@@ -702,7 +858,9 @@ public class Evolv3Command extends BaseCommand {
           "stone",
           "setbackpack",
           "statistic",
-          "scroll");
+          "scroll",
+          "socketcalib",
+          "vesselcalib");
 
   @Override
   public @Nullable List<String> getTabCompletion(
@@ -793,6 +951,15 @@ public class Evolv3Command extends BaseCommand {
           .map(Player::getName)
           .filter(n -> n.toLowerCase().startsWith(args[3].toLowerCase()))
           .toList();
+    }
+    if (args.length == 2 && "socketcalib".equals(sub)) {
+      return filterPrefix(List.of("1", "2", "3", "4"), args[1]);
+    }
+    if (args.length == 2 && "vesselcalib".equals(sub)) {
+      return filterPrefix(List.of("pickaxe", "socket"), args[1]);
+    }
+    if (args.length == 3 && "vesselcalib".equals(sub)) {
+      return filterPrefix(List.of("essence", "evolve", "shutter"), args[2]);
     }
     if ("scroll".equals(sub)) {
       if (args.length == 2)

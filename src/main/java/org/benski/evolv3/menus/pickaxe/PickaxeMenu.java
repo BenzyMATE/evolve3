@@ -19,20 +19,18 @@ import org.benski.evolv3.core.abstracts.BaseMenu;
 import org.benski.evolv3.core.constants.ConfigNames;
 import org.benski.evolv3.core.constants.ConfigPaths;
 import org.benski.evolv3.core.constants.Enchants;
+import org.benski.evolv3.core.constants.PixelSpace;
 import org.benski.evolv3.core.constants.ShutterFrames;
 import org.benski.evolv3.core.helpers.ItemStackExtensions;
 import org.benski.evolv3.core.helpers.ItemTagHelper;
+import org.benski.evolv3.core.helpers.VesselProgress;
 import org.benski.evolv3.core.managers.enchant.EnchantAnimationConfig;
-import org.benski.evolv3.core.managers.enchant.EnchantSelectionManager;
-import org.benski.evolv3.core.managers.enchant.EvolutionSelectionManager;
 import org.benski.evolv3.core.managers.enchant.StoneEffectRegistry;
 import org.benski.evolv3.core.managers.pickaxe.PickaxeManager;
 import org.benski.evolv3.core.types.MenuType;
 import org.benski.evolv3.core.types.RarityConfig;
 import org.benski.evolv3.datacenters.PlayerDataCenter;
 import org.benski.evolv3.enchants.passive.FortuneEnchant;
-import org.benski.evolv3.enums.EvolutionTier;
-import org.benski.evolv3.items.AncientResin;
 import org.benski.evolv3.models.pickaxe.EnchantData;
 import org.benski.evolv3.models.pickaxe.Pickaxe;
 import org.benski.evolv3.models.player.PlayerProfile;
@@ -46,7 +44,6 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.meta.Damageable;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -174,10 +171,50 @@ public class PickaxeMenu extends BaseMenu {
   private static final int SHUTTER_STEP_TICKS = 2;
 
   /**
-   * Spacer count (in {@code 七} characters) before the shutter glyph, positioning it over the
-   * pickaxe frame art. Placeholder — needs in-game tuning against the real texture.
+   * Exact pixel offset (via {@link PixelSpace}) from "⒑" to the essence vessel icon. Tunable
+   * in-game via {@code /e vesselcalib} without a rebuild/restart.
    */
-  private static final int SHUTTER_OFFSET = 187;
+  private static int ESSENCE_ICON_OFFSET = -89;
+
+  /** Exact pixel offset from the essence icon to the evolve vessel icon. */
+  private static int EVOLVE_ICON_OFFSET = -105;
+
+  /**
+   * Exact pixel offset (via {@link PixelSpace}) from "⒑" (plus the vessel icons, when present) to
+   * the shutter glyph, positioning it over the pickaxe frame art. Tunable in-game via {@code /e
+   * vesselcalib} without a rebuild/restart.
+   */
+  private static int SHUTTER_OFFSET = -65;
+
+  /**
+   * Temporary calibration hooks for {@code /e vesselcalib} so {@link #ESSENCE_ICON_OFFSET}, {@link
+   * #EVOLVE_ICON_OFFSET}, and {@link #SHUTTER_OFFSET} can be tuned in-game without a
+   * rebuild/restart. Remove alongside the command once alignment is finalized and the defaults
+   * above are updated to match.
+   */
+  public static void setEssenceIconOffset(int value) {
+    ESSENCE_ICON_OFFSET = value;
+  }
+
+  public static int getEssenceIconOffset() {
+    return ESSENCE_ICON_OFFSET;
+  }
+
+  public static void setEvolveIconOffset(int value) {
+    EVOLVE_ICON_OFFSET = value;
+  }
+
+  public static int getEvolveIconOffset() {
+    return EVOLVE_ICON_OFFSET;
+  }
+
+  public static void setShutterOffset(int value) {
+    SHUTTER_OFFSET = value;
+  }
+
+  public static int getShutterOffset() {
+    return SHUTTER_OFFSET;
+  }
 
   /** Creates and registers the PickaxeMenu. @param plugin the owning plugin */
   public PickaxeMenu(JavaPlugin plugin) {
@@ -219,37 +256,46 @@ public class PickaxeMenu extends BaseMenu {
     return 10;
   }
 
+  /** Refreshes the menu contents and re-renders the title so vessel icon changes are reflected. */
+  @Override
+  public void refresh(Player player) {
+    super.refresh(player);
+    updateTitle(player);
+  }
+
   /** Returns the menu title. */
   @Override
   protected String getMenuTitle(Player player) {
     Integer shutter = shutterFrame.get(player.getUniqueId());
-    if (shutter != null) {
-      return "&f"
-          + "七".repeat(52)
-          + "⒑"
-          + "七".repeat(SHUTTER_OFFSET)
-          + ShutterFrames.glyph(shutter);
-    }
+    // At rest (no active transition) the shutter sits on its nearly-fully-transparent open
+    // keyframe; mid-transition it follows the real ramp frame, same as before.
+    int shutterGlyphFrame = shutter != null ? shutter : 1;
 
     PlayerDataCenter pdc = DataCenterRegistry.getInstance().getPlayerDataCenter();
     var pickaxeProfile = pdc != null ? pdc.getPickaxeForPlayer(player) : null;
     if (pickaxeProfile == null) {
-      return "&cLoading...";
+      return "&f"
+          + "七".repeat(52)
+          + "⒑"
+          + PixelSpace.of(SHUTTER_OFFSET)
+          + ShutterFrames.glyph(shutterGlyphFrame);
     }
 
     int frame =
         animationFrames.merge(player.getUniqueId(), 1, (cur, inc) -> cur >= 5 ? 1 : cur + 1);
 
-    String essenceIcon = getEssenceProgress(pickaxeProfile, frame);
-    String evolveIcon = getEvolveProgress(pickaxeProfile, frame);
+    String essenceIcon = VesselProgress.getEssenceProgress(pickaxeProfile, frame);
+    String evolveIcon = VesselProgress.getEvolveProgress(pickaxeProfile, frame);
 
     return "&f"
         + "七".repeat(52)
         + "⒑"
-        + "七".repeat(89)
+        + PixelSpace.of(ESSENCE_ICON_OFFSET)
         + essenceIcon
-        + "七".repeat(105)
-        + evolveIcon;
+        + PixelSpace.of(EVOLVE_ICON_OFFSET)
+        + evolveIcon
+        + PixelSpace.of(SHUTTER_OFFSET)
+        + ShutterFrames.glyph(shutterGlyphFrame);
   }
 
   /** Returns the menu size. */
@@ -313,6 +359,10 @@ public class PickaxeMenu extends BaseMenu {
   /** Handles click. */
   @Override
   protected boolean handleClick(Player player, int slot, InventoryClickEvent event) {
+    if (shutterFrame.containsKey(player.getUniqueId())) {
+      return true;
+    }
+
     PlayerDataCenter pdc = DataCenterRegistry.getInstance().getPlayerDataCenter();
     Pickaxe clickProfile = pdc != null ? pdc.getPickaxeForPlayer(player) : null;
     if (clickProfile != null) {
@@ -693,6 +743,20 @@ public class PickaxeMenu extends BaseMenu {
     if (socketMenu == null) return;
 
     UUID uuid = player.getUniqueId();
+
+    // Hide the enchant grid for the duration of the transition instead of leaving it sitting
+    // visible underneath the shutter cover.
+    Inventory inventory = openInventories.get(uuid);
+    if (inventory != null) {
+      for (int enchantSlot : ENCHANT_SLOTS) {
+        inventory.setItem(enchantSlot, null);
+      }
+    }
+
+    // Stop the periodic dynamic-title task (started when this menu was opened) so it doesn't fire
+    // concurrently with the manual per-frame updateTitle() calls below — running both at once was
+    // sending overlapping title updates and was the main source of the flicker.
+    stopTitleUpdateTask(player);
     runFrameRamp(
         player,
         1,
@@ -718,13 +782,27 @@ public class PickaxeMenu extends BaseMenu {
   public void openWithEntranceShutter(Player player) {
     shutterFrame.put(player.getUniqueId(), ShutterFrames.FRAME_COUNT);
     openMenu(player);
+
+    // openMenu() just populated the enchant grid; hide it again until the shutter fully opens so
+    // it doesn't sit visible underneath the shutter cover for the whole transition.
+    Inventory inventory = openInventories.get(player.getUniqueId());
+    if (inventory != null) {
+      for (int enchantSlot : ENCHANT_SLOTS) {
+        inventory.setItem(enchantSlot, null);
+      }
+    }
+
+    // openMenu() just started the periodic dynamic-title task (if enabled for this player); stop
+    // it immediately so it doesn't fire concurrently with the manual ramp below — see the matching
+    // comment in handleEnchantSocketOpen for why that caused heavy flicker.
+    stopTitleUpdateTask(player);
     playOpeningShutter(player);
   }
 
   /**
    * Ramps the shutter from fully closed down to fully open, revealing the already-populated menu
    * underneath. Assumes {@link #shutterFrame} is currently set to {@link ShutterFrames#FRAME_COUNT}
-   * for this player.
+   * for this player. Restarts the periodic dynamic-title task on completion, if enabled.
    *
    * @param player the player to animate for
    */
@@ -739,7 +817,21 @@ public class PickaxeMenu extends BaseMenu {
           shutterFrame.put(uuid, frame);
           updateTitle(player);
         },
-        () -> shutterFrame.remove(uuid));
+        () -> {
+          shutterFrame.remove(uuid);
+          updateTitle(player);
+
+          Inventory inventory = openInventories.get(uuid);
+          PlayerDataCenter pdc = DataCenterRegistry.getInstance().getPlayerDataCenter();
+          Pickaxe profile = pdc != null ? pdc.getPickaxeForPlayer(player) : null;
+          if (inventory != null && profile != null) {
+            buildEnchantSlots(player, inventory, profile);
+          }
+
+          if (isDynamicTitle(player)) {
+            startTitleUpdateTask(player);
+          }
+        });
   }
 
   /**
@@ -791,96 +883,7 @@ public class PickaxeMenu extends BaseMenu {
    * @param player the player who right-clicked
    */
   private void handleRepair(Player player) {
-    ItemStack held = player.getInventory().getItemInMainHand();
-    if (held.getType() == Material.AIR
-        || !org.benski.evolv3.core.helpers.Utils.isPickaxe(held.getType())) {
-      FileConfiguration messages = ConfigRegistry.getInstance().get(ConfigNames.MESSAGES);
-      String msg =
-          messages.getString(
-              ConfigPaths.Messages.Pickaxe.NO_PICKAXE,
-              "%evolv3_prefix% &cYou must be holding a pickaxe to repair it.");
-      player.sendMessage(formatMessage(player, msg));
-      return;
-    }
-
-    ItemMeta heldMeta = held.getItemMeta();
-    if (!(heldMeta instanceof Damageable dmg)) return;
-
-    if (dmg.getDamage() == 0) {
-      sendMessageList(player, ConfigPaths.Messages.PickaxeLimit.REPAIR_ALREADY_FULL);
-      player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
-      return;
-    }
-
-    FileConfiguration config = ConfigRegistry.getInstance().get(ConfigNames.DEFAULT);
-    int repairCost = config.getInt(ConfigPaths.Default.AncientResin.REPAIR_COST, 5);
-
-    if (countAncientResinInInventory(player) < repairCost) {
-      sendMessageList(
-          player,
-          ConfigPaths.Messages.PickaxeLimit.REPAIR_INSUFFICIENT_WOOD,
-          "%required%",
-          String.valueOf(repairCost));
-      player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
-      return;
-    }
-
-    removeAncientResinFromInventory(player, repairCost);
-
-    dmg.setDamage(0);
-    held.setItemMeta(dmg);
-    player.getInventory().setItemInMainHand(held);
-
-    String pickaxeId = ItemStackExtensions.getData(held, "id");
-    if (pickaxeId != null && !pickaxeId.isEmpty()) {
-      PlayerDataCenter repairPdc = DataCenterRegistry.getInstance().getPlayerDataCenter();
-      Pickaxe repairProfile = repairPdc != null ? repairPdc.getPickaxeByItemId(pickaxeId) : null;
-      if (repairProfile != null) {
-        repairProfile.durability = 0;
-        repairProfile.save(null);
-      }
-    }
-
-    player.playSound(player.getLocation(), Sound.BLOCK_ANVIL_USE, 1.0f, 1.2f);
-    sendMessageList(player, ConfigPaths.Messages.PickaxeLimit.REPAIR_SUCCESS);
-    closeMenu(player);
-  }
-
-  /** Sends message list. */
-  private void sendMessageList(Player player, String path, String... replacements) {
-    List<String> lines = ConfigRegistry.getInstance().get(ConfigNames.MESSAGES).getStringList(path);
-    for (String line : lines) {
-      for (int i = 0; i + 1 < replacements.length; i += 2) {
-        line = line.replace(replacements[i], replacements[i + 1]);
-      }
-      player.sendMessage(formatMessage(player, line));
-    }
-  }
-
-  /** Count ancient resin in inventory. */
-  private int countAncientResinInInventory(Player player) {
-    int total = 0;
-    for (ItemStack item : player.getInventory().getContents()) {
-      if (AncientResin.isAncientResin(item)) total += item.getAmount();
-    }
-    return total;
-  }
-
-  /** Remove ancient resin from inventory. */
-  private void removeAncientResinFromInventory(Player player, int amount) {
-    int remaining = amount;
-    ItemStack[] contents = player.getInventory().getContents();
-    for (int i = 0; i < contents.length && remaining > 0; i++) {
-      ItemStack item = contents[i];
-      if (!AncientResin.isAncientResin(item)) continue;
-      if (item.getAmount() <= remaining) {
-        remaining -= item.getAmount();
-        player.getInventory().setItem(i, new ItemStack(Material.AIR));
-      } else {
-        item.setAmount(item.getAmount() - remaining);
-        remaining = 0;
-      }
-    }
+    PickaxeManager.getInstance().repairPickaxe(player, () -> closeMenu(player));
   }
 
   /**
@@ -895,51 +898,7 @@ public class PickaxeMenu extends BaseMenu {
     Pickaxe profile = pdc.getPickaxeForPlayer(player);
     if (profile == null) return;
 
-    FileConfiguration messages = ConfigRegistry.getInstance().get(ConfigNames.MESSAGES);
-
-    if (EnchantSelectionManager.getInstance().hasActiveSelection(player)) {
-      String msg =
-          messages.getString(
-              ConfigPaths.Messages.Pickaxe.ENCHANT_SELECTION_ALREADY_ACTIVE,
-              "&cYou already have an enchant selection active!");
-      player.sendMessage(formatMessage(player, msg));
-      return;
-    }
-
-    if (EvolutionSelectionManager.getInstance().hasActiveEvolution(player)) {
-      String msg =
-          messages.getString(
-              ConfigPaths.Messages.Pickaxe.ENCHANT_SELECTION_ALREADY_ACTIVE,
-              "&cAn evolution is already in progress!");
-      player.sendMessage(formatMessage(player, msg));
-      return;
-    }
-
-    if (profile.essenceVessel.crystals <= 0) {
-      String msg =
-          messages.getString(
-              ConfigPaths.Messages.Pickaxe.ENCHANT_NO_SPINS,
-              "%evolv3_prefix% &cYou need at least 1 enchant spin to use this.");
-      player.sendMessage(formatMessage(player, msg));
-      return;
-    }
-
-    profile.essenceVessel.crystals--;
-    profile.save();
-
-    closeMenu(player);
-
-    EnchantSelectionManager.getInstance()
-        .startSelection(
-            player,
-            profile.key,
-            (p, selected) -> {
-              PlayerDataCenter dc = DataCenterRegistry.getInstance().getPlayerDataCenter();
-              if (dc == null) return;
-              Pickaxe updatedProfile = dc.getPickaxeForPlayer(p);
-              if (updatedProfile == null) return;
-              PickaxeManager.getInstance().applyEnchantFromSelection(p, selected, updatedProfile);
-            });
+    PickaxeManager.getInstance().startEnchantRoll(player, profile, () -> closeMenu(player));
   }
 
   /**
@@ -956,36 +915,8 @@ public class PickaxeMenu extends BaseMenu {
     PlayerProfile playerProfile = playerDC.getLocal(player);
     if (playerProfile == null) return;
 
-    PickaxeManager manager = PickaxeManager.getInstance();
-    if (!manager.validateEvolution(player, profile)) return;
-
-    EvolutionTier current = EvolutionTier.fromLevel(profile.evolution);
-    EvolutionTier next = current.next();
-    if (next == null) return;
-
-    profile.atomVessel.crystals--;
-    profile.save(null);
-
-    RarityConfig stone = EnchantAnimationConfig.rollRarity();
-    if (stone == null) return;
-
-    closeMenu(player);
-
-    final EvolutionTier finalCurrent = current;
-    final EvolutionTier finalNext = next;
-    final RarityConfig finalStone = stone;
-    final String pickaxeKey = profile.key;
-
-    EvolutionSelectionManager.getInstance()
-        .startEvolution(
-            player,
-            pickaxeKey,
-            finalCurrent,
-            finalNext,
-            finalStone,
-            () ->
-                manager.applyEvolutionResult(
-                    player, profile, playerProfile, finalNext, finalStone));
+    PickaxeManager.getInstance()
+        .startEvolution(player, profile, playerProfile, () -> closeMenu(player));
   }
 
   /**
@@ -1088,109 +1019,6 @@ public class PickaxeMenu extends BaseMenu {
       lore.add(deserialize(formatMessage(player, line)));
     }
     return lore;
-  }
-
-  /**
-   * Generates a Unicode character representing the essence progress for a pickaxe profile.
-   *
-   * @param profile the player's pickaxe profile
-   * @param animationFrame the current animation frame (1–5)
-   * @return a single Unicode character for the progress icon
-   */
-  private String getEssenceProgress(Pickaxe profile, int animationFrame) {
-    if (profile.essenceVessel.crystals > 0) {
-      return getAnimatedProgressIcon(10, animationFrame);
-    }
-
-    int percentage =
-        (int)
-            Math.round((double) profile.essenceVessel.current / profile.essenceVessel.target * 100);
-    int progressStep = Math.min(percentage / 10, 10);
-
-    if (progressStep == 0) {
-      return "↛";
-    }
-
-    return getAnimatedProgressIcon(progressStep, animationFrame);
-  }
-
-  /**
-   * Maps a progress step and animation frame to a Unicode progress icon.
-   *
-   * @param progressStep the current progress level (1–10)
-   * @param frame the current animation frame (1–5)
-   * @return the corresponding Unicode character
-   */
-  private String getAnimatedProgressIcon(int progressStep, int frame) {
-    String[][] progressIcons = {
-      {"①", "②", "③", "④", "⑤"},
-      {"⑥", "⑦", "⑧", "⑨", "⑩"},
-      {"⑪", "⑫", "⑬", "⑭", "⑮"},
-      {"⑯", "⑰", "⑱", "⑲", "⑳"},
-      {"㉑", "㉒", "㉓", "㉔", "㉕"},
-      {"㉖", "㉗", "㉘", "㉙", "㉚"},
-      {"㉛", "㉜", "㉝", "㉞", "㉟"},
-      {"㊱", "㊲", "㊳", "㊴", "㊵"},
-      {"㊶", "㊷", "㊸", "㊹", "㊺"},
-      {"㊻", "㊼", "㊽", "㊾", "㊿"}
-    };
-
-    if (progressStep < 1 || progressStep > 10 || frame < 1 || frame > 5) {
-      return "";
-    }
-
-    return progressIcons[progressStep - 1][frame - 1];
-  }
-
-  /**
-   * Generates a Unicode character representing the evolution progress for a pickaxe profile.
-   *
-   * @param profile the player's pickaxe profile
-   * @param animationFrame the current animation frame (1–5)
-   * @return a single Unicode character for the evolution progress icon
-   */
-  private String getEvolveProgress(Pickaxe profile, int animationFrame) {
-    if (profile.atomVessel.crystals > 0) {
-      return getAnimatedEvolveProgressIcon(10, animationFrame);
-    }
-
-    int percentage =
-        (int) Math.round((double) profile.atomVessel.current / profile.atomVessel.target * 100);
-    int progressStep = Math.min(percentage / 10, 10);
-
-    if (progressStep == 0) {
-      return "⁐";
-    }
-
-    return getAnimatedEvolveProgressIcon(progressStep, animationFrame);
-  }
-
-  /**
-   * Maps a progress step and animation frame to an evolution-specific Unicode icon.
-   *
-   * @param progressStep the current progress level (1–10)
-   * @param frame the current animation frame (1–5)
-   * @return the corresponding Unicode character
-   */
-  private String getAnimatedEvolveProgressIcon(int progressStep, int frame) {
-    String[][] evolveProgressIcons = {
-      {"⑾", "⑿", "⒀", "⒁", "⒂"},
-      {"⒃", "⒄", "⒅", "⒆", "⒇"},
-      {"⒈", "⒉", "⒊", "⒋", "⒌"},
-      {"⒍", "⒎", "⒏", "⒐", "⓵"},
-      {"⓶", "⓷", "⓸", "⓹", "⓺"},
-      {"⓻", "⓼", "⓽", "⓾", "⓿"},
-      {"❶", "❷", "❸", "❹", "❺"},
-      {"❻", "❼", "❽", "❾", "❿"},
-      {"➀", "➁", "➂", "➃", "➄"},
-      {"➅", "➆", "➇", "➈", "➉"}
-    };
-
-    if (progressStep < 1 || progressStep > 10 || frame < 1 || frame > 5) {
-      return "\uD83D\uDFA8";
-    }
-
-    return evolveProgressIcons[progressStep - 1][frame - 1];
   }
 
   /**

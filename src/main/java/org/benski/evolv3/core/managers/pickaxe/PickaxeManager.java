@@ -18,12 +18,15 @@ import org.benski.evolv3.core.constants.ConfigPaths;
 import org.benski.evolv3.core.helpers.ItemStackExtensions;
 import org.benski.evolv3.core.helpers.Utils;
 import org.benski.evolv3.core.managers.enchant.EnchantAnimationConfig;
+import org.benski.evolv3.core.managers.enchant.EnchantSelectionManager;
+import org.benski.evolv3.core.managers.enchant.EvolutionSelectionManager;
 import org.benski.evolv3.core.managers.player.EvolveScoreboardManager;
 import org.benski.evolv3.core.types.EnchantOption;
 import org.benski.evolv3.datacenters.ArmorDataCenter;
 import org.benski.evolv3.datacenters.PlayerDataCenter;
 import org.benski.evolv3.enums.ArmorType;
 import org.benski.evolv3.enums.EvolutionTier;
+import org.benski.evolv3.items.AncientResin;
 import org.benski.evolv3.models.armor.ArmorItem;
 import org.benski.evolv3.models.armor.ArmorProfile;
 import org.benski.evolv3.models.pickaxe.EnchantData;
@@ -36,6 +39,8 @@ import org.bukkit.Sound;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.Damageable;
+import org.bukkit.inventory.meta.ItemMeta;
 
 /**
  * Facade for all pickaxe-related operations. Handles progression (XP, level, essence, atoms),
@@ -441,6 +446,50 @@ public class PickaxeManager {
   }
 
   /**
+   * Validates and starts an evolution for the player, deducts the roll, rolls the reward stone
+   * rarity, then hands off to {@link EvolutionSelectionManager}'s animation. Shared by every menu
+   * that exposes an evolution button (currently the pickaxe menu and the stone socket menu) so the
+   * eligibility/roll logic isn't duplicated per-menu.
+   *
+   * @param player the player evolving
+   * @param profile the player's pickaxe profile
+   * @param playerProfile the player's overall profile, needed for the essence reward on completion
+   * @param onMenuClose invoked right before the animation starts, so the calling menu can close its
+   *     own inventory first (the animation requires an unobstructed view)
+   */
+  public void startEvolution(
+      @org.jetbrains.annotations.NotNull Player player,
+      @org.jetbrains.annotations.NotNull Pickaxe profile,
+      @org.jetbrains.annotations.NotNull PlayerProfile playerProfile,
+      @org.jetbrains.annotations.NotNull Runnable onMenuClose) {
+    if (!validateEvolution(player, profile)) return;
+
+    EvolutionTier current = EvolutionTier.fromLevel(profile.evolution);
+    EvolutionTier next = current.next();
+    if (next == null) return;
+
+    profile.atomVessel.crystals--;
+    profile.save(null);
+
+    org.benski.evolv3.core.types.RarityConfig stone = EnchantAnimationConfig.rollRarity();
+    if (stone == null) return;
+
+    onMenuClose.run();
+
+    EvolutionTier finalNext = next;
+    org.benski.evolv3.core.types.RarityConfig finalStone = stone;
+
+    EvolutionSelectionManager.getInstance()
+        .startEvolution(
+            player,
+            profile.key,
+            current,
+            finalNext,
+            finalStone,
+            () -> applyEvolutionResult(player, profile, playerProfile, finalNext, finalStone));
+  }
+
+  /**
    * Applies the result of an evolution after the animation completes.
    *
    * @param player the owning player
@@ -532,6 +581,69 @@ public class PickaxeManager {
     int minAmount = Math.min(((level - 1) * increment) + 1, maxCap);
     int maxAmount = Math.min(level * increment, maxCap);
     return ThreadLocalRandom.current().nextInt(minAmount, maxAmount + 1);
+  }
+
+  /**
+   * Validates and starts an enchant-roll selection for the player: rejects it if the player already
+   * has an active enchant selection or evolution in progress, or doesn't have a roll to spend;
+   * otherwise deducts the roll and hands off to {@link EnchantSelectionManager}'s animation. Shared
+   * by every menu that exposes a roll button (currently the pickaxe menu and the stone socket menu)
+   * so the eligibility/roll logic isn't duplicated per-menu.
+   *
+   * @param player the player rolling
+   * @param profile the player's pickaxe profile
+   * @param onMenuClose invoked right before the animation starts, so the calling menu can close its
+   *     own inventory first (the animation requires an unobstructed view)
+   */
+  public void startEnchantRoll(
+      @org.jetbrains.annotations.NotNull Player player,
+      @org.jetbrains.annotations.NotNull Pickaxe profile,
+      @org.jetbrains.annotations.NotNull Runnable onMenuClose) {
+    FileConfiguration messages = messagesConfig();
+
+    if (EnchantSelectionManager.getInstance().hasActiveSelection(player)) {
+      String msg =
+          messages.getString(
+              ConfigPaths.Messages.Pickaxe.ENCHANT_SELECTION_ALREADY_ACTIVE,
+              "&cYou already have an enchant selection active!");
+      player.sendMessage(Utils.formatMessage(player, msg));
+      return;
+    }
+
+    if (EvolutionSelectionManager.getInstance().hasActiveEvolution(player)) {
+      String msg =
+          messages.getString(
+              ConfigPaths.Messages.Pickaxe.ENCHANT_SELECTION_ALREADY_ACTIVE,
+              "&cAn evolution is already in progress!");
+      player.sendMessage(Utils.formatMessage(player, msg));
+      return;
+    }
+
+    if (profile.essenceVessel.crystals <= 0) {
+      String msg =
+          messages.getString(
+              ConfigPaths.Messages.Pickaxe.ENCHANT_NO_SPINS,
+              "%evolv3_prefix% &cYou need at least 1 enchant spin to use this.");
+      player.sendMessage(Utils.formatMessage(player, msg));
+      return;
+    }
+
+    profile.essenceVessel.crystals--;
+    profile.save();
+
+    onMenuClose.run();
+
+    EnchantSelectionManager.getInstance()
+        .startSelection(
+            player,
+            profile.key,
+            (p, selected) -> {
+              PlayerDataCenter dc = DataCenterRegistry.getInstance().getPlayerDataCenter();
+              if (dc == null) return;
+              Pickaxe updatedProfile = dc.getPickaxeForPlayer(p);
+              if (updatedProfile == null) return;
+              applyEnchantFromSelection(p, selected, updatedProfile);
+            });
   }
 
   /**
@@ -640,6 +752,108 @@ public class PickaxeManager {
     player.playSound(player.getLocation(), Sound.BLOCK_ENCHANTMENT_TABLE_USE, 1.0f, 1.2f);
 
     return true;
+  }
+
+  /**
+   * Repairs the pickaxe held in the player's main hand, spending Ancient Resin from their
+   * inventory. Shared by every menu that exposes a repair action (currently the pickaxe menu and
+   * the stone socket menu) so the validation/cost logic isn't duplicated per-menu.
+   *
+   * @param player the player repairing their held pickaxe
+   * @param onMenuClose invoked on a successful repair, so the calling menu can close its own
+   *     inventory the same way the pickaxe menu always has
+   */
+  public void repairPickaxe(
+      @org.jetbrains.annotations.NotNull Player player,
+      @org.jetbrains.annotations.NotNull Runnable onMenuClose) {
+    ItemStack held = player.getInventory().getItemInMainHand();
+    if (held.getType() == Material.AIR || !Utils.isPickaxe(held.getType())) {
+      String msg =
+          messagesConfig()
+              .getString(
+                  ConfigPaths.Messages.Pickaxe.NO_PICKAXE,
+                  "%evolv3_prefix% &cYou must be holding a pickaxe to repair it.");
+      player.sendMessage(Utils.formatMessage(player, msg));
+      return;
+    }
+
+    ItemMeta heldMeta = held.getItemMeta();
+    if (!(heldMeta instanceof Damageable dmg)) return;
+
+    if (dmg.getDamage() == 0) {
+      sendRepairMessageList(player, ConfigPaths.Messages.PickaxeLimit.REPAIR_ALREADY_FULL);
+      player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
+      return;
+    }
+
+    int repairCost = defaultConfig().getInt(ConfigPaths.Default.AncientResin.REPAIR_COST, 5);
+
+    if (countAncientResinInInventory(player) < repairCost) {
+      sendRepairMessageList(
+          player,
+          ConfigPaths.Messages.PickaxeLimit.REPAIR_INSUFFICIENT_WOOD,
+          "%required%",
+          String.valueOf(repairCost));
+      player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
+      return;
+    }
+
+    removeAncientResinFromInventory(player, repairCost);
+
+    dmg.setDamage(0);
+    held.setItemMeta(dmg);
+    player.getInventory().setItemInMainHand(held);
+
+    String pickaxeId = ItemStackExtensions.getData(held, "id");
+    if (pickaxeId != null && !pickaxeId.isEmpty()) {
+      PlayerDataCenter repairPdc = DataCenterRegistry.getInstance().getPlayerDataCenter();
+      Pickaxe repairProfile = repairPdc != null ? repairPdc.getPickaxeByItemId(pickaxeId) : null;
+      if (repairProfile != null) {
+        repairProfile.durability = 0;
+        repairProfile.save(null);
+      }
+    }
+
+    player.playSound(player.getLocation(), Sound.BLOCK_ANVIL_USE, 1.0f, 1.2f);
+    sendRepairMessageList(player, ConfigPaths.Messages.PickaxeLimit.REPAIR_SUCCESS);
+    onMenuClose.run();
+  }
+
+  /** Sends a config-driven message list to the player, applying token replacements. */
+  private void sendRepairMessageList(Player player, String path, String... replacements) {
+    List<String> lines = messagesConfig().getStringList(path);
+    for (String line : lines) {
+      for (int i = 0; i + 1 < replacements.length; i += 2) {
+        line = line.replace(replacements[i], replacements[i + 1]);
+      }
+      player.sendMessage(Utils.formatMessage(player, line));
+    }
+  }
+
+  /** Counts Ancient Resin across the player's entire inventory. */
+  private int countAncientResinInInventory(Player player) {
+    int total = 0;
+    for (ItemStack item : player.getInventory().getContents()) {
+      if (AncientResin.isAncientResin(item)) total += item.getAmount();
+    }
+    return total;
+  }
+
+  /** Removes the given amount of Ancient Resin from the player's inventory. */
+  private void removeAncientResinFromInventory(Player player, int amount) {
+    int remaining = amount;
+    ItemStack[] contents = player.getInventory().getContents();
+    for (int i = 0; i < contents.length && remaining > 0; i++) {
+      ItemStack item = contents[i];
+      if (!AncientResin.isAncientResin(item)) continue;
+      if (item.getAmount() <= remaining) {
+        remaining -= item.getAmount();
+        player.getInventory().setItem(i, new ItemStack(Material.AIR));
+      } else {
+        item.setAmount(item.getAmount() - remaining);
+        remaining = 0;
+      }
+    }
   }
 
   /**
