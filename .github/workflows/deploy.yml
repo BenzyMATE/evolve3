@@ -23,7 +23,7 @@ jobs:
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
-          java-version: '21'      # match your server's Java version
+          java-version: '25'    # was 21 — Paper 26.x requires Java 25
           cache: 'maven'
 
       - name: Build with Maven
