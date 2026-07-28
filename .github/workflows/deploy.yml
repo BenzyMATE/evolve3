@@ -29,6 +29,9 @@ jobs:
         # Make sure your pom has <finalName>evolve3</finalName> so the jar
         # name is stable and overwrites cleanly each deploy.
 
+      - name: List built jars
+          run: ls -la target/*.jar
+
       # --- DEPLOY: pure-SFTP upload into the server's plugins folder ---
       - name: Upload plugin jar via SFTP
         uses: wlixcc/SFTP-Deploy-Action@v1.2.5
