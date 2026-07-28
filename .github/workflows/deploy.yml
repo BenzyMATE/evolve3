@@ -1,15 +1,13 @@
 # .github/workflows/deploy.yml
-# Builds the plugin, uploads it via SFTP (Pterodactyl file daemon),
-# then restarts the server through the WitherPanel (Pterodactyl) Client API.
+# Builds the plugin on every push to main, uploads the jar via SFTP to the
+# Pterodactyl (WitherPanel) file daemon, then pings the DeployWebhook plugin
+# to hot-reload it. No panel API or SSH shell required.
 
 name: Build & Deploy Plugin
 
 on:
   push:
     branches: [ master ]
-
-env:
-  SERVER_ID: 7140e993   # your Pterodactyl server identifier - verify in panel URL
 
 jobs:
   build-deploy:
@@ -23,31 +21,31 @@ jobs:
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
-          java-version: '25'    # was 21 — Paper 26.x requires Java 25
+          java-version: '25'      # matches Paper 26.x
           cache: 'maven'
 
       - name: Build with Maven
         run: mvn -B clean package
-        # Gradle alternative: run: ./gradlew build
+        # Make sure your pom has <finalName>evolve3</finalName> so the jar
+        # name is stable and overwrites cleanly each deploy.
 
-      # --- DEPLOY: pure-SFTP upload (no shell/SCP available on Pterodactyl) ---
+      # --- DEPLOY: pure-SFTP upload into the server's plugins folder ---
       - name: Upload plugin jar via SFTP
         uses: wlixcc/SFTP-Deploy-Action@v1.2.5
         with:
           server: 'nl-3.panelapi.net'
           port: '2022'
-          username: ${{ secrets.SFTP_USERNAME }}   # e.g. yourname.7140e993
+          username: ${{ secrets.SFTP_USERNAME }}    # full name.serverid format
           password: ${{ secrets.SFTP_PASSWORD }}
-          sftp_only: true                          # IMPORTANT: no SSH shell exists
-          local_path: './target/upload/Evolv3.jar'
+          sftp_only: true                            # Pterodactyl has no SSH shell
+          local_path: './target/evolve3.jar'         # must match your finalName
           remote_path: '/plugins'
 
-      # --- RESTART: send power signal through the panel's Client API ---
-      - name: Restart server via panel API
+      # --- RELOAD: tell the DeployWebhook plugin to swap in the new jar ---
+      # play.evolvemc.net resolves to your server IP; the port here is the
+      # EXTRA allocation you assigned to DeployWebhook in the panel Network tab.
+      - name: Trigger plugin hot-reload
         run: |
-          curl --fail -X POST \
-            "https://witherpanel.com/api/client/servers/${SERVER_ID}/power" \
-            -H "Authorization: Bearer ${{ secrets.PANEL_API_KEY }}" \
-            -H "Content-Type: application/json" \
-            -H "Accept: Application/vnd.pterodactyl.v1+json" \
-            -d '{"signal": "restart"}'
+          curl --fail --show-error --silent -X POST \
+            "http://play.evolvemc.net:${{ secrets.WEBHOOK_PORT }}/deploy" \
+            -H "Authorization: Bearer ${{ secrets.WEBHOOK_TOKEN }}"
