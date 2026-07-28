@@ -30,7 +30,7 @@ jobs:
         # name is stable and overwrites cleanly each deploy.
 
       - name: List built jars
-          run: ls -la target/*.jar
+        run: ls -la target/*.jar
 
       # --- DEPLOY: pure-SFTP upload into the server's plugins folder ---
       - name: Upload plugin jar via SFTP
