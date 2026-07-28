@@ -114,7 +114,15 @@
       "WebFetch(domain:github.com)",
       "WebFetch(domain:docs.papermc.io)",
       "WebFetch(domain:jd.papermc.io)",
-      "WebFetch(domain:raw.githubusercontent.com)"
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "Bash(mvn dependency:build-classpath -q)",
+      "Bash(mvn dependency:build-classpath)",
+      "Bash(jar xf *)",
+      "Bash(del /f /q META-INF\\\\MANIFEST.MF)",
+      "Bash(rmdir /s /q META-INF)",
+      "Bash(mvn dependency:resolve -q)",
+      "Bash(mvn dependency:tree)",
+      "Bash(mvn --version)"
     ],
     "deny": [],
     "ask": []

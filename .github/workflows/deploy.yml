@@ -39,7 +39,7 @@ jobs:
           username: ${{ secrets.SFTP_USERNAME }}   # e.g. yourname.7140e993
           password: ${{ secrets.SFTP_PASSWORD }}
           sftp_only: true                          # IMPORTANT: no SSH shell exists
-          local_path: './target/Evolv3*.jar'   # tighten to your jar's name
+          local_path: './target/upload/Evolv3.jar'
           remote_path: '/plugins'
 
       # --- RESTART: send power signal through the panel's Client API ---
