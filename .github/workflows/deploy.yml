@@ -6,7 +6,7 @@ name: Build & Deploy Plugin
 
 on:
   push:
-    branches: [ main ]
+    branches: [ master ]
 
 env:
   SERVER_ID: 7140e993   # your Pterodactyl server identifier - verify in panel URL
