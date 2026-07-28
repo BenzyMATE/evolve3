@@ -30,7 +30,7 @@ jobs:
         # name is stable and overwrites cleanly each deploy.
 
       - name: List built jars
-        run: ls -la target/*.jar
+        run: ls -la target/Evolv3.jar
 
       # --- DEPLOY: pure-SFTP upload into the server's plugins folder ---
       - name: Upload plugin jar via SFTP
@@ -41,7 +41,7 @@ jobs:
           username: ${{ secrets.SFTP_USERNAME }}    # full name.serverid format
           password: ${{ secrets.SFTP_PASSWORD }}
           sftp_only: true                            # Pterodactyl has no SSH shell
-          local_path: './target/evolve3.jar'         # must match your finalName
+          local_path: './target/Evolv3.jar'
           remote_path: '/plugins'
 
       # --- RELOAD: tell the DeployWebhook plugin to swap in the new jar ---
