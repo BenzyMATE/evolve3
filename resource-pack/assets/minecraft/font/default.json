@@ -1,206 +1,1547 @@
 {
-    "providers": [
-        {"type": "bitmap", "file": "minecraft:guis/pixel.png","ascent": -2000,"height": -3,"chars": ["七"]},
-        {"type": "bitmap", "file": "minecraft:guis/evolve/pickaxe_menu.png","ascent": 29,"height": 256,"chars": ["⒑"]},
-        {"type": "bitmap", "file": "minecraft:guis/evolve/evolution_slot.png","ascent": 12,"height": 20,"chars": ["⁘"]},
-        {"type": "bitmap", "file": "minecraft:guis/evolve/socket_menu.png","ascent": 29,"height": 256,"chars": ["⠣"]},
+  "providers": [
+    {
+      "type": "bitmap",
+      "file": "minecraft:font/evolve/common.png",
+      "ascent": 8,
+      "height": 9,
+      "chars": [
+        "㋐"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:font/evolve/uncommon.png",
+      "ascent": 8,
+      "height": 9,
+      "chars": [
+        "㋑"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:font/evolve/rare.png",
+      "ascent": 8,
+      "height": 9,
+      "chars": [
+        "㋒"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:font/evolve/epic.png",
+      "ascent": 8,
+      "height": 9,
+      "chars": [
+        "㋓"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:font/evolve/legendary.png",
+      "ascent": 8,
+      "height": 9,
+      "chars": [
+        "㋔"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:font/evolve/artifact.png",
+      "ascent": 8,
+      "height": 9,
+      "chars": [
+        "㋕"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:font/evolve/item.png",
+      "ascent": 8,
+      "height": 9,
+      "chars": [
+        "㋖"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:font/evolve/weapon.png",
+      "ascent": 8,
+      "height": 9,
+      "chars": [
+        "㋗"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:font/evolve/armor.png",
+      "ascent": 8,
+      "height": 9,
+      "chars": [
+        "㋘"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:font/evolve/tool.png",
+      "ascent": 8,
+      "height": 9,
+      "chars": [
+        "㋙"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:font/evolve/food.png",
+      "ascent": 8,
+      "height": 9,
+      "chars": [
+        "㋚"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:font/evolve/currency.png",
+      "ascent": 8,
+      "height": 9,
+      "chars": [
+        "㋛"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:font/evolve/block.png",
+      "ascent": 8,
+      "height": 9,
+      "chars": [
+        "㋜"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:font/evolve/furniture.png",
+      "ascent": 8,
+      "height": 9,
+      "chars": [
+        "㋝"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:font/evolve/hat.png",
+      "ascent": 8,
+      "height": 9,
+      "chars": [
+        "㋞"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:font/evolve/cosmetic.png",
+      "ascent": 8,
+      "height": 9,
+      "chars": [
+        "㋟"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:font/evolve/pet.png",
+      "ascent": 8,
+      "height": 9,
+      "chars": [
+        "㋠"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:font/evolve/accessory.png",
+      "ascent": 8,
+      "height": 9,
+      "chars": [
+        "㋡"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:font/evolve/decoration.png",
+      "ascent": 8,
+      "height": 9,
+      "chars": [
+        "㋢"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:font/evolve/other.png",
+      "ascent": 8,
+      "height": 9,
+      "chars": [
+        "㋣"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:guis/pixel.png",
+      "ascent": -2000,
+      "height": -3,
+      "chars": [
+        "七"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:guis/evolve/pickaxe_menu.png",
+      "ascent": 29,
+      "height": 256,
+      "chars": [
+        "⒑"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:guis/evolve/evolution_slot.png",
+      "ascent": 12,
+      "height": 20,
+      "chars": [
+        "⁘"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:guis/evolve/socket_menu.png",
+      "ascent": 29,
+      "height": 256,
+      "chars": [
+        "⠣"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:guis/evolve/common.png",
+      "ascent": -15,
+      "height": 32,
+      "chars": [
+        "Ⅰ"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:guis/evolve/uncommon.png",
+      "ascent": -15,
+      "height": 32,
+      "chars": [
+        "Ⅱ"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:guis/evolve/rare.png",
+      "ascent": -15,
+      "height": 33,
+      "chars": [
+        "Ⅲ"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:guis/evolve/epic.png",
+      "ascent": -15,
+      "height": 32,
+      "chars": [
+        "Ⅳ"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:guis/evolve/legendary.png",
+      "ascent": -15,
+      "height": 32,
+      "chars": [
+        "Ⅴ"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:guis/evolve/locked.png",
+      "ascent": -15,
+      "height": 32,
+      "chars": [
+        "⠤"
+      ]
+    },
+    // Exact-pixel spacer characters (signed powers of two, composed in Java via PixelSpace)
+    // for precise GUI positioning, replacing guesswork-based 七 repeat counts.
+    {
+      "type": "space",
+      "advances": {
+        "⠦": 1,
+        "⠧": 2,
+        "⠨": 4,
+        "⠩": 8,
+        "⠪": 16,
+        "⠫": 32,
+        "⠬": 64,
+        "⠭": 128,
+        "⠮": 256,
+        "⠯": -1,
+        "⠰": -2,
+        "⠱": -4,
+        "⠲": -8,
+        "⠳": -16,
+        "⠴": -32,
+        "⠵": -64,
+        "⠶": -128,
+        "⠷": -256,
+        "⠥": 24
+      }
+    },
+    // Progress Step 1 (10% progress)
+    {
+      "type": "bitmap",
+      "file": "minecraft:guis/evolve/enchant_progress_1_1.png",
+      "ascent": -61,
+      "height": 53,
+      "chars": [
+        "①"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:guis/evolve/enchant_progress_1_2.png",
+      "ascent": -61,
+      "height": 53,
+      "chars": [
+        "②"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:guis/evolve/enchant_progress_1_3.png",
+      "ascent": -61,
+      "height": 53,
+      "chars": [
+        "③"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:guis/evolve/enchant_progress_1_4.png",
+      "ascent": -61,
+      "height": 53,
+      "chars": [
+        "④"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:guis/evolve/enchant_progress_1_5.png",
+      "ascent": -61,
+      "height": 53,
+      "chars": [
+        "⑤"
+      ]
+    },
+    // Progress Step 2 (20% progress)
+    {
+      "type": "bitmap",
+      "file": "minecraft:guis/evolve/enchant_progress_2_1.png",
+      "ascent": -61,
+      "height": 53,
+      "chars": [
+        "⑥"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:guis/evolve/enchant_progress_2_2.png",
+      "ascent": -61,
+      "height": 53,
+      "chars": [
+        "⑦"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:guis/evolve/enchant_progress_2_3.png",
+      "ascent": -61,
+      "height": 53,
+      "chars": [
+        "⑧"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:guis/evolve/enchant_progress_2_4.png",
+      "ascent": -61,
+      "height": 53,
+      "chars": [
+        "⑨"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:guis/evolve/enchant_progress_2_5.png",
+      "ascent": -61,
+      "height": 53,
+      "chars": [
+        "⑩"
+      ]
+    },
+    // Progress Step 3 (30% progress)
+    {
+      "type": "bitmap",
+      "file": "minecraft:guis/evolve/enchant_progress_3_1.png",
+      "ascent": -61,
+      "height": 53,
+      "chars": [
+        "⑪"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:guis/evolve/enchant_progress_3_2.png",
+      "ascent": -61,
+      "height": 53,
+      "chars": [
+        "⑫"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:guis/evolve/enchant_progress_3_3.png",
+      "ascent": -61,
+      "height": 53,
+      "chars": [
+        "⑬"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:guis/evolve/enchant_progress_3_4.png",
+      "ascent": -61,
+      "height": 53,
+      "chars": [
+        "⑭"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:guis/evolve/enchant_progress_3_5.png",
+      "ascent": -61,
+      "height": 53,
+      "chars": [
+        "⑮"
+      ]
+    },
+    // Progress Step 4 (40% progress)
+    {
+      "type": "bitmap",
+      "file": "minecraft:guis/evolve/enchant_progress_4_1.png",
+      "ascent": -61,
+      "height": 53,
+      "chars": [
+        "⑯"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:guis/evolve/enchant_progress_4_2.png",
+      "ascent": -61,
+      "height": 53,
+      "chars": [
+        "⑰"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:guis/evolve/enchant_progress_4_3.png",
+      "ascent": -61,
+      "height": 53,
+      "chars": [
+        "⑱"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:guis/evolve/enchant_progress_4_4.png",
+      "ascent": -61,
+      "height": 53,
+      "chars": [
+        "⑲"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:guis/evolve/enchant_progress_4_5.png",
+      "ascent": -61,
+      "height": 53,
+      "chars": [
+        "⑳"
+      ]
+    },
+    // Progress Step 5 (50% progress)
+    {
+      "type": "bitmap",
+      "file": "minecraft:guis/evolve/enchant_progress_5_1.png",
+      "ascent": -61,
+      "height": 53,
+      "chars": [
+        "㉑"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:guis/evolve/enchant_progress_5_2.png",
+      "ascent": -61,
+      "height": 53,
+      "chars": [
+        "㉒"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:guis/evolve/enchant_progress_5_3.png",
+      "ascent": -61,
+      "height": 53,
+      "chars": [
+        "㉓"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:guis/evolve/enchant_progress_5_4.png",
+      "ascent": -61,
+      "height": 53,
+      "chars": [
+        "㉔"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:guis/evolve/enchant_progress_5_5.png",
+      "ascent": -61,
+      "height": 53,
+      "chars": [
+        "㉕"
+      ]
+    },
+    // Progress Step 6 (60% progress)
+    {
+      "type": "bitmap",
+      "file": "minecraft:guis/evolve/enchant_progress_6_1.png",
+      "ascent": -61,
+      "height": 53,
+      "chars": [
+        "㉖"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:guis/evolve/enchant_progress_6_2.png",
+      "ascent": -61,
+      "height": 53,
+      "chars": [
+        "㉗"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:guis/evolve/enchant_progress_6_3.png",
+      "ascent": -61,
+      "height": 53,
+      "chars": [
+        "㉘"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:guis/evolve/enchant_progress_6_4.png",
+      "ascent": -61,
+      "height": 53,
+      "chars": [
+        "㉙"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:guis/evolve/enchant_progress_6_5.png",
+      "ascent": -61,
+      "height": 53,
+      "chars": [
+        "㉚"
+      ]
+    },
+    // Progress Step 7 (70% progress)
+    {
+      "type": "bitmap",
+      "file": "minecraft:guis/evolve/enchant_progress_7_1.png",
+      "ascent": -61,
+      "height": 53,
+      "chars": [
+        "㉛"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:guis/evolve/enchant_progress_7_2.png",
+      "ascent": -61,
+      "height": 53,
+      "chars": [
+        "㉜"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:guis/evolve/enchant_progress_7_3.png",
+      "ascent": -61,
+      "height": 53,
+      "chars": [
+        "㉝"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:guis/evolve/enchant_progress_7_4.png",
+      "ascent": -61,
+      "height": 53,
+      "chars": [
+        "㉞"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:guis/evolve/enchant_progress_7_5.png",
+      "ascent": -61,
+      "height": 53,
+      "chars": [
+        "㉟"
+      ]
+    },
+    // Progress Step 8 (80% progress)
+    {
+      "type": "bitmap",
+      "file": "minecraft:guis/evolve/enchant_progress_8_1.png",
+      "ascent": -61,
+      "height": 53,
+      "chars": [
+        "㊱"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:guis/evolve/enchant_progress_8_2.png",
+      "ascent": -61,
+      "height": 53,
+      "chars": [
+        "㊲"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:guis/evolve/enchant_progress_8_3.png",
+      "ascent": -61,
+      "height": 53,
+      "chars": [
+        "㊳"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:guis/evolve/enchant_progress_8_4.png",
+      "ascent": -61,
+      "height": 53,
+      "chars": [
+        "㊴"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:guis/evolve/enchant_progress_8_5.png",
+      "ascent": -61,
+      "height": 53,
+      "chars": [
+        "㊵"
+      ]
+    },
+    // Progress Step 9 (90% progress)
+    {
+      "type": "bitmap",
+      "file": "minecraft:guis/evolve/enchant_progress_9_1.png",
+      "ascent": -61,
+      "height": 53,
+      "chars": [
+        "㊶"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:guis/evolve/enchant_progress_9_2.png",
+      "ascent": -61,
+      "height": 53,
+      "chars": [
+        "㊷"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:guis/evolve/enchant_progress_9_3.png",
+      "ascent": -61,
+      "height": 53,
+      "chars": [
+        "㊸"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:guis/evolve/enchant_progress_9_4.png",
+      "ascent": -61,
+      "height": 53,
+      "chars": [
+        "㊹"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:guis/evolve/enchant_progress_9_5.png",
+      "ascent": -61,
+      "height": 53,
+      "chars": [
+        "㊺"
+      ]
+    },
+    // Progress Step 10 (100% progress - but no spins available)
+    {
+      "type": "bitmap",
+      "file": "minecraft:guis/evolve/enchant_progress_10_1.png",
+      "ascent": -61,
+      "height": 53,
+      "chars": [
+        "㊻"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:guis/evolve/enchant_progress_10_2.png",
+      "ascent": -61,
+      "height": 53,
+      "chars": [
+        "㊼"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:guis/evolve/enchant_progress_10_3.png",
+      "ascent": -61,
+      "height": 53,
+      "chars": [
+        "㊽"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:guis/evolve/enchant_progress_10_4.png",
+      "ascent": -61,
+      "height": 53,
+      "chars": [
+        "㊾"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:guis/evolve/enchant_progress_10_5.png",
+      "ascent": -61,
+      "height": 53,
+      "chars": [
+        "㊿"
+      ]
+    },
+    // Evolve Progress Animations (50 characters, separate Unicode range from enchant progress)
 
-        {"type": "bitmap", "file": "minecraft:guis/evolve/common.png", "ascent": -15,"height": 32, "chars": [ "Ⅰ" ]},
-        {"type": "bitmap","file": "minecraft:guis/evolve/uncommon.png","ascent": -15,"height": 32,"chars": [ "Ⅱ" ] },
-        {"type": "bitmap", "file": "minecraft:guis/evolve/rare.png", "ascent": -15,"height": 33,"chars": [ "Ⅲ" ]},
-        {"type": "bitmap","file": "minecraft:guis/evolve/epic.png","ascent": -15,"height": 32,"chars": [ "Ⅳ" ]},
-        {"type": "bitmap", "file": "minecraft:guis/evolve/legendary.png","ascent": -15,"height": 32, "chars": [ "Ⅴ" ] },
-        {"type": "bitmap", "file": "minecraft:guis/evolve/locked.png","ascent": -15,"height": 32, "chars": [ "⠤" ] },
-
-        // Exact-pixel spacer characters (signed powers of two, composed in Java via PixelSpace)
-        // for precise GUI positioning, replacing guesswork-based 七 repeat counts.
-        {"type": "space", "advances": {
-            "⠦": 1, "⠧": 2, "⠨": 4, "⠩": 8, "⠪": 16, "⠫": 32, "⠬": 64, "⠭": 128, "⠮": 256,
-            "⠯": -1, "⠰": -2, "⠱": -4, "⠲": -8, "⠳": -16, "⠴": -32, "⠵": -64, "⠶": -128, "⠷": -256,
-
-            "⠥": 24
-        }},
-
-        // Progress Step 1 (10% progress)
-        {"type": "bitmap", "file": "minecraft:guis/evolve/enchant_progress_1_1.png","ascent": -61,"height": 53,"chars": ["①"]},
-        {"type": "bitmap", "file": "minecraft:guis/evolve/enchant_progress_1_2.png","ascent": -61,"height": 53,"chars": ["②"]},
-        {"type": "bitmap", "file": "minecraft:guis/evolve/enchant_progress_1_3.png","ascent": -61,"height": 53,"chars": ["③"]},
-        {"type": "bitmap", "file": "minecraft:guis/evolve/enchant_progress_1_4.png","ascent": -61,"height": 53,"chars": ["④"]},
-        {"type": "bitmap", "file": "minecraft:guis/evolve/enchant_progress_1_5.png","ascent": -61,"height": 53,"chars": ["⑤"]},
-
-        // Progress Step 2 (20% progress)
-        {"type": "bitmap", "file": "minecraft:guis/evolve/enchant_progress_2_1.png","ascent": -61,"height": 53,"chars": ["⑥"]},
-        {"type": "bitmap", "file": "minecraft:guis/evolve/enchant_progress_2_2.png","ascent": -61,"height": 53,"chars": ["⑦"]},
-        {"type": "bitmap", "file": "minecraft:guis/evolve/enchant_progress_2_3.png","ascent": -61,"height": 53,"chars": ["⑧"]},
-        {"type": "bitmap", "file": "minecraft:guis/evolve/enchant_progress_2_4.png","ascent": -61,"height": 53,"chars": ["⑨"]},
-        {"type": "bitmap", "file": "minecraft:guis/evolve/enchant_progress_2_5.png","ascent": -61,"height": 53,"chars": ["⑩"]},
-
-        // Progress Step 3 (30% progress)
-        {"type": "bitmap", "file": "minecraft:guis/evolve/enchant_progress_3_1.png","ascent": -61,"height": 53,"chars": ["⑪"]},
-        {"type": "bitmap", "file": "minecraft:guis/evolve/enchant_progress_3_2.png","ascent": -61,"height": 53,"chars": ["⑫"]},
-        {"type": "bitmap", "file": "minecraft:guis/evolve/enchant_progress_3_3.png","ascent": -61,"height": 53,"chars": ["⑬"]},
-        {"type": "bitmap", "file": "minecraft:guis/evolve/enchant_progress_3_4.png","ascent": -61,"height": 53,"chars": ["⑭"]},
-        {"type": "bitmap", "file": "minecraft:guis/evolve/enchant_progress_3_5.png","ascent": -61,"height": 53,"chars": ["⑮"]},
-
-        // Progress Step 4 (40% progress)
-        {"type": "bitmap", "file": "minecraft:guis/evolve/enchant_progress_4_1.png","ascent": -61,"height": 53,"chars": ["⑯"]},
-        {"type": "bitmap", "file": "minecraft:guis/evolve/enchant_progress_4_2.png","ascent": -61,"height": 53,"chars": ["⑰"]},
-        {"type": "bitmap", "file": "minecraft:guis/evolve/enchant_progress_4_3.png","ascent": -61,"height": 53,"chars": ["⑱"]},
-        {"type": "bitmap", "file": "minecraft:guis/evolve/enchant_progress_4_4.png","ascent": -61,"height": 53,"chars": ["⑲"]},
-        {"type": "bitmap", "file": "minecraft:guis/evolve/enchant_progress_4_5.png","ascent": -61,"height": 53,"chars": ["⑳"]},
-
-        // Progress Step 5 (50% progress)
-        {"type": "bitmap", "file": "minecraft:guis/evolve/enchant_progress_5_1.png","ascent": -61,"height": 53,"chars": ["㉑"]},
-        {"type": "bitmap", "file": "minecraft:guis/evolve/enchant_progress_5_2.png","ascent": -61,"height": 53,"chars": ["㉒"]},
-        {"type": "bitmap", "file": "minecraft:guis/evolve/enchant_progress_5_3.png","ascent": -61,"height": 53,"chars": ["㉓"]},
-        {"type": "bitmap", "file": "minecraft:guis/evolve/enchant_progress_5_4.png","ascent": -61,"height": 53,"chars": ["㉔"]},
-        {"type": "bitmap", "file": "minecraft:guis/evolve/enchant_progress_5_5.png","ascent": -61,"height": 53,"chars": ["㉕"]},
-
-        // Progress Step 6 (60% progress)
-        {"type": "bitmap", "file": "minecraft:guis/evolve/enchant_progress_6_1.png","ascent": -61,"height": 53,"chars": ["㉖"]},
-        {"type": "bitmap", "file": "minecraft:guis/evolve/enchant_progress_6_2.png","ascent": -61,"height": 53,"chars": ["㉗"]},
-        {"type": "bitmap", "file": "minecraft:guis/evolve/enchant_progress_6_3.png","ascent": -61,"height": 53,"chars": ["㉘"]},
-        {"type": "bitmap", "file": "minecraft:guis/evolve/enchant_progress_6_4.png","ascent": -61,"height": 53,"chars": ["㉙"]},
-        {"type": "bitmap", "file": "minecraft:guis/evolve/enchant_progress_6_5.png","ascent": -61,"height": 53,"chars": ["㉚"]},
-
-        // Progress Step 7 (70% progress)
-        {"type": "bitmap", "file": "minecraft:guis/evolve/enchant_progress_7_1.png","ascent": -61,"height": 53,"chars": ["㉛"]},
-        {"type": "bitmap", "file": "minecraft:guis/evolve/enchant_progress_7_2.png","ascent": -61,"height": 53,"chars": ["㉜"]},
-        {"type": "bitmap", "file": "minecraft:guis/evolve/enchant_progress_7_3.png","ascent": -61,"height": 53,"chars": ["㉝"]},
-        {"type": "bitmap", "file": "minecraft:guis/evolve/enchant_progress_7_4.png","ascent": -61,"height": 53,"chars": ["㉞"]},
-        {"type": "bitmap", "file": "minecraft:guis/evolve/enchant_progress_7_5.png","ascent": -61,"height": 53,"chars": ["㉟"]},
-
-        // Progress Step 8 (80% progress)
-        {"type": "bitmap", "file": "minecraft:guis/evolve/enchant_progress_8_1.png","ascent": -61,"height": 53,"chars": ["㊱"]},
-        {"type": "bitmap", "file": "minecraft:guis/evolve/enchant_progress_8_2.png","ascent": -61,"height": 53,"chars": ["㊲"]},
-        {"type": "bitmap", "file": "minecraft:guis/evolve/enchant_progress_8_3.png","ascent": -61,"height": 53,"chars": ["㊳"]},
-        {"type": "bitmap", "file": "minecraft:guis/evolve/enchant_progress_8_4.png","ascent": -61,"height": 53,"chars": ["㊴"]},
-        {"type": "bitmap", "file": "minecraft:guis/evolve/enchant_progress_8_5.png","ascent": -61,"height": 53,"chars": ["㊵"]},
-
-        // Progress Step 9 (90% progress)
-        {"type": "bitmap", "file": "minecraft:guis/evolve/enchant_progress_9_1.png","ascent": -61,"height": 53,"chars": ["㊶"]},
-        {"type": "bitmap", "file": "minecraft:guis/evolve/enchant_progress_9_2.png","ascent": -61,"height": 53,"chars": ["㊷"]},
-        {"type": "bitmap", "file": "minecraft:guis/evolve/enchant_progress_9_3.png","ascent": -61,"height": 53,"chars": ["㊸"]},
-        {"type": "bitmap", "file": "minecraft:guis/evolve/enchant_progress_9_4.png","ascent": -61,"height": 53,"chars": ["㊹"]},
-        {"type": "bitmap", "file": "minecraft:guis/evolve/enchant_progress_9_5.png","ascent": -61,"height": 53,"chars": ["㊺"]},
-
-        // Progress Step 10 (100% progress - but no spins available)
-        {"type": "bitmap", "file": "minecraft:guis/evolve/enchant_progress_10_1.png","ascent": -61,"height": 53,"chars": ["㊻"]},
-        {"type": "bitmap", "file": "minecraft:guis/evolve/enchant_progress_10_2.png","ascent": -61,"height": 53,"chars": ["㊼"]},
-        {"type": "bitmap", "file": "minecraft:guis/evolve/enchant_progress_10_3.png","ascent": -61,"height": 53,"chars": ["㊽"]},
-        {"type": "bitmap", "file": "minecraft:guis/evolve/enchant_progress_10_4.png","ascent": -61,"height": 53,"chars": ["㊾"]},
-        {"type": "bitmap", "file": "minecraft:guis/evolve/enchant_progress_10_5.png","ascent": -61,"height": 53,"chars": ["㊿"]},
-
-        // Evolve Progress Animations (50 characters, separate Unicode range from enchant progress)
-
-        // Evolve Progress Step 1 (10% progress)
-        {"type": "bitmap", "file": "minecraft:guis/evolve/evolve_progress_1_1.png","ascent": -61,"height": 53,"chars": ["⑾"]},
-        {"type": "bitmap", "file": "minecraft:guis/evolve/evolve_progress_1_2.png","ascent": -61,"height": 53,"chars": ["⑿"]},
-        {"type": "bitmap", "file": "minecraft:guis/evolve/evolve_progress_1_3.png","ascent": -61,"height": 53,"chars": ["⒀"]},
-        {"type": "bitmap", "file": "minecraft:guis/evolve/evolve_progress_1_4.png","ascent": -61,"height": 53,"chars": ["⒁"]},
-        {"type": "bitmap", "file": "minecraft:guis/evolve/evolve_progress_1_5.png","ascent": -61,"height": 53,"chars": ["⒂"]},
-
-        // Evolve Progress Step 2 (20% progress)
-        {"type": "bitmap", "file": "minecraft:guis/evolve/evolve_progress_2_1.png","ascent": -61,"height": 53,"chars": ["⒃"]},
-        {"type": "bitmap", "file": "minecraft:guis/evolve/evolve_progress_2_2.png","ascent": -61,"height": 53,"chars": ["⒄"]},
-        {"type": "bitmap", "file": "minecraft:guis/evolve/evolve_progress_2_3.png","ascent": -61,"height": 53,"chars": ["⒅"]},
-        {"type": "bitmap", "file": "minecraft:guis/evolve/evolve_progress_2_4.png","ascent": -61,"height": 53,"chars": ["⒆"]},
-        {"type": "bitmap", "file": "minecraft:guis/evolve/evolve_progress_2_5.png","ascent": -61,"height": 53,"chars": ["⒇"]},
-
-        // Evolve Progress Step 3 (30% progress)
-        {"type": "bitmap", "file": "minecraft:guis/evolve/evolve_progress_3_1.png","ascent": -61,"height": 53,"chars": ["⒈"]},
-        {"type": "bitmap", "file": "minecraft:guis/evolve/evolve_progress_3_2.png","ascent": -61,"height": 53,"chars": ["⒉"]},
-        {"type": "bitmap", "file": "minecraft:guis/evolve/evolve_progress_3_3.png","ascent": -61,"height": 53,"chars": ["⒊"]},
-        {"type": "bitmap", "file": "minecraft:guis/evolve/evolve_progress_3_4.png","ascent": -61,"height": 53,"chars": ["⒋"]},
-        {"type": "bitmap", "file": "minecraft:guis/evolve/evolve_progress_3_5.png","ascent": -61,"height": 53,"chars": ["⒌"]},
-
-        // Evolve Progress Step 4 (40% progress)
-        {"type": "bitmap", "file": "minecraft:guis/evolve/evolve_progress_4_1.png","ascent": -61,"height": 53,"chars": ["⒍"]},
-        {"type": "bitmap", "file": "minecraft:guis/evolve/evolve_progress_4_2.png","ascent": -61,"height": 53,"chars": ["⒎"]},
-        {"type": "bitmap", "file": "minecraft:guis/evolve/evolve_progress_4_3.png","ascent": -61,"height": 53,"chars": ["⒏"]},
-        {"type": "bitmap", "file": "minecraft:guis/evolve/evolve_progress_4_4.png","ascent": -61,"height": 53,"chars": ["⒐"]},
-        {"type": "bitmap", "file": "minecraft:guis/evolve/evolve_progress_4_5.png","ascent": -61,"height": 53,"chars": ["⓵"]},
-
-        // Evolve Progress Step 5 (50% progress)
-        {"type": "bitmap", "file": "minecraft:guis/evolve/evolve_progress_5_1.png","ascent": -61,"height": 53,"chars": ["⓶"]},
-        {"type": "bitmap", "file": "minecraft:guis/evolve/evolve_progress_5_2.png","ascent": -61,"height": 53,"chars": ["⓷"]},
-        {"type": "bitmap", "file": "minecraft:guis/evolve/evolve_progress_5_3.png","ascent": -61,"height": 53,"chars": ["⓸"]},
-        {"type": "bitmap", "file": "minecraft:guis/evolve/evolve_progress_5_4.png","ascent": -61,"height": 53,"chars": ["⓹"]},
-        {"type": "bitmap", "file": "minecraft:guis/evolve/evolve_progress_5_5.png","ascent": -61,"height": 53,"chars": ["⓺"]},
-
-        // Evolve Progress Step 6 (60% progress)
-        {"type": "bitmap", "file": "minecraft:guis/evolve/evolve_progress_6_1.png","ascent": -61,"height": 53,"chars": ["⓻"]},
-        {"type": "bitmap", "file": "minecraft:guis/evolve/evolve_progress_6_2.png","ascent": -61,"height": 53,"chars": ["⓼"]},
-        {"type": "bitmap", "file": "minecraft:guis/evolve/evolve_progress_6_3.png","ascent": -61,"height": 53,"chars": ["⓽"]},
-        {"type": "bitmap", "file": "minecraft:guis/evolve/evolve_progress_6_4.png","ascent": -61,"height": 53,"chars": ["⓾"]},
-        {"type": "bitmap", "file": "minecraft:guis/evolve/evolve_progress_6_5.png","ascent": -61,"height": 53,"chars": ["⓿"]},
-
-        // Evolve Progress Step 7 (70% progress)
-        {"type": "bitmap", "file": "minecraft:guis/evolve/evolve_progress_7_1.png","ascent": -61,"height": 53,"chars": ["❶"]},
-        {"type": "bitmap", "file": "minecraft:guis/evolve/evolve_progress_7_2.png","ascent": -61,"height": 53,"chars": ["❷"]},
-        {"type": "bitmap", "file": "minecraft:guis/evolve/evolve_progress_7_3.png","ascent": -61,"height": 53,"chars": ["❸"]},
-        {"type": "bitmap", "file": "minecraft:guis/evolve/evolve_progress_7_4.png","ascent": -61,"height": 53,"chars": ["❹"]},
-        {"type": "bitmap", "file": "minecraft:guis/evolve/evolve_progress_7_5.png","ascent": -61,"height": 53,"chars": ["❺"]},
-
-        // Evolve Progress Step 8 (80% progress)
-        {"type": "bitmap", "file": "minecraft:guis/evolve/evolve_progress_8_1.png","ascent": -61,"height": 53,"chars": ["❻"]},
-        {"type": "bitmap", "file": "minecraft:guis/evolve/evolve_progress_8_2.png","ascent": -61,"height": 53,"chars": ["❼"]},
-        {"type": "bitmap", "file": "minecraft:guis/evolve/evolve_progress_8_3.png","ascent": -61,"height": 53,"chars": ["❽"]},
-        {"type": "bitmap", "file": "minecraft:guis/evolve/evolve_progress_8_4.png","ascent": -61,"height": 53,"chars": ["❾"]},
-        {"type": "bitmap", "file": "minecraft:guis/evolve/evolve_progress_8_5.png","ascent": -61,"height": 53,"chars": ["❿"]},
-
-        // Evolve Progress Step 9 (90% progress)
-        {"type": "bitmap", "file": "minecraft:guis/evolve/evolve_progress_9_1.png","ascent": -61,"height": 53,"chars": ["➀"]},
-        {"type": "bitmap", "file": "minecraft:guis/evolve/evolve_progress_9_2.png","ascent": -61,"height": 53,"chars": ["➁"]},
-        {"type": "bitmap", "file": "minecraft:guis/evolve/evolve_progress_9_3.png","ascent": -61,"height": 53,"chars": ["➂"]},
-        {"type": "bitmap", "file": "minecraft:guis/evolve/evolve_progress_9_4.png","ascent": -61,"height": 53,"chars": ["➃"]},
-        {"type": "bitmap", "file": "minecraft:guis/evolve/evolve_progress_9_5.png","ascent": -61,"height": 53,"chars": ["➄"]},
-
-        // Evolve Progress Step 10 (100% progress - but no evolve available)
-        {"type": "bitmap", "file": "minecraft:guis/evolve/evolve_progress_10_1.png","ascent": -61,"height": 53,"chars": ["➅"]},
-        {"type": "bitmap", "file": "minecraft:guis/evolve/evolve_progress_10_2.png","ascent": -61,"height": 53,"chars": ["➆"]},
-        {"type": "bitmap", "file": "minecraft:guis/evolve/evolve_progress_10_3.png","ascent": -61,"height": 53,"chars": ["➇"]},
-        {"type": "bitmap", "file": "minecraft:guis/evolve/evolve_progress_10_4.png","ascent": -61,"height": 53,"chars": ["➈"]},
-        {"type": "bitmap", "file": "minecraft:guis/evolve/evolve_progress_10_5.png","ascent": -61,"height": 53,"chars": ["➉"]},
-
-        {"type": "bitmap", "file": "minecraft:guis/evolve/enchant_empty.png","ascent": -61,"height": 53,"chars": ["↛"]},
-        {"type": "bitmap", "file": "minecraft:guis/evolve/evolve_empty.png","ascent": -61,"height": 53,"chars": ["⁐"]},
-
-        {"type": "bitmap", "file": "minecraft:guis/evolve/progress_bar.png","ascent": -85,"height": 25,"chars": ["⠁"]},
-        {"type": "bitmap", "file": "minecraft:guis/evolve/progress_bar_1.png","ascent": -85,"height": 25,"chars": ["⠂"]},
-        {"type": "bitmap", "file": "minecraft:guis/evolve/progress_bar_2.png","ascent": -85,"height": 25,"chars": ["⠃"]},
-        {"type": "bitmap", "file": "minecraft:guis/evolve/progress_bar_3.png","ascent": -85,"height": 25,"chars": ["⠄"]},
-        {"type": "bitmap", "file": "minecraft:guis/evolve/progress_bar_4.png","ascent": -85,"height": 25,"chars": ["⠅"]},
-        {"type": "bitmap", "file": "minecraft:guis/evolve/progress_bar_5.png","ascent": -85,"height": 25,"chars": ["⠆"]},
-        {"type": "bitmap", "file": "minecraft:guis/evolve/progress_bar_6.png","ascent": -85,"height": 25,"chars": ["⠇"]},
-        {"type": "bitmap", "file": "minecraft:guis/evolve/progress_bar_7.png","ascent": -85,"height": 25,"chars": ["⠈"]},
-        {"type": "bitmap", "file": "minecraft:guis/evolve/progress_bar_8.png","ascent": -85,"height": 25,"chars": ["⠉"]},
-        {"type": "bitmap", "file": "minecraft:guis/evolve/progress_bar_9.png","ascent": -85,"height": 25,"chars": ["⠊"]},
-
-        // Socket menu shutter animation (24 keyframes, 1 = fully open/retracted, 24 = fully closed)
-        {"type": "bitmap", "file": "minecraft:guis/evolve/shutter_socket_1.png","ascent": -5,"height": 52,"chars": ["⠋"]},
-        {"type": "bitmap", "file": "minecraft:guis/evolve/shutter_socket_2.png","ascent": -5,"height": 52,"chars": ["⠌"]},
-        {"type": "bitmap", "file": "minecraft:guis/evolve/shutter_socket_3.png","ascent": -5,"height": 52,"chars": ["⠍"]},
-        {"type": "bitmap", "file": "minecraft:guis/evolve/shutter_socket_4.png","ascent": -5,"height": 52,"chars": ["⠎"]},
-        {"type": "bitmap", "file": "minecraft:guis/evolve/shutter_socket_5.png","ascent": -5,"height": 52,"chars": ["⠏"]},
-        {"type": "bitmap", "file": "minecraft:guis/evolve/shutter_socket_6.png","ascent": -5,"height": 52,"chars": ["⠐"]},
-        {"type": "bitmap", "file": "minecraft:guis/evolve/shutter_socket_7.png","ascent": -5,"height": 52,"chars": ["⠑"]},
-        {"type": "bitmap", "file": "minecraft:guis/evolve/shutter_socket_8.png","ascent": -5,"height": 52,"chars": ["⠒"]},
-        {"type": "bitmap", "file": "minecraft:guis/evolve/shutter_socket_9.png","ascent": -5,"height": 52,"chars": ["⠓"]},
-        {"type": "bitmap", "file": "minecraft:guis/evolve/shutter_socket_10.png","ascent": -5,"height": 52,"chars": ["⠔"]},
-        {"type": "bitmap", "file": "minecraft:guis/evolve/shutter_socket_11.png","ascent": -5,"height": 52,"chars": ["⠕"]},
-        {"type": "bitmap", "file": "minecraft:guis/evolve/shutter_socket_12.png","ascent": -5,"height": 52,"chars": ["⠖"]},
-        {"type": "bitmap", "file": "minecraft:guis/evolve/shutter_socket_13.png","ascent": -5,"height": 52,"chars": ["⠗"]},
-        {"type": "bitmap", "file": "minecraft:guis/evolve/shutter_socket_14.png","ascent": -5,"height": 52,"chars": ["⠘"]},
-        {"type": "bitmap", "file": "minecraft:guis/evolve/shutter_socket_15.png","ascent": -5,"height": 52,"chars": ["⠙"]},
-        {"type": "bitmap", "file": "minecraft:guis/evolve/shutter_socket_16.png","ascent": -5,"height": 52,"chars": ["⠚"]},
-        {"type": "bitmap", "file": "minecraft:guis/evolve/shutter_socket_17.png","ascent": -5,"height": 52,"chars": ["⠛"]},
-        {"type": "bitmap", "file": "minecraft:guis/evolve/shutter_socket_18.png","ascent": -5,"height": 52,"chars": ["⠜"]},
-        {"type": "bitmap", "file": "minecraft:guis/evolve/shutter_socket_19.png","ascent": -5,"height": 52,"chars": ["⠝"]},
-        {"type": "bitmap", "file": "minecraft:guis/evolve/shutter_socket_20.png","ascent": -5,"height": 52,"chars": ["⠞"]},
-        {"type": "bitmap", "file": "minecraft:guis/evolve/shutter_socket_21.png","ascent": -5,"height": 52,"chars": ["⠟"]},
-        {"type": "bitmap", "file": "minecraft:guis/evolve/shutter_socket_22.png","ascent": -5,"height": 52,"chars": ["⠠"]},
-        {"type": "bitmap", "file": "minecraft:guis/evolve/shutter_socket_23.png","ascent": -5,"height": 52,"chars": ["⠡"]},
-        {"type": "bitmap", "file": "minecraft:guis/evolve/shutter_socket_24.png","ascent": -5,"height": 52,"chars": ["⠢"]}
-    ]
+    // Evolve Progress Step 1 (10% progress)
+    {
+      "type": "bitmap",
+      "file": "minecraft:guis/evolve/evolve_progress_1_1.png",
+      "ascent": -61,
+      "height": 53,
+      "chars": [
+        "⑾"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:guis/evolve/evolve_progress_1_2.png",
+      "ascent": -61,
+      "height": 53,
+      "chars": [
+        "⑿"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:guis/evolve/evolve_progress_1_3.png",
+      "ascent": -61,
+      "height": 53,
+      "chars": [
+        "⒀"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:guis/evolve/evolve_progress_1_4.png",
+      "ascent": -61,
+      "height": 53,
+      "chars": [
+        "⒁"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:guis/evolve/evolve_progress_1_5.png",
+      "ascent": -61,
+      "height": 53,
+      "chars": [
+        "⒂"
+      ]
+    },
+    // Evolve Progress Step 2 (20% progress)
+    {
+      "type": "bitmap",
+      "file": "minecraft:guis/evolve/evolve_progress_2_1.png",
+      "ascent": -61,
+      "height": 53,
+      "chars": [
+        "⒃"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:guis/evolve/evolve_progress_2_2.png",
+      "ascent": -61,
+      "height": 53,
+      "chars": [
+        "⒄"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:guis/evolve/evolve_progress_2_3.png",
+      "ascent": -61,
+      "height": 53,
+      "chars": [
+        "⒅"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:guis/evolve/evolve_progress_2_4.png",
+      "ascent": -61,
+      "height": 53,
+      "chars": [
+        "⒆"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:guis/evolve/evolve_progress_2_5.png",
+      "ascent": -61,
+      "height": 53,
+      "chars": [
+        "⒇"
+      ]
+    },
+    // Evolve Progress Step 3 (30% progress)
+    {
+      "type": "bitmap",
+      "file": "minecraft:guis/evolve/evolve_progress_3_1.png",
+      "ascent": -61,
+      "height": 53,
+      "chars": [
+        "⒈"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:guis/evolve/evolve_progress_3_2.png",
+      "ascent": -61,
+      "height": 53,
+      "chars": [
+        "⒉"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:guis/evolve/evolve_progress_3_3.png",
+      "ascent": -61,
+      "height": 53,
+      "chars": [
+        "⒊"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:guis/evolve/evolve_progress_3_4.png",
+      "ascent": -61,
+      "height": 53,
+      "chars": [
+        "⒋"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:guis/evolve/evolve_progress_3_5.png",
+      "ascent": -61,
+      "height": 53,
+      "chars": [
+        "⒌"
+      ]
+    },
+    // Evolve Progress Step 4 (40% progress)
+    {
+      "type": "bitmap",
+      "file": "minecraft:guis/evolve/evolve_progress_4_1.png",
+      "ascent": -61,
+      "height": 53,
+      "chars": [
+        "⒍"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:guis/evolve/evolve_progress_4_2.png",
+      "ascent": -61,
+      "height": 53,
+      "chars": [
+        "⒎"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:guis/evolve/evolve_progress_4_3.png",
+      "ascent": -61,
+      "height": 53,
+      "chars": [
+        "⒏"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:guis/evolve/evolve_progress_4_4.png",
+      "ascent": -61,
+      "height": 53,
+      "chars": [
+        "⒐"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:guis/evolve/evolve_progress_4_5.png",
+      "ascent": -61,
+      "height": 53,
+      "chars": [
+        "⓵"
+      ]
+    },
+    // Evolve Progress Step 5 (50% progress)
+    {
+      "type": "bitmap",
+      "file": "minecraft:guis/evolve/evolve_progress_5_1.png",
+      "ascent": -61,
+      "height": 53,
+      "chars": [
+        "⓶"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:guis/evolve/evolve_progress_5_2.png",
+      "ascent": -61,
+      "height": 53,
+      "chars": [
+        "⓷"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:guis/evolve/evolve_progress_5_3.png",
+      "ascent": -61,
+      "height": 53,
+      "chars": [
+        "⓸"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:guis/evolve/evolve_progress_5_4.png",
+      "ascent": -61,
+      "height": 53,
+      "chars": [
+        "⓹"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:guis/evolve/evolve_progress_5_5.png",
+      "ascent": -61,
+      "height": 53,
+      "chars": [
+        "⓺"
+      ]
+    },
+    // Evolve Progress Step 6 (60% progress)
+    {
+      "type": "bitmap",
+      "file": "minecraft:guis/evolve/evolve_progress_6_1.png",
+      "ascent": -61,
+      "height": 53,
+      "chars": [
+        "⓻"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:guis/evolve/evolve_progress_6_2.png",
+      "ascent": -61,
+      "height": 53,
+      "chars": [
+        "⓼"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:guis/evolve/evolve_progress_6_3.png",
+      "ascent": -61,
+      "height": 53,
+      "chars": [
+        "⓽"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:guis/evolve/evolve_progress_6_4.png",
+      "ascent": -61,
+      "height": 53,
+      "chars": [
+        "⓾"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:guis/evolve/evolve_progress_6_5.png",
+      "ascent": -61,
+      "height": 53,
+      "chars": [
+        "⓿"
+      ]
+    },
+    // Evolve Progress Step 7 (70% progress)
+    {
+      "type": "bitmap",
+      "file": "minecraft:guis/evolve/evolve_progress_7_1.png",
+      "ascent": -61,
+      "height": 53,
+      "chars": [
+        "❶"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:guis/evolve/evolve_progress_7_2.png",
+      "ascent": -61,
+      "height": 53,
+      "chars": [
+        "❷"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:guis/evolve/evolve_progress_7_3.png",
+      "ascent": -61,
+      "height": 53,
+      "chars": [
+        "❸"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:guis/evolve/evolve_progress_7_4.png",
+      "ascent": -61,
+      "height": 53,
+      "chars": [
+        "❹"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:guis/evolve/evolve_progress_7_5.png",
+      "ascent": -61,
+      "height": 53,
+      "chars": [
+        "❺"
+      ]
+    },
+    // Evolve Progress Step 8 (80% progress)
+    {
+      "type": "bitmap",
+      "file": "minecraft:guis/evolve/evolve_progress_8_1.png",
+      "ascent": -61,
+      "height": 53,
+      "chars": [
+        "❻"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:guis/evolve/evolve_progress_8_2.png",
+      "ascent": -61,
+      "height": 53,
+      "chars": [
+        "❼"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:guis/evolve/evolve_progress_8_3.png",
+      "ascent": -61,
+      "height": 53,
+      "chars": [
+        "❽"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:guis/evolve/evolve_progress_8_4.png",
+      "ascent": -61,
+      "height": 53,
+      "chars": [
+        "❾"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:guis/evolve/evolve_progress_8_5.png",
+      "ascent": -61,
+      "height": 53,
+      "chars": [
+        "❿"
+      ]
+    },
+    // Evolve Progress Step 9 (90% progress)
+    {
+      "type": "bitmap",
+      "file": "minecraft:guis/evolve/evolve_progress_9_1.png",
+      "ascent": -61,
+      "height": 53,
+      "chars": [
+        "➀"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:guis/evolve/evolve_progress_9_2.png",
+      "ascent": -61,
+      "height": 53,
+      "chars": [
+        "➁"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:guis/evolve/evolve_progress_9_3.png",
+      "ascent": -61,
+      "height": 53,
+      "chars": [
+        "➂"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:guis/evolve/evolve_progress_9_4.png",
+      "ascent": -61,
+      "height": 53,
+      "chars": [
+        "➃"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:guis/evolve/evolve_progress_9_5.png",
+      "ascent": -61,
+      "height": 53,
+      "chars": [
+        "➄"
+      ]
+    },
+    // Evolve Progress Step 10 (100% progress - but no evolve available)
+    {
+      "type": "bitmap",
+      "file": "minecraft:guis/evolve/evolve_progress_10_1.png",
+      "ascent": -61,
+      "height": 53,
+      "chars": [
+        "➅"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:guis/evolve/evolve_progress_10_2.png",
+      "ascent": -61,
+      "height": 53,
+      "chars": [
+        "➆"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:guis/evolve/evolve_progress_10_3.png",
+      "ascent": -61,
+      "height": 53,
+      "chars": [
+        "➇"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:guis/evolve/evolve_progress_10_4.png",
+      "ascent": -61,
+      "height": 53,
+      "chars": [
+        "➈"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:guis/evolve/evolve_progress_10_5.png",
+      "ascent": -61,
+      "height": 53,
+      "chars": [
+        "➉"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:guis/evolve/enchant_empty.png",
+      "ascent": -61,
+      "height": 53,
+      "chars": [
+        "↛"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:guis/evolve/evolve_empty.png",
+      "ascent": -61,
+      "height": 53,
+      "chars": [
+        "⁐"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:guis/evolve/progress_bar.png",
+      "ascent": -85,
+      "height": 25,
+      "chars": [
+        "⠁"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:guis/evolve/progress_bar_1.png",
+      "ascent": -85,
+      "height": 25,
+      "chars": [
+        "⠂"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:guis/evolve/progress_bar_2.png",
+      "ascent": -85,
+      "height": 25,
+      "chars": [
+        "⠃"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:guis/evolve/progress_bar_3.png",
+      "ascent": -85,
+      "height": 25,
+      "chars": [
+        "⠄"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:guis/evolve/progress_bar_4.png",
+      "ascent": -85,
+      "height": 25,
+      "chars": [
+        "⠅"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:guis/evolve/progress_bar_5.png",
+      "ascent": -85,
+      "height": 25,
+      "chars": [
+        "⠆"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:guis/evolve/progress_bar_6.png",
+      "ascent": -85,
+      "height": 25,
+      "chars": [
+        "⠇"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:guis/evolve/progress_bar_7.png",
+      "ascent": -85,
+      "height": 25,
+      "chars": [
+        "⠈"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:guis/evolve/progress_bar_8.png",
+      "ascent": -85,
+      "height": 25,
+      "chars": [
+        "⠉"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:guis/evolve/progress_bar_9.png",
+      "ascent": -85,
+      "height": 25,
+      "chars": [
+        "⠊"
+      ]
+    },
+    // Socket menu shutter animation (24 keyframes, 1 = fully open/retracted, 24 = fully closed)
+    {
+      "type": "bitmap",
+      "file": "minecraft:guis/evolve/shutter_socket_1.png",
+      "ascent": -5,
+      "height": 52,
+      "chars": [
+        "⠋"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:guis/evolve/shutter_socket_2.png",
+      "ascent": -5,
+      "height": 52,
+      "chars": [
+        "⠌"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:guis/evolve/shutter_socket_3.png",
+      "ascent": -5,
+      "height": 52,
+      "chars": [
+        "⠍"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:guis/evolve/shutter_socket_4.png",
+      "ascent": -5,
+      "height": 52,
+      "chars": [
+        "⠎"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:guis/evolve/shutter_socket_5.png",
+      "ascent": -5,
+      "height": 52,
+      "chars": [
+        "⠏"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:guis/evolve/shutter_socket_6.png",
+      "ascent": -5,
+      "height": 52,
+      "chars": [
+        "⠐"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:guis/evolve/shutter_socket_7.png",
+      "ascent": -5,
+      "height": 52,
+      "chars": [
+        "⠑"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:guis/evolve/shutter_socket_8.png",
+      "ascent": -5,
+      "height": 52,
+      "chars": [
+        "⠒"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:guis/evolve/shutter_socket_9.png",
+      "ascent": -5,
+      "height": 52,
+      "chars": [
+        "⠓"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:guis/evolve/shutter_socket_10.png",
+      "ascent": -5,
+      "height": 52,
+      "chars": [
+        "⠔"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:guis/evolve/shutter_socket_11.png",
+      "ascent": -5,
+      "height": 52,
+      "chars": [
+        "⠕"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:guis/evolve/shutter_socket_12.png",
+      "ascent": -5,
+      "height": 52,
+      "chars": [
+        "⠖"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:guis/evolve/shutter_socket_13.png",
+      "ascent": -5,
+      "height": 52,
+      "chars": [
+        "⠗"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:guis/evolve/shutter_socket_14.png",
+      "ascent": -5,
+      "height": 52,
+      "chars": [
+        "⠘"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:guis/evolve/shutter_socket_15.png",
+      "ascent": -5,
+      "height": 52,
+      "chars": [
+        "⠙"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:guis/evolve/shutter_socket_16.png",
+      "ascent": -5,
+      "height": 52,
+      "chars": [
+        "⠚"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:guis/evolve/shutter_socket_17.png",
+      "ascent": -5,
+      "height": 52,
+      "chars": [
+        "⠛"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:guis/evolve/shutter_socket_18.png",
+      "ascent": -5,
+      "height": 52,
+      "chars": [
+        "⠜"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:guis/evolve/shutter_socket_19.png",
+      "ascent": -5,
+      "height": 52,
+      "chars": [
+        "⠝"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:guis/evolve/shutter_socket_20.png",
+      "ascent": -5,
+      "height": 52,
+      "chars": [
+        "⠞"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:guis/evolve/shutter_socket_21.png",
+      "ascent": -5,
+      "height": 52,
+      "chars": [
+        "⠟"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:guis/evolve/shutter_socket_22.png",
+      "ascent": -5,
+      "height": 52,
+      "chars": [
+        "⠠"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:guis/evolve/shutter_socket_23.png",
+      "ascent": -5,
+      "height": 52,
+      "chars": [
+        "⠡"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:guis/evolve/shutter_socket_24.png",
+      "ascent": -5,
+      "height": 52,
+      "chars": [
+        "⠢"
+      ]
+    }
+  ]
 }
