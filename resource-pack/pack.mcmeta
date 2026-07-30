@@ -1,8 +1,7 @@
 {
   "pack": {
-    "description": "§7By: §6§nCesarZorak\n§r§7Updated for 26.1.2",
-    "pack_format": 84.0,
-    "min_format": 84.0,
-    "max_format": 84.0
+    "description": "§7By: §6§nCesarZorak\n§r§7Updated for 26.2",
+    "min_format": 84,
+    "max_format": 88
   }
 }

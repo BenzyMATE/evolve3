@@ -76,6 +76,7 @@ jobs:
           tag_name: resource-pack-latest
           name: Resource Pack (latest)
           files: pack.zip
+          overwrite_files: true
 
       # 3. Pull server.properties, edit, push back — same SFTP creds as above
       - name: Update server.properties via SFTP
