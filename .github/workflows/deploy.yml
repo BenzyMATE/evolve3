@@ -1,7 +1,8 @@
 # .github/workflows/deploy.yml
-# Builds the plugin on every push to main, uploads the jar via SFTP to the
-# Pterodactyl (WitherPanel) file daemon, then pings the DeployWebhook plugin
-# to hot-reload it. No panel API or SSH shell required.
+# Builds the plugin on every push to master, uploads the jar via SFTP to the
+# Pterodactyl (WitherPanel) file daemon, pings the DeployWebhook plugin to
+# hot-reload it, then packages the resource pack, publishes it to a rolling
+# GitHub Release, and updates server.properties over the same SFTP creds.
 
 name: Build & Deploy Plugin
 
@@ -12,6 +13,8 @@ on:
 jobs:
   build-deploy:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write          # needed to publish the resource pack release
 
     steps:
       - name: Checkout code
@@ -45,10 +48,64 @@ jobs:
           remote_path: '/plugins'
 
       # --- RELOAD: tell the DeployWebhook plugin to swap in the new jar ---
-      # play.evolvemc.net resolves to your server IP; the port here is the
-      # EXTRA allocation you assigned to DeployWebhook in the panel Network tab.
       - name: Trigger plugin hot-reload
         run: |
           curl --fail --show-error --silent -X POST \
             "http://play.evolvemc.net:${{ secrets.WEBHOOK_PORT }}/deploy" \
             -H "Authorization: Bearer ${{ secrets.WEBHOOK_TOKEN }}"
+
+      # =================================================================
+      # RESOURCE PACK — only runs when files under resource-pack/ changed
+      # =================================================================
+      - name: Check for resource pack changes
+        id: pack-changes
+        run: |
+          if git diff --quiet ${{ github.event.before }} ${{ github.sha }} -- resource-pack/ 2>/dev/null; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      # 1. Zip the pack contents (pack.mcmeta must end up at the zip root)
+      - name: Package resource pack
+        if: steps.pack-changes.outputs.changed == 'true'
+        run: |
+          cd resource-pack
+          zip -r ../pack.zip . -x '.*'
+          cd ..
+          echo "PACK_SHA1=$(sha1sum pack.zip | cut -d' ' -f1)" >> "$GITHUB_ENV"
+
+      # 2. Host it on a rolling GitHub Release with a fixed tag
+      - name: Publish pack to release
+        if: steps.pack-changes.outputs.changed == 'true'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: resource-pack-latest
+          name: Resource Pack (latest)
+          files: pack.zip
+
+      # 3. Pull server.properties, edit, push back — same SFTP creds as above
+      - name: Update server.properties via SFTP
+        if: steps.pack-changes.outputs.changed == 'true'
+        env:
+          SFTP_USER: ${{ secrets.SFTP_USERNAME }}
+          SFTP_PASS: ${{ secrets.SFTP_PASSWORD }}
+          PACK_URL: https://github.com/${{ github.repository }}/releases/download/resource-pack-latest/pack.zip
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq lftp
+
+          lftp -u "$SFTP_USER","$SFTP_PASS" -p 2022 sftp://nl-3.panelapi.net \
+            -e "set sftp:auto-confirm yes; get /server.properties -o server.properties; bye"
+
+          update_key() {
+            if grep -q "^$1=" server.properties; then
+              sed -i "s|^$1=.*|$1=$2|" server.properties
+            else
+              echo "$1=$2" >> server.properties
+            fi
+          }
+          update_key resource-pack "$PACK_URL"
+          update_key resource-pack-sha1 "$PACK_SHA1"
+
+          lftp -u "$SFTP_USER","$SFTP_PASS" -p 2022 sftp://nl-3.panelapi.net \
+            -e "set sftp:auto-confirm yes; put server.properties -o /server.properties; bye"

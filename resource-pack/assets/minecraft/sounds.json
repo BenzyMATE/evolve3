@@ -1,0 +1,27 @@
+{
+  "custom.coins": {
+    "sounds": [
+      "custom/coins"
+    ]
+  },
+  "custom.flyingtowardsessence": {
+    "sounds": [
+      "custom/flying_towards_essence"
+    ]
+  },
+    "custom.flyingtowardsatom": {
+    "sounds": [
+      "custom/flying_towards_atoms"
+    ]
+  },
+    "custom.burstatoms": {
+    "sounds": [
+      "custom/burst_atoms"
+    ]
+  },
+    "custom.burstessence": {
+    "sounds": [
+      "custom/burst_essence"
+    ]
+  }
+}
