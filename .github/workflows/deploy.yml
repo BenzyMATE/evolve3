@@ -77,6 +77,8 @@ jobs:
           name: Resource Pack (latest)
           files: pack.zip
           overwrite_files: true
+          repository: BenzyMATE/evolve3-pack
+          token: ${{ secrets.PACK_REPO_TOKEN }}
 
       # 3. Pull server.properties, edit, push back — same SFTP creds as above
       - name: Update server.properties via SFTP
@@ -84,7 +86,7 @@ jobs:
         env:
           SFTP_USER: ${{ secrets.SFTP_USERNAME }}
           SFTP_PASS: ${{ secrets.SFTP_PASSWORD }}
-          PACK_URL: https://github.com/${{ github.repository }}/releases/download/resource-pack-latest/pack.zip
+          PACK_URL: https://github.com/BenzyMATE/evolve3-pack/releases/download/resource-pack-latest/pack.zip
         run: |
           sudo apt-get update -qq && sudo apt-get install -y -qq lftp
 
