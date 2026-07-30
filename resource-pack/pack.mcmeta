@@ -1,8 +1,7 @@
 {
   "pack": {
-    "description": "§3play.EvolveMc.Net",
-    "min_format": 84,
-    "max_format": 88,
-    "mcmodels": "c07d5fd725ff84eaffb3e4da02ee35eb"
+    "description": "§bEvolveMc Asset Pack",
+    "min_format": 84.0,
+    "max_format": 88.0
   }
 }

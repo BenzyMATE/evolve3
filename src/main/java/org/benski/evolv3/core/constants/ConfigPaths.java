@@ -1369,6 +1369,12 @@ public final class ConfigPaths {
 
       /** String list — each entry is one apply-hint line. */
       public static final String APPLY_HINT = "Item.ApplyHint";
+
+      /**
+       * Prefix for per-rarity custom model data values. Append the rarity display name (e.g.
+       * "Item.CustomModelData.Common").
+       */
+      public static final String CUSTOM_MODEL_DATA_PREFIX = "Item.CustomModelData.";
     }
 
     /** Socket Menu display strings for the StoneSocketMenu. */

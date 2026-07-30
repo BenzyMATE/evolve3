@@ -23,6 +23,7 @@ import org.bukkit.enchantments.Enchantment;
 import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.inventory.meta.components.CustomModelDataComponent;
 import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
 
@@ -61,6 +62,10 @@ public final class EvolutionStone {
 
   /**
    * Creates an Evolution Stone {@link ItemStack} for the given rarity and enchant.
+   *
+   * <p>The item's custom model data is set from {@code stones.yml}'s {@code Item.CustomModelData}
+   * section, which the resourcepack's {@code items/nether_star.json} range dispatch maps to a
+   * rarity-specific model (see {@code models/item/*_stone.json}).
    *
    * @param rarity the rarity of the stone
    * @param enchantDisplayName the enchant this stone is bound to (e.g. "Efficiency")
@@ -154,6 +159,16 @@ public final class EvolutionStone {
       meta.addEnchant(glow, 1, true);
     }
     meta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
+
+    int customModelData =
+        cfg != null
+            ? cfg.getInt(ConfigPaths.Stones.Item.CUSTOM_MODEL_DATA_PREFIX + rarity.displayName(), 0)
+            : 0;
+    if (customModelData > 0) {
+      CustomModelDataComponent modelDataComponent = meta.getCustomModelDataComponent();
+      modelDataComponent.setFloats(List.of((float) customModelData));
+      meta.setCustomModelDataComponent(modelDataComponent);
+    }
 
     item.setItemMeta(meta);
     ItemTagHelper.applyTooltipStyle(item, rarityKey);
