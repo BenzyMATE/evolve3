@@ -1,6 +1,6 @@
 {
   "parent": "minecraft:item/generated",
   "textures": {
-    "layer0": "minecraft:guis/evolve/legendary_stone"
+    "layer0": "minecraft:item/legendary_stone"
   }
 }
