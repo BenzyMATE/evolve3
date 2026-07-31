@@ -483,9 +483,11 @@ public class PickaxeMenu extends BaseMenu {
     String rarityColor = "&" + rarityHex;
     String rarityGlyph =
         rarity != null ? ItemTagHelper.getRarityGlyph(rarity.displayName().toLowerCase()) : null;
-    String otherGlyph = ItemTagHelper.getTypeGlyph("other");
+    String enchantGlyph = ItemTagHelper.getTypeGlyph("enchant");
     String rarityStr =
-        "&f" + (rarityGlyph != null ? rarityGlyph : "") + (otherGlyph != null ? otherGlyph : "");
+        "&f"
+            + (rarityGlyph != null ? rarityGlyph : "")
+            + (enchantGlyph != null ? enchantGlyph : "");
 
     int level = enchant.level;
     int maxLevel = enchant.maxLevel;

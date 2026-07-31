@@ -223,6 +223,9 @@
         {"type": "bitmap", "file": "minecraft:font/evolve/pet.png", "ascent": 8, "height": 9, "chars": ["㋠"]},
         {"type": "bitmap", "file": "minecraft:font/evolve/accessory.png", "ascent": 8, "height": 9, "chars": ["㋡"]},
         {"type": "bitmap", "file": "minecraft:font/evolve/decoration.png", "ascent": 8, "height": 9, "chars": ["㋢"]},
-        {"type": "bitmap", "file": "minecraft:font/evolve/other.png", "ascent": 8, "height": 9, "chars": ["㋣"]}
+        {"type": "bitmap", "file": "minecraft:font/evolve/other.png", "ascent": 8, "height": 9, "chars": ["㋣"]},
+        {"type": "bitmap", "file": "minecraft:font/evolve/evolution_stone.png", "ascent": 8, "height": 9, "chars": ["㋤"]},
+        {"type": "bitmap", "file": "minecraft:font/evolve/enchant.png", "ascent": 8, "height": 9, "chars": ["㋥"]},
+        {"type": "bitmap", "file": "minecraft:font/evolve/omnitool.png", "ascent": 8, "height": 9, "chars": ["㋦"]}
     ]
 }

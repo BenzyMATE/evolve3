@@ -43,7 +43,10 @@ public final class ItemTagHelper {
           Map.entry("pet", "㋠"),
           Map.entry("accessory", "㋡"),
           Map.entry("decoration", "㋢"),
-          Map.entry("other", "㋣"));
+          Map.entry("other", "㋣"),
+          Map.entry("evolution_stone", "㋤"),
+          Map.entry("enchant", "㋥"),
+          Map.entry("omnitool", "㋦"));
 
   private static final Set<String> ALL_GLYPHS;
 

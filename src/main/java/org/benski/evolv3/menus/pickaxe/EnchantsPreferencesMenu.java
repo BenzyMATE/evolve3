@@ -252,7 +252,7 @@ public class EnchantsPreferencesMenu extends BaseMenu {
             ? ItemTagHelper.getRarityGlyph(option.rarity().displayName().toLowerCase())
             : null;
     String glyphPrefix = rGlyph != null ? rGlyph : "";
-    String otherGlyph = ItemTagHelper.getTypeGlyph("other");
+    String enchantGlyph = ItemTagHelper.getTypeGlyph("enchant");
 
     List<String> lore =
         loreTpl.stream()
@@ -260,7 +260,7 @@ public class EnchantsPreferencesMenu extends BaseMenu {
                 line -> {
                   if (option != null) {
                     String rarityLabel =
-                        "&f" + glyphPrefix + (otherGlyph != null ? otherGlyph : "");
+                        "&f" + glyphPrefix + (enchantGlyph != null ? enchantGlyph : "");
                     return line.replace("{rarity}", rarityLabel);
                   }
                   return line.replace("{rarity}", "&#888888Unknown");

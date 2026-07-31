@@ -74,6 +74,7 @@ public final class EvolutionStone {
   public static ItemStack create(RarityConfig rarity, String enchantDisplayName) {
     String rarityKey = rarity.displayName().toLowerCase();
     String rarityGlyph = ItemTagHelper.getRarityGlyph(rarityKey);
+    String evolutionStoneGlyph = ItemTagHelper.getTypeGlyph("evolution_stone");
     String rarityHex = String.format("%06X", rarity.textColor().value());
 
     var enchantOption = EnchantAnimationConfig.getOption(enchantDisplayName);
@@ -126,7 +127,11 @@ public final class EvolutionStone {
         ds(stoneNameTemplate.replace("{hex}", rarityHex).replace("{stone_name}", stoneName)));
 
     List<Component> lore = new ArrayList<>();
-    String rarityLabel = (rarityGlyph != null ? rarityGlyph + " " : "") + rarity.displayName();
+    String rarityLabel =
+        (rarityGlyph != null ? rarityGlyph : "")
+            + (evolutionStoneGlyph != null ? evolutionStoneGlyph : "")
+            + " "
+            + rarity.displayName();
     lore.add(ds(rarityLineTemplate.replace("{hex}", rarityHex).replace("{rarity}", rarityLabel)));
     lore.add(
         ds(

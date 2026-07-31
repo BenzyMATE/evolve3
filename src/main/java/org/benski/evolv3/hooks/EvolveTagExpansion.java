@@ -42,7 +42,10 @@ public class EvolveTagExpansion extends PlaceholderExpansion {
           Map.entry("pet", "㋠"),
           Map.entry("accessory", "㋡"),
           Map.entry("decoration", "㋢"),
-          Map.entry("other", "㋣"));
+          Map.entry("other", "㋣"),
+          Map.entry("evolution_stone", "㋤"),
+          Map.entry("enchant", "㋥"),
+          Map.entry("omnitool", "㋦"));
 
   private static final Map<String, String> RARITY_COLOURS =
       Map.of(

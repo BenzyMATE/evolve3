@@ -148,9 +148,11 @@ public final class PickaxeLoreRenderer {
         buildFormattedLoreStrings(player, profile, loreTemplate, durabilityBar);
 
     String artifactGlyph = ItemTagHelper.getRarityGlyph("artifact");
-    String toolGlyph = ItemTagHelper.getTypeGlyph("tool");
+    String omnitoolGlyph = ItemTagHelper.getTypeGlyph("omnitool");
     String tagLine =
-        "&f " + (artifactGlyph != null ? artifactGlyph : "") + (toolGlyph != null ? toolGlyph : "");
+        "&f "
+            + (artifactGlyph != null ? artifactGlyph : "")
+            + (omnitoolGlyph != null ? omnitoolGlyph : "");
     formattedLore.add(0, Utils.formatMessage(player, tagLine));
 
     formattedLore.add("");
