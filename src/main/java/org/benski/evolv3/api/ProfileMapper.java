@@ -52,7 +52,7 @@ public final class ProfileMapper {
 
     profile.wallet = walletFromDto(dto.wallet);
     profile.ranks = ranksFromDto(dto.ranks);
-    profile.activity = activityFromInt(dto.activity);
+    profile.activity = safeEnum(dto.activity, PlayerActivity.class, PlayerActivity.NONE);
     profile.backpack = backpackFromDto(dto.backpack);
     profile.pickaxes = pickaxesFromDto(dto.pickaxes);
 
@@ -76,7 +76,7 @@ public final class ProfileMapper {
     List<Rank> ranks = new ArrayList<>();
     if (dtos == null) return ranks;
     for (RankDto dto : dtos) {
-      RankType type = rankTypeFromInt(dto.type);
+      RankType type = safeEnum(dto.type, RankType.class, RankType.DEFAULT);
       ranks.add(new Rank(dto.prefix, type));
     }
     return ranks;
@@ -133,7 +133,7 @@ public final class ProfileMapper {
   /** Vessel from dto. */
   private static Vessel vesselFromDto(VesselDto dto, VesselType defaultType) {
     if (dto == null) return new Vessel(defaultType, 0, 100, 0);
-    VesselType type = dto.type == 0 ? VesselType.ESSENCE : VesselType.ATOMS;
+    VesselType type = safeEnum(dto.type, VesselType.class, defaultType);
     return new Vessel(type, dto.current, dto.target, dto.crystals);
   }
 
@@ -259,7 +259,7 @@ public final class ProfileMapper {
 
     dto.wallet = walletToDto(profile.wallet);
     dto.ranks = ranksToDto(profile.ranks);
-    dto.activity = activityToInt(profile.activity);
+    dto.activity = (profile.activity != null ? profile.activity : PlayerActivity.NONE).name();
     dto.backpack = backpackToDto(profile.backpack);
     dto.pickaxes = pickaxesToDto(profile.pickaxes);
     dto.preferences = preferencesToDto(profile);
@@ -283,7 +283,7 @@ public final class ProfileMapper {
     for (Rank rank : ranks) {
       RankDto dto = new RankDto();
       dto.prefix = rank.prefix;
-      dto.type = rankTypeToInt(rank.type);
+      dto.type = (rank.type != null ? rank.type : RankType.DEFAULT).name();
       dtos.add(dto);
     }
     return dtos;
@@ -338,7 +338,7 @@ public final class ProfileMapper {
   private static VesselDto vesselToDto(Vessel vessel) {
     VesselDto dto = new VesselDto();
     if (vessel == null) return dto;
-    dto.type = vessel.type == VesselType.ESSENCE ? 0 : 1;
+    dto.type = (vessel.type != null ? vessel.type : VesselType.ESSENCE).name();
     dto.current = vessel.current;
     dto.target = vessel.target;
     dto.crystals = vessel.crystals;
@@ -412,44 +412,6 @@ public final class ProfileMapper {
   }
 
   // ── Enum helpers ──────────────────────────────────────────────────────────
-
-  /** Activity from int. */
-  private static PlayerActivity activityFromInt(int value) {
-    return switch (value) {
-      case 1 -> PlayerActivity.ENCHANTING;
-      case 2 -> PlayerActivity.EVOLVING;
-      default -> PlayerActivity.NONE;
-    };
-  }
-
-  /** Activity to int. */
-  private static int activityToInt(PlayerActivity activity) {
-    if (activity == null) return 0;
-    return switch (activity) {
-      case ENCHANTING -> 1;
-      case EVOLVING -> 2;
-      default -> 0;
-    };
-  }
-
-  /** Rank type from int. */
-  private static RankType rankTypeFromInt(int value) {
-    return switch (value) {
-      case 1 -> RankType.STAFF;
-      case 2 -> RankType.DONATOR;
-      default -> RankType.DEFAULT;
-    };
-  }
-
-  /** Rank type to int. */
-  private static int rankTypeToInt(RankType type) {
-    if (type == null) return 0;
-    return switch (type) {
-      case STAFF -> 1;
-      case DONATOR -> 2;
-      default -> 0;
-    };
-  }
 
   /** Safe enum. */
   private static <E extends Enum<E>> E safeEnum(String value, Class<E> type, E fallback) {

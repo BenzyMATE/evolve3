@@ -7,7 +7,7 @@ public class PlayerProfileDto {
   public String id;
   public String username;
   public String skin;
-  public int activity = 0;
+  public String activity = "NONE";
   public WalletDto wallet;
   public List<RankDto> ranks = new ArrayList<>();
   public BackpackDto backpack;

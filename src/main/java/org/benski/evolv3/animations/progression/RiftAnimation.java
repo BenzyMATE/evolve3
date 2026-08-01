@@ -74,7 +74,7 @@ public class RiftAnimation extends EnchantAnimation {
   /** Replaces the classic guardian-particle + dragon-ambient flourish with the spell cast. */
   @Override
   protected void playIntroEffects(World world, Location playerLoc) {
-    world.playSound(playerLoc, "custom.magiccastwhoosh", 1.0f, 1.0f);
+    world.playSound(playerLoc, "custom.magiccastwhoosh", 0.5f, 1.0f);
     world.spawnParticle(Particle.WITCH, player.getEyeLocation(), 30, 0.25, 0.25, 0.25, 0.02);
     world.spawnParticle(
         Particle.DUST,
@@ -95,7 +95,7 @@ public class RiftAnimation extends EnchantAnimation {
       tickIntro(tick);
     }
     super.doTick(progress);
-    if (tick > introTicks && tick < scrollEndTick) {
+    if (riftsOpened) {
       tickRiftAmbience(tick);
     }
   }
@@ -129,7 +129,7 @@ public class RiftAnimation extends EnchantAnimation {
 
   /** Tears open the two rifts on either side of the strip with a dense particle burst. */
   private void openRifts(World world) {
-    world.playSound(stripCenter, "custom.portalopenrift", 1.0f, 1.0f);
+    world.playSound(stripCenter, "custom.portalopenrift", 0.5f, 1.0f);
     for (Location rift : riftLocations()) {
       spawnVoidCore(world, rift, 18);
       spawnRimShimmer(world, rift, 20);
@@ -138,8 +138,9 @@ public class RiftAnimation extends EnchantAnimation {
   }
 
   /**
-   * Keeps the two rifts shimmering — void core, starfield, and rim swirl — while the reel travels
-   * between them.
+   * Keeps the two rifts shimmering — void core, starfield, and rim swirl — for as long as they're
+   * open, including through the reveal and selection phases so they stay visible while the player
+   * is choosing. The travelling whoosh only plays while the reel is still actually moving.
    */
   private void tickRiftAmbience(int tick) {
     World world = player.getWorld();
@@ -156,8 +157,8 @@ public class RiftAnimation extends EnchantAnimation {
         spawnStarfield(world, rift, 2);
       }
     }
-    if (tick % 6 == 0) {
-      world.playSound(stripCenter, "custom.objectflybywhoosh", 0.35f, 1.3f);
+    if (tick < scrollEndTick && tick % 6 == 0) {
+      world.playSound(stripCenter, "custom.objectflybywhoosh", 0.15f, 1.3f);
     }
   }
 
@@ -226,13 +227,13 @@ public class RiftAnimation extends EnchantAnimation {
   /** Plays the traveling-through-space whoosh instead of the classic note-block tick. */
   @Override
   protected void playScrollWhoosh(World world, Location origin, float pitch) {
-    world.playSound(origin, "custom.objectflybywhoosh", 0.22f, pitch);
+    world.playSound(origin, "custom.objectflybywhoosh", 0.1f, pitch);
   }
 
   /** Plays a magic-lock impact instead of the classic beacon/level-up landing sound. */
   @Override
   protected void playLandingSound(World world, Location origin) {
-    world.playSound(origin, "custom.magiclockimpact", 1.0f, 1.0f);
+    world.playSound(origin, "custom.magiclockimpact", 0.5f, 1.0f);
   }
 
   /** Collapses both rifts with a reverse-whoosh before the usual cleanup runs. */
@@ -240,7 +241,7 @@ public class RiftAnimation extends EnchantAnimation {
   protected void doComplete() {
     World world = player.getWorld();
     if (world != null && stripCenter != null) {
-      world.playSound(stripCenter, "custom.vacuumsuckshort", 0.8f, 1.0f);
+      world.playSound(stripCenter, "custom.vacuumsuckshort", 0.4f, 1.0f);
       for (Location rift : riftLocations()) {
         world.spawnParticle(Particle.REVERSE_PORTAL, rift, 20, 0.2, 0.4, 0.2, 0.3);
       }
