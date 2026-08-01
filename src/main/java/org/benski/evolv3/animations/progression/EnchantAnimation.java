@@ -351,6 +351,10 @@ public class EnchantAnimation extends BaseEnchantAnimation {
   protected void onHighlightChanged(int index, boolean highlighted) {
     if (index >= 0 && index < 3) {
       descTargetIn[index] = highlighted;
+      ItemDisplay item = enchantItems[index];
+      if (item != null && !item.isDead()) {
+        item.setGlowing(highlighted);
+      }
     }
     if (highlighted && resultPos[index] != null) {
       player.playSound(resultPos[index], Sound.UI_BUTTON_CLICK, 0.4f, 1.0f);
@@ -610,9 +614,6 @@ public class EnchantAnimation extends BaseEnchantAnimation {
               0,
               new Particle.DustOptions(opt.rarity().particleColor(), 1.0f));
         }
-      }
-      if (highlightedIndex == r && tick % 3 == 0) {
-        world.spawnParticle(Particle.END_ROD, pos, 2, 0.12, 0.12, 0.12, 0.02);
       }
     }
 

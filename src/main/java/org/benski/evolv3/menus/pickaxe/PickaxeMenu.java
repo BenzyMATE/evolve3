@@ -933,7 +933,8 @@ public class PickaxeMenu extends BaseMenu {
   private ItemStack buildEvolutionItem(Player player) {
     FileConfiguration menus = ConfigRegistry.getInstance().get(ConfigNames.MENUS);
     String rawName =
-        menus.getString(ConfigPaths.Menus.PickaxeMenu.EVOLVE_NAME, "&#00BFFF⭐ &#FFFFFF&lEvolution");
+        menus.getString(
+            ConfigPaths.Menus.PickaxeMenu.EVOLVE_NAME, "&#00BFFF⭐ &#FFFFFF&lEvolution Vessel");
     List<String> rawLore = menus.getStringList(ConfigPaths.Menus.PickaxeMenu.EVOLVE_LORE);
 
     PlayerDataCenter evoPdc = DataCenterRegistry.getInstance().getPlayerDataCenter();
@@ -966,7 +967,8 @@ public class PickaxeMenu extends BaseMenu {
   private ItemStack buildEssenceItem(Player player) {
     FileConfiguration menus = ConfigRegistry.getInstance().get(ConfigNames.MENUS);
     String rawName =
-        menus.getString(ConfigPaths.Menus.PickaxeMenu.ESSENCE_NAME, "&#9932CC🔥 &#FFFFFF&lEssence");
+        menus.getString(
+            ConfigPaths.Menus.PickaxeMenu.ESSENCE_NAME, "&#9932CC🔥 &#FFFFFF&lEnchant Vessel");
     List<String> rawLore = menus.getStringList(ConfigPaths.Menus.PickaxeMenu.ESSENCE_LORE);
 
     PlayerDataCenter essPdc = DataCenterRegistry.getInstance().getPlayerDataCenter();

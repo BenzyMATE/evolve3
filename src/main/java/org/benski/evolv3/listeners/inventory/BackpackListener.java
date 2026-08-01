@@ -14,7 +14,6 @@ import org.benski.evolv3.registry.MenuRegistry;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
-import org.bukkit.Sound;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -81,8 +80,6 @@ public class BackpackListener extends BaseListener {
     }
 
     event.setCancelled(true);
-
-    player.playSound(player.getLocation(), Sound.BLOCK_SHULKER_BOX_OPEN, 1.0f, 1.0f);
 
     Menu backpackMenu = MenuRegistry.getInstance().get("backpack");
     if (backpackMenu != null) {

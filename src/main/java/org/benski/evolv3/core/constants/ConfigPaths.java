@@ -719,24 +719,6 @@ public final class ConfigPaths {
       public static final String OTHERS_DISABLED = "pickup-animation.others-disabled";
     }
 
-    /** Messages for the /enchantstyle command. */
-    public static final class EnchantStyle {
-      private EnchantStyle() {}
-
-      public static final String USAGE_SET = "enchant-style.usage-set";
-      public static final String UNKNOWN_SUBCOMMAND = "enchant-style.unknown-subcommand";
-      public static final String CURRENT_HEADER = "enchant-style.current-header";
-      public static final String CURRENT = "enchant-style.current";
-      public static final String HINT = "enchant-style.hint";
-      public static final String LIST_HEADER = "enchant-style.list-header";
-      public static final String LIST_ITEM_SELECTED = "enchant-style.list-item-selected";
-      public static final String LIST_ITEM = "enchant-style.list-item";
-      public static final String LIST_FOOTER = "enchant-style.list-footer";
-      public static final String SET_SUCCESS = "enchant-style.set-success";
-      public static final String INVALID_STYLE = "enchant-style.invalid-style";
-      public static final String CYCLED = "enchant-style.cycled";
-    }
-
     /** Furnace smelt menu messages. */
     public static final class FurnaceSmelt {
       private FurnaceSmelt() {}

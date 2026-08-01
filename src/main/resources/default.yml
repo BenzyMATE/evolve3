@@ -37,7 +37,7 @@ Scoreboard:
   # Text shown on the evo line while the enchant reel is rolling
   EnchantRollingText: " &#FFD700⚙ Rolling"
   # Text shown on the evo line while the player is selecting an enchant
-  EnchantSelectingText: " &#00FF88✦ Selecting..."
+  EnchantSelectingText: " &#00FF88&lSelecting..."
   # Text shown on the rank line when the player can afford to rankup (animates in/out like evo/atoms)
   RankupToggleText: "&#55FF55&l/rankup"
   Lines:

@@ -465,14 +465,13 @@ public class EnchantSelectionManager {
   /**
    * Maps the player's enchant style preference to which {@link BaseEnchantAnimation} subclass
    * {@link #startSelectionInternal} constructs. Defaults to {@link
-   * PreferenceType.EnchantStyle#CLASSIC} if the preference is unavailable or not yet implemented
-   * (e.g. {@code GHOST_WISPS}).
+   * PreferenceType.EnchantStyle#PORTAL_RIFT} if the preference is unavailable.
    */
   private PreferenceType.EnchantStyle resolveEnchantStyle(Player player) {
     PlayerDataCenter pdc = DataCenterRegistry.getInstance().getPlayerDataCenter();
-    if (pdc == null) return PreferenceType.EnchantStyle.CLASSIC;
+    if (pdc == null) return PreferenceType.EnchantStyle.PORTAL_RIFT;
     PlayerProfile profile = pdc.getLocal(player);
-    if (profile == null) return PreferenceType.EnchantStyle.CLASSIC;
+    if (profile == null) return PreferenceType.EnchantStyle.PORTAL_RIFT;
     return profile.preferences.enchantStyle;
   }
 }

@@ -885,7 +885,7 @@ public final class EvolveScoreboardManager {
     String selectingText =
         config()
             .getString(
-                ConfigPaths.Default.Scoreboard.ENCHANT_SELECTING_TEXT, " &#00FF88✦ Selecting...");
+                ConfigPaths.Default.Scoreboard.ENCHANT_SELECTING_TEXT, " &#00FF88&lSelecting...");
     pushLineSafe(state, state.evoLineIndex, colored(FontUtils.toSmallCaps(selectingText)));
     pushLineSafe(state, state.levelLineIndex, colored(buildArrowLine(opts, highlighted, true)));
     pushLineSafe(

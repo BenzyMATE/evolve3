@@ -348,8 +348,8 @@ public class PickaxeManager {
           player,
           ConfigPaths.Messages.Pickaxe.ENCHANT_ROLL_TITLE,
           ConfigPaths.Messages.Pickaxe.ENCHANT_ROLL_SUBTITLE,
-          "&#B366D9&l✦ Enchant Roll",
-          "&#CCCCCCYou earned an Enchant Roll");
+          "&#B366D9&lEnchant Shard",
+          "&#CCCCCCYou earned an Enchant Shard");
     }
   }
 
@@ -374,8 +374,8 @@ public class PickaxeManager {
           player,
           ConfigPaths.Messages.Pickaxe.EVOLVE_SUCCESS_TITLE,
           ConfigPaths.Messages.Pickaxe.EVOLVE_SUCCESS_SUBTITLE,
-          "&#FFD700&l⚛ Evolution Roll",
-          "&#CCCCCCYou earned an Evolution Roll");
+          "&#FFD700&lEvolution Shard",
+          "&#CCCCCCYou earned an Evolution Shard");
     }
   }
 

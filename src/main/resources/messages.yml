@@ -61,8 +61,8 @@ pickaxe:
   profile-created: "  %evolv3_prefix% &#00FFFFPickaxe profile created."
   no-pickaxe: "  %evolv3_prefix% &#CCCCCCYou don't have a pickaxe in storage."
   enchant-roll-gained: "  %evolv3_prefix% &#B366D9&l[Enchant Roll] &#CCCCCCYou earned an Enchant Roll!"
-  enchant-roll-title: "&#B366D9&l✦ Enchant Roll"
-  enchant-roll-subtitle: "&#CCCCCCYou earned an Enchant Roll"
+  enchant-roll-title: "&#B366D9&lEnchant Shard"
+  enchant-roll-subtitle: "&#CCCCCCYou earned an Enchant Shard"
   pickaxe-broken: "  &#FF4444Your pickaxe has broken and been removed from storage."
   drop-confirmation:
     - ""
@@ -116,8 +116,8 @@ pickaxe:
     not-available: "  %evolv3_prefix% &#CCCCCCEvolution is not yet available."
     insufficient-spins: "  %evolv3_prefix% &#CCCCCCNot enough &#FFD700⚛ Atoms &#CCCCCCto evolve your pickaxe."
     success: "  %evolv3_prefix% &#FFD700&l[Evolution Roll] &#CCCCCCYou earned an Evolution Roll!"
-    success-title: "&#FFD700&l⚛ Evolution Roll"
-    success-subtitle: "&#CCCCCCYou earned an Evolution Roll"
+    success-title: "&#FFD700&lEvolution Shard"
+    success-subtitle: "&#CCCCCCYou earned an Evolution Shard"
     result:
       - ""
       - "  &b⛏ &b&l EVOLUTION %evolution_level%"
@@ -351,23 +351,6 @@ pickup-animation:
   cycled: "  &#00FFFFSwitched to: &#FFFFFF%name% &#888888- &#CCCCCC%description%"
   others-enabled: "  &#00FFFFYou can now see other players' pickup animations."
   others-disabled: "  &#CCCCCCYou will no longer see other players' pickup animations."
-
-# =====================================================
-# Enchant Style Command Messages (/enchantstyle)
-# =====================================================
-enchant-style:
-  usage-set: "  &cUsage: /enchantstyle set <classic|rift>"
-  unknown-subcommand: "  &cUnknown option. Use: list, set <style>, or next"
-  current-header: "  &#B366D9&l[Enchant Style]"
-  current: "  &#CCCCCCCurrent: &#B366D9%name% &#888888- &#CCCCCC%description%"
-  hint: "  &#CCCCCCUse &#B366D9/enchantstyle list &#CCCCCCto see all options, or &#B366D9/enchantstyle next &#CCCCCCto cycle."
-  list-header: "  &#B366D9&l[Available Enchant Styles]"
-  list-item-selected: " &#B366D9> &#FFFFFF%name% &#888888- &#CCCCCC%description% &#B366D9(selected)"
-  list-item: " &#888888> &#CCCCCC%name% &#888888- &#CCCCCC%description%"
-  list-footer: "  &#CCCCCCUse &#B366D9/enchantstyle set <name> &#CCCCCCto select a style."
-  set-success: "  &#B366D9Enchant style set to: &#FFFFFF%name%"
-  invalid-style: "  &cInvalid style: %name%. Use /enchantstyle list to see available options."
-  cycled: "  &#B366D9Switched to: &#FFFFFF%name% &#888888- &#CCCCCC%description%"
 
 # =====================================================
 # Admin Command Messages (/evolve)

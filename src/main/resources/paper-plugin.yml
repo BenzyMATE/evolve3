@@ -41,10 +41,6 @@ commands:
     description: Manage pickup animations
     usage: /<command> <list|set|next|others>
     aliases: [pa]
-  enchantstyle:
-    description: Switch the enchant roll animation style
-    usage: /<command> <list|set|next>
-    aliases: [estyle]
   bal:
     description: View your coin balance
     usage: /<command> [player]

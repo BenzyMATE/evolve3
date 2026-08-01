@@ -185,7 +185,9 @@ public final class ProfileMapper {
         case PREF_ENCHANT_STYLE ->
             profile.preferences.enchantStyle =
                 safeEnum(
-                    val, PreferenceType.EnchantStyle.class, PreferenceType.EnchantStyle.CLASSIC);
+                    val,
+                    PreferenceType.EnchantStyle.class,
+                    PreferenceType.EnchantStyle.PORTAL_RIFT);
         case PREF_PICKUP_EFFECT ->
             profile.preferences.pickupEffect =
                 safeEnum(

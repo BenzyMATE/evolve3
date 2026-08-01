@@ -79,7 +79,7 @@ Backpack Menu:
 # All text is automatically converted to small-caps via FontUtils in the formatMessage pipeline.
 Pickaxe Menu:
   Essence:
-    Name: "&#B366D9🔥 &#FFFFFF&l%evolv3_player_name% &#B366D9Enchant"
+    Name: "&#B366D9🔥 &#FFFFFF&l%evolv3_player_name% &#B366D9Enchant Vessel"
     Lore:
       - ''
       - ' &#FFFFFF&lDescription'
@@ -117,7 +117,7 @@ Pickaxe Menu:
       - ' &#555555Use the &#B366D9Enchant Panel &#555555to roll.'
       - ''
   Evolve:
-    Name: "&#FFEE00⚛ &#FFFFFF&l%evolv3_player_name% &#FFEE00Evolution"
+    Name: "&#FFEE00⚛ &#FFFFFF&l%evolv3_player_name% &#FFEE00Evolution Vessel"
     Lore:
       - ''
       - ' &#FFFFFF&lDescription'
