@@ -47,6 +47,13 @@ public class BackpackMenu extends BaseMenu {
   private final Map<UUID, Integer> currentPage = new HashMap<>();
   private final Map<UUID, Set<Integer>> selectedItems = new HashMap<>();
 
+  /**
+   * Players whose next {@link #onClose} should be silent — set right before {@link
+   * #sellSelectedItems} auto-closes the menu because selling emptied the backpack, so that close
+   * doesn't play the "closed without selling" sound.
+   */
+  private final Set<UUID> skipCloseSound = new HashSet<>();
+
   /** Creates and registers the BackpackMenu. @param plugin the owning plugin */
   public BackpackMenu(JavaPlugin plugin) {
     super(plugin);
@@ -63,6 +70,9 @@ public class BackpackMenu extends BaseMenu {
   /** {@inheritDoc} */
   @Override
   protected void onClose(Player player) {
+    if (skipCloseSound.remove(player.getUniqueId())) {
+      return;
+    }
     player.playSound(player.getLocation(), "custom.backpackclose", 0.8f, 1.0f);
   }
 
@@ -387,6 +397,7 @@ public class BackpackMenu extends BaseMenu {
     profile.save(null);
 
     if (backpack.getItems().isEmpty()) {
+      skipCloseSound.add(player.getUniqueId());
       closeMenu(player);
     } else {
       int maxPage = Math.max(0, getTotalPages(backpack) - 1);

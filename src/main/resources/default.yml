@@ -35,7 +35,7 @@ Scoreboard:
   # Label used in the level-up flash on the scoreboard (e.g. "Level")
   LevelUpLabel: "Level"
   # Text shown on the evo line while the enchant reel is rolling
-  EnchantRollingText: " &#FFD700⚙ Rolling"
+  EnchantRollingText: " &#FFD700&lRolling"
   # Text shown on the evo line while the player is selecting an enchant
   EnchantSelectingText: " &#00FF88&lSelecting..."
   # Text shown on the rank line when the player can afford to rankup (animates in/out like evo/atoms)

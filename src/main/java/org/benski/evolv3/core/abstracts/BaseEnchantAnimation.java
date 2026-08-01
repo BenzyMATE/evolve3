@@ -102,6 +102,11 @@ public abstract class BaseEnchantAnimation extends BaseAnimation {
       }
     }
     doComplete();
+    if (onCleanup != null) {
+      Runnable cleanup = onCleanup;
+      onCleanup = null;
+      cleanup.run();
+    }
   }
 
   /** Starts click detector. */
@@ -263,15 +268,46 @@ public abstract class BaseEnchantAnimation extends BaseAnimation {
     return selectionMade;
   }
 
+  /** Whether {@link #onSelect} has already fired. Guards {@link #applyNow} against double-apply. */
+  private boolean applied = false;
+
   /**
-   * Invokes the {@link #onSelect} callback if a valid selection was made. Safe to call multiple
-   * times — only the first call has any effect since the animation stops after firing it.
+   * Invokes the {@link #onSelect} callback immediately if a valid selection was made and it hasn't
+   * already fired. Subclasses call this as soon as the outcome is known to be applied (e.g. once
+   * the item is back in the player's hand), rather than waiting for the animation's closing
+   * flourish to finish — see {@link #fireCallback()} for the difference.
+   */
+  public void applyNow() {
+    if (applied) return;
+    if (onSelect == null || selectedIndex < 0 || selectedIndex >= enchantOptions.size()) return;
+    applied = true;
+    onSelect.accept(player, enchantOptions.get(selectedIndex));
+  }
+
+  /**
+   * Ensures the {@link #onSelect} callback has fired. Safe to call multiple times — only the first
+   * call (whether via this method or {@link #applyNow}) has any effect. Kept as a defensive
+   * fallback for callers that still invoke it directly (e.g. on disconnect); the normal path
+   * applies the outcome earlier via {@link #applyNow}.
    */
   public void fireCallback() {
-    if (onSelect != null && selectedIndex >= 0 && selectedIndex < enchantOptions.size()) {
-      onSelect.accept(player, enchantOptions.get(selectedIndex));
-    }
+    applyNow();
   }
+
+  /**
+   * Registers a callback to run once, when this animation completes (see {@link
+   * BaseAnimation#stop()}) — independent of {@link #fireCallback}/{@link #applyNow}'s timing. Used
+   * by {@link org.benski.evolv3.core.managers.enchant.EnchantSelectionManager} to remove its
+   * bookkeeping for this selection only once the animation is truly done, even though the actual
+   * outcome may already have been applied earlier.
+   *
+   * @param onCleanup the cleanup action, or {@code null} to clear a previously-registered one
+   */
+  public void setOnCleanup(Runnable onCleanup) {
+    this.onCleanup = onCleanup;
+  }
+
+  private Runnable onCleanup;
 
   /**
    * Marks the original item as already handled externally (saved to {@link

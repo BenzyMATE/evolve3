@@ -14,6 +14,7 @@ import org.benski.evolv3.core.abstracts.BaseEnchantAnimation;
 import org.benski.evolv3.core.constants.ConfigNames;
 import org.benski.evolv3.core.constants.ConfigPaths;
 import org.benski.evolv3.core.helpers.FontUtils;
+import org.benski.evolv3.core.helpers.ItemTagHelper;
 import org.benski.evolv3.core.helpers.Utils;
 import org.benski.evolv3.core.managers.enchant.EnchantAnimationConfig;
 import org.benski.evolv3.core.managers.enchant.EnchantSelectionManager;
@@ -872,7 +873,7 @@ public final class EvolveScoreboardManager {
     int dots = (state.enchantArrowTick / 5) % 3 + 1;
     String rollingBase =
         config()
-            .getString(ConfigPaths.Default.Scoreboard.ENCHANT_ROLLING_TEXT, " &#FFD700⚙ Rolling");
+            .getString(ConfigPaths.Default.Scoreboard.ENCHANT_ROLLING_TEXT, " &#FFD700&lRolling");
     pushLineSafe(
         state, state.evoLineIndex, colored(FontUtils.toSmallCaps(rollingBase + ".".repeat(dots))));
     pushLineSafe(state, state.levelLineIndex, colored(buildArrowLine(opts, -1, false)));
@@ -901,12 +902,17 @@ public final class EvolveScoreboardManager {
     String reveal = name.substring(0, chars);
     String cursor = chars >= name.length() ? "" : "&#888888▌";
     pushLineSafe(
-        state, state.evoLineIndex, colored(" " + state.enchantRevealColor + reveal + cursor));
+        state,
+        state.evoLineIndex,
+        colored(" " + state.enchantRevealColor + "&l" + reveal + cursor));
 
     if (selectedIndex >= 0 && selectedIndex < opts.size()) {
-      String rarityName = FontUtils.toSmallCaps(opts.get(selectedIndex).rarity().displayName());
-      pushLineSafe(
-          state, state.levelLineIndex, colored(" " + state.enchantRevealColor + "&l" + rarityName));
+      String rarityKey = opts.get(selectedIndex).rarity().displayName().toLowerCase();
+      String rarityGlyph = ItemTagHelper.getRarityGlyph(rarityKey);
+      String enchantGlyph = ItemTagHelper.getTypeGlyph("enchant");
+      String tag =
+          (rarityGlyph != null ? rarityGlyph : "") + (enchantGlyph != null ? enchantGlyph : "");
+      pushLineSafe(state, state.levelLineIndex, colored(" &f" + tag));
     }
 
     pushLineSafe(

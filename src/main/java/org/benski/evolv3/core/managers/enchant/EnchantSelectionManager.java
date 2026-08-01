@@ -383,21 +383,22 @@ public class EnchantSelectionManager {
     pendingSelections.put(player.getUniqueId(), pending);
 
     final UUID uuid = player.getUniqueId();
-    BiConsumer<Player, EnchantOption> wrappedCallback =
-        (p, selected) -> {
-          activeAnimations.remove(uuid);
-          pendingSelections.remove(uuid);
-          deletePendingFromDatabase(uuid);
-          if (onSelect != null) {
-            onSelect.accept(p, selected);
-          }
-        };
 
     int scrollTicks = resolveScrollTicks(player);
     BaseEnchantAnimation animation =
         resolveEnchantStyle(player) == PreferenceType.EnchantStyle.PORTAL_RIFT
-            ? new RiftAnimation(plugin, player, options, wrappedCallback, scrollTicks)
-            : new EnchantAnimation(plugin, player, options, wrappedCallback, scrollTicks);
+            ? new RiftAnimation(plugin, player, options, onSelect, scrollTicks)
+            : new EnchantAnimation(plugin, player, options, onSelect, scrollTicks);
+
+    // The animation applies the outcome itself, as soon as it knows it (see
+    // BaseEnchantAnimation#applyNow) — this bookkeeping only needs to run once the animation is
+    // fully done, which is decoupled from that via setOnCleanup rather than fused into onSelect.
+    animation.setOnCleanup(
+        () -> {
+          activeAnimations.remove(uuid);
+          pendingSelections.remove(uuid);
+          deletePendingFromDatabase(uuid);
+        });
 
     if (!AnimationRegistry.getInstance().canPlay(animation)) {
       pendingSelections.remove(player.getUniqueId());

@@ -14,12 +14,13 @@ import org.bukkit.plugin.java.JavaPlugin;
 /**
  * Portal/rift reskin of {@link EnchantAnimation}.
  *
- * <p>Instead of the strip simply appearing, the player casts a purple-essence spell that tears open
- * a rift on either side of where the strip will travel; the enchant reel then emerges from one
- * rift, crosses the gap, and vanishes into the other before decelerating to a stop on the same
- * three result slots as the classic style. The landing, reveal, and selection choreography are
- * entirely inherited unchanged from {@link EnchantAnimation} — only the intro, the ambient travel
- * effects, and a handful of sounds are swapped.
+ * <p>Instead of the strip simply appearing, the player casts a purple-essence spell that converges
+ * on the strip's centre, splits in two, and travels out to where each rift will sit; each rift then
+ * spins open in a swirling vortex before the enchant reel starts flowing between them. The reel
+ * emerges from one rift, crosses the gap, and vanishes into the other before decelerating to a stop
+ * on the same three result slots as the classic style. The landing, reveal, and selection
+ * choreography are entirely inherited unchanged from {@link EnchantAnimation} — only the intro, the
+ * ambient travel effects, and a handful of sounds are swapped.
  *
  * <p>Each rift is drawn entirely from particles — a dark void core, a starfield of {@link
  * Particle#GLOW} twinkles, and a swirling {@link Particle#REVERSE_PORTAL} rim — arranged in the
@@ -32,8 +33,17 @@ public class RiftAnimation extends EnchantAnimation {
   /** Ticks spent on the cast + rift-open intro before the reel starts flowing. */
   private static final int INTRO_TICKS = 50;
 
-  /** Tick within the intro at which the two rifts tear open. */
-  private static final int RIFT_OPEN_TICK = 22;
+  /** Ticks spent on the cast spiralling inward from the player's eyes to the strip's centre. */
+  private static final int CAST_CONVERGE_TICKS = 15;
+
+  /** Ticks the split spell takes to travel from the strip's centre out to each rift location. */
+  private static final int SPLIT_TRAVEL_TICKS = 10;
+
+  /** Tick within the intro at which the cast has split and reached both rift locations. */
+  private static final int SWIRL_START_TICK = CAST_CONVERGE_TICKS + SPLIT_TRAVEL_TICKS;
+
+  /** Ticks the swirling vortex takes to spin each rift open to its full size. */
+  private static final int SWIRL_OPEN_TICKS = 20;
 
   /**
    * Distance from the strip centre to each rift, along {@code rightDir} — just past the 4.2
@@ -95,17 +105,41 @@ public class RiftAnimation extends EnchantAnimation {
       tickIntro(tick);
     }
     super.doTick(progress);
-    if (riftsOpened) {
+    if (riftsOpened && tick >= SWIRL_START_TICK + SWIRL_OPEN_TICKS) {
       tickRiftAmbience(tick);
     }
   }
 
-  /** Rising spiral of purple essence from the player toward the strip, then the rifts tear open. */
+  /**
+   * Drives the three-beat intro: the cast spirals inward to the strip's centre, then splits into
+   * two and travels out to each rift location, then each rift spins open in a swirling vortex —
+   * only once that's finished do the enchant blocks start flowing (handled by the inherited {@code
+   * introTicks} gating).
+   */
   private void tickIntro(int tick) {
     World world = player.getWorld();
     if (world == null || stripCenter == null) return;
 
-    double t = Math.min(1.0, (double) tick / introTicks);
+    if (tick <= CAST_CONVERGE_TICKS) {
+      tickCastConverge(world, tick);
+    } else if (tick <= SWIRL_START_TICK) {
+      tickSpellSplit(world, tick - CAST_CONVERGE_TICKS);
+    }
+
+    if (!riftsOpened && tick >= SWIRL_START_TICK) {
+      riftsOpened = true;
+      openRifts(world);
+    }
+
+    int sinceSwirlStart = tick - SWIRL_START_TICK;
+    if (riftsOpened && sinceSwirlStart <= SWIRL_OPEN_TICKS) {
+      tickSwirlOpen(world, sinceSwirlStart);
+    }
+  }
+
+  /** Purple essence spirals inward from the player's eyes toward the strip's centre. */
+  private void tickCastConverge(World world, int tick) {
+    double t = Math.min(1.0, (double) tick / CAST_CONVERGE_TICKS);
     Location swirlCenter = lerpLocation(player.getEyeLocation(), stripCenter, t);
     double angle = tick * 0.6;
     double radius = 0.3 + 0.5 * t;
@@ -120,21 +154,48 @@ public class RiftAnimation extends EnchantAnimation {
         0,
         0,
         new Particle.DustOptions(CAST_COLOR, 1.1f));
+  }
 
-    if (!riftsOpened && tick >= RIFT_OPEN_TICK) {
-      riftsOpened = true;
-      openRifts(world);
+  /**
+   * The converged cast splits into two and travels from the strip's centre out to each rift
+   * location, leaving a trail — the "spell splits in two" beat before each portal tears open.
+   */
+  private void tickSpellSplit(World world, int sinceSplit) {
+    double t = Math.min(1.0, (double) sinceSplit / SPLIT_TRAVEL_TICKS);
+    for (Location rift : riftLocations()) {
+      Location pos = lerpLocation(stripCenter, rift, t);
+      world.spawnParticle(
+          Particle.DUST, pos, 3, 0.05, 0.05, 0.05, 0, new Particle.DustOptions(CAST_COLOR, 1.3f));
+      world.spawnParticle(Particle.END_ROD, pos, 1, 0.02, 0.02, 0.02, 0.005);
     }
   }
 
-  /** Tears open the two rifts on either side of the strip with a dense particle burst. */
+  /**
+   * Swirling vortex that spins each rift open from nothing out to its full radius, settling into
+   * the steady rim/void/starfield ambience once it reaches full size.
+   */
+  private void tickSwirlOpen(World world, int sinceSwirl) {
+    double t = Math.min(1.0, (double) sinceSwirl / SWIRL_OPEN_TICKS);
+    double radius = DISC_RADIUS * t;
+    double angle = sinceSwirl * 0.9;
+    for (Location rift : riftLocations()) {
+      world.spawnParticle(
+          Particle.REVERSE_PORTAL, discPoint(rift, radius, angle), 2, 0.02, 0.02, 0.02, 0.01);
+      world.spawnParticle(
+          Particle.DUST,
+          discPoint(rift, radius * 0.6, -angle * 1.4),
+          1,
+          0,
+          0,
+          0,
+          0,
+          new Particle.DustOptions(CAST_COLOR, 1.0f));
+    }
+  }
+
+  /** Plays the portal-open sound as each rift begins its swirling opening animation. */
   private void openRifts(World world) {
     world.playSound(stripCenter, "custom.portalopenrift", 0.5f, 1.0f);
-    for (Location rift : riftLocations()) {
-      spawnVoidCore(world, rift, 18);
-      spawnRimShimmer(world, rift, 20);
-      spawnStarfield(world, rift, 14);
-    }
   }
 
   /**
@@ -158,7 +219,7 @@ public class RiftAnimation extends EnchantAnimation {
       }
     }
     if (tick < scrollEndTick && tick % 6 == 0) {
-      world.playSound(stripCenter, "custom.objectflybywhoosh", 0.15f, 1.3f);
+      world.playSound(stripCenter, "custom.objectflybywhoosh", 0.5f, 1.3f);
     }
   }
 
@@ -227,13 +288,13 @@ public class RiftAnimation extends EnchantAnimation {
   /** Plays the traveling-through-space whoosh instead of the classic note-block tick. */
   @Override
   protected void playScrollWhoosh(World world, Location origin, float pitch) {
-    world.playSound(origin, "custom.objectflybywhoosh", 0.1f, pitch);
+    world.playSound(origin, "custom.objectflybywhoosh", 0.5f, pitch);
   }
 
   /** Plays a magic-lock impact instead of the classic beacon/level-up landing sound. */
   @Override
   protected void playLandingSound(World world, Location origin) {
-    world.playSound(origin, "custom.magiclockimpact", 0.5f, 1.0f);
+    world.playSound(origin, "custom.magiclockimpact", 0.65f, 1.0f);
   }
 
   /** Collapses both rifts with a reverse-whoosh before the usual cleanup runs. */

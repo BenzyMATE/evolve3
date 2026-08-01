@@ -710,6 +710,11 @@ public class EnchantAnimation extends BaseEnchantAnimation {
         player.getInventory().setItemInMainHand(originalItem);
       }
 
+      // Apply the outcome now, with the item already back in hand, so its lore reflects the new
+      // enchant the instant the player receives it — not ~1.5s later when fireCallback() used to
+      // fire. The item must already be in hand for the lore refresh inside the callback to find it.
+      applyNow();
+
       world.playSound(playerLoc, Sound.UI_TOAST_CHALLENGE_COMPLETE, 1.0f, 1.1f);
       world.playSound(playerLoc, Sound.ENTITY_PLAYER_LEVELUP, 0.8f, 0.8f);
 
