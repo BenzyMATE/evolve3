@@ -12,12 +12,14 @@ import java.util.logging.Logger;
 import lombok.Getter;
 import org.benski.evolv3.Main;
 import org.benski.evolv3.animations.progression.EnchantAnimation;
+import org.benski.evolv3.animations.progression.RiftAnimation;
 import org.benski.evolv3.api.EvolveApiClient;
 import org.benski.evolv3.api.dto.PendingDataDto;
 import org.benski.evolv3.api.dto.PendingType;
 import org.benski.evolv3.core.abstracts.BaseEnchantAnimation;
 import org.benski.evolv3.core.types.EnchantOption;
 import org.benski.evolv3.core.types.PendingEnchantData;
+import org.benski.evolv3.core.types.PreferenceType;
 import org.benski.evolv3.datacenters.PlayerDataCenter;
 import org.benski.evolv3.models.pickaxe.EnchantData;
 import org.benski.evolv3.models.pickaxe.PendingEnchantDocument;
@@ -393,7 +395,9 @@ public class EnchantSelectionManager {
 
     int scrollTicks = resolveScrollTicks(player);
     BaseEnchantAnimation animation =
-        new EnchantAnimation(plugin, player, options, wrappedCallback, scrollTicks);
+        resolveEnchantStyle(player) == PreferenceType.EnchantStyle.PORTAL_RIFT
+            ? new RiftAnimation(plugin, player, options, wrappedCallback, scrollTicks)
+            : new EnchantAnimation(plugin, player, options, wrappedCallback, scrollTicks);
 
     if (!AnimationRegistry.getInstance().canPlay(animation)) {
       pendingSelections.remove(player.getUniqueId());
@@ -456,5 +460,19 @@ public class EnchantSelectionManager {
       case FAST -> 50;
       case VERY_FAST -> 28;
     };
+  }
+
+  /**
+   * Maps the player's enchant style preference to which {@link BaseEnchantAnimation} subclass
+   * {@link #startSelectionInternal} constructs. Defaults to {@link
+   * PreferenceType.EnchantStyle#CLASSIC} if the preference is unavailable or not yet implemented
+   * (e.g. {@code GHOST_WISPS}).
+   */
+  private PreferenceType.EnchantStyle resolveEnchantStyle(Player player) {
+    PlayerDataCenter pdc = DataCenterRegistry.getInstance().getPlayerDataCenter();
+    if (pdc == null) return PreferenceType.EnchantStyle.CLASSIC;
+    PlayerProfile profile = pdc.getLocal(player);
+    if (profile == null) return PreferenceType.EnchantStyle.CLASSIC;
+    return profile.preferences.enchantStyle;
   }
 }

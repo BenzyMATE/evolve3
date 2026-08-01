@@ -28,5 +28,35 @@
     "sounds": [
       "custom/shutter"
     ]
+  },
+  "custom.magiccastwhoosh": {
+    "sounds": [
+      "custom/magic_cast_whoosh"
+    ]
+  },
+  "custom.portalopenrift": {
+    "sounds": [
+      "custom/portal_open_rift"
+    ]
+  },
+  "custom.energyfieldloop": {
+    "sounds": [
+      "custom/energy_field_loop"
+    ]
+  },
+  "custom.objectflybywhoosh": {
+    "sounds": [
+      "custom/object_flyby_whoosh"
+    ]
+  },
+  "custom.magiclockimpact": {
+    "sounds": [
+      "custom/magic_lock_impact"
+    ]
+  },
+  "custom.vacuumsuckshort": {
+    "sounds": [
+      "custom/vacuum_suck_short"
+    ]
   }
 }

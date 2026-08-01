@@ -353,6 +353,23 @@ pickup-animation:
   others-disabled: "  &#CCCCCCYou will no longer see other players' pickup animations."
 
 # =====================================================
+# Enchant Style Command Messages (/enchantstyle)
+# =====================================================
+enchant-style:
+  usage-set: "  &cUsage: /enchantstyle set <classic|rift>"
+  unknown-subcommand: "  &cUnknown option. Use: list, set <style>, or next"
+  current-header: "  &#B366D9&l[Enchant Style]"
+  current: "  &#CCCCCCCurrent: &#B366D9%name% &#888888- &#CCCCCC%description%"
+  hint: "  &#CCCCCCUse &#B366D9/enchantstyle list &#CCCCCCto see all options, or &#B366D9/enchantstyle next &#CCCCCCto cycle."
+  list-header: "  &#B366D9&l[Available Enchant Styles]"
+  list-item-selected: " &#B366D9> &#FFFFFF%name% &#888888- &#CCCCCC%description% &#B366D9(selected)"
+  list-item: " &#888888> &#CCCCCC%name% &#888888- &#CCCCCC%description%"
+  list-footer: "  &#CCCCCCUse &#B366D9/enchantstyle set <name> &#CCCCCCto select a style."
+  set-success: "  &#B366D9Enchant style set to: &#FFFFFF%name%"
+  invalid-style: "  &cInvalid style: %name%. Use /enchantstyle list to see available options."
+  cycled: "  &#B366D9Switched to: &#FFFFFF%name% &#888888- &#CCCCCC%description%"
+
+# =====================================================
 # Admin Command Messages (/evolve)
 # =====================================================
 statistic:

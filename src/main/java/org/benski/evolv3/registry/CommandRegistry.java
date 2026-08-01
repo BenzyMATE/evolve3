@@ -8,6 +8,7 @@ import org.benski.evolv3.commands.admin.Evolv3Command;
 import org.benski.evolv3.commands.player.BackpackCommand;
 import org.benski.evolv3.commands.player.BalCommand;
 import org.benski.evolv3.commands.player.CellPlayerCommand;
+import org.benski.evolv3.commands.player.EnchantStyleCommand;
 import org.benski.evolv3.commands.player.IslandCommand;
 import org.benski.evolv3.commands.player.PickaxeCommand;
 import org.benski.evolv3.commands.player.PickupAnimationCommand;
@@ -29,6 +30,7 @@ public class CommandRegistry implements Registry<BaseCommand> {
   private final List<Class<? extends BaseCommand>> commands =
       List.of(
           PickupAnimationCommand.class,
+          EnchantStyleCommand.class,
           Evolv3Command.class,
           PickaxeCommand.class,
           BackpackCommand.class,

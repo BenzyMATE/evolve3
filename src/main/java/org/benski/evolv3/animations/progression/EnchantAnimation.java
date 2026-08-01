@@ -64,18 +64,24 @@ public class EnchantAnimation extends BaseEnchantAnimation {
   private static final int REVEAL_DURATION = 22;
   private static final int MAX_DURATION = 800;
 
-  private final int scrollEndTick;
-  private final int revealStartTick;
-  private final int selectionReady;
+  /** Ticks to wait before the strip starts scrolling (0 for the classic style). */
+  protected final int introTicks;
+
+  /** How many ticks the strip scrolls, once it starts. */
+  protected final int scrollDuration;
+
+  protected final int scrollEndTick;
+  protected final int revealStartTick;
+  protected final int selectionReady;
 
   private static final float BLOCK_SCALE = 0.52f;
   private static final float ITEM_SCALE = 0.85f;
 
   private static final Random RAND = new Random();
 
-  private Vector forwardDir;
-  private Vector rightDir;
-  private Location stripCenter;
+  protected Vector forwardDir;
+  protected Vector rightDir;
+  protected Location stripCenter;
 
   /**
    * -- GETTER -- Returns the item that was in the player's main hand when the animation started.
@@ -139,8 +145,34 @@ public class EnchantAnimation extends BaseEnchantAnimation {
       List<EnchantOption> enchantOptions,
       BiConsumer<org.bukkit.entity.Player, EnchantOption> onSelect,
       int scrollEndTick) {
-    super(plugin, player, enchantOptions, onSelect, MAX_DURATION);
-    this.scrollEndTick = scrollEndTick;
+    this(plugin, player, enchantOptions, onSelect, scrollEndTick, 0);
+  }
+
+  /**
+   * Creates an enchant selection animation with an extra lead-in delay before the strip begins
+   * scrolling. The strip and arrows spawn immediately (hidden underground, exactly as they already
+   * are before scrolling starts) and stay hidden for {@code introTicks} before the usual
+   * deceleration curve begins — giving reskins (e.g. a portal/rift variant) room to play their own
+   * intro sequence first.
+   *
+   * @param plugin the plugin instance
+   * @param player the player receiving the selection
+   * @param enchantOptions the three options to present
+   * @param onSelect callback invoked when an option is chosen
+   * @param scrollDuration how many ticks the strip scrolls before stopping, once it starts
+   * @param introTicks ticks to wait before the scroll starts (0 = starts immediately)
+   */
+  protected EnchantAnimation(
+      JavaPlugin plugin,
+      org.bukkit.entity.Player player,
+      List<EnchantOption> enchantOptions,
+      BiConsumer<org.bukkit.entity.Player, EnchantOption> onSelect,
+      int scrollDuration,
+      int introTicks) {
+    super(plugin, player, enchantOptions, onSelect, MAX_DURATION + introTicks);
+    this.introTicks = introTicks;
+    this.scrollDuration = scrollDuration;
+    this.scrollEndTick = introTicks + scrollDuration;
     this.revealStartTick = scrollEndTick + SCATTER_DURATION + 4;
     this.selectionReady = revealStartTick + 2 * REVEAL_STAGGER + REVEAL_DURATION + 16;
   }
@@ -154,7 +186,7 @@ public class EnchantAnimation extends BaseEnchantAnimation {
   /** Returns the linear scroll progress. */
   @Override
   public double getLinearScrollProgress() {
-    return Math.min(1.0, (double) getCurrentTick() / scrollEndTick);
+    return Math.min(1.0, Math.max(0.0, (double) (getCurrentTick() - introTicks) / scrollDuration));
   }
 
   /**
@@ -188,8 +220,6 @@ public class EnchantAnimation extends BaseEnchantAnimation {
     Location playerLoc = player.getLocation();
     World world = playerLoc.getWorld();
     if (world == null) return;
-
-    player.spawnParticle(Particle.ELDER_GUARDIAN, playerLoc, 1);
 
     forwardDir = player.getLocation().getDirection().setY(0).normalize();
     rightDir = forwardDir.clone().crossProduct(new Vector(0, 1, 0)).normalize();
@@ -279,6 +309,19 @@ public class EnchantAnimation extends BaseEnchantAnimation {
       arrows[idx] = arrow;
     }
 
+    playIntroEffects(world, playerLoc);
+  }
+
+  /**
+   * Plays the intro flourish once the (initially hidden) strip and arrows have spawned: a particle
+   * burst and two sounds. Overridden by reskins that play their own intro sequence instead (e.g. a
+   * spell-cast + portal-open effect for the rift variant).
+   *
+   * @param world the world to play effects in
+   * @param playerLoc the player's location
+   */
+  protected void playIntroEffects(World world, Location playerLoc) {
+    player.spawnParticle(Particle.ELDER_GUARDIAN, playerLoc, 1);
     world.playSound(playerLoc, Sound.ENTITY_ENDER_DRAGON_AMBIENT, 0.4f, 1.5f);
     world.playSound(playerLoc, Sound.BLOCK_BEACON_ACTIVATE, 0.5f, 0.6f);
   }
@@ -348,7 +391,8 @@ public class EnchantAnimation extends BaseEnchantAnimation {
 
   /** Ticks scroll. */
   private void tickScroll(World world, int tick) {
-    double scrollProgress = Math.min(1.0, (double) tick / scrollEndTick);
+    double scrollProgress =
+        Math.min(1.0, Math.max(0.0, (double) (tick - introTicks) / scrollDuration));
     double scroll = TOTAL_SCROLL * easeInOutQuart(scrollProgress);
 
     for (int i = 0; i < STRIP_SIZE; i++) {
@@ -362,14 +406,13 @@ public class EnchantAnimation extends BaseEnchantAnimation {
       }
     }
 
-    if (tick < scrollEndTick && tick % 2 == 0) {
+    if (tick >= introTicks && tick < scrollEndTick && tick % 2 == 0) {
       float pitch = (float) (2.0 - 1.5 * scrollProgress);
-      world.playSound(stripCenter, Sound.BLOCK_NOTE_BLOCK_HAT, 0.25f, pitch);
+      playScrollWhoosh(world, stripCenter, pitch);
     }
 
     if (tick == scrollEndTick) {
-      world.playSound(stripCenter, Sound.BLOCK_BEACON_ACTIVATE, 0.8f, 1.5f);
-      world.playSound(stripCenter, Sound.ENTITY_PLAYER_LEVELUP, 0.7f, 1.0f);
+      playLandingSound(world, stripCenter);
 
       for (int r = 0; r < RESULT_INDICES.length; r++) {
         BlockDisplay block = stripBlocks[RESULT_INDICES[r]];
@@ -381,6 +424,30 @@ public class EnchantAnimation extends BaseEnchantAnimation {
       triggerScatter(world);
       spawnRarityLabels(world);
     }
+  }
+
+  /**
+   * Plays the per-tick whoosh sound while the strip decelerates toward its stop. Overridden by
+   * reskins (e.g. a rift/portal variant) to swap in a different travel sound.
+   *
+   * @param world the world to play the sound in
+   * @param origin where to play the sound
+   * @param pitch the pitch for this tick (rises as the strip slows down)
+   */
+  protected void playScrollWhoosh(World world, Location origin, float pitch) {
+    world.playSound(origin, Sound.BLOCK_NOTE_BLOCK_HAT, 0.25f, pitch);
+  }
+
+  /**
+   * Plays the sound when the strip finishes decelerating and the three results have landed.
+   * Overridden by reskins to swap in a different "impact" sound.
+   *
+   * @param world the world to play the sound in
+   * @param origin where to play the sound
+   */
+  protected void playLandingSound(World world, Location origin) {
+    world.playSound(origin, Sound.BLOCK_BEACON_ACTIVATE, 0.8f, 1.5f);
+    world.playSound(origin, Sound.ENTITY_PLAYER_LEVELUP, 0.7f, 1.0f);
   }
 
   /** Assigns outward velocities to every visible, non-result block and removes hidden ones. */
