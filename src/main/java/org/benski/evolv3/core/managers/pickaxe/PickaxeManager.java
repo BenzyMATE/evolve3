@@ -282,12 +282,7 @@ public class PickaxeManager {
 
       checkAtoms(profile, player);
 
-      player.playSound(
-          net.kyori.adventure.sound.Sound.sound(
-              net.kyori.adventure.key.Key.key("minecraft", "ui.toast.goal_complete"),
-              net.kyori.adventure.sound.Sound.Source.MASTER,
-              1.0f,
-              1.0f));
+      player.playSound(player.getLocation(), "custom.levelup", 1.0f, 1.0f);
 
       EvolveScoreboardManager.getInstance().triggerLevelUpAnimation(player, profile.level);
       sendLevelUpMessages(player, profile, oldLevel, essenceReward, atomReward);
@@ -348,7 +343,7 @@ public class PickaxeManager {
       profile.essenceVessel.current -= profile.essenceVessel.target;
       profile.essenceVessel.target =
           Math.min(cap, Math.max(1, (int) (profile.essenceVessel.target * multiplier)));
-      player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.5f);
+      player.playSound(player.getLocation(), "custom.vesselfull", 1.0f, 1.0f);
       showPickaxeTitle(
           player,
           ConfigPaths.Messages.Pickaxe.ENCHANT_ROLL_TITLE,
@@ -374,7 +369,7 @@ public class PickaxeManager {
       profile.atomVessel.crystals++;
       profile.atomVessel.current -= profile.atomVessel.target;
       profile.atomVessel.target = Math.max(1, (int) (profile.atomVessel.target * multiplier));
-      player.playSound(player.getLocation(), Sound.UI_TOAST_CHALLENGE_COMPLETE, 1.0f, 1.0f);
+      player.playSound(player.getLocation(), "custom.vesselfull", 1.0f, 1.0f);
       showPickaxeTitle(
           player,
           ConfigPaths.Messages.Pickaxe.EVOLVE_SUCCESS_TITLE,

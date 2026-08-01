@@ -58,5 +58,25 @@
     "sounds": [
       "custom/vacuum_suck_short"
     ]
+  },
+  "custom.vesselfull": {
+    "sounds": [
+      "custom/vessel_full"
+    ]
+  },
+  "custom.levelup": {
+    "sounds": [
+      "custom/level_up"
+    ]
+  },
+  "custom.backpackopen": {
+    "sounds": [
+      "custom/backpack_open"
+    ]
+  },
+  "custom.backpackclose": {
+    "sounds": [
+      "custom/backpack_close"
+    ]
   }
 }

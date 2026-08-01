@@ -91,7 +91,7 @@ public class EssenceAnimation extends BaseAnimation {
     }
 
     if (!prefSound) return;
-    targetPlayer.playSound(centerLocation, "custom.burstessence", 1.0f, 1.0f);
+    targetPlayer.playSound(centerLocation, "custom.burstessence", 0.5f, 1.0f);
   }
 
   /** {@inheritDoc} */

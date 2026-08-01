@@ -57,13 +57,13 @@ public class BackpackMenu extends BaseMenu {
   /** {@inheritDoc} */
   @Override
   protected void onOpen(Player player) {
-    player.playSound(player.getLocation(), Sound.BLOCK_SHULKER_BOX_OPEN, 0.8f, 1.0f);
+    player.playSound(player.getLocation(), "custom.backpackopen", 0.8f, 1.0f);
   }
 
   /** {@inheritDoc} */
   @Override
   protected void onClose(Player player) {
-    player.playSound(player.getLocation(), Sound.BLOCK_SHULKER_BOX_CLOSE, 0.8f, 1.0f);
+    player.playSound(player.getLocation(), "custom.backpackclose", 0.8f, 1.0f);
   }
 
   /**

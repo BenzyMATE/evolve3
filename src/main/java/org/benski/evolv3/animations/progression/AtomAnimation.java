@@ -114,7 +114,7 @@ public class AtomAnimation extends BaseAnimation {
     ringAngles[2] = Math.PI * 4.0 / 3.0;
 
     if (!prefSound) return;
-    targetPlayer.playSound(centerLocation, "custom.burstatoms", 0.5f, 1.0f);
+    targetPlayer.playSound(centerLocation, "custom.burstatoms", 0.25f, 1.0f);
   }
 
   /** Called when tick occurs. */
