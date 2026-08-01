@@ -254,7 +254,33 @@ public class StoneSocketMenu extends BaseMenu {
           shutterFrame.remove(uuid);
           updateTitle(player);
           stopShutterSound(player);
+          showEnchantHeader(player);
         });
+  }
+
+  /**
+   * Builds and places the enchant header item (slot {@value #SLOT_ENCHANT_HEADER}). Called once the
+   * opening shutter animation has fully completed — {@link #populateMenu} deliberately withholds
+   * this item while a shutter transition is in progress so it doesn't appear before the reveal is
+   * done.
+   *
+   * @param player the player to build the header for
+   */
+  private void showEnchantHeader(Player player) {
+    String displayName = pendingEnchants.get(player.getUniqueId());
+    if (displayName == null) return;
+
+    PlayerDataCenter pdc = DataCenterRegistry.getInstance().getPlayerDataCenter();
+    Pickaxe profile = pdc != null ? pdc.getPickaxeForPlayer(player) : null;
+    if (profile == null) return;
+
+    Inventory inventory = openInventories.get(player.getUniqueId());
+    if (inventory == null) return;
+
+    EnchantData enchant = profile.enchants.getEnchant(displayName.toLowerCase());
+    int unlockedSlots = EnchantData.getUnlockedSlotCount(profile.prestige);
+    inventory.setItem(
+        SLOT_ENCHANT_HEADER, buildEnchantHeader(player, displayName, enchant, unlockedSlots));
   }
 
   /**
@@ -431,8 +457,12 @@ public class StoneSocketMenu extends BaseMenu {
     EnchantData enchant = profile.enchants.getEnchant(displayName.toLowerCase());
 
     int unlockedSlots = EnchantData.getUnlockedSlotCount(profile.prestige);
-    inventory.setItem(
-        SLOT_ENCHANT_HEADER, buildEnchantHeader(player, displayName, enchant, unlockedSlots));
+    // Held back while the opening shutter animation is running (see #showEnchantHeader) so it
+    // doesn't appear before the transition is fully complete.
+    if (!shutterFrame.containsKey(player.getUniqueId())) {
+      inventory.setItem(
+          SLOT_ENCHANT_HEADER, buildEnchantHeader(player, displayName, enchant, unlockedSlots));
+    }
 
     for (int i = 0; i < SOCKET_SLOTS.length; i++) {
       if (i < unlockedSlots) {
