@@ -31,7 +31,7 @@ Scoreboard:
   # Text shown on the evo line during the atoms phase. Supports PlaceholderAPI.
   EvoAtomToggleText: "&#FFEE00⚛ &#FFEE00%evolv3_pickaxe_evolution_atoms%"
   # Base text for the loading indicator shown while pickaxe data is loading (dots appended dynamically)
-  LoadingText: " &8| &7Loading"
+  LoadingText: " &7Loading"
   # Label used in the level-up flash on the scoreboard (e.g. "Level")
   LevelUpLabel: "Level"
   # Text shown on the evo line while the enchant reel is rolling
@@ -43,16 +43,16 @@ Scoreboard:
   Lines:
     - ""
     - " &#FFFFFF&l%evolv3_player_name%"
-    - " &8| &#888888Rank: %evolv3_rank%"
-    - " &8| &#888888Backpack: &#FFFFFF%evolv3_player_backpack_items%&#888888/&#FFFFFF%evolv3_player_backpack_size%"
+    - " &#888888Rank: %evolv3_rank%"
+    - " &#888888Backpack: &#FFFFFF%evolv3_player_backpack_items%&#888888/&#FFFFFF%evolv3_player_backpack_size%"
     - "%evolv3_pickaxe_blank%"
     - " &#CCCCCC%evolv3_tool_label% &8(&#00FFFF&lEvo %evolv3_pickaxe_evolution%&8)"
     - " %evolv3_pickaxe_prestige_line%"
-    - " &8| &#888888Level: &#FFFFFF%evolv3_pickaxe_level%      &#00FF88%evolv3_pickaxe_percentage%"
-    - " &8| %evolv3_pickaxe_progressbar% &7&7 "
+    - " &#888888Level: &#FFFFFF%evolv3_pickaxe_level%      &#00FF88%evolv3_pickaxe_percentage%"
+    - " %evolv3_pickaxe_progressbar% &7&7 "
     - ""
     - " &#CCCCCCWallet"
-    - " &8| &#FFD700⛁ %evolv3_player_coins% &#B366D9  🔥 %evolv3_player_essence%"
+    - " &#FFD700⛁ %evolv3_player_coins% &#B366D9  🔥 %evolv3_player_essence%"
     - ""
     - " &7play.evolvemc.net"
 
@@ -113,8 +113,8 @@ Pickaxe:
   DurabilityWarningThreshold: 10
 
   # Durability lore section displayed below the main lore template
-  DurabilityLabel: " &8| &#00FFFFDurability:"
-  DurabilityBarPrefix: " &8| "
+  DurabilityLabel: " &#00FFFFDurability:"
+  DurabilityBarPrefix: " "
 
   # Progress bar visual elements
   Progressbar Symbol 1: "&#00FF88▄"
@@ -136,15 +136,15 @@ Pickaxe:
     - ''
     - ' &#FFFFFF&lStatistics'
     - ' %evolv3_pickaxe_prestige_lore%'
-    - ' &8| &#00FFFFLevel: &#FFFFFF%evolv3_pickaxe_level%'
-    - ' &8| &#00FFFFXP: &#FFFFFF%evolv3_pickaxe_xp%&#888888/&#FFFFFF%evolv3_pickaxe_target%'
-    - ' &8| &#00FFFFProgress: &#00FF88%evolv3_pickaxe_percentage%'
-    - ' &8| %evolv3_pickaxe_progressbar%'
+    - ' &#00FFFFLevel: &#FFFFFF%evolv3_pickaxe_level%'
+    - ' &#00FFFFXP: &#FFFFFF%evolv3_pickaxe_xp%&#888888/&#FFFFFF%evolv3_pickaxe_target%'
+    - ' &#00FFFFProgress: &#00FF88%evolv3_pickaxe_percentage%'
+    - ' %evolv3_pickaxe_progressbar%'
 
   # Footer lore (usage instructions)
   LoreFooter:
     - ''
-    - ' &8| &aRight-Click &#AAAAAAto open menu '
+    - ' &aRight-Click &#AAAAAAto open menu '
     - ''
 
   # XP Hologram settings (displayed when mining blocks)

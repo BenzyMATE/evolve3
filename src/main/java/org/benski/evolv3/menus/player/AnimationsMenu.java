@@ -426,7 +426,7 @@ public class AnimationsMenu extends BaseMenu {
       Material unselectedMat) {
     Material mat = selected ? selectedMat : unselectedMat;
     String displayName = selected ? "&#00FFFF✔ " + name : "&#AAAAAA" + name;
-    String statusLine = selected ? "&#00FFFF● Selected" : " &8| &aLeft-Click &#AAAAAAto select";
+    String statusLine = selected ? "&#00FFFF● Selected" : " &aLeft-Click &#AAAAAAto select";
     List<String> resolved =
         lore.stream().map(line -> line.replace("{status}", statusLine)).toList();
     ItemStack item = buildItem(mat, displayName, resolved);

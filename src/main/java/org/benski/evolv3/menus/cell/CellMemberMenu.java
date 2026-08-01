@@ -103,15 +103,15 @@ public class CellMemberMenu extends BaseMenu {
               .lore(
                   "",
                   " &f&lPERMISSIONS",
-                  " &8| &#888888Build: "
+                  " &#888888Build: "
                       + (perms.contains(CellPermission.BUILD) ? "&#55FF55✔" : "&#FF5555✗"),
-                  " &8| &#888888Break: "
+                  " &#888888Break: "
                       + (perms.contains(CellPermission.BREAK) ? "&#55FF55✔" : "&#FF5555✗"),
-                  " &8| &#888888Containers: "
+                  " &#888888Containers: "
                       + (perms.contains(CellPermission.CONTAINERS) ? "&#55FF55✔" : "&#FF5555✗"),
                   "",
-                  " &8| &aLeft-click &#AAAAAAto edit.",
-                  " &8| &#FFEE00Right-click &#AAAAAAto remove.",
+                  " &aLeft-click &#AAAAAAto edit.",
+                  " &#FFEE00Right-click &#AAAAAAto remove.",
                   "")
               .meta(
                   m -> {
@@ -142,10 +142,10 @@ public class CellMemberMenu extends BaseMenu {
             .lore(
                 "",
                 " &f&lINFO",
-                " &8| &#888888Invite a player to share",
-                " &8| &#888888your cell.",
+                " &#888888Invite a player to share",
+                " &#888888your cell.",
                 "",
-                " &8| &aLeft-click &#AAAAAAto add.")
+                " &aLeft-click &#AAAAAAto add.")
             .build());
 
     inventory.setItem(47, new ItemBuilder(Material.ARROW).name("&#FF5555&l← Back").build());

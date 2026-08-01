@@ -241,7 +241,6 @@ public class StoneSocketMenu extends BaseMenu {
    */
   private void playOpeningShutter(Player player) {
     UUID uuid = player.getUniqueId();
-    playShutterSound(player);
     runFrameRamp(
         player,
         ShutterFrames.FRAME_COUNT,
@@ -254,6 +253,7 @@ public class StoneSocketMenu extends BaseMenu {
         () -> {
           shutterFrame.remove(uuid);
           updateTitle(player);
+          stopShutterSound(player);
         });
   }
 
@@ -481,11 +481,11 @@ public class StoneSocketMenu extends BaseMenu {
     String storageAction =
         menus.getString(
             ConfigPaths.Menus.PickaxeMenu.STORAGE_ACTION_LINE,
-            " &8| &aLeft-Click &#AAAAAAto open pickaxe storage");
+            " &aLeft-Click &#AAAAAAto open pickaxe storage");
     String repairAction =
         menus.getString(
             ConfigPaths.Menus.PickaxeMenu.REPAIR_ACTION_LINE,
-            " &8| &#FFEE00Right-Click &#AAAAAAto repair &#777777(&#E8890A5 &#777777Ancient Resin)");
+            " &#FFEE00Right-Click &#AAAAAAto repair &#777777(&#E8890A5 &#777777Ancient Resin)");
     ItemMeta displayMeta = display.getItemMeta();
     if (displayMeta != null) {
       List<Component> lore = displayMeta.lore();
@@ -524,8 +524,8 @@ public class StoneSocketMenu extends BaseMenu {
             format(
                 player,
                 canEvolve
-                    ? " &8| &aLeft-Click &#AAAAAAto fill the canister."
-                    : " &8| &#888888Not enough evolution points."));
+                    ? " &aLeft-Click &#AAAAAAto fill the canister."
+                    : " &#888888Not enough evolution points."));
       } else {
         lore.add(format(player, line));
       }
@@ -555,8 +555,8 @@ public class StoneSocketMenu extends BaseMenu {
             format(
                 player,
                 canRoll
-                    ? " &8| &aLeft-Click &#AAAAAAto roll an enchant."
-                    : " &8| &#888888Not enough essence."));
+                    ? " &aLeft-Click &#AAAAAAto roll an enchant."
+                    : " &#888888Not enough essence."));
       } else {
         lore.add(format(player, line));
       }
@@ -814,22 +814,21 @@ public class StoneSocketMenu extends BaseMenu {
     if (enchant != null) {
       lore.add(
           format(
-              player,
-              " &8| &#888888Level: &#FFFFFF" + enchant.level + " &8/ &7" + enchant.maxLevel));
+              player, " &#888888Level: &#FFFFFF" + enchant.level + " &8/ &7" + enchant.maxLevel));
       lore.add(
           format(
               player,
-              " &8| &#888888Sockets: &#FFFFFF"
+              " &#888888Sockets: &#FFFFFF"
                   + enchant.getSocketedCount()
                   + " &8/ &7"
                   + unlockedSlots));
     } else {
-      lore.add(format(player, " &8| &#FF5555This enchant has not been unlocked."));
+      lore.add(format(player, " &#FF5555This enchant has not been unlocked."));
     }
     lore.add(Component.empty());
     lore.add(format(player, " &#FFFFFF&lSocket Guide"));
-    lore.add(format(player, " &8| &aLeft-Click &#AAAAAAa socket with a stone to apply."));
-    lore.add(format(player, " &8| &cLeft-Click &#AAAAAAan occupied socket to remove."));
+    lore.add(format(player, " &aLeft-Click &#AAAAAAa socket with a stone to apply."));
+    lore.add(format(player, " &cLeft-Click &#AAAAAAan occupied socket to remove."));
     lore.add(Component.empty());
     meta.lore(lore);
     item.setItemMeta(meta);
@@ -880,8 +879,8 @@ public class StoneSocketMenu extends BaseMenu {
         cfg != null
             ? cfg.getStringList(ConfigPaths.Stones.SocketMenu.EMPTY_HOW_TO_LINES)
             : List.of(
-                " &8| &#888888Hold an &#00FFFFEvolution Stone",
-                " &8| &#888888in your cursor and left-click.");
+                " &#888888Hold an &#00FFFFEvolution Stone",
+                " &#888888in your cursor and left-click.");
 
     Component name = format(player, emptyName.replace("{index}", String.valueOf(socketIndex + 1)));
     List<Component> lore = new ArrayList<>();

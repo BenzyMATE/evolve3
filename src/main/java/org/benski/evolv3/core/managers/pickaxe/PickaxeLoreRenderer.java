@@ -158,10 +158,10 @@ public final class PickaxeLoreRenderer {
     formattedLore.add("");
     String durabilityLabel =
         defaultConfig()
-            .getString(ConfigPaths.Default.Pickaxe.DURABILITY_LABEL, " &8| &#00FFFFDurability:");
+            .getString(ConfigPaths.Default.Pickaxe.DURABILITY_LABEL, " &#00FFFFDurability:");
     formattedLore.add(Utils.formatMessage(player, durabilityLabel));
     String barPrefix =
-        defaultConfig().getString(ConfigPaths.Default.Pickaxe.DURABILITY_BAR_PREFIX, " &8| ");
+        defaultConfig().getString(ConfigPaths.Default.Pickaxe.DURABILITY_BAR_PREFIX, " ");
     formattedLore.add(Utils.formatMessage(player, barPrefix + durabilityBar));
 
     for (String line : loreFooter) {
@@ -222,8 +222,7 @@ public final class PickaxeLoreRenderer {
     if (profile.prestige <= 0) return;
     String prestigeLine =
         messagesConfig()
-            .getString(
-                ConfigPaths.Messages.Pickaxe.PRESTIGE_LORE_LINE, " &8| &5Prestige &d%prestige%");
+            .getString(ConfigPaths.Messages.Pickaxe.PRESTIGE_LORE_LINE, " &5Prestige &d%prestige%");
     double mult = PickaxeManager.getInstance().getPrestigeMultiplier(profile.prestige);
     prestigeLine =
         prestigeLine
@@ -237,7 +236,7 @@ public final class PickaxeLoreRenderer {
   private void appendEnchantsLore(Pickaxe profile, List<String> newLore, Player player) {
     if (profile.enchants == null || profile.enchants.isEmpty()) {
       String noEnchants = enchantsConfig().getString(ConfigPaths.Enchants.NO_ENCHANTS, "&cNone");
-      newLore.add(Utils.formatMessage(player, " &8| " + noEnchants));
+      newLore.add(Utils.formatMessage(player, " " + noEnchants));
       return;
     }
 
@@ -269,7 +268,7 @@ public final class PickaxeLoreRenderer {
 
     String stoneIcons = buildStoneIcons(enchant, profile.prestige);
     return Utils.formatMessage(
-        player, " &8| " + stoneIcons + rarityColor + displayName + " " + levelDisplay);
+        player, " " + stoneIcons + rarityColor + displayName + " " + levelDisplay);
   }
 
   /** Builds stone icons. */

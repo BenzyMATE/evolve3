@@ -83,26 +83,26 @@ Pickaxe Menu:
     Lore:
       - ''
       - ' &#FFFFFF&lDescription'
-      - ' &8| &#CCCCCCMine blocks to build up &#B366D9Essence&#CCCCCC.'
-      - ' &8| &#CCCCCCOnce your canister is full'
-      - ' &8| &#CCCCCCyou earn an &#00FFFFEnchant Shard&#CCCCCC,'
-      - ' &8| &#CCCCCCwhich can be spent to unlock or'
-      - ' &8| &#CCCCCCupgrade enchantments.'
+      - ' &#CCCCCCMine blocks to build up &#B366D9Essence&#CCCCCC.'
+      - ' &#CCCCCCOnce your canister is full'
+      - ' &#CCCCCCyou earn an &#00FFFFEnchant Shard&#CCCCCC,'
+      - ' &#CCCCCCwhich can be spent to unlock or'
+      - ' &#CCCCCCupgrade enchantments.'
       - ''
       - ' &#FFFFFF&lStatistics'
-      - ' &8| &#B366D9Essence: 🔥 &#FFFFFF%evolv3_pickaxe_essence%&#888888/&#FFFFFF%evolv3_pickaxe_target_essence%'
-      - ' &8| &#B366D9Enchant Shards: &#00FFFF%evolv3_pickaxe_enchant_rolls%'
-      - ' &8| &#B366D9Progress: &#00FF88%evolv3_pickaxe_essence_percentage%'
-      - ' &8| %evolv3_pickaxe_essence_progressbar%'
+      - ' &#B366D9Essence: 🔥 &#FFFFFF%evolv3_pickaxe_essence%&#888888/&#FFFFFF%evolv3_pickaxe_target_essence%'
+      - ' &#B366D9Enchant Shards: &#00FFFF%evolv3_pickaxe_enchant_rolls%'
+      - ' &#B366D9Progress: &#00FF88%evolv3_pickaxe_essence_percentage%'
+      - ' %evolv3_pickaxe_essence_progressbar%'
       - ''
-      - ' &8| &aLeft-Click &#AAAAAAto roll for enchantments '
+      - ' &aLeft-Click &#AAAAAAto roll for enchantments '
       - ''
-  StorageAction: " &8| &aLeft-Click &#AAAAAAto open pickaxe storage"
-  RepairAction: " &8| &#FFEE00Right-Click &#AAAAAAto repair &#777777(&#E8890A5 &#777777Ancient Resin)"
+  StorageAction: " &aLeft-Click &#AAAAAAto open pickaxe storage"
+  RepairAction: " &#FFEE00Right-Click &#AAAAAAto repair &#777777(&#E8890A5 &#777777Ancient Resin)"
   Stones:
     Header: " &#FFFFFF&lStones"
-    FilledLine: " &8| &#{hex}{effect}"
-    EmptyLine: " &8| &#333333Empty Socket"
+    FilledLine: " &#{hex}{effect}"
+    EmptyLine: " &#333333Empty Socket"
     ActionLine: " &aShift+Right-Click &#AAAAAAto manage stones."
   LockedEnchant:
     Name: "&8&l⬡ &#666666Locked Enchant"
@@ -110,30 +110,30 @@ Pickaxe Menu:
       - ' &#444444Locked'
       - ''
       - ' &#FFFFFF&lDescription'
-      - ' &8| &#777777This enchant slot has not been unlocked.'
-      - ' &8| &#777777Roll for enchants to discover new'
-      - ' &8| &#777777abilities for your pickaxe.'
+      - ' &#777777This enchant slot has not been unlocked.'
+      - ' &#777777Roll for enchants to discover new'
+      - ' &#777777abilities for your pickaxe.'
       - ''
-      - ' &8| &#555555Use the &#B366D9Enchant Panel &#555555to roll.'
+      - ' &#555555Use the &#B366D9Enchant Panel &#555555to roll.'
       - ''
   Evolve:
     Name: "&#FFEE00⚛ &#FFFFFF&l%evolv3_player_name% &#FFEE00Evolution"
     Lore:
       - ''
       - ' &#FFFFFF&lDescription'
-      - ' &8| &#CCCCCCRare &#FFEE00Atoms&#CCCCCC surface as you break'
-      - ' &8| &#CCCCCCblocks. Fill the canister to earn'
-      - ' &8| &#CCCCCCan &#00FFFFEvolution shard&#CCCCCC, then spend'
-      - ' &8| &#CCCCCCit to push your pickaxe to the'
-      - ' &8| &#CCCCCCnext stage.'
+      - ' &#CCCCCCRare &#FFEE00Atoms&#CCCCCC surface as you break'
+      - ' &#CCCCCCblocks. Fill the canister to earn'
+      - ' &#CCCCCCan &#00FFFFEvolution shard&#CCCCCC, then spend'
+      - ' &#CCCCCCit to push your pickaxe to the'
+      - ' &#CCCCCCnext stage.'
       - ''
       - ' &#FFFFFF&lStatistics'
-      - ' &8| &#FFEE00Atoms: ⚛ &#FFFFFF%evolv3_pickaxe_evolution_atoms%&#888888/&#FFFFFF%evolv3_pickaxe_atom_target%'
-      - ' &8| &#FFEE00Evolution Shards: &#00FFFF%evolv3_pickaxe_evolution_rolls%'
-      - ' &8| &#FFEE00Progress: &#00FF88%evolv3_pickaxe_atom_percentage%'
-      - ' &8| %evolv3_pickaxe_atom_progressbar%'
+      - ' &#FFEE00Atoms: ⚛ &#FFFFFF%evolv3_pickaxe_evolution_atoms%&#888888/&#FFFFFF%evolv3_pickaxe_atom_target%'
+      - ' &#FFEE00Evolution Shards: &#00FFFF%evolv3_pickaxe_evolution_rolls%'
+      - ' &#FFEE00Progress: &#00FF88%evolv3_pickaxe_atom_percentage%'
+      - ' %evolv3_pickaxe_atom_progressbar%'
       - ''
-      - ' &8| &aLeft-Click &#AAAAAAto evolve your pickaxe '
+      - ' &aLeft-Click &#AAAAAAto evolve your pickaxe '
       - ''
 
 # Pickaxe Limit Menu slot items
@@ -145,20 +145,20 @@ Pickaxe Limit Menu:
     Lore:
       - ''
       - ' &#FFFFFF&lBegin Your Journey'
-      - ' &8| &#CCCCCCEvery great miner starts here.'
-      - ' &8| &#CCCCCCClaim your pickaxe and descend'
-      - ' &8| &#CCCCCCinto the depths. Mine, evolve,'
-      - ' &8| &#CCCCCCand forge a legacy in stone.'
+      - ' &#CCCCCCEvery great miner starts here.'
+      - ' &#CCCCCCClaim your pickaxe and descend'
+      - ' &#CCCCCCinto the depths. Mine, evolve,'
+      - ' &#CCCCCCand forge a legacy in stone.'
       - ''
-      - ' &8| &aLeft-Click &#AAAAAAto claim'
+      - ' &aLeft-Click &#AAAAAAto claim'
       - ''
   BlockedSlot:
     Name: "&#FF4444⬡ &#FFFFFF&lSlot Blocked"
     Lore:
       - ''
       - ' &#FFFFFF&lBlocked'
-      - ' &8| &#CCCCCCYou already have an active pickaxe.'
-      - ' &8| &#CCCCCCDeposit it first to claim this slot.'
+      - ' &#CCCCCCYou already have an active pickaxe.'
+      - ' &#CCCCCCDeposit it first to claim this slot.'
       - ''
   LockedSlot:
     Name: "&#666666⬡ &#666666Locked Slot"
@@ -166,10 +166,10 @@ Pickaxe Limit Menu:
       - ' &#444444Locked'
       - ''
       - ' &#FFFFFF&lDescription'
-      - ' &8| &#CCCCCCPurchase to unlock this storage slot.'
+      - ' &#CCCCCCPurchase to unlock this storage slot.'
       - ''
       - ' &#FFFFFF&lRequirements'
-      - ' &8| &#888888Cost: &#FFFFFF{cost} {wood}'
+      - ' &#888888Cost: &#FFFFFF{cost} {wood}'
       - ''
   ActiveSlot:
     Name: "&#00FFFF⛏ &#FFFFFF&lPickaxe &#00FF88(Active)"
@@ -179,18 +179,18 @@ Pickaxe Limit Menu:
     Lore:
       - ''
       - ' &#FFFFFF&lRequirements'
-      - ' &8| &#888888Next Slot: &#FFFFFF{slot}'
-      - ' &8| &#888888Cost: &#FFFFFF{cost} {wood}'
-      - ' &8| &#888888You Have: {amount_colored}'
+      - ' &#888888Next Slot: &#FFFFFF{slot}'
+      - ' &#888888Cost: &#FFFFFF{cost} {wood}'
+      - ' &#888888You Have: {amount_colored}'
       - ''
-    ActionAffordable: " &8| &aLeft-Click &#AAAAAAto unlock"
-    ActionTooExpensive: " &8| &#FF5555Not enough {wood}"
+    ActionAffordable: " &aLeft-Click &#AAAAAAto unlock"
+    ActionTooExpensive: " &#FF5555Not enough {wood}"
   MaxedButton:
     Name: "&#00FFFF★ &#FFFFFF&lAll Slots Unlocked"
     Lore:
       - ''
       - ' &#FFFFFF&lStatus'
-      - ' &8| &#00FF88All pickaxe storage slots are unlocked!'
+      - ' &#00FF88All pickaxe storage slots are unlocked!'
       - ''
 
 # Preferences Menu
@@ -202,9 +202,9 @@ Preferences Menu:
     Lore:
       - ''
       - ' &#FFFFFF&lVisual Effects & Animations'
-      - ' &8| &#AAAAAA Pickup animation style'
-      - ' &8| &#AAAAAA Atom & Essence FX toggles'
-      - ' &8| &#AAAAAA Enchant roll speed'
+      - ' &#AAAAAA Pickup animation style'
+      - ' &#AAAAAA Atom & Essence FX toggles'
+      - ' &#AAAAAA Enchant roll speed'
       - ''
       - ' &#AAAAAA▸ Left-Click to open'
       - ''
@@ -214,9 +214,9 @@ Preferences Menu:
     Lore:
       - ''
       - ' &#FFFFFF&lPer-Enchant Feedback'
-      - ' &8| &#AAAAAA Chat messages on proc'
-      - ' &8| &#AAAAAA Title popups on proc'
-      - ' &8| &#AAAAAA Sounds on proc'
+      - ' &#AAAAAA Chat messages on proc'
+      - ' &#AAAAAA Title popups on proc'
+      - ' &#AAAAAA Sounds on proc'
       - ''
       - ' &#AAAAAA▸ Left-Click to open'
       - ''
@@ -233,8 +233,8 @@ Preferences Menu:
     Lore:
       - ''
       - ' &#FFFFFF&lBeta Features'
-      - ' &8| &#AAAAAA Experimental toggles that'
-      - ' &8| &#AAAAAA may have visual side effects.'
+      - ' &#AAAAAA Experimental toggles that'
+      - ' &#AAAAAA may have visual side effects.'
       - ''
       - ' &#AAAAAA▸ Left-Click to open'
       - ''
@@ -256,9 +256,9 @@ Experimental Menu:
     Lore:
       - ''
       - ' &#FFFFFF&lPickaxe Menu Title'
-      - ' &8| &#AAAAAA Cycles through progress icons'
-      - ' &8| &#AAAAAA in the Pickaxe Menu title bar.'
-      - ' &8| &#555555&oMay cause visual flicker.'
+      - ' &#AAAAAA Cycles through progress icons'
+      - ' &#AAAAAA in the Pickaxe Menu title bar.'
+      - ' &#555555&oMay cause visual flicker.'
       - ''
       - ' {status}'
       - ''
@@ -282,16 +282,16 @@ Animations Menu:
       Lore:
         - ''
         - ' &#FFFFFF&lPickup Animation'
-        - ' &8| &#AAAAAA The effect that plays when'
-        - ' &8| &#AAAAAA a block enters your backpack.'
+        - ' &#AAAAAA The effect that plays when'
+        - ' &#AAAAAA a block enters your backpack.'
         - ''
     Material: ENDER_PEARL
     SelectedMaterial: ENDER_EYE
     Default:
       Name: "Default"
       Lore:
-        - ' &8| &#AAAAAA Block floats up and dissolves'
-        - ' &8| &#AAAAAA into your backpack.'
+        - ' &#AAAAAA Block floats up and dissolves'
+        - ' &#AAAAAA into your backpack.'
         - ''
         - ' {status}'
         - ''
@@ -300,8 +300,8 @@ Animations Menu:
     Simple:
       Name: "Simple"
       Lore:
-        - ' &8| &#AAAAAA Items fade out and jump'
-        - ' &8| &#AAAAAA directly into your backpack.'
+        - ' &#AAAAAA Items fade out and jump'
+        - ' &#AAAAAA directly into your backpack.'
         - ''
         - ' {status}'
         - ''
@@ -310,8 +310,8 @@ Animations Menu:
     Disabled:
       Name: "Disabled"
       Lore:
-        - ' &8| &#AAAAAA No animation — blocks go'
-        - ' &8| &#AAAAAA straight into your backpack.'
+        - ' &#AAAAAA No animation — blocks go'
+        - ' &#AAAAAA straight into your backpack.'
         - ''
         - ' {status}'
         - ''
@@ -324,8 +324,8 @@ Animations Menu:
       Lore:
         - ''
         - ' &#FFFFFF&lEnchant Roll Speed'
-        - ' &8| &#AAAAAA How fast the selection'
-        - ' &8| &#AAAAAA animation plays.'
+        - ' &#AAAAAA How fast the selection'
+        - ' &#AAAAAA animation plays.'
         - ''
     Material: ENDER_PEARL
     SelectedMaterial: ENDER_EYE
@@ -341,15 +341,15 @@ Animations Menu:
       Lore:
         - ''
         - ' &#FFFFFF&lAtom Discovery Effects'
-        - ' &8| &#AAAAAA Toggle each part of the'
-        - ' &8| &#AAAAAA atom pickup animation.'
+        - ' &#AAAAAA Toggle each part of the'
+        - ' &#AAAAAA atom pickup animation.'
         - ''
     EnabledMaterial: LIME_DYE
     DisabledMaterial: GRAY_DYE
     Sound:
       Name: "Atom Sound"
       Lore:
-        - ' &8| &#AAAAAA Discovery and arrival sounds.'
+        - ' &#AAAAAA Discovery and arrival sounds.'
         - ''
         - ' {status}'
         - ''
@@ -358,7 +358,7 @@ Animations Menu:
     Particles:
       Name: "Atom Particles"
       Lore:
-        - ' &8| &#AAAAAA Flying orb trail particles.'
+        - ' &#AAAAAA Flying orb trail particles.'
         - ''
         - ' {status}'
         - ''
@@ -367,7 +367,7 @@ Animations Menu:
     Hologram:
       Name: "Atom Hologram"
       Lore:
-        - ' &8| &#AAAAAA Floating &#FFEE00+Atoms &#AAAAAAAAtext.'
+        - ' &#AAAAAA Floating &#FFEE00+Atoms &#AAAAAAAAtext.'
         - ''
         - ' {status}'
         - ''
@@ -376,7 +376,7 @@ Animations Menu:
     Glow:
       Name: "Atom Glow"
       Lore:
-        - ' &8| &#AAAAAA Brief glow on discovery.'
+        - ' &#AAAAAA Brief glow on discovery.'
         - ''
         - ' {status}'
         - ''
@@ -389,15 +389,15 @@ Animations Menu:
       Lore:
         - ''
         - ' &#FFFFFF&lEssence Discovery Effects'
-        - ' &8| &#AAAAAA Toggle each part of the'
-        - ' &8| &#AAAAAA essence pickup animation.'
+        - ' &#AAAAAA Toggle each part of the'
+        - ' &#AAAAAA essence pickup animation.'
         - ''
     EnabledMaterial: LIME_DYE
     DisabledMaterial: GRAY_DYE
     Sound:
       Name: "Essence Sound"
       Lore:
-        - ' &8| &#AAAAAA Discovery and arrival sounds.'
+        - ' &#AAAAAA Discovery and arrival sounds.'
         - ''
         - ' {status}'
         - ''
@@ -406,7 +406,7 @@ Animations Menu:
     Particles:
       Name: "Essence Particles"
       Lore:
-        - ' &8| &#AAAAAA Flying orb trail particles.'
+        - ' &#AAAAAA Flying orb trail particles.'
         - ''
         - ' {status}'
         - ''
@@ -415,7 +415,7 @@ Animations Menu:
     Hologram:
       Name: "Essence Hologram"
       Lore:
-        - ' &8| &#AAAAAA Floating &#B366D9+Essence &#AAAAAAAAtext.'
+        - ' &#AAAAAA Floating &#B366D9+Essence &#AAAAAAAAtext.'
         - ''
         - ' {status}'
         - ''
@@ -424,7 +424,7 @@ Animations Menu:
     Glow:
       Name: "Essence Glow"
       Lore:
-        - ' &8| &#AAAAAA Brief glow on discovery.'
+        - ' &#AAAAAA Brief glow on discovery.'
         - ''
         - ' {status}'
         - ''
@@ -462,7 +462,7 @@ Enchants Menu:
     Lore:
       - ''
       - ' &#FFFFFF&lRarity'
-      - ' &8| {rarity}'
+      - ' {rarity}'
       - ''
       - ' &#AAAAAA▸ Left-Click to configure'
       - ''
@@ -479,53 +479,53 @@ Enchant Option Menu:
     Material: RED_STAINED_GLASS_PANE
     Name: "&#AAAAAA← Back"
     Lore:
-      - ' &8| &aLeft-Click &7to go back'
+      - ' &aLeft-Click &7to go back'
   EnabledMaterial: LIME_DYE
   DisabledMaterial: RED_DYE
   Message:
     Name: "Message"
     Lore:
-      - ' &8| &#777777Chat message when triggered.'
+      - ' &#777777Chat message when triggered.'
       - ''
       - ' {status}'
       - ''
-      - ' &8| &aLeft-Click &#AAAAAAto toggle'
+      - ' &aLeft-Click &#AAAAAAto toggle'
       - ''
   Title:
     Name: "Title"
     Lore:
-      - ' &8| &#777777Title popup when triggered.'
+      - ' &#777777Title popup when triggered.'
       - ''
       - ' {status}'
       - ''
-      - ' &8| &aLeft-Click &#AAAAAAto toggle'
+      - ' &aLeft-Click &#AAAAAAto toggle'
       - ''
   Sound:
     Name: "Sound"
     Lore:
-      - ' &8| &#777777Sound when triggered.'
+      - ' &#777777Sound when triggered.'
       - ''
       - ' {status}'
       - ''
-      - ' &8| &aLeft-Click &#AAAAAAto toggle'
+      - ' &aLeft-Click &#AAAAAAto toggle'
       - ''
   Hologram:
     Name: "Hologram"
     Lore:
-      - ' &8| &#777777Floating text hologram.'
+      - ' &#777777Floating text hologram.'
       - ''
       - ' {status}'
       - ''
-      - ' &8| &aLeft-Click &#AAAAAAto toggle'
+      - ' &aLeft-Click &#AAAAAAto toggle'
       - ''
   Particles:
     Name: "Particles"
     Lore:
-      - ' &8| &#777777Particle effects.'
+      - ' &#777777Particle effects.'
       - ''
       - ' {status}'
       - ''
-      - ' &8| &aLeft-Click &#AAAAAAto toggle'
+      - ' &aLeft-Click &#AAAAAAto toggle'
       - ''
 
 # Furnace Smelt Menu
@@ -570,13 +570,13 @@ Cell Menu:
     Lore:
       - ""
       - " &f&lINFO"
-      - " &8| &#888888Owner: &#FFFFFF{owner}"
-      - " &8| &#888888Allies: &#FFFFFF{allies}"
-      - " &8| &#888888Expires: {expires}"
-      - " &8| &#888888Expansions: &#FFFFFF{expansions}"
+      - " &#888888Owner: &#FFFFFF{owner}"
+      - " &#888888Allies: &#FFFFFF{allies}"
+      - " &#888888Expires: {expires}"
+      - " &#888888Expansions: &#FFFFFF{expansions}"
       - ""
       - " &f&lSTATUS"
-      - " &8| {status}"
+      - " {status}"
       - ""
   Lock:
     SealedMaterial: IRON_DOOR
@@ -586,24 +586,24 @@ Cell Menu:
     SealedLore:
       - ""
       - " &f&lINFO"
-      - " &8| &#888888Decide whether to allow non-members"
-      - " &8| &#888888to enter your cell. "
+      - " &#888888Decide whether to allow non-members"
+      - " &#888888to enter your cell. "
       - ""
       - " &f&lSTATUS"
-      - " &8| &#888888Only members can access this cell."
+      - " &#888888Only members can access this cell."
       - ""
-      - " &8| &aLeft-click &#AAAAAAto open your cell."
+      - " &aLeft-click &#AAAAAAto open your cell."
       - ""
     OpenLore:
       - ""
       - " &f&lINFO"
-      - " &8| &#888888Decide whether to allow non-members"
-      - " &8| &#888888to enter your cell. "
+      - " &#888888Decide whether to allow non-members"
+      - " &#888888to enter your cell. "
       - ""
       - " &f&lSTATUS"
-      - " &8| &#888888All prisoners can access this cell."
+      - " &#888888All prisoners can access this cell."
       - ""
-      - " &8| &aLeft-click &#AAAAAAto close your cell."
+      - " &aLeft-click &#AAAAAAto close your cell."
       - ""
   Expand:
     AvailableMaterial: PISTON
@@ -613,25 +613,25 @@ Cell Menu:
     AvailableLore:
       - ""
       - " &f&lINFO"
-      - " &8| &#888888Expand your cell by 1 block"
+      - " &#888888Expand your cell by 1 block"
       - ""
       - " &f&lSTATISTICS"
-      - " &8| &#888888Cost: {cost}"
-      - " &8| &#888888Expansions: &#FFFFFF{expansions}&#888888/&#FFFFFF{max_expansions}"
+      - " &#888888Cost: {cost}"
+      - " &#888888Expansions: &#FFFFFF{expansions}&#888888/&#FFFFFF{max_expansions}"
       - ""
-      - " &8| &aLeft-click &#AAAAAAto expand."
+      - " &aLeft-click &#AAAAAAto expand."
       - ""
     MaxedLore:
       - ""
       - " &f&lINFO"
-      - " &8| &#888888Open a rift to a remote"
-      - " &8| &#888888unknown location."
+      - " &#888888Open a rift to a remote"
+      - " &#888888unknown location."
       - ""
       - " &f&lSTATISTICS"
-      - " &8| &#888888Cost: {cost}"
-      - " &8| &#888888Expansions: &#FFFFFF{expansions}&#888888/&#FFFFFF{max_expansions}"
+      - " &#888888Cost: {cost}"
+      - " &#888888Expansions: &#FFFFFF{expansions}&#888888/&#FFFFFF{max_expansions}"
       - ""
-      - " &8| &aLeft-click &#AAAAAAto open rift."
+      - " &aLeft-click &#AAAAAAto open rift."
       - ""
   Members:
     Material: PLAYER_HEAD
@@ -639,13 +639,13 @@ Cell Menu:
     Lore:
       - ""
       - " &f&lINFO"
-      - " &8| &#888888Manage who has access to"
-      - " &8| &#888888your cell."
+      - " &#888888Manage who has access to"
+      - " &#888888your cell."
       - ""
       - " &f&lSTATUS"
-      - " &8| &#888888{member_count} {member_label} sworn in."
+      - " &#888888{member_count} {member_label} sworn in."
       - ""
-      - " &8| &aLeft-click &#AAAAAAto manage."
+      - " &aLeft-click &#AAAAAAto manage."
       - ""
   Rift:
     Material: ENDER_EYE
@@ -653,15 +653,15 @@ Cell Menu:
     Lore:
       - ""
       - " &f&lINFO"
-      - " &8| &#888888Open a rift to an unknown"
-      - " &8| &#888888location. Walk through to evolve."
+      - " &#888888Open a rift to an unknown"
+      - " &#888888location. Walk through to evolve."
       - ""
       - " &f&lSTATISTICS"
-      - " &8| &#888888Expansions: &#FFFFFF{expansions}&#888888/&#FFFFFF{max_expansions}"
+      - " &#888888Expansions: &#FFFFFF{expansions}&#888888/&#FFFFFF{max_expansions}"
       - ""
-      - " &8| &#FF5555This cannot be undone."
+      - " &#FF5555This cannot be undone."
       - ""
-      - " &8| &aLeft-click &#AAAAAAto open."
+      - " &aLeft-click &#AAAAAAto open."
       - ""
   ExtendRent:
     Name: "&#00FFFFExtend Rent"
@@ -669,22 +669,22 @@ Cell Menu:
     Lore:
       - ""
       - " &f&lINFO"
-      - " &8| &#888888Extend your rental period."
-      - " &8| &#888888Max 7 days from now."
+      - " &#888888Extend your rental period."
+      - " &#888888Max 7 days from now."
       - ""
       - " &f&lSTATUS"
-      - " &8| &#888888Expires: {expires}"
-      - " &8| &#888888Can add: {extend_days} day{extend_plural}"
-      - " &8| &#888888Cost per day: {cost}"
+      - " &#888888Expires: {expires}"
+      - " &#888888Can add: {extend_days} day{extend_plural}"
+      - " &#888888Cost per day: {cost}"
       - ""
-      - " &8| &aLeft-click &#AAAAAAto add 1 day."
-      - " &8| &#FFEE00Right-click &#AAAAAAto extend max."
+      - " &aLeft-click &#AAAAAAto add 1 day."
+      - " &#FFEE00Right-click &#AAAAAAto extend max."
       - ""
     MaxedLore:
       - ""
       - " &f&lSTATUS"
-      - " &8| &#888888Rental period is maxed at 7 days."
-      - " &8| &#888888Expires: {expires}"
+      - " &#888888Rental period is maxed at 7 days."
+      - " &#888888Expires: {expires}"
       - ""
   Evolve:
     Material: BEACON
@@ -692,17 +692,17 @@ Cell Menu:
     Lore:
       - ""
       - " &f&lINFO"
-      - " &8| &#888888You have reached the pinnacle"
-      - " &8| &#888888of this cell. Ascend to claim"
-      - " &8| &#888888a private island."
+      - " &#888888You have reached the pinnacle"
+      - " &#888888of this cell. Ascend to claim"
+      - " &#888888a private island."
       - ""
       - " &f&lDETAILS"
-      - " &8| &#888888Your cell will be fully reset."
-      - " &8| &#888888Allies and lock settings carry over."
+      - " &#888888Your cell will be fully reset."
+      - " &#888888Allies and lock settings carry over."
       - ""
-      - " &8| &#FF5555This cannot be undone."
+      - " &#FF5555This cannot be undone."
       - ""
-      - " &8| &aLeft-click &#AAAAAAto ascend."
+      - " &aLeft-click &#AAAAAAto ascend."
       - ""
   Abandon:
     Material: REDSTONE_BLOCK
@@ -711,26 +711,26 @@ Cell Menu:
     OwnerLore:
       - ""
       - " &f&lINFO"
-      - " &8| &#888888Permanently relinquish your"
-      - " &8| &#888888claim to this cell."
+      - " &#888888Permanently relinquish your"
+      - " &#888888claim to this cell."
       - ""
       - " &f&lDETAILS"
-      - " &8| &#888888All expansions will be undone."
-      - " &8| &#888888The cell will be made available."
+      - " &#888888All expansions will be undone."
+      - " &#888888The cell will be made available."
       - ""
-      - " &8| &#FF5555This cannot be undone."
+      - " &#FF5555This cannot be undone."
       - ""
-      - " &8| &aLeft-click &#AAAAAAto confirm."
+      - " &aLeft-click &#AAAAAAto confirm."
       - ""
     MemberLore:
       - ""
       - " &f&lINFO"
-      - " &8| &#888888Step away from this cell."
-      - " &8| &#888888You will lose all access."
+      - " &#888888Step away from this cell."
+      - " &#888888You will lose all access."
       - ""
-      - " &8| &#FF5555This cannot be undone."
+      - " &#FF5555This cannot be undone."
       - ""
-      - " &8| &aLeft-click &#AAAAAAto confirm."
+      - " &aLeft-click &#AAAAAAto confirm."
       - ""
 
 # =====================================================
@@ -743,14 +743,14 @@ Prestige Confirm Menu:
     Lore:
       - ""
       - " &#55FF55&lRewards"
-      - " &8| &#FFFFFF+1 &#888888evolution stone socket"
-      - " &8| &#FFFFFF+1 &#888888evolution stone &#444444(Rare minimum)"
-      - " &8| &#FFFFFF×{mult} &#888888essence amd atom discovery"
+      - " &#FFFFFF+1 &#888888evolution stone socket"
+      - " &#FFFFFF+1 &#888888evolution stone &#444444(Rare minimum)"
+      - " &#FFFFFF×{mult} &#888888essence amd atom discovery"
       - ""
       - " &#55FF55&lInformation"
-      - " &8| &#888888Pickaxe resets to &#FFFFFFWooden"
-      - " &8| &#888888Level & enchants &#FFFFFFcleared"
-      - " &8| &#888888New level cap: &#FFFFFF{new_cap}"
+      - " &#888888Pickaxe resets to &#FFFFFFWooden"
+      - " &#888888Level & enchants &#FFFFFFcleared"
+      - " &#888888New level cap: &#FFFFFF{new_cap}"
       - ""
       - " &aLeft-click &#888888to confirm your prestige."
   Info:

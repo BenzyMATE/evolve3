@@ -246,7 +246,7 @@ public class EnchantOptionMenu extends BaseMenu {
 
     List<String> lore = new ArrayList<>();
     if (option != null) {
-      lore.add(" &8| &#888888Rarity: &" + rarityHex + option.rarity().displayName());
+      lore.add(" &#888888Rarity: &" + rarityHex + option.rarity().displayName());
     }
     return buildItem(mat, displayName, lore);
   }

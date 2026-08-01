@@ -132,9 +132,9 @@ pickaxe:
     # Action bar shown while mining when prestige is available
     action-bar: "&#55FF55&lPRESTIGE AVAILABLE &#888888(Shift+Right-Click)"
     # Lore line displayed on the pickaxe when prestige > 0 (shown in Statistics section)
-    lore-line: " &8| &#FFD700★ &#FFD700&lPrestige %prestige% &#888888(x%multiplier%)"
+    lore-line: " &#FFD700★ &#FFD700&lPrestige %prestige% &#888888(x%multiplier%)"
     # Scoreboard line displayed when prestige > 0
-    scoreboard-line: " &8| &#FFD700★ &#FFD700Prestige %prestige%"
+    scoreboard-line: " &#FFD700★ &#FFD700Prestige %prestige%"
     # Broadcast/chat messages shown after a successful prestige
     success:
       - ""
@@ -426,7 +426,7 @@ skin:
 # Furnace Smelt Menu Messages
 # =====================================================
 furnace-smelt:
-  smeltable-tag: " &8| &#FF8C00🔥 Smeltable &#888888→ &#FFFFFF%result%"
+  smeltable-tag: " &#FF8C00🔥 Smeltable &#888888→ &#FFFFFF%result%"
 
 # =====================================================
 # Enchant Animation Action Bar Messages

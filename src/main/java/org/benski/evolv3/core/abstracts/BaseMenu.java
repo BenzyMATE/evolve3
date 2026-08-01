@@ -245,13 +245,25 @@ public abstract class BaseMenu implements Menu, InventoryHolder, Listener {
   }
 
   /**
-   * Plays the shutter transition sound. Call once at the start of any shutter animation — closing
-   * or opening, forward or via a back button — so the audio always lines up with the visual sweep.
+   * Plays the shutter transition sound. Call once at the very start of a full shutter round-trip
+   * (top-to-bottom then bottom-to-top) — e.g. when the shift+right-click transition begins, or when
+   * the back button is clicked — not at every ramp within that round-trip.
    *
    * @param player the player to play the sound for
    */
   protected void playShutterSound(Player player) {
     player.playSound(player.getLocation(), "custom.shutter", 1.0f, 1.0f);
+  }
+
+  /**
+   * Force-stops the shutter transition sound. The sound clip runs longer than the visual animation,
+   * so call this once the full round-trip (top-to-bottom then bottom-to-top) has completed — not
+   * when the shutter merely reaches the bottom (fully closed) partway through.
+   *
+   * @param player the player to stop the sound for
+   */
+  protected void stopShutterSound(Player player) {
+    player.stopSound("custom.shutter");
   }
 
   /**

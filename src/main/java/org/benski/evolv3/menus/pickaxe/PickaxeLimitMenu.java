@@ -368,10 +368,10 @@ public class PickaxeLimitMenu extends BaseMenu {
             List.of(
                 "",
                 " &#FFFFFF&lDescription",
-                " &8| &#CCCCCCThis slot is ready for a pickaxe.",
-                " &8| &#CCCCCCClick to claim your new pickaxe.",
+                " &#CCCCCCThis slot is ready for a pickaxe.",
+                " &#CCCCCCClick to claim your new pickaxe.",
                 "",
-                " &8| &aLeft-Click &#AAAAAAto claim",
+                " &aLeft-Click &#AAAAAAto claim",
                 ""));
 
     return new ItemBuilder(Material.YELLOW_STAINED_GLASS_PANE)
@@ -393,8 +393,8 @@ public class PickaxeLimitMenu extends BaseMenu {
             List.of(
                 "",
                 " &#FFFFFF&lBlocked",
-                " &8| &#CCCCCCYou already have an active pickaxe.",
-                " &8| &#CCCCCCDeposit it first to claim this slot.",
+                " &#CCCCCCYou already have an active pickaxe.",
+                " &#CCCCCCDeposit it first to claim this slot.",
                 ""));
 
     return new ItemBuilder(Material.ORANGE_STAINED_GLASS_PANE)
@@ -435,17 +435,17 @@ public class PickaxeLimitMenu extends BaseMenu {
       FileConfiguration activeConfig = ConfigRegistry.getInstance().get(ConfigNames.DEFAULT);
       String durabilityLabel =
           activeConfig.getString(
-              ConfigPaths.Default.Pickaxe.DURABILITY_LABEL, " &8| &#00FFFFDurability:");
+              ConfigPaths.Default.Pickaxe.DURABILITY_LABEL, " &#00FFFFDurability:");
       String barPrefix =
-          activeConfig.getString(ConfigPaths.Default.Pickaxe.DURABILITY_BAR_PREFIX, " &8| ");
+          activeConfig.getString(ConfigPaths.Default.Pickaxe.DURABILITY_BAR_PREFIX, " ");
       List<String> footer = new ArrayList<>();
       footer.add("");
       footer.add(durabilityLabel);
       footer.add(barPrefix + durabilityBar);
       footer.add("");
-      footer.add(" &8| &aLeft-Click &#AAAAAAto deposit");
+      footer.add(" &aLeft-Click &#AAAAAAto deposit");
       footer.add(
-          " &8| &#FFEE00Right-Click &#AAAAAAto repair &#777777(&#E8890A5 &#777777Ancient Resin)");
+          " &#FFEE00Right-Click &#AAAAAAto repair &#777777(&#E8890A5 &#777777Ancient Resin)");
       footer.add("");
       meta.lore(PickaxeManager.getInstance().buildLoreComponents(player, pickProfile, footer));
     } else {
@@ -454,11 +454,11 @@ public class PickaxeLimitMenu extends BaseMenu {
               Component.empty(),
               SERIALIZER
                   .deserialize(
-                      fmt(player, " &8| &#CCCCCCPickaxe is currently active in your inventory."))
+                      fmt(player, " &#CCCCCCPickaxe is currently active in your inventory."))
                   .decoration(TextDecoration.ITALIC, false),
               Component.empty(),
               SERIALIZER
-                  .deserialize(fmt(player, " &8| &aLeft-Click &#AAAAAAto deposit"))
+                  .deserialize(fmt(player, " &aLeft-Click &#AAAAAAto deposit"))
                   .decoration(TextDecoration.ITALIC, false),
               Component.empty()));
     }
@@ -495,18 +495,16 @@ public class PickaxeLimitMenu extends BaseMenu {
       String durabilityBar =
           buildDurabilityBar(pickProfile.durability, material.getMaxDurability());
       String durabilityLabel =
-          config.getString(
-              ConfigPaths.Default.Pickaxe.DURABILITY_LABEL, " &8| &#00FFFFDurability:");
-      String barPrefix =
-          config.getString(ConfigPaths.Default.Pickaxe.DURABILITY_BAR_PREFIX, " &8| ");
+          config.getString(ConfigPaths.Default.Pickaxe.DURABILITY_LABEL, " &#00FFFFDurability:");
+      String barPrefix = config.getString(ConfigPaths.Default.Pickaxe.DURABILITY_BAR_PREFIX, " ");
       List<String> footer = new ArrayList<>();
       footer.add("");
       footer.add(durabilityLabel);
       footer.add(barPrefix + durabilityBar);
       footer.add("");
-      footer.add(" &8| &aLeft-Click &#AAAAAAto withdraw");
+      footer.add(" &aLeft-Click &#AAAAAAto withdraw");
       footer.add(
-          " &8| &#FFEE00Right-Click &#AAAAAAto repair &#777777(&#E8890A5 &#777777Ancient Resin)");
+          " &#FFEE00Right-Click &#AAAAAAto repair &#777777(&#E8890A5 &#777777Ancient Resin)");
       footer.add("");
       meta.lore(PickaxeManager.getInstance().buildLoreComponents(player, pickProfile, footer));
     } else {
@@ -518,7 +516,7 @@ public class PickaxeLimitMenu extends BaseMenu {
           List.of(
               Component.empty(),
               SERIALIZER
-                  .deserialize(fmt(player, " &8| &aLeft-Click &#AAAAAAto withdraw"))
+                  .deserialize(fmt(player, " &aLeft-Click &#AAAAAAto withdraw"))
                   .decoration(TextDecoration.ITALIC, false),
               Component.empty()));
     }
@@ -543,9 +541,7 @@ public class PickaxeLimitMenu extends BaseMenu {
             fmt(player, " &#FFFFFF&lRequirements"),
             fmt(
                 player,
-                " &8| &#CCCCCCReach &#FFFFFF&lEvolution "
-                    + requiredEvolution
-                    + " &#CCCCCCto unlock."),
+                " &#CCCCCCReach &#FFFFFF&lEvolution " + requiredEvolution + " &#CCCCCCto unlock."),
             "");
 
     return new ItemBuilder(Material.RED_STAINED_GLASS_PANE)
@@ -563,14 +559,12 @@ public class PickaxeLimitMenu extends BaseMenu {
     List<String> lore = new ArrayList<>();
     lore.add("");
     lore.add(fmt(player, " &#FFFFFF&lSlot Unlocks"));
-    lore.add(fmt(player, " &8| &#00FFFFUnlocked: &#FFFFFF" + unlockedSlots + " / " + maxSlots));
-    lore.add(fmt(player, " &8| &#00FFFFYour Evolution: &#FFFFFF" + currentMaxEvolution));
+    lore.add(fmt(player, " &#00FFFFUnlocked: &#FFFFFF" + unlockedSlots + " / " + maxSlots));
+    lore.add(fmt(player, " &#00FFFFYour Evolution: &#FFFFFF" + currentMaxEvolution));
     lore.add("");
     lore.add(fmt(player, " &#FFFFFF&lNext Slot"));
     lore.add(
-        fmt(
-            player,
-            " &8| &#CCCCCCReach &#FFFFFF&lEvolution " + nextEvolution + " &#CCCCCCto unlock."));
+        fmt(player, " &#CCCCCCReach &#FFFFFF&lEvolution " + nextEvolution + " &#CCCCCCto unlock."));
     lore.add("");
 
     return new ItemBuilder(Material.EXPERIENCE_BOTTLE)
@@ -592,7 +586,7 @@ public class PickaxeLimitMenu extends BaseMenu {
             ConfigPaths.Menus.PickaxeLimitMenu.MAXED_LORE,
             List.of(
                 "", " &#FFFFFF&lStatus",
-                " &8| &#00FF88All pickaxe storage slots are unlocked!", ""));
+                " &#00FF88All pickaxe storage slots are unlocked!", ""));
 
     return new ItemBuilder(Material.NETHER_STAR).name(fmt(player, name)).lore(lore).build();
   }

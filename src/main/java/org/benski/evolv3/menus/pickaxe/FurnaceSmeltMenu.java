@@ -412,7 +412,7 @@ public class FurnaceSmeltMenu extends BaseMenu {
         PICKER_BACK,
         new ItemBuilder(Material.RED_STAINED_GLASS_PANE)
             .name(fmt(player, "&#AAAAAA← Back"))
-            .lore("", fmt(player, " &8| &aLeft-Click &#AAAAAAto go back"), "")
+            .lore("", fmt(player, " &aLeft-Click &#AAAAAAto go back"), "")
             .build());
 
     inv.setItem(
@@ -438,19 +438,19 @@ public class FurnaceSmeltMenu extends BaseMenu {
         FurnaceRecipe recipe = SmeltingHelper.getRecipe(mat);
         String result = recipe != null ? formatMaterialName(recipe.getResult().getType()) : "?";
         lore.add(fmt(player, " &#FFFFFF&lSmeltable"));
-        lore.add(fmt(player, " &8| &#888888In backpack: &#FFFFFF" + fmt(amt)));
-        lore.add(fmt(player, " &8| &#FF8C00Smelts into: &#FFFFFF" + result));
+        lore.add(fmt(player, " &#888888In backpack: &#FFFFFF" + fmt(amt)));
+        lore.add(fmt(player, " &#FF8C00Smelts into: &#FFFFFF" + result));
       } else {
         int ipf = SmeltingHelper.getItemsPerFuel(mat);
         lore.add(fmt(player, " &#FFFFFF&lFuel"));
-        lore.add(fmt(player, " &8| &#888888In backpack: &#FFFFFF" + fmt(amt)));
+        lore.add(fmt(player, " &#888888In backpack: &#FFFFFF" + fmt(amt)));
         lore.add(
             fmt(
                 player,
-                " &8| &#FF8C00Smelts: &#FFFFFF" + ipf + " item" + (ipf == 1 ? "" : "s") + " each"));
+                " &#FF8C00Smelts: &#FFFFFF" + ipf + " item" + (ipf == 1 ? "" : "s") + " each"));
       }
       lore.add("");
-      lore.add(fmt(player, " &8| &aLeft-Click &#AAAAAAto load into furnace"));
+      lore.add(fmt(player, " &aLeft-Click &#AAAAAAto load into furnace"));
       lore.add("");
 
       inv.setItem(
@@ -675,14 +675,14 @@ public class FurnaceSmeltMenu extends BaseMenu {
         SLOT_AMT_BACK,
         new ItemBuilder(Material.RED_STAINED_GLASS_PANE)
             .name(fmt(player, "&#AAAAAA← Back"))
-            .lore("", fmt(player, " &8| &aLeft-Click &#AAAAAAto go back"), "")
+            .lore("", fmt(player, " &aLeft-Click &#AAAAAAto go back"), "")
             .build());
 
     inv.setItem(
         SLOT_AMT_CONFIRM,
         new ItemBuilder(Material.LIME_STAINED_GLASS_PANE)
             .name(fmt(player, "&#00FF00&l✓ Confirm — Load into Furnace"))
-            .lore("", fmt(player, " &8| &aLeft-Click &#AAAAAAto confirm"), "")
+            .lore("", fmt(player, " &aLeft-Click &#AAAAAAto confirm"), "")
             .build());
   }
 
@@ -890,11 +890,11 @@ public class FurnaceSmeltMenu extends BaseMenu {
               .lore(
                   "",
                   fmt(player, " &#FFFFFF&lInput"),
-                  fmt(player, " &8| &#888888In furnace: &#FFFFFF" + fmt(data.inputStored)),
-                  fmt(player, " &8| &#FF8C00Smelts into: &#FFFFFF" + result),
+                  fmt(player, " &#888888In furnace: &#FFFFFF" + fmt(data.inputStored)),
+                  fmt(player, " &#FF8C00Smelts into: &#FFFFFF" + result),
                   "",
-                  fmt(player, " &8| &aLeft-Click &#AAAAAAto change"),
-                  fmt(player, " &8| &cRight-Click &#AAAAAAto clear & return"),
+                  fmt(player, " &aLeft-Click &#AAAAAAto change"),
+                  fmt(player, " &cRight-Click &#AAAAAAto clear & return"),
                   "")
               .amount(Math.min(Math.max(1, data.inputStored), 64))
               .build());
@@ -921,17 +921,17 @@ public class FurnaceSmeltMenu extends BaseMenu {
               .lore(
                   "",
                   fmt(player, " &#FFFFFF&lFuel"),
-                  fmt(player, " &8| &#888888In furnace: &#FFFFFF" + fmt(data.fuelStored)),
+                  fmt(player, " &#888888In furnace: &#FFFFFF" + fmt(data.fuelStored)),
                   fmt(
                       player,
-                      " &8| &#FF8C00Smelts: &#FFFFFF"
+                      " &#FF8C00Smelts: &#FFFFFF"
                           + ipf
                           + " item"
                           + (ipf == 1 ? "" : "s")
                           + " each"),
                   "",
-                  fmt(player, " &8| &aLeft-Click &#AAAAAAto change"),
-                  fmt(player, " &8| &cRight-Click &#AAAAAAto clear & return"),
+                  fmt(player, " &aLeft-Click &#AAAAAAto change"),
+                  fmt(player, " &cRight-Click &#AAAAAAto clear & return"),
                   "")
               .amount(Math.min(Math.max(1, data.fuelStored), 64))
               .build());
@@ -956,9 +956,9 @@ public class FurnaceSmeltMenu extends BaseMenu {
               .lore(
                   "",
                   fmt(player, " &#00FF00&lOutput"),
-                  fmt(player, " &8| &#888888Total ready: &#FFFFFF" + fmt(data.pendingOutput)),
+                  fmt(player, " &#888888Total ready: &#FFFFFF" + fmt(data.pendingOutput)),
                   "",
-                  fmt(player, " &8| &aLeft-Click &#AAAAAAto collect"),
+                  fmt(player, " &aLeft-Click &#AAAAAAto collect"),
                   "")
               .amount(Math.min(data.pendingOutput, 64))
               .build());

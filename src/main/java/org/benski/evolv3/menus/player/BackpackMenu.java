@@ -143,19 +143,18 @@ public class BackpackMenu extends BaseMenu {
 
       List<String> lore = new ArrayList<>();
       if (SmeltingHelper.isSmeltable(item.getMaterial())) {
-        lore.add(fmt(player, " &8| &#FF8C00🔥 Smeltable"));
+        lore.add(fmt(player, " &#FF8C00🔥 Smeltable"));
       }
       if (item.getMaterial().isEdible()) {
-        lore.add(fmt(player, " &8| &#FF8C00🍖 Edible"));
+        lore.add(fmt(player, " &#FF8C00🍖 Edible"));
       }
       if (item.isEvolveItem()) {
-        lore.add(fmt(player, " &8| &#9932CC✦ Enchant Drop"));
+        lore.add(fmt(player, " &#9932CC✦ Enchant Drop"));
       }
       lore.add("");
       lore.add(fmt(player, " &#FFFFFF&lItem"));
-      lore.add(fmt(player, " &8| &#00FFFFAmount: &#FFFFFF" + formatAmount(item.getAmount())));
-      lore.add(
-          fmt(player, " &8| &#00FFFFValue: &#FFD700⛁ &#FFD700" + formatCoins(getItemValue(item))));
+      lore.add(fmt(player, " &#00FFFFAmount: &#FFFFFF" + formatAmount(item.getAmount())));
+      lore.add(fmt(player, " &#00FFFFValue: &#FFD700⛁ &#FFD700" + formatCoins(getItemValue(item))));
       if (item.getMaterial().isEdible()) {
         FileConfiguration defCfg = ConfigRegistry.getInstance().get(ConfigNames.DEFAULT);
         int specific =
@@ -166,15 +165,15 @@ public class BackpackMenu extends BaseMenu {
             specific >= 0
                 ? specific
                 : defCfg.getInt(ConfigPaths.Default.Hunger.FOOD_RESTORE_PREFIX + ".DEFAULT", 2);
-        lore.add(fmt(player, " &8| &#FF8C00Fills: &#FFFFFF+" + fills));
+        lore.add(fmt(player, " &#FF8C00Fills: &#FFFFFF+" + fills));
       }
       lore.add("");
       lore.add(
           isSelected
-              ? fmt(player, " &8| &#FF5555Left-Click &#AAAAAAto deselect")
-              : fmt(player, " &8| &aLeft-Click &#AAAAAAto select"));
+              ? fmt(player, " &#FF5555Left-Click &#AAAAAAto deselect")
+              : fmt(player, " &aLeft-Click &#AAAAAAto select"));
       if (item.getMaterial().isEdible()) {
-        lore.add(fmt(player, " &8| &aRight-Click &#AAAAAAto consume"));
+        lore.add(fmt(player, " &aRight-Click &#AAAAAAto consume"));
       }
       lore.add("");
 
@@ -218,18 +217,17 @@ public class BackpackMenu extends BaseMenu {
     sellLore.add(
         fmt(
             player,
-            " &8| &#888888Selected: &#FFFFFF"
+            " &#888888Selected: &#FFFFFF"
                 + selectedCount
                 + " item"
                 + (selectedCount == 1 ? "" : "s")));
-    sellLore.add(
-        fmt(player, " &8| &#888888Base Value: &#FFD700⛁ &#FFD700" + formatCoins(totalValue)));
-    sellLore.add(fmt(player, " &8| &#00FF88Total: &#FFD700⛁ &#FFD700" + formatCoins(finalValue)));
+    sellLore.add(fmt(player, " &#888888Base Value: &#FFD700⛁ &#FFD700" + formatCoins(totalValue)));
+    sellLore.add(fmt(player, " &#00FF88Total: &#FFD700⛁ &#FFD700" + formatCoins(finalValue)));
     sellLore.add("");
     sellLore.add(
         hasSelection
-            ? fmt(player, " &8| &aLeft-Click &#AAAAAAto sell")
-            : fmt(player, " &8| &#FF5555Select items first"));
+            ? fmt(player, " &aLeft-Click &#AAAAAAto sell")
+            : fmt(player, " &#FF5555Select items first"));
     sellLore.add("");
 
     ItemStack sellItem =

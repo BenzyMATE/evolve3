@@ -533,7 +533,7 @@ public final class EvolveScoreboardManager {
     String rankupInner =
         colored(
             cfg.getString(ConfigPaths.Default.Scoreboard.RANKUP_TOGGLE_TEXT, "&#55FF55&l/rankup"));
-    String staticPrefix = colored(" &8| &#888888Rank: ");
+    String staticPrefix = colored(" &#888888Rank: ");
 
     if (!canRankup && state.rankPhase != RankTogglePhase.RANK_DISPLAY) {
       state.rankPhase = RankTogglePhase.RANK_DISPLAY;
@@ -736,7 +736,7 @@ public final class EvolveScoreboardManager {
    */
   private String loadingText(int tick) {
     int dots = (tick / 10) % 3 + 1;
-    String base = config().getString(ConfigPaths.Default.Scoreboard.LOADING_TEXT, " &8| &7Loading");
+    String base = config().getString(ConfigPaths.Default.Scoreboard.LOADING_TEXT, " &7Loading");
     return MatrixColorAPI.process(base) + ".".repeat(dots);
   }
 
@@ -906,9 +906,7 @@ public final class EvolveScoreboardManager {
     if (selectedIndex >= 0 && selectedIndex < opts.size()) {
       String rarityName = FontUtils.toSmallCaps(opts.get(selectedIndex).rarity().displayName());
       pushLineSafe(
-          state,
-          state.levelLineIndex,
-          colored(" &8| " + state.enchantRevealColor + "&l" + rarityName));
+          state, state.levelLineIndex, colored(" " + state.enchantRevealColor + "&l" + rarityName));
     }
 
     pushLineSafe(
@@ -926,7 +924,7 @@ public final class EvolveScoreboardManager {
    * cell, so when rendered directly above the bar's █ icons it creates a solid downward indicator
    * with matching visual weight.
    *
-   * <p>Both lines share the same prefix {@code " &8| "} and use {@code █} spacers at non-result
+   * <p>Both lines share the same prefix {@code " "} and use {@code █} spacers at non-result
    * positions so every character slot has identical pixel widths.
    *
    * <ul>
@@ -942,7 +940,7 @@ public final class EvolveScoreboardManager {
     for (int i = 0; i < 3; i++) {
       ac[i] = !isSelecting ? "&#666666" : (i == highlighted) ? rarityHex(opts.get(i)) : "&#2A2A2A";
     }
-    return " &8| " + DARK + "██" + ac[0] + "▄" + DARK + "█" + ac[1] + "▄" + DARK + "█" + ac[2] + "▄"
+    return " " + DARK + "██" + ac[0] + "▄" + DARK + "█" + ac[1] + "▄" + DARK + "█" + ac[2] + "▄"
         + DARK + "██";
   }
 
@@ -985,7 +983,7 @@ public final class EvolveScoreboardManager {
    * positions 2, 5, 8.
    */
   private static String buildRarityBar(RarityConfig[] strip, int offset) {
-    StringBuilder sb = new StringBuilder(" &8| ");
+    StringBuilder sb = new StringBuilder(" ");
     for (int p = 0; p < 9; p++) {
       int idx = Math.min(offset + p, strip.length - 1);
       TextColor tc = concreteColor(strip[idx]);
@@ -1001,7 +999,7 @@ public final class EvolveScoreboardManager {
    */
   private static String buildStoppedBar(
       RarityConfig[] strip, List<EnchantOption> opts, int highlighted, boolean isSelected) {
-    StringBuilder sb = new StringBuilder(" &8| ");
+    StringBuilder sb = new StringBuilder(" ");
     int[] resultAt = {-1, -1, 0, -1, 1, -1, 2, -1, -1};
     for (int p = 0; p < 9; p++) {
       int optIdx = resultAt[p];
@@ -1098,8 +1096,7 @@ public final class EvolveScoreboardManager {
     FileConfiguration msgs = ConfigRegistry.getInstance().get(ConfigNames.MESSAGES);
     String raw =
         msgs.getString(
-            ConfigPaths.Messages.Pickaxe.PRESTIGE_SCOREBOARD_LINE,
-            " &8| &5&lPrestige &d" + prestige);
+            ConfigPaths.Messages.Pickaxe.PRESTIGE_SCOREBOARD_LINE, " &5&lPrestige &d" + prestige);
     String formatted =
         Utils.formatMessage(
             player,

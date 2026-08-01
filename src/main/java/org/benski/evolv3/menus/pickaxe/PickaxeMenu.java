@@ -333,11 +333,11 @@ public class PickaxeMenu extends BaseMenu {
       String storageAction =
           menus.getString(
               ConfigPaths.Menus.PickaxeMenu.STORAGE_ACTION_LINE,
-              " &8| &aLeft-Click &#AAAAAAto open pickaxe storage");
+              " &aLeft-Click &#AAAAAAto open pickaxe storage");
       String repairAction =
           menus.getString(
               ConfigPaths.Menus.PickaxeMenu.REPAIR_ACTION_LINE,
-              " &8| &#FFEE00Right-Click &#AAAAAAto repair &#777777(&#E8890A5 &#777777Ancient Resin)");
+              " &#FFEE00Right-Click &#AAAAAAto repair &#777777(&#E8890A5 &#777777Ancient Resin)");
       ItemMeta displayMeta = display.getItemMeta();
       if (displayMeta != null) {
         List<Component> lore = displayMeta.lore();
@@ -564,11 +564,11 @@ public class PickaxeMenu extends BaseMenu {
     String stonesFilledLine =
         menusConfig.getString(
             ConfigPaths.Menus.PickaxeMenu.STONES_FILLED_LINE,
-            " &8| &#888888Stone {index}: &#{hex}{rarity} {enchant} Stone");
+            " &#888888Stone {index}: &#{hex}{rarity} {enchant} Stone");
     String stonesEmptyLine =
         menusConfig.getString(
             ConfigPaths.Menus.PickaxeMenu.STONES_EMPTY_LINE,
-            " &8| &#444444Stone {index}: &#333333Empty");
+            " &#444444Stone {index}: &#333333Empty");
     String stonesActionLine =
         menusConfig.getString(
             ConfigPaths.Menus.PickaxeMenu.STONES_ACTION_LINE,
@@ -593,7 +593,7 @@ public class PickaxeMenu extends BaseMenu {
               boolean firstChunk = true;
               for (String word : words) {
                 if (!chunk.isEmpty() && chunk.length() + word.length() + 1 > 30) {
-                  String template = firstChunk ? stonesFilledLine : " &8| &#{hex}{effect}";
+                  String template = firstChunk ? stonesFilledLine : " &#{hex}{effect}";
                   lore.add(
                       deserialize(
                           formatMessage(
@@ -609,7 +609,7 @@ public class PickaxeMenu extends BaseMenu {
                 chunk.append(word).append(" ");
               }
               if (!chunk.isEmpty()) {
-                String template = firstChunk ? stonesFilledLine : " &8| &#{hex}{effect}";
+                String template = firstChunk ? stonesFilledLine : " &#{hex}{effect}";
                 lore.add(
                     deserialize(
                         formatMessage(
@@ -811,7 +811,6 @@ public class PickaxeMenu extends BaseMenu {
    */
   private void playOpeningShutter(Player player) {
     UUID uuid = player.getUniqueId();
-    playShutterSound(player);
     runFrameRamp(
         player,
         ShutterFrames.FRAME_COUNT,
@@ -824,6 +823,7 @@ public class PickaxeMenu extends BaseMenu {
         () -> {
           shutterFrame.remove(uuid);
           updateTitle(player);
+          stopShutterSound(player);
 
           Inventory inventory = openInventories.get(uuid);
           PlayerDataCenter pdc = DataCenterRegistry.getInstance().getPlayerDataCenter();
@@ -945,8 +945,8 @@ public class PickaxeMenu extends BaseMenu {
       if (line.contains("Left-Click") && line.contains("evolve")) {
         processedLore.add(
             canEvolve
-                ? " &8| &aLeft-Click &#AAAAAAto fill the canister."
-                : " &8| &#888888Not enough evolution points.");
+                ? " &aLeft-Click &#AAAAAAto fill the canister."
+                : " &#888888Not enough evolution points.");
       } else {
         processedLore.add(line);
       }
@@ -977,9 +977,7 @@ public class PickaxeMenu extends BaseMenu {
     for (String line : rawLore) {
       if (line.contains("Left-Click") && line.contains("roll")) {
         processedLore.add(
-            canRoll
-                ? " &8| &aLeft-Click &#AAAAAAto roll an enchant."
-                : " &8| &#888888Not enough essence.");
+            canRoll ? " &aLeft-Click &#AAAAAAto roll an enchant." : " &#888888Not enough essence.");
       } else {
         processedLore.add(line);
       }

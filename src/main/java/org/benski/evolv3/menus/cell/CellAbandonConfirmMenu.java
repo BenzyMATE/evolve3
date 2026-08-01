@@ -61,12 +61,12 @@ public class CellAbandonConfirmMenu extends BaseMenu {
             .lore(
                 "",
                 " &f&lINFO",
-                " &8| &#888888Your cell will be reset.",
-                " &8| &#888888All expansions will be lost.",
+                " &#888888Your cell will be reset.",
+                " &#888888All expansions will be lost.",
                 "",
-                " &8| &#FF5555This cannot be undone.",
+                " &#FF5555This cannot be undone.",
                 "",
-                " &8| &aLeft-click &#AAAAAAto confirm.",
+                " &aLeft-click &#AAAAAAto confirm.",
                 "")
             .build());
 

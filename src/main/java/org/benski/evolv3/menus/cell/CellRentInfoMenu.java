@@ -211,9 +211,7 @@ public class CellRentInfoMenu extends BaseMenu {
         .lore(
             "&#888888Cost: " + totalStr,
             "",
-            canRent
-                ? " &8| &aLeft-click &#AAAAAAto rent."
-                : " &8| &#FF5555You cannot rent right now.")
+            canRent ? " &aLeft-click &#AAAAAAto rent." : " &#FF5555You cannot rent right now.")
         .build();
   }
 
