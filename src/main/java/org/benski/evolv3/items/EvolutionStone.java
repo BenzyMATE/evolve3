@@ -86,13 +86,12 @@ public final class EvolutionStone {
 
     String stoneNameTemplate =
         cfg != null
-            ? cfg.getString(ConfigPaths.Stones.Item.NAME, "&#{hex}◆ &l{stone_name}")
-            : "&#{hex}◆ &l{stone_name}";
+            ? cfg.getString(ConfigPaths.Stones.Item.NAME, "&#{hex}&l{stone_name}")
+            : "&#{hex}&l{stone_name}";
     String rarityLineTemplate =
         cfg != null
-            ? cfg.getString(
-                ConfigPaths.Stones.Item.RARITY_LINE, " &#{hex}&l{rarity} &#888888Evolution Stone")
-            : " &#{hex}&l{rarity} &#888888Evolution Stone";
+            ? cfg.getString(ConfigPaths.Stones.Item.RARITY_LINE, " &f{rarity}")
+            : " &f{rarity}";
     String boundTemplate =
         cfg != null
             ? cfg.getString(
@@ -104,8 +103,8 @@ public final class EvolutionStone {
             : " &#FFFFFF&lEffect";
     String effectTemplate =
         cfg != null
-            ? cfg.getString(ConfigPaths.Stones.Item.EFFECT_LINE, " &8| &#CCCCCC{effect}")
-            : " &8| &#CCCCCC{effect}";
+            ? cfg.getString(ConfigPaths.Stones.Item.EFFECT_LINE, " &#CCCCCC{effect}")
+            : " &#CCCCCC{effect}";
     List<String> applyHint =
         cfg != null
             ? cfg.getStringList(ConfigPaths.Stones.Item.APPLY_HINT)
@@ -127,12 +126,10 @@ public final class EvolutionStone {
         ds(stoneNameTemplate.replace("{hex}", rarityHex).replace("{stone_name}", stoneName)));
 
     List<Component> lore = new ArrayList<>();
-    String rarityLabel =
+    String tagsLabel =
         (rarityGlyph != null ? rarityGlyph : "")
-            + (evolutionStoneGlyph != null ? evolutionStoneGlyph : "")
-            + " "
-            + rarity.displayName();
-    lore.add(ds(rarityLineTemplate.replace("{hex}", rarityHex).replace("{rarity}", rarityLabel)));
+            + (evolutionStoneGlyph != null ? evolutionStoneGlyph : "");
+    lore.add(ds(rarityLineTemplate.replace("{hex}", rarityHex).replace("{rarity}", tagsLabel)));
     lore.add(
         ds(
             boundTemplate

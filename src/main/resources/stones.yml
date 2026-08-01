@@ -4,7 +4,7 @@
 # Tokens available:
 #   {hex}         - stone rarity colour as RRGGBB (no #)
 #   {enchant_hex} - enchant's own rarity colour as RRGGBB (no #)
-#   {rarity}      - rarity display name (e.g. "Common")
+#   {rarity}      - rarity/type tag icons (rendered via resourcepack font)
 #   {stone_name}  - unique stone name (e.g. "Hyperdrive")
 #   {enchant}     - enchant display name (e.g. "Efficiency")
 #   {effect}      - effect text (one wrapped line at a time)
@@ -12,8 +12,8 @@
 # =====================================================
 
 Item:
-  Name: "&#{hex}◆ &l{stone_name} &7Evolution stone"
-  RarityLine: "&#{hex}{rarity}"
+  Name: "&#{hex}&l{stone_name}"
+  RarityLine: " &f{rarity}"
   # Custom model data applied per rarity, matching the range_dispatch thresholds in
   # resource-pack/assets/minecraft/items/nether_star.json. A rarity missing here (or a value of 0)
   # falls back to the vanilla nether star model.
@@ -25,7 +25,7 @@ Item:
     Legendary: 5
   BoundTo: " &#888888Bound to &#{enchant_hex}&l{enchant}"
   EffectHeader: " &#FFFFFF&lEffect"
-  EffectLine: " &8| &#CCCCCC{effect}"
+  EffectLine: " &#CCCCCC{effect}"
   ApplyHint:
     - " &#555555Apply via the Pickaxe Menu."
     - " &#555555Shift+Right-Click an enchant"
