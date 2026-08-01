@@ -1360,7 +1360,7 @@ public final class ConfigPaths {
 
       public static final String NAME = "Item.Name";
 
-      /** Rarity + "Evolution Stone" line shown as first lore entry. */
+      /** Rarity/type tag icon line shown as first lore entry. */
       public static final String RARITY_LINE = "Item.RarityLine";
 
       public static final String BOUND_TO = "Item.BoundTo";
@@ -1381,10 +1381,11 @@ public final class ConfigPaths {
     public static final class SocketMenu {
       private SocketMenu() {}
 
-      public static final String FILLED_NAME = "Socket Menu.Filled Stone.Name";
-      public static final String FILLED_RARITY_LINE = "Socket Menu.Filled Stone.RarityLine";
-      public static final String FILLED_EFFECT_HEADER = "Socket Menu.Filled Stone.EffectHeader";
-      public static final String FILLED_EFFECT_LINE = "Socket Menu.Filled Stone.EffectLine";
+      /**
+       * Footer hint appended after the shared stone lore (see {@link
+       * org.benski.evolv3.items.EvolutionStone#buildSharedLore}) when a socket is filled. This is
+       * the only line that differs from the held item's own lore.
+       */
       public static final String FILLED_REMOVE_HINT = "Socket Menu.Filled Stone.RemoveHint";
 
       public static final String EMPTY_NAME = "Socket Menu.Empty Socket.Name";

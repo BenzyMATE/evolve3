@@ -759,6 +759,7 @@ public class PickaxeMenu extends BaseMenu {
     // concurrently with the manual per-frame updateTitle() calls below — running both at once was
     // sending overlapping title updates and was the main source of the flicker.
     stopTitleUpdateTask(player);
+    playShutterSound(player);
     runFrameRamp(
         player,
         1,
@@ -810,6 +811,7 @@ public class PickaxeMenu extends BaseMenu {
    */
   private void playOpeningShutter(Player player) {
     UUID uuid = player.getUniqueId();
+    playShutterSound(player);
     runFrameRamp(
         player,
         ShutterFrames.FRAME_COUNT,

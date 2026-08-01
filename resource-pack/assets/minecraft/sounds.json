@@ -9,19 +9,24 @@
       "custom/flying_towards_essence"
     ]
   },
-    "custom.flyingtowardsatom": {
+  "custom.flyingtowardsatom": {
     "sounds": [
       "custom/flying_towards_atoms"
     ]
   },
-    "custom.burstatoms": {
+  "custom.burstatoms": {
     "sounds": [
       "custom/burst_atoms"
     ]
   },
-    "custom.burstessence": {
+  "custom.burstessence": {
     "sounds": [
       "custom/burst_essence"
+    ]
+  },
+  "custom.shutter": {
+    "sounds": [
+      "custom/shutter"
     ]
   }
 }

@@ -12,7 +12,7 @@
 # =====================================================
 
 Item:
-  Name: "&#{hex}&l{stone_name}"
+  Name: " &#{hex}&l{stone_name}"
   RarityLine: " &f{rarity}"
   # Custom model data applied per rarity, matching the range_dispatch thresholds in
   # resource-pack/assets/minecraft/items/nether_star.json. A rarity missing here (or a value of 0)
@@ -32,12 +32,10 @@ Item:
     - " &#555555slot to socket this stone."
 
 Socket Menu:
+  # The filled-socket display reuses the held stone's own name/lore (Item: section above) so the
+  # two stay in sync. Only this footer line differs, replacing the held item's ApplyHint.
   Filled Stone:
-    Name: "&#{hex}◆ &l{stone_name}"
-    RarityLine: " &#{hex}&l{rarity} &#888888Evolution Stone &8— &#{enchant_hex}{enchant}"
-    EffectHeader: " &#FFFFFF&lPassive Effect"
-    EffectLine: " &8| &#{hex}{effect}"
-    RemoveHint: " &8| &cRight-Click &#AAAAAAto remove this stone."
+    RemoveHint: " &cLeft-Click &#AAAAAAto remove this stone."
   Empty Socket:
     Name: "&#888888Socket {index} &#444444\u2014 Empty"
     HowToHeader: " &#FFFFFF&lHow to Socket"

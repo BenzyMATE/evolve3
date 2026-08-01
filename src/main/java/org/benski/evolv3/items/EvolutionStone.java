@@ -73,38 +73,8 @@ public final class EvolutionStone {
    */
   public static ItemStack create(RarityConfig rarity, String enchantDisplayName) {
     String rarityKey = rarity.displayName().toLowerCase();
-    String rarityGlyph = ItemTagHelper.getRarityGlyph(rarityKey);
-    String evolutionStoneGlyph = ItemTagHelper.getTypeGlyph("evolution_stone");
-    String rarityHex = String.format("%06X", rarity.textColor().value());
-
-    var enchantOption = EnchantAnimationConfig.getOption(enchantDisplayName);
-    var enchantRarity = enchantOption != null ? enchantOption.rarity() : null;
-    String enchantRarityHex =
-        enchantRarity != null ? String.format("%06X", enchantRarity.textColor().value()) : "CCCCCC";
-
     FileConfiguration cfg = ConfigRegistry.getInstance().get(ConfigNames.STONES);
 
-    String stoneNameTemplate =
-        cfg != null
-            ? cfg.getString(ConfigPaths.Stones.Item.NAME, "&#{hex}&l{stone_name}")
-            : "&#{hex}&l{stone_name}";
-    String rarityLineTemplate =
-        cfg != null
-            ? cfg.getString(ConfigPaths.Stones.Item.RARITY_LINE, " &f{rarity}")
-            : " &f{rarity}";
-    String boundTemplate =
-        cfg != null
-            ? cfg.getString(
-                ConfigPaths.Stones.Item.BOUND_TO, " &#888888Bound to &#FFFFFF&l{enchant}")
-            : " &#888888Bound to &#FFFFFF&l{enchant}";
-    String effectHeader =
-        cfg != null
-            ? cfg.getString(ConfigPaths.Stones.Item.EFFECT_HEADER, " &#FFFFFF&lEffect")
-            : " &#FFFFFF&lEffect";
-    String effectTemplate =
-        cfg != null
-            ? cfg.getString(ConfigPaths.Stones.Item.EFFECT_LINE, " &#CCCCCC{effect}")
-            : " &#CCCCCC{effect}";
     List<String> applyHint =
         cfg != null
             ? cfg.getStringList(ConfigPaths.Stones.Item.APPLY_HINT)
@@ -113,35 +83,13 @@ public final class EvolutionStone {
                 " &#555555Shift+Right-Click an enchant",
                 " &#555555slot to socket this stone.");
 
-    String internalName = enchantDisplayName.toLowerCase();
-    String stoneName = StoneEffectRegistry.getName(internalName, rarity.displayName());
-    if (stoneName == null) stoneName = rarity.displayName() + " Evolution Stone";
-    String effectText = StoneEffectRegistry.getEffect(internalName, rarity.displayName());
-
     ItemStack item = new ItemStack(Material.NETHER_STAR);
     ItemMeta meta = item.getItemMeta();
     if (meta == null) return item;
 
-    meta.displayName(
-        ds(stoneNameTemplate.replace("{hex}", rarityHex).replace("{stone_name}", stoneName)));
+    meta.displayName(buildDisplayName(rarity, enchantDisplayName));
 
-    List<Component> lore = new ArrayList<>();
-    String tagsLabel =
-        (rarityGlyph != null ? rarityGlyph : "")
-            + (evolutionStoneGlyph != null ? evolutionStoneGlyph : "");
-    lore.add(ds(rarityLineTemplate.replace("{hex}", rarityHex).replace("{rarity}", tagsLabel)));
-    lore.add(
-        ds(
-            boundTemplate
-                .replace("{hex}", rarityHex)
-                .replace("{enchant_hex}", enchantRarityHex)
-                .replace("{enchant}", enchantDisplayName)));
-    lore.add(Component.empty());
-    lore.add(ds(effectHeader));
-    for (String chunk : org.benski.evolv3.core.helpers.Utils.wrapWords(effectText, 5)) {
-      lore.add(ds(effectTemplate.replace("{effect}", chunk)));
-    }
-    lore.add(Component.empty());
+    List<Component> lore = new ArrayList<>(buildSharedLore(rarity, enchantDisplayName));
     for (String hint : applyHint) {
       lore.add(ds(hint));
     }
@@ -175,6 +123,96 @@ public final class EvolutionStone {
     item.setItemMeta(meta);
     ItemTagHelper.applyTooltipStyle(item, rarityKey);
     return item;
+  }
+
+  /**
+   * Builds the display name shown for a stone of the given rarity and enchant binding. Shared by
+   * the held item ({@link #create}) and its socketed-slot display in {@code StoneSocketMenu}, so
+   * both stay in sync.
+   *
+   * @param rarity the stone rarity
+   * @param enchantDisplayName the enchant this stone is bound to (e.g. "Efficiency")
+   * @return the formatted display name component
+   */
+  public static Component buildDisplayName(RarityConfig rarity, String enchantDisplayName) {
+    String rarityHex = String.format("%06X", rarity.textColor().value());
+    FileConfiguration cfg = ConfigRegistry.getInstance().get(ConfigNames.STONES);
+
+    String stoneNameTemplate =
+        cfg != null
+            ? cfg.getString(ConfigPaths.Stones.Item.NAME, "&#{hex}&l{stone_name}")
+            : "&#{hex}&l{stone_name}";
+
+    String stoneName =
+        StoneEffectRegistry.getName(enchantDisplayName.toLowerCase(), rarity.displayName());
+    if (stoneName == null) stoneName = rarity.displayName() + " Evolution Stone";
+
+    return ds(stoneNameTemplate.replace("{hex}", rarityHex).replace("{stone_name}", stoneName));
+  }
+
+  /**
+   * Builds the lore lines shared between a held Evolution Stone ({@link #create}) and its
+   * socketed-slot display in {@code StoneSocketMenu}: the rarity/type tag line, the
+   * bound-to-enchant line, and the passive effect block, ending with a blank separator line.
+   * Callers append their own trailing footer lines (e.g. apply or remove hints) so the two displays
+   * stay identical apart from that footer.
+   *
+   * @param rarity the stone rarity
+   * @param enchantDisplayName the enchant this stone is bound to (e.g. "Efficiency")
+   * @return the shared lore lines, ending with a blank separator line
+   */
+  public static List<Component> buildSharedLore(RarityConfig rarity, String enchantDisplayName) {
+    String rarityKey = rarity.displayName().toLowerCase();
+    String rarityGlyph = ItemTagHelper.getRarityGlyph(rarityKey);
+    String evolutionStoneGlyph = ItemTagHelper.getTypeGlyph("evolution_stone");
+    String rarityHex = String.format("%06X", rarity.textColor().value());
+
+    var enchantOption = EnchantAnimationConfig.getOption(enchantDisplayName);
+    var enchantRarity = enchantOption != null ? enchantOption.rarity() : null;
+    String enchantRarityHex =
+        enchantRarity != null ? String.format("%06X", enchantRarity.textColor().value()) : "CCCCCC";
+
+    FileConfiguration cfg = ConfigRegistry.getInstance().get(ConfigNames.STONES);
+
+    String rarityLineTemplate =
+        cfg != null
+            ? cfg.getString(ConfigPaths.Stones.Item.RARITY_LINE, " &f{rarity}")
+            : " &f{rarity}";
+    String boundTemplate =
+        cfg != null
+            ? cfg.getString(
+                ConfigPaths.Stones.Item.BOUND_TO, " &#888888Bound to &#FFFFFF&l{enchant}")
+            : " &#888888Bound to &#FFFFFF&l{enchant}";
+    String effectHeader =
+        cfg != null
+            ? cfg.getString(ConfigPaths.Stones.Item.EFFECT_HEADER, " &#FFFFFF&lEffect")
+            : " &#FFFFFF&lEffect";
+    String effectTemplate =
+        cfg != null
+            ? cfg.getString(ConfigPaths.Stones.Item.EFFECT_LINE, " &#CCCCCC{effect}")
+            : " &#CCCCCC{effect}";
+
+    String internalName = enchantDisplayName.toLowerCase();
+    String effectText = StoneEffectRegistry.getEffect(internalName, rarity.displayName());
+
+    List<Component> lore = new ArrayList<>();
+    String tagsLabel =
+        (rarityGlyph != null ? rarityGlyph : "")
+            + (evolutionStoneGlyph != null ? evolutionStoneGlyph : "");
+    lore.add(ds(rarityLineTemplate.replace("{hex}", rarityHex).replace("{rarity}", tagsLabel)));
+    lore.add(
+        ds(
+            boundTemplate
+                .replace("{hex}", rarityHex)
+                .replace("{enchant_hex}", enchantRarityHex)
+                .replace("{enchant}", enchantDisplayName)));
+    lore.add(Component.empty());
+    lore.add(ds(effectHeader));
+    for (String chunk : org.benski.evolv3.core.helpers.Utils.wrapWords(effectText, 5)) {
+      lore.add(ds(effectTemplate.replace("{effect}", chunk)));
+    }
+    lore.add(Component.empty());
+    return lore;
   }
 
   /**

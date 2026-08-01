@@ -16,9 +16,9 @@ import org.benski.evolv3.core.constants.ConfigPaths;
 import org.benski.evolv3.core.constants.PixelSpace;
 import org.benski.evolv3.core.constants.ShutterFrames;
 import org.benski.evolv3.core.helpers.ItemStackExtensions;
+import org.benski.evolv3.core.helpers.ItemTagHelper;
 import org.benski.evolv3.core.helpers.VesselProgress;
 import org.benski.evolv3.core.managers.enchant.EnchantAnimationConfig;
-import org.benski.evolv3.core.managers.enchant.StoneEffectRegistry;
 import org.benski.evolv3.core.managers.pickaxe.PickaxeManager;
 import org.benski.evolv3.core.types.MenuType;
 import org.benski.evolv3.core.types.RarityConfig;
@@ -45,15 +45,15 @@ import org.bukkit.plugin.java.JavaPlugin;
  *
  * <p>Open this menu by shift+left-clicking an enchant slot in {@link PickaxeMenu}. The menu
  * displays three socket slots showing any applied stones along with their passive effect
- * descriptions. Players apply stones from their cursor and remove them with right-click.
+ * descriptions. Players apply and remove stones with left-click.
  *
  * <h3>Socket interactions</h3>
  *
  * <ul>
  *   <li><b>Left-click on socket with an Evolution Stone on cursor</b> — applies the stone to that
  *       socket. Any previously socketed stone is returned to the player's inventory.
- *   <li><b>Right-click on an occupied socket</b> — removes the stone and returns it to the player's
- *       inventory.
+ *   <li><b>Left-click on an occupied socket with an empty (or non-stone) cursor</b> — removes the
+ *       stone and returns it to the player's inventory.
  *   <li><b>Back button (slots 20-21)</b> — closes this menu and re-opens the Pickaxe Menu.
  * </ul>
  */
@@ -241,6 +241,7 @@ public class StoneSocketMenu extends BaseMenu {
    */
   private void playOpeningShutter(Player player) {
     UUID uuid = player.getUniqueId();
+    playShutterSound(player);
     runFrameRamp(
         player,
         ShutterFrames.FRAME_COUNT,
@@ -659,6 +660,7 @@ public class StoneSocketMenu extends BaseMenu {
     boolean[] headerCleared = {false};
     boolean[] socketsCleared = {false};
 
+    playShutterSound(player);
     runFrameRamp(
         player,
         1,
@@ -708,9 +710,18 @@ public class StoneSocketMenu extends BaseMenu {
     EnchantData enchant = profile.enchants.getEnchant(displayName.toLowerCase());
     if (enchant == null) return;
 
-    if (event.isRightClick()) {
+    if (!event.isLeftClick()) return;
+
+    ItemStack cursor = event.getCursor();
+    if (!EvolutionStone.isEvolutionStone(cursor)) {
       String existing = enchant.socketStones[socketIndex];
-      if (existing == null) return;
+      if (existing == null) {
+        player.sendMessage(
+            formatMessage(
+                player,
+                "%evolv3_prefix% &#CCCCCCHold an &#00FFFFEvolution Stone &#CCCCCCin your cursor to socket it."));
+        return;
+      }
 
       RarityConfig rarity = EnchantAnimationConfig.getRarityByName(existing);
       if (rarity != null) {
@@ -725,15 +736,6 @@ public class StoneSocketMenu extends BaseMenu {
       profile.save(null);
       player.playSound(player.getLocation(), Sound.BLOCK_AMETHYST_BLOCK_BREAK, 0.8f, 1.0f);
       refresh(player);
-      return;
-    }
-
-    ItemStack cursor = event.getCursor();
-    if (!EvolutionStone.isEvolutionStone(cursor)) {
-      player.sendMessage(
-          formatMessage(
-              player,
-              "%evolv3_prefix% &#CCCCCCHold an &#00FFFFEvolution Stone &#CCCCCCin your cursor to socket it."));
       return;
     }
 
@@ -827,7 +829,7 @@ public class StoneSocketMenu extends BaseMenu {
     lore.add(Component.empty());
     lore.add(format(player, " &#FFFFFF&lSocket Guide"));
     lore.add(format(player, " &8| &aLeft-Click &#AAAAAAa socket with a stone to apply."));
-    lore.add(format(player, " &8| &cRight-Click &#AAAAAAan occupied socket to remove."));
+    lore.add(format(player, " &8| &cLeft-Click &#AAAAAAan occupied socket to remove."));
     lore.add(Component.empty());
     meta.lore(lore);
     item.setItemMeta(meta);
@@ -844,72 +846,22 @@ public class StoneSocketMenu extends BaseMenu {
     if (storedRarity != null) {
       RarityConfig rarity = EnchantAnimationConfig.getRarityByName(storedRarity);
       if (rarity != null) {
-        String rarityHex = String.format("%06X", rarity.textColor().value());
-        String internalName = enchantDisplayName.toLowerCase();
-        String effectText = StoneEffectRegistry.getEffect(internalName, storedRarity);
-
-        var enchantOption = EnchantAnimationConfig.getOption(enchantDisplayName);
-        var enchantRarConfig = enchantOption != null ? enchantOption.rarity() : null;
-        String enchantRarityHex =
-            enchantRarConfig != null
-                ? String.format("%06X", enchantRarConfig.textColor().value())
-                : "CCCCCC";
-
-        String stoneName = StoneEffectRegistry.getName(internalName, storedRarity);
-        if (stoneName == null) stoneName = storedRarity + " Evolution Stone";
-
-        String nameTemplate =
-            cfg != null
-                ? cfg.getString(
-                    ConfigPaths.Stones.SocketMenu.FILLED_NAME, "&#{hex}◆ &l{stone_name}")
-                : "&#{hex}◆ &l{stone_name}";
-        String rarityTemplate =
-            cfg != null
-                ? cfg.getString(
-                    ConfigPaths.Stones.SocketMenu.FILLED_RARITY_LINE,
-                    " &#{hex}&l{rarity} &#888888Evolution Stone")
-                : " &#{hex}&l{rarity} &#888888Evolution Stone";
-        String effectHeader =
-            cfg != null
-                ? cfg.getString(
-                    ConfigPaths.Stones.SocketMenu.FILLED_EFFECT_HEADER, " &#FFFFFF&lPassive Effect")
-                : " &#FFFFFF&lPassive Effect";
-        String effectTemplate =
-            cfg != null
-                ? cfg.getString(
-                    ConfigPaths.Stones.SocketMenu.FILLED_EFFECT_LINE, " &8| &#{hex}{effect}")
-                : " &8| &#{hex}{effect}";
         String removeHint =
             cfg != null
                 ? cfg.getString(
                     ConfigPaths.Stones.SocketMenu.FILLED_REMOVE_HINT,
-                    " &8| &cRight-Click &#AAAAAAto remove this stone.")
-                : " &8| &cRight-Click &#AAAAAAto remove this stone.";
+                    " &cLeft-Click &#AAAAAAto remove this stone.")
+                : " &cLeft-Click &#AAAAAAto remove this stone.";
 
-        Component name =
-            format(
-                player,
-                nameTemplate.replace("{hex}", rarityHex).replace("{stone_name}", stoneName));
-        List<Component> lore = new ArrayList<>();
-        lore.add(
-            format(
-                player,
-                rarityTemplate
-                    .replace("{hex}", rarityHex)
-                    .replace("{rarity}", storedRarity)
-                    .replace("{enchant_hex}", enchantRarityHex)
-                    .replace("{enchant}", enchantDisplayName)));
-        lore.add(Component.empty());
-        lore.add(format(player, effectHeader));
-        for (String chunk : org.benski.evolv3.core.helpers.Utils.wrapWords(effectText, 5)) {
-          lore.add(
-              format(
-                  player, effectTemplate.replace("{hex}", rarityHex).replace("{effect}", chunk)));
-        }
-        lore.add(Component.empty());
+        Component name = EvolutionStone.buildDisplayName(rarity, enchantDisplayName);
+        List<Component> lore =
+            new ArrayList<>(EvolutionStone.buildSharedLore(rarity, enchantDisplayName));
         lore.add(format(player, removeHint));
         lore.add(Component.empty());
-        return buildInvisibleMapItem(name, lore);
+
+        ItemStack item = buildInvisibleMapItem(name, lore);
+        ItemTagHelper.applyTooltipStyle(item, storedRarity.toLowerCase());
+        return item;
       }
     }
 
