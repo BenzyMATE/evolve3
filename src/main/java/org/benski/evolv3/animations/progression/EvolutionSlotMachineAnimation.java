@@ -34,35 +34,46 @@ import org.joml.Vector3f;
 /**
  * Evolution animation variant — "Jackpot Reels".
  *
- * <p>After the shared gold atom cast, twin portals tear open — one above, one below — and the
- * pickaxe lifts out of the player's hand, floating up into the top portal and vanishing inside it.
- * Between the two portals, three reels of spinning stones flicker through every rarity like a slot
- * machine, each reel locking into place in turn until all three show the same colour down the
- * middle: a win. The top row of stones is sucked up into the top portal, the bottom row is sucked
- * down into the bottom portal, and the two stones flanking the centre fizzle away — leaving only
- * the winning stone, whose name is revealed. The portals then release the pickaxe, now evolved,
- * back out of the bottom portal to rest beside its prize, and both fly back to the player.
+ * <p>After the shared gold atom cast — timed exactly like the enchant rift's cast/converge/split
+ * swirl-open sequence, so the same custom sounds land on the same beats — twin portals tear open,
+ * one above, one below, and the pickaxe lifts out of the player's hand, floating up into the top
+ * portal and vanishing inside it. Between the two portals, three reels of spinning stones flicker
+ * through every rarity like a slot machine, each reel locking into place in turn until all three
+ * show the same colour down the middle: a win. The top row of stones is sucked up into the top
+ * portal, the bottom row is sucked down into the bottom portal, and the two stones flanking the
+ * centre fizzle away — leaving only the winning stone, whose name is revealed. The portals then
+ * release the pickaxe, now evolved, back out of the bottom portal to rest beside its prize. Both
+ * portals stay open, shimmering, for the rest of the animation and only collapse in a single burst
+ * — exactly like the enchant rift's closing rifts, with the same sound — once the pickaxe and stone
+ * have swept back to the player.
  *
  * <p>Phase overview:
  *
  * <ol>
- *   <li>Cast ( 0– 16) Shared gold atom burst.
- *   <li>Portals Open ( 16– 36) Twin portals swirl open above and below.
- *   <li>Ascend ( 36– 58) The held pickaxe floats up into the top portal and is sucked in.
- *   <li>Spin ( 58–106) Three reels of stones spin, locking one by one.
- *   <li>Reveal (106) The middle row matches — a win. Tier change applied here.
- *   <li>Suck (106–128) Top row sucked up, bottom row sucked down, side stones fizzle out.
- *   <li>Stone Reveal (130) The surviving stone's name is revealed.
- *   <li>Descend (130–158) The evolved pickaxe emerges from the bottom portal; portals collapse.
- *   <li>Float (158–188) Both items hover.
- *   <li>Return (188–208) Both items sweep back to the player.
+ *   <li>Cast ( 0– 15) Shared gold atom burst; essence converges on the machine.
+ *   <li>Portals Open ( 15– 45) Twin portals swirl open above and below.
+ *   <li>Ascend ( 45– 67) The held pickaxe floats up into the top portal and is sucked in.
+ *   <li>Spin ( 67–115) Three reels of stones spin, locking one by one.
+ *   <li>Reveal (115) The middle row matches — a win. Tier change applied here.
+ *   <li>Suck (115–137) Top row sucked up, bottom row sucked down, side stones fizzle out.
+ *   <li>Stone Reveal (139) The surviving stone's name is revealed.
+ *   <li>Descend (139–167) The evolved pickaxe emerges from the bottom portal; portals stay open.
+ *   <li>Float (167–197) Both items hover; portals keep shimmering behind them.
+ *   <li>Return (197–217) Both items sweep back to the player; portals collapse in one final burst.
  * </ol>
  */
 public class EvolutionSlotMachineAnimation implements EvolutionAnimation {
-  private static final int CAST_END = 16;
-  private static final int CONVERGE_END = CAST_END + 12;
-  private static final int SPLIT_END = CONVERGE_END + 8;
-  private static final int PORTAL_OPEN_END = SPLIT_END + 18;
+  /**
+   * These four durations mirror {@link RiftAnimation}'s cast/converge/split/swirl-open sequence
+   * tick-for-tick (its {@code CAST_CONVERGE_TICKS}, {@code SPLIT_TRAVEL_TICKS}, and {@code
+   * SWIRL_OPEN_TICKS}) so the shared custom sounds — tuned to that timing — land on the same beats
+   * here instead of dragging out the opening.
+   */
+  private static final int CAST_END = 0;
+
+  private static final int CONVERGE_END = CAST_END + 15;
+  private static final int SPLIT_END = CONVERGE_END + 10;
+  private static final int PORTAL_OPEN_END = SPLIT_END + 20;
   private static final int ASCEND_END = PORTAL_OPEN_END + 22;
   private static final int COL1_STOP = ASCEND_END + 24;
   private static final int COL2_STOP = COL1_STOP + 12;
@@ -255,7 +266,7 @@ public class EvolutionSlotMachineAnimation implements EvolutionAnimation {
       tickSpellSplit(world);
     } else if (currentTick > SPLIT_END && currentTick <= PORTAL_OPEN_END) {
       tickSwirlOpen(world);
-    } else if (currentTick > PORTAL_OPEN_END && currentTick <= DESCEND_END) {
+    } else if (currentTick > PORTAL_OPEN_END && currentTick <= RETURN_END) {
       tickPortalAmbience(world);
     }
 
@@ -341,9 +352,6 @@ public class EvolutionSlotMachineAnimation implements EvolutionAnimation {
           0,
           new Particle.DustOptions(EvolutionCastEffects.ATOM_GOLD, 1.3f));
       world.spawnParticle(Particle.END_ROD, pos, 1, 0.02, 0.02, 0.02, 0.005);
-    }
-    if (sinceSplit == 1) {
-      world.playSound(machineCenter, "custom.magiccastwhoosh", 0.45f, 1.4f);
     }
   }
 
@@ -692,8 +700,9 @@ public class EvolutionSlotMachineAnimation implements EvolutionAnimation {
   }
 
   /**
-   * The evolved pickaxe rises from the bottom portal as the stone slides aside to make room, while
-   * both portals collapse.
+   * The evolved pickaxe rises from the bottom portal as the stone slides aside to make room. Both
+   * portals stay fully open throughout — {@link #tickPortalAmbience} keeps them shimmering — and
+   * only collapse once, at the very end, via {@link #collapsePortals}.
    */
   @SuppressWarnings("deprecation")
   private void tickDescend(World world) {
@@ -732,15 +741,6 @@ public class EvolutionSlotMachineAnimation implements EvolutionAnimation {
       Location from = stoneNamePos;
       Location to = exitStoneFinalPos.clone().add(0, 0.9, 0);
       stoneNameText.teleport(lerp(from, to, eased));
-    }
-
-    double closeT = Math.min(1.0, t * 1.3);
-    double radius = PORTAL_RADIUS * (1 - closeT);
-    if (radius > 0.05) {
-      drawPortalRing(world, topPortal, radius, currentTick * 0.7);
-      drawPortalRing(world, bottomPortal, radius, -currentTick * 0.7);
-    } else if (currentTick % 10 == 0) {
-      world.playSound(machineCenter, "custom.vacuumsuckshort", 0.3f, 1.4f);
     }
 
     if (currentTick % 4 == 0) {
@@ -844,11 +844,33 @@ public class EvolutionSlotMachineAnimation implements EvolutionAnimation {
     }
   }
 
+  /**
+   * Collapses both portals in a single burst with a reverse-whoosh — exactly like {@link
+   * RiftAnimation#doComplete()} closes its rifts, same sound, gold instead of purple — played once
+   * as the whole animation wraps up rather than fading them out gradually mid-sequence.
+   */
+  private void collapsePortals(World world) {
+    world.playSound(machineCenter, "custom.vacuumsuckshort", 0.4f, 1.0f);
+    for (Location portal : new Location[] {topPortal, bottomPortal}) {
+      world.spawnParticle(
+          Particle.DUST,
+          portal,
+          20,
+          0.2,
+          0.4,
+          0.2,
+          0,
+          new Particle.DustOptions(EvolutionCastEffects.ATOM_GOLD, 1.6f));
+      world.spawnParticle(Particle.END_ROD, portal, 10, 0.15, 0.3, 0.15, 0.05);
+    }
+  }
+
   /** Deliver items. */
   @SuppressWarnings("deprecation")
   private void deliverItems(World world) {
     if (itemsReturned) return;
     itemsReturned = true;
+    collapsePortals(world);
     if (heldPickaxe != null && heldPickaxe.getType() != Material.AIR && player.isOnline()) {
       heldPickaxe.setType(nextTier.material);
       ItemStack cur = player.getInventory().getItem(heldSlot);
