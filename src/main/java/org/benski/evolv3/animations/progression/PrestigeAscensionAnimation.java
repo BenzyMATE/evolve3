@@ -4,12 +4,15 @@ import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.BiConsumer;
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextColor;
 import net.kyori.adventure.text.format.TextDecoration;
 import org.benski.evolv3.core.helpers.FontUtils;
 import org.benski.evolv3.core.helpers.Utils;
+import org.benski.evolv3.core.managers.enchant.EnchantAnimationConfig;
 import org.benski.evolv3.core.managers.enchant.StoneEffectRegistry;
 import org.benski.evolv3.core.managers.pickaxe.PrestigeManager;
+import org.benski.evolv3.core.types.RarityConfig;
 import org.benski.evolv3.items.EvolutionStone;
 import org.bukkit.Color;
 import org.bukkit.Location;
@@ -30,9 +33,9 @@ import org.joml.Vector3f;
 
 /**
  * The "epic" prestige animation — a single continuous world-space sequence combining the enchant
- * rift animation's twin-portal-and-look-to-select mechanic ({@link RiftAnimation}) with the
- * evolution slot machine's portal-transform-and-collapse mechanic ({@link
- * EvolutionSlotMachineAnimation}), replacing the old confirm-menu-then-GUI-slot-machine-then-flight
+ * rift animation's twin-portal-and-scrolling-reel mechanic ({@link RiftAnimation}/{@link
+ * EnchantAnimation}) with the evolution slot machine's portal-transform-and-collapse mechanic
+ * ({@link EvolutionSlotMachineAnimation}), replacing the old confirm-menu-then-GUI-slot-machine
  * flow entirely.
  *
  * <p>The pickaxe is never removed from the player's hand — {@code onSelect} triggers {@link
@@ -43,18 +46,20 @@ import org.joml.Vector3f;
  * <p>Phase overview:
  *
  * <ol>
- *   <li>Cast ( 0– 15) Tier-coloured burst at the player.
- *   <li>Converge/Split ( 15– 35) Essence spirals out to two rift sites.
- *   <li>Rifts Open ( 35– 55) Twin rifts spin open, flanking the player.
- *   <li>Stones Rise ( 55– 75) The three pre-rolled stones rise into view between the rifts.
- *   <li>Selection (75+) Player looks at a stone and left-clicks to choose it (auto-picks the first
- *       option after a long AFK grace period).
- *   <li>Forge ( selection+0–10) Unchosen stones sink and fizzle; the chosen stone is drawn into the
- *       right-hand rift. {@code onSelect} fires here — the prestige is applied immediately.
- *   <li>Burst ( selection+10–40) Tier-coloured explosion and "Prestige N Unlocked" title.
- *   <li>Glory ( selection+40–70) Halo of tier-coloured particles.
- *   <li>Collapse ( selection+70–75) Both rifts collapse in one burst; the stone settles near the
- *       player before the animation finishes.
+ *   <li>Cast — tier-coloured burst at the player.
+ *   <li>Converge/Split — essence spirals out to two rift sites.
+ *   <li>Rifts Open — twin rifts spin open, flanking the player.
+ *   <li>Reel — a strip of Evolution Stones (five visible at a time, evenly spaced) scrolls between
+ *       the rifts and decelerates onto three result slots, exactly like {@link EnchantAnimation}'s
+ *       strip.
+ *   <li>Scatter/Reveal — the non-result stones scatter away; each result's name types out above it.
+ *   <li>Selection — player looks at a result and left-clicks to choose it (auto-picks after a long
+ *       AFK grace period).
+ *   <li>Flight — unchosen stones sink and fizzle; the chosen one flies to the player's eye, exactly
+ *       like {@link EnchantAnimation}'s selection flourish. {@code onSelect} fires on arrival — the
+ *       prestige is applied immediately.
+ *   <li>Burst/Glory — tier-coloured explosion and "Prestige N Unlocked" title.
+ *   <li>Collapse — both rifts collapse in one burst; the animation finishes.
  * </ol>
  */
 public class PrestigeAscensionAnimation {
@@ -62,13 +67,41 @@ public class PrestigeAscensionAnimation {
   private static final int CONVERGE_END = CAST_END + 10;
   private static final int SPLIT_END = CONVERGE_END + 10;
   private static final int RIFTS_OPEN_END = SPLIT_END + 20;
-  private static final int STONES_RISE_END = RIFTS_OPEN_END + 20;
-  private static final int SELECTION_READY_TICK = STONES_RISE_END;
+
+  /** How many ticks the strip scrolls once it starts, before decelerating to a stop. */
+  private static final int SCROLL_DURATION = 90;
+
+  private static final int SCROLL_END_TICK = RIFTS_OPEN_END + SCROLL_DURATION;
+  private static final int SCATTER_DURATION = 18;
+  private static final int REVEAL_STAGGER = 14;
+  private static final int REVEAL_DURATION = 22;
+  private static final int REVEAL_START_TICK = SCROLL_END_TICK + SCATTER_DURATION + 4;
+  private static final int SELECTION_READY_TICK =
+      REVEAL_START_TICK + 2 * REVEAL_STAGGER + REVEAL_DURATION + 10;
   private static final int AUTO_SELECT_TIMEOUT = 300;
 
-  private static final double RIFT_OFFSET = 1.7;
+  /** Ticks the chosen stone takes to fly from its result slot to the player's eye. */
+  private static final int FLIGHT_DURATION = 25;
+
   private static final double RIFT_RADIUS = 0.85;
-  private static final double[] STONE_OFFSETS = {-0.8, 0.0, 0.8};
+
+  /** Spacing between strip slots — wide enough that ~5 stones are visible at once. */
+  private static final double STRIP_SPACING = 1.1;
+
+  private static final double STRIP_INITIAL_OFFSET = 6.0;
+  private static final int STRIP_SIZE = 17;
+  private static final int[] RESULT_INDICES = {11, 13, 15};
+
+  /** Distance from centre beyond which a strip stone is hidden (culled) rather than rendered. */
+  private static final double STRIP_HIDE_RADIUS = 2.9;
+
+  /** Distance from centre to each rift, just past {@link #STRIP_HIDE_RADIUS}. */
+  private static final double RIFT_OFFSET = 3.0;
+
+  private static final double STRIP_TOTAL_SCROLL =
+      RESULT_INDICES[1] * STRIP_SPACING + STRIP_INITIAL_OFFSET;
+
+  private static final double[] INDICATOR_OFFSETS = {-2 * STRIP_SPACING, 0.0, 2 * STRIP_SPACING};
 
   private static final Color VOID_COLOR = Color.fromRGB(4, 4, 12);
 
@@ -87,6 +120,9 @@ public class PrestigeAscensionAnimation {
   private boolean finished = false;
   private boolean selectionMade = false;
   private boolean outcomeApplied = false;
+  private boolean scatterTriggered = false;
+  private boolean labelsSpawned = false;
+  private boolean arrowsRemoved = false;
   private int selectedIndex = -1;
   private int selectionTick = -1;
   private volatile int highlightedIndex = -1;
@@ -99,20 +135,20 @@ public class PrestigeAscensionAnimation {
   private Location rightRift;
   private Location titlePos;
 
-  private final ItemDisplay[] stoneDisplays = new ItemDisplay[3];
-  private final TextDisplay[] stoneLabels = new TextDisplay[3];
-  private final Location[] stonePositions = new Location[3];
-  private final boolean[] stoneRemoved = new boolean[3];
-  private TextDisplay titleDisplay;
+  /** Full strip — index N corresponds to {@link #RESULT_INDICES} for the three real stones. */
+  private final ItemDisplay[] stripItems = new ItemDisplay[STRIP_SIZE];
 
-  /** Hover-only description panel per stone, shown while it's the highlighted option. */
+  private final Vector[] scatterVels = new Vector[STRIP_SIZE];
+  private final TextDisplay[] arrows = new TextDisplay[3];
+  private final TextDisplay[] resultLabels = new TextDisplay[3];
   private final TextDisplay[] descDisplays = new TextDisplay[3];
-
-  /** Animation progress per stone's description panel: 0 = hidden, 1 = fully visible. */
   private final float[] descProgress = new float[3];
-
-  /** Whether each stone's description should be animating toward visible. */
   private final boolean[] descTargetIn = new boolean[3];
+  private final Location[] resultPos = new Location[3];
+  private final boolean[] revealStarted = new boolean[3];
+  private final boolean[] revealDone = new boolean[3];
+  private final boolean[] resultRemoved = new boolean[3];
+  private TextDisplay titleDisplay;
 
   /**
    * Creates a prestige ascension animation.
@@ -170,10 +206,6 @@ public class PrestigeAscensionAnimation {
     rightRift = center.clone().add(rightDir.clone().multiply(RIFT_OFFSET));
     titlePos = center.clone().add(0, 1.5, 0);
 
-    for (int i = 0; i < 3; i++) {
-      stonePositions[i] = center.clone().add(rightDir.clone().multiply(STONE_OFFSETS[i]));
-    }
-
     playCastBurst();
 
     new BukkitRunnable() {
@@ -228,15 +260,14 @@ public class PrestigeAscensionAnimation {
       tickRiftAmbience(world);
     }
 
-    if (currentTick > RIFTS_OPEN_END && currentTick <= STONES_RISE_END) {
-      tickStonesRise(world);
-    } else if (currentTick == STONES_RISE_END + 1) {
-      spawnStoneLabels(world);
-    }
-
     if (!selectionMade) {
+      if (currentTick > RIFTS_OPEN_END && currentTick <= SCROLL_END_TICK) {
+        tickScroll(world);
+      }
+      tickScatter(world);
+      tickReveal(world);
+
       if (currentTick >= SELECTION_READY_TICK) {
-        tickStoneIdle(world);
         tickHighlightDetection();
         tickDescriptions();
         if (currentTick - SELECTION_READY_TICK >= AUTO_SELECT_TIMEOUT) {
@@ -249,7 +280,7 @@ public class PrestigeAscensionAnimation {
     tickPostSelection(world);
   }
 
-  /** Gold-equivalent (tier-coloured) essence spirals from the player's eyes toward the centre. */
+  /** Tier-coloured essence spirals from the player's eyes toward the centre. */
   private void tickConverge(org.bukkit.World world) {
     int tick = currentTick - CAST_END;
     double t = Math.min(1.0, (double) tick / (CONVERGE_END - CAST_END));
@@ -281,7 +312,7 @@ public class PrestigeAscensionAnimation {
     }
   }
 
-  /** Both rifts spin open from nothing out to full size. */
+  /** Both rifts spin open from nothing out to full size, and the result indicator arrows appear. */
   private void tickRiftsOpen(org.bukkit.World world) {
     double t = Math.min(1.0, (double) (currentTick - SPLIT_END) / (RIFTS_OPEN_END - SPLIT_END));
     double radius = RIFT_RADIUS * t;
@@ -291,10 +322,34 @@ public class PrestigeAscensionAnimation {
     if (currentTick == SPLIT_END + 1) {
       world.playSound(center, "custom.portalopenrift", 0.55f, 0.9f);
       world.playSound(center, "custom.portalopenrift", 0.55f, 1.3f);
+      spawnArrows(world);
     }
   }
 
-  /** Keeps both rifts shimmering while the player looks over their options. */
+  /** Spawns the three gold indicator arrows above the result slots. */
+  private void spawnArrows(org.bukkit.World world) {
+    for (int i = 0; i < 3; i++) {
+      Location arrowLoc =
+          center.clone().add(rightDir.clone().multiply(INDICATOR_OFFSETS[i])).add(0, 0.7, 0);
+      final int idx = i;
+      arrows[idx] =
+          world.spawn(
+              arrowLoc,
+              TextDisplay.class,
+              e -> {
+                e.setVisibleByDefault(false);
+                e.setBillboard(Display.Billboard.CENTER);
+                e.setBrightness(new Display.Brightness(15, 15));
+                e.setPersistent(false);
+                e.text(
+                    Component.text("▼").color(NamedTextColor.GOLD).decorate(TextDecoration.BOLD));
+                e.setTransformation(textTransform(0.5f));
+              });
+      player.showEntity(plugin, arrows[idx]);
+    }
+  }
+
+  /** Keeps both rifts shimmering while the reel spins/settles and the player looks over results. */
   private void tickRiftAmbience(org.bukkit.World world) {
     for (Location rift : new Location[] {leftRift, rightRift}) {
       if (currentTick % 3 == 0) spawnRimShimmer(world, rift, 3);
@@ -359,65 +414,189 @@ public class PrestigeAscensionAnimation {
         .add(0, Math.sin(angle) * radius, 0);
   }
 
-  /** The three pre-rolled stones rise into view between the rifts. */
-  private void tickStonesRise(org.bukkit.World world) {
-    double t =
-        Math.min(1.0, (double) (currentTick - RIFTS_OPEN_END) / (STONES_RISE_END - RIFTS_OPEN_END));
-    double eased = easeOutCubic(t);
+  /**
+   * Scrolls the strip left-to-right and decelerates it to a stop, exactly like {@link
+   * EnchantAnimation}'s reel — five stones visible at a time, evenly spaced, the real three rolls
+   * always resting at {@link #RESULT_INDICES} once it lands.
+   */
+  private void tickScroll(org.bukkit.World world) {
+    int tick = currentTick - RIFTS_OPEN_END;
+    double scrollProgress = Math.min(1.0, (double) tick / SCROLL_DURATION);
+    double scroll = STRIP_TOTAL_SCROLL * easeInOutQuart(scrollProgress);
 
-    for (int i = 0; i < 3; i++) {
-      if (stoneDisplays[i] == null) {
-        PrestigeManager.StoneRoll roll = stoneRolls.get(i);
-        ItemStack stack =
-            org.benski.evolv3.items.EvolutionStone.create(roll.rarity(), roll.enchantName());
-        stoneDisplays[i] =
-            world.spawn(
-                stonePositions[i].clone().add(0, -1.2, 0),
-                ItemDisplay.class,
-                e -> {
-                  e.setVisibleByDefault(false);
-                  e.setItemStack(stack);
-                  e.setBrightness(new Display.Brightness(15, 15));
-                  e.setPersistent(false);
-                  e.setBillboard(Display.Billboard.CENTER);
-                  e.setTransformation(itemTransform(0f));
-                });
-        player.showEntity(plugin, stoneDisplays[i]);
+    for (int i = 0; i < STRIP_SIZE; i++) {
+      ItemDisplay item = stripItems[i];
+      if (item == null) {
+        item = spawnStripItem(world, i);
       }
-      ItemDisplay display = stoneDisplays[i];
-      if (display != null && !display.isDead()) {
-        Location from = stonePositions[i].clone().add(0, -1.2, 0);
-        display.teleport(lerp(from, stonePositions[i], eased));
-        display.setTransformation(itemTransform((float) eased * 0.75f));
+      if (item == null || item.isDead()) continue;
+
+      double rightAxis = i * STRIP_SPACING + STRIP_INITIAL_OFFSET - scroll;
+      if (Math.abs(rightAxis) > STRIP_HIDE_RADIUS) {
+        item.teleport(center.clone().add(0, -20, 0));
+      } else {
+        item.teleport(center.clone().add(rightDir.clone().multiply(rightAxis)));
       }
     }
 
-    if (currentTick % 4 == 0) {
-      world.playSound(center, Sound.BLOCK_AMETHYST_CLUSTER_PLACE, 0.4f, 1.3f + (float) t * 0.3f);
+    if (tick < SCROLL_DURATION && tick % 2 == 0) {
+      float pitch = (float) (2.0 - 1.5 * scrollProgress);
+      world.playSound(center, "custom.objectflybywhoosh", 0.4f, pitch);
+    }
+
+    if (currentTick == SCROLL_END_TICK) {
+      world.playSound(center, "custom.magiclockimpact", 0.6f, 1.0f);
+      for (int r = 0; r < 3; r++) {
+        ItemDisplay item = stripItems[RESULT_INDICES[r]];
+        if (item != null && !item.isDead()) {
+          resultPos[r] = item.getLocation().clone();
+        }
+      }
+      triggerScatter(world);
     }
   }
 
-  /**
-   * Spawns the always-visible stone name above each stone, plus an initially-hidden hover
-   * description panel (the stone's effect, wrapped, with a trailing ▼ arrow) that scales in while
-   * it's the highlighted option — mirroring {@link EnchantAnimation}'s label/description pair.
-   */
-  private void spawnStoneLabels(org.bukkit.World world) {
-    for (int i = 0; i < 3; i++) {
-      PrestigeManager.StoneRoll roll = stoneRolls.get(i);
-      final int idx = i;
+  /** Lazily spawns one strip slot's display — a real roll at a result index, otherwise a filler. */
+  private ItemDisplay spawnStripItem(org.bukkit.World world, int index) {
+    PrestigeManager.StoneRoll roll = rollForSlot(index);
+    ItemStack stack = EvolutionStone.create(roll.rarity(), roll.enchantName());
+    ItemDisplay display =
+        world.spawn(
+            center.clone().add(0, -20, 0),
+            ItemDisplay.class,
+            e -> {
+              e.setVisibleByDefault(false);
+              e.setItemStack(stack);
+              e.setBrightness(new Display.Brightness(15, 15));
+              e.setPersistent(false);
+              e.setBillboard(Display.Billboard.CENTER);
+              e.setTransformation(itemTransform(0.55f));
+            });
+    player.showEntity(plugin, display);
+    stripItems[index] = display;
+    return display;
+  }
 
-      Location labelPos = stonePositions[i].clone().add(0, 0.55, 0);
-      Component nameText =
-          EvolutionStone.buildDisplayName(roll.rarity(), roll.enchantName())
-              .decoration(TextDecoration.ITALIC, false);
-      stoneLabels[idx] =
+  /** Returns the real roll for a result index, otherwise a random cosmetic filler. */
+  private PrestigeManager.StoneRoll rollForSlot(int index) {
+    for (int r = 0; r < RESULT_INDICES.length; r++) {
+      if (RESULT_INDICES[r] == index) return stoneRolls.get(r);
+    }
+    List<RarityConfig> rarities = EnchantAnimationConfig.getRarities();
+    RarityConfig rarity =
+        !rarities.isEmpty()
+            ? rarities.get(ThreadLocalRandom.current().nextInt(rarities.size()))
+            : stoneRolls.get(0).rarity();
+    List<String> enchants = EnchantAnimationConfig.getEnchantOrder();
+    String enchant =
+        !enchants.isEmpty()
+            ? enchants.get(ThreadLocalRandom.current().nextInt(enchants.size()))
+            : stoneRolls.get(0).enchantName();
+    return new PrestigeManager.StoneRoll(rarity, enchant);
+  }
+
+  /** Assigns outward velocities to every visible, non-result strip item. */
+  private void triggerScatter(org.bukkit.World world) {
+    for (int i = 0; i < STRIP_SIZE; i++) {
+      if (isResultIndex(i)) continue;
+      ItemDisplay item = stripItems[i];
+      if (item == null || item.isDead()) continue;
+
+      double rightAxis = i * STRIP_SPACING + STRIP_INITIAL_OFFSET - STRIP_TOTAL_SCROLL;
+      if (Math.abs(rightAxis) > STRIP_HIDE_RADIUS) {
+        item.remove();
+        stripItems[i] = null;
+        continue;
+      }
+
+      double angle = ThreadLocalRandom.current().nextDouble() * 2 * Math.PI;
+      double speed = 0.14 + ThreadLocalRandom.current().nextDouble() * 0.22;
+      double upward = 0.06 + ThreadLocalRandom.current().nextDouble() * 0.10;
+      scatterVels[i] = new Vector(Math.cos(angle) * speed, upward, Math.sin(angle) * speed);
+    }
+    scatterTriggered = true;
+  }
+
+  /** Moves scattered (non-result) strip items outward each tick and removes them at the end. */
+  private void tickScatter(org.bukkit.World world) {
+    if (!scatterTriggered) return;
+    int st = currentTick - SCROLL_END_TICK;
+    if (st <= 0 || st > SCATTER_DURATION) return;
+
+    float shrinkT = (float) st / SCATTER_DURATION;
+    for (int i = 0; i < STRIP_SIZE; i++) {
+      if (isResultIndex(i)) continue;
+      ItemDisplay item = stripItems[i];
+      if (item == null || item.isDead() || scatterVels[i] == null) continue;
+
+      scatterVels[i].setY(scatterVels[i].getY() - 0.010);
+      item.teleport(item.getLocation().clone().add(scatterVels[i]));
+
+      float scale = Math.max(0.55f * (1f - shrinkT), 0.001f);
+      item.setTransformation(itemTransform(scale));
+
+      if (st == SCATTER_DURATION) {
+        item.remove();
+        stripItems[i] = null;
+      }
+    }
+  }
+
+  /** Reveals each result: settles into place and types out its name above it, staggered. */
+  private void tickReveal(org.bukkit.World world) {
+    if (!arrowsRemoved && currentTick >= REVEAL_START_TICK - 3) {
+      arrowsRemoved = true;
+      for (TextDisplay arrow : arrows) {
+        if (arrow != null && !arrow.isDead()) arrow.remove();
+      }
+    }
+    if (currentTick == REVEAL_START_TICK - 1) {
+      spawnDescPanels(world);
+    }
+
+    for (int r = 0; r < 3; r++) {
+      int slotStart = REVEAL_START_TICK + r * REVEAL_STAGGER;
+      if (currentTick < slotStart) continue;
+
+      int revealTick = currentTick - slotStart;
+      if (!revealStarted[r]) {
+        revealStarted[r] = true;
+        float pitch = 0.8f + r * 0.15f;
+        world.playSound(center, Sound.BLOCK_AMETHYST_BLOCK_CHIME, 0.5f, pitch);
+      }
+
+      if (revealTick >= REVEAL_DURATION) {
+        if (!revealDone[r]) revealDone[r] = true;
+        tickTypewriter(world, r, revealTick - REVEAL_DURATION);
+        continue;
+      }
+
+      float t = (float) revealTick / REVEAL_DURATION;
+      ItemDisplay item = stripItems[RESULT_INDICES[r]];
+      if (item != null && !item.isDead()) {
+        float scale = Math.max(0.55f + 0.2f * (float) easeOutCubic(t), 0.001f);
+        item.setTransformation(itemTransform(scale));
+      }
+    }
+  }
+
+  /** Spawns the (initially empty) name label and hidden description panel above each result. */
+  private void spawnDescPanels(org.bukkit.World world) {
+    if (labelsSpawned) return;
+    labelsSpawned = true;
+
+    for (int r = 0; r < 3; r++) {
+      if (resultPos[r] == null) continue;
+      PrestigeManager.StoneRoll roll = stoneRolls.get(r);
+      final int idx = r;
+
+      Location labelPos = resultPos[r].clone().add(0, 0.55, 0);
+      resultLabels[idx] =
           world.spawn(
               labelPos,
               TextDisplay.class,
               e -> {
                 e.setVisibleByDefault(false);
-                e.text(nameText);
                 e.setAlignment(TextDisplay.TextAlignment.CENTER);
                 e.setBillboard(Display.Billboard.CENTER);
                 e.setBrightness(new Display.Brightness(15, 15));
@@ -425,7 +604,7 @@ public class PrestigeAscensionAnimation {
                 e.setPersistent(false);
                 e.setTransformation(textTransform(0.6f));
               });
-      player.showEntity(plugin, stoneLabels[idx]);
+      player.showEntity(plugin, resultLabels[idx]);
 
       String effect =
           StoneEffectRegistry.getEffect(
@@ -438,16 +617,16 @@ public class PrestigeAscensionAnimation {
       }
       descBuilder.append(
           Component.text("▼").color(TextColor.color(0xFFD700)).decorate(TextDecoration.BOLD));
-      final Component finalDescText = descBuilder.build().decoration(TextDecoration.ITALIC, false);
+      final Component descText = descBuilder.build().decoration(TextDecoration.ITALIC, false);
 
-      Location descPos = stonePositions[i].clone().add(0, 1.05, 0);
+      Location descPos = resultPos[r].clone().add(0, 1.05, 0);
       descDisplays[idx] =
           world.spawn(
               descPos,
               TextDisplay.class,
               e -> {
                 e.setVisibleByDefault(false);
-                e.text(finalDescText);
+                e.text(descText);
                 e.setAlignment(TextDisplay.TextAlignment.CENTER);
                 e.setBillboard(Display.Billboard.CENTER);
                 e.setBrightness(new Display.Brightness(15, 15));
@@ -462,7 +641,39 @@ public class PrestigeAscensionAnimation {
               });
       player.showEntity(plugin, descDisplays[idx]);
     }
-    world.playSound(center, Sound.ENTITY_PLAYER_LEVELUP, 0.6f, 1.4f);
+  }
+
+  /** Types out the stone's name above its result slot, character by character. */
+  private void tickTypewriter(org.bukkit.World world, int r, int writeTick) {
+    if (resultLabels[r] == null || resultLabels[r].isDead()) return;
+
+    PrestigeManager.StoneRoll roll = stoneRolls.get(r);
+    String rawName = stoneName(roll);
+    String name = FontUtils.toSmallCaps(rawName);
+    int chars = Math.min(writeTick / 2 + 1, name.length());
+    boolean done = chars >= name.length();
+
+    Component label =
+        Component.text(name.substring(0, chars) + (done ? "" : "▌"))
+            .color(roll.rarity().textColor())
+            .decoration(TextDecoration.BOLD, true)
+            .decoration(TextDecoration.ITALIC, false);
+    resultLabels[r].text(label);
+
+    if (writeTick % 2 == 0 && !done) {
+      float pitch = 1.4f + (chars / (float) name.length()) * 0.6f;
+      world.playSound(center, Sound.BLOCK_NOTE_BLOCK_PLING, 0.2f, pitch);
+    }
+    if (done && writeTick == (name.length() - 1) * 2) {
+      world.playSound(center, Sound.BLOCK_BEACON_ACTIVATE, 0.35f, 1.8f);
+    }
+  }
+
+  /** Returns the stone's unique display name, falling back to "{rarity} Evolution Stone". */
+  private String stoneName(PrestigeManager.StoneRoll roll) {
+    String name =
+        StoneEffectRegistry.getName(roll.enchantName().toLowerCase(), roll.rarity().displayName());
+    return name != null ? name : roll.rarity().displayName() + " Evolution Stone";
   }
 
   /** Smoothly scales each description panel in/out based on hover state. */
@@ -496,28 +707,7 @@ public class PrestigeAscensionAnimation {
     }
   }
 
-  /** Idle rarity-coloured sparkle around each stone while waiting for a selection. */
-  private void tickStoneIdle(org.bukkit.World world) {
-    if (currentTick % 2 != 0) return;
-    for (int i = 0; i < 3; i++) {
-      if (stoneRemoved[i]) continue;
-      PrestigeManager.StoneRoll roll = stoneRolls.get(i);
-      double angle = currentTick * 0.18 + i * 2.09;
-      world.spawnParticle(
-          Particle.DUST,
-          stonePositions[i]
-              .clone()
-              .add(Math.cos(angle) * 0.35, Math.sin(angle * 0.7) * 0.12, Math.sin(angle) * 0.35),
-          1,
-          0,
-          0,
-          0,
-          0,
-          new Particle.DustOptions(roll.rarity().particleColor(), 1.0f));
-    }
-  }
-
-  /** Resolves which stone (if any) the player is currently looking at. */
+  /** Resolves which result (if any) the player is currently looking at. */
   private void tickHighlightDetection() {
     Location eye = player.getEyeLocation();
     Vector direction = eye.getDirection();
@@ -525,8 +715,8 @@ public class PrestigeAscensionAnimation {
     int newHighlight = -1;
     double bestDot = 0.9;
     for (int i = 0; i < 3; i++) {
-      if (stoneRemoved[i]) continue;
-      Vector toStone = stonePositions[i].toVector().subtract(eye.toVector());
+      if (resultRemoved[i] || resultPos[i] == null) continue;
+      Vector toStone = resultPos[i].toVector().subtract(eye.toVector());
       if (toStone.lengthSquared() < 1e-6) continue;
       toStone = toStone.normalize();
       double dot = direction.dot(toStone);
@@ -541,29 +731,32 @@ public class PrestigeAscensionAnimation {
       highlightedIndex = newHighlight;
       if (prev >= 0) {
         descTargetIn[prev] = false;
-        if (stoneDisplays[prev] != null && !stoneDisplays[prev].isDead()) {
-          stoneDisplays[prev].setGlowing(false);
-        }
+        ItemDisplay item = stripItems[RESULT_INDICES[prev]];
+        if (item != null && !item.isDead()) item.setGlowing(false);
       }
       if (newHighlight >= 0) {
         descTargetIn[newHighlight] = true;
-        if (stoneDisplays[newHighlight] != null) {
-          stoneDisplays[newHighlight].setGlowing(true);
-        }
-        player.playSound(stonePositions[newHighlight], Sound.UI_BUTTON_CLICK, 0.4f, 1.0f);
+        ItemDisplay item = stripItems[RESULT_INDICES[newHighlight]];
+        if (item != null && !item.isDead()) item.setGlowing(true);
+        player.playSound(resultPos[newHighlight], Sound.UI_BUTTON_CLICK, 0.4f, 1.0f);
       }
     }
   }
 
-  /** Commits to a stone: locks the selection, applies the outcome, and starts the finale. */
+  /** Commits to a stone: locks the selection and starts the flight-to-player finale. */
   private void applySelection(int index) {
     if (selectionMade) return;
     selectedIndex = index;
     selectionMade = true;
     selectionTick = currentTick;
+    // Done here rather than gated on tickFlight's sp == 0 — confirmSelection() can fire from a
+    // click event at any point between ticks, so sp's first observed value isn't guaranteed to be
+    // exactly 0.
+    removeResultDisplays(index);
     var world = player.getWorld();
     if (world != null) {
       world.playSound(center, Sound.BLOCK_AMETHYST_BLOCK_CHIME, 0.9f, 1.5f);
+      world.playSound(center, Sound.BLOCK_ENCHANTMENT_TABLE_USE, 0.6f, 2.0f);
     }
   }
 
@@ -571,78 +764,102 @@ public class PrestigeAscensionAnimation {
   private void tickPostSelection(org.bukkit.World world) {
     int sp = currentTick - selectionTick;
 
-    if (sp <= 10) {
-      tickForge(world, sp);
+    if (sp <= FLIGHT_DURATION) {
+      tickFlight(world, sp);
     }
-    if (sp == 10 && !outcomeApplied) {
+    if (sp == FLIGHT_DURATION && !outcomeApplied) {
       outcomeApplied = true;
       onSelect.accept(player, stoneRolls.get(selectedIndex));
     }
-    if (sp > 10 && sp <= 40) {
-      tickBurst(world, sp - 10);
+
+    int bp = sp - FLIGHT_DURATION;
+    if (bp > 0 && bp <= 30) {
+      tickBurst(world, bp);
     }
-    if (sp > 40 && sp <= 70) {
-      tickGlory(world, sp - 40);
+    if (bp > 30 && bp <= 60) {
+      tickGlory(world, bp - 30);
     }
-    if (sp == 71) {
+    if (bp == 61) {
       collapseRifts(world);
     }
-    if (sp == 75) {
+    if (bp == 65) {
       finished = true;
       removeAllDisplays();
       if (onComplete != null) onComplete.run();
     }
   }
 
-  /** Unchosen stones sink and fizzle; the chosen one is drawn into the right-hand rift. */
-  private void tickForge(org.bukkit.World world, int sp) {
-    double t = sp / 10.0;
-    for (int i = 0; i < 3; i++) {
-      ItemDisplay display = stoneDisplays[i];
-      if (display == null || display.isDead() || stoneRemoved[i]) continue;
+  /**
+   * Unchosen stones sink and fizzle (staggered, matching {@link EnchantAnimation}); the chosen
+   * stone flies from its result slot up to the player's eye.
+   */
+  private void tickFlight(org.bukkit.World world, int sp) {
+    int[] nonSelected = nonSelectedIndices();
+    for (int ni = 0; ni < nonSelected.length; ni++) {
+      int r = nonSelected[ni];
+      int start = 2 + ni * 8;
+      if (sp < start || resultRemoved[r]) continue;
 
-      if (i == selectedIndex) {
-        display.teleport(lerp(stonePositions[i], rightRift, easeInCubic(t)));
-        display.setTransformation(itemTransform(0.75f * (1f - (float) t * 0.4f)));
-      } else {
-        display.teleport(stonePositions[i].clone().add(0, -t * 1.0, 0));
-        display.setTransformation(itemTransform(Math.max(0.001f, 0.75f * (1f - (float) t))));
-        if (sp == 10) {
-          stoneRemoved[i] = true;
-          display.remove();
-          stoneDisplays[i] = null;
-          world.spawnParticle(Particle.POOF, stonePositions[i], 10, 0.2, 0.2, 0.2, 0.05);
-          if (stoneLabels[i] != null && !stoneLabels[i].isDead()) {
-            stoneLabels[i].remove();
-            stoneLabels[i] = null;
-          }
-          if (descDisplays[i] != null && !descDisplays[i].isDead()) {
-            descDisplays[i].remove();
-            descDisplays[i] = null;
-          }
+      int fp = sp - start;
+      ItemDisplay item = stripItems[RESULT_INDICES[r]];
+      if (item != null && !item.isDead() && fp <= 8) {
+        if (resultPos[r] != null) {
+          item.teleport(resultPos[r].clone().add(0, -fp * 0.20, 0));
+        }
+        float scale = Math.max(0.001f, 0.75f * (1f - fp / 8f));
+        item.setTransformation(itemTransform(scale));
+      }
+
+      if (fp == 8) {
+        resultRemoved[r] = true;
+        if (item != null && !item.isDead()) item.remove();
+        stripItems[RESULT_INDICES[r]] = null;
+        removeResultDisplays(r);
+        if (resultPos[r] != null) {
+          world.spawnParticle(Particle.POOF, resultPos[r], 10, 0.25, 0.25, 0.25, 0.05);
+          world.playSound(resultPos[r], Sound.ENTITY_ITEM_PICKUP, 0.6f, 1.8f);
         }
       }
     }
 
-    if (sp == 10) {
-      ItemDisplay chosen = stoneDisplays[selectedIndex];
-      if (chosen != null && !chosen.isDead()) {
-        chosen.remove();
-        stoneDisplays[selectedIndex] = null;
+    ItemDisplay selected = stripItems[RESULT_INDICES[selectedIndex]];
+    if (selected != null && !selected.isDead() && sp <= FLIGHT_DURATION) {
+      double t = easeInCubic((double) sp / FLIGHT_DURATION);
+      Location origin = resultPos[selectedIndex];
+      Location target = player.getEyeLocation();
+      if (origin != null) {
+        selected.teleport(lerp(origin, target, t));
       }
-      if (stoneLabels[selectedIndex] != null && !stoneLabels[selectedIndex].isDead()) {
-        stoneLabels[selectedIndex].remove();
-        stoneLabels[selectedIndex] = null;
-      }
-      if (descDisplays[selectedIndex] != null && !descDisplays[selectedIndex].isDead()) {
-        descDisplays[selectedIndex].remove();
-        descDisplays[selectedIndex] = null;
-      }
-      world.playSound(rightRift, "custom.burstatoms", 0.5f, 1.3f);
-      world.spawnParticle(
-          Particle.DUST, rightRift, 25, 0.25, 0.2, 0.25, 0, new Particle.DustOptions(accent, 1.4f));
-      world.spawnParticle(Particle.END_ROD, rightRift, 12, 0.2, 0.2, 0.2, 0.08);
+      selected.setTransformation(itemTransform(0.75f));
     }
+
+    if (sp == FLIGHT_DURATION) {
+      resultRemoved[selectedIndex] = true;
+      if (selected != null && !selected.isDead()) selected.remove();
+      stripItems[RESULT_INDICES[selectedIndex]] = null;
+    }
+  }
+
+  /** Removes the name label and description panel for a result slot, if present. */
+  private void removeResultDisplays(int r) {
+    if (resultLabels[r] != null && !resultLabels[r].isDead()) {
+      resultLabels[r].remove();
+      resultLabels[r] = null;
+    }
+    if (descDisplays[r] != null && !descDisplays[r].isDead()) {
+      descDisplays[r].remove();
+      descDisplays[r] = null;
+    }
+  }
+
+  /** Returns the two non-selected result indices. */
+  private int[] nonSelectedIndices() {
+    int[] result = new int[2];
+    int idx = 0;
+    for (int r = 0; r < 3 && idx < 2; r++) {
+      if (r != selectedIndex) result[idx++] = r;
+    }
+    return result;
   }
 
   /** Big tier-coloured explosion and the "Prestige N Unlocked" title. */
@@ -726,7 +943,7 @@ public class PrestigeAscensionAnimation {
               e.text(comp);
               e.setAlignment(TextDisplay.TextAlignment.CENTER);
               e.setBillboard(Display.Billboard.CENTER);
-              e.setBackgroundColor(org.bukkit.Color.fromARGB(160, 0, 0, 0));
+              e.setBackgroundColor(Color.fromARGB(160, 0, 0, 0));
               e.setShadowed(true);
               e.setBrightness(new Display.Brightness(15, 15));
               e.setPersistent(false);
@@ -756,15 +973,23 @@ public class PrestigeAscensionAnimation {
         0.3,
         0,
         new Particle.DustOptions(stoneRolls.get(selectedIndex).rarity().particleColor(), 1.5f));
-    world.playSound(player.getLocation(), Sound.ENTITY_ITEM_PICKUP, 0.8f, 1.1f);
+  }
+
+  /** Returns {@code true} if the given strip index is one of the three result slots. */
+  private static boolean isResultIndex(int index) {
+    for (int r : RESULT_INDICES) if (r == index) return true;
+    return false;
   }
 
   /** Removes every display entity this animation may have spawned. */
   private void removeAllDisplays() {
-    for (int i = 0; i < 3; i++) {
-      if (stoneDisplays[i] != null && !stoneDisplays[i].isDead()) stoneDisplays[i].remove();
-      if (stoneLabels[i] != null && !stoneLabels[i].isDead()) stoneLabels[i].remove();
-      if (descDisplays[i] != null && !descDisplays[i].isDead()) descDisplays[i].remove();
+    for (int i = 0; i < STRIP_SIZE; i++) {
+      if (stripItems[i] != null && !stripItems[i].isDead()) stripItems[i].remove();
+    }
+    for (int r = 0; r < 3; r++) {
+      if (arrows[r] != null && !arrows[r].isDead()) arrows[r].remove();
+      if (resultLabels[r] != null && !resultLabels[r].isDead()) resultLabels[r].remove();
+      if (descDisplays[r] != null && !descDisplays[r].isDead()) descDisplays[r].remove();
     }
     if (titleDisplay != null && !titleDisplay.isDead()) titleDisplay.remove();
   }
@@ -818,6 +1043,11 @@ public class PrestigeAscensionAnimation {
   private static Transformation textTransform(float scale) {
     return new Transformation(
         new Vector3f(), new AxisAngle4f(), new Vector3f(scale, scale, scale), new AxisAngle4f());
+  }
+
+  /** Fast launch, hard brake — exactly like a mechanical reel. */
+  private static double easeInOutQuart(double x) {
+    return x < 0.5 ? 8 * x * x * x * x : 1 - Math.pow(-2 * x + 2, 4) / 2;
   }
 
   /** Ease out cubic. */
