@@ -7,7 +7,10 @@ import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.TextColor;
 import net.kyori.adventure.text.format.TextDecoration;
 import org.benski.evolv3.core.helpers.FontUtils;
+import org.benski.evolv3.core.helpers.Utils;
+import org.benski.evolv3.core.managers.enchant.StoneEffectRegistry;
 import org.benski.evolv3.core.managers.pickaxe.PrestigeManager;
+import org.benski.evolv3.items.EvolutionStone;
 import org.bukkit.Color;
 import org.bukkit.Location;
 import org.bukkit.Particle;
@@ -69,6 +72,10 @@ public class PrestigeAscensionAnimation {
 
   private static final Color VOID_COLOR = Color.fromRGB(4, 4, 12);
 
+  private static final float DESC_SCALE = 0.42f;
+  private static final float DESC_IN_STEP = 0.14f;
+  private static final float DESC_OUT_STEP = 0.20f;
+
   private final JavaPlugin plugin;
   private final Player player;
   private final int nextPrestige;
@@ -97,6 +104,15 @@ public class PrestigeAscensionAnimation {
   private final Location[] stonePositions = new Location[3];
   private final boolean[] stoneRemoved = new boolean[3];
   private TextDisplay titleDisplay;
+
+  /** Hover-only description panel per stone, shown while it's the highlighted option. */
+  private final TextDisplay[] descDisplays = new TextDisplay[3];
+
+  /** Animation progress per stone's description panel: 0 = hidden, 1 = fully visible. */
+  private final float[] descProgress = new float[3];
+
+  /** Whether each stone's description should be animating toward visible. */
+  private final boolean[] descTargetIn = new boolean[3];
 
   /**
    * Creates a prestige ascension animation.
@@ -222,6 +238,7 @@ public class PrestigeAscensionAnimation {
       if (currentTick >= SELECTION_READY_TICK) {
         tickStoneIdle(world);
         tickHighlightDetection();
+        tickDescriptions();
         if (currentTick - SELECTION_READY_TICK >= AUTO_SELECT_TIMEOUT) {
           applySelection(0);
         }
@@ -380,33 +397,103 @@ public class PrestigeAscensionAnimation {
     }
   }
 
-  /** Spawns the rarity-coloured name label above each stone. */
+  /**
+   * Spawns the always-visible stone name above each stone, plus an initially-hidden hover
+   * description panel (the stone's effect, wrapped, with a trailing ▼ arrow) that scales in while
+   * it's the highlighted option — mirroring {@link EnchantAnimation}'s label/description pair.
+   */
   private void spawnStoneLabels(org.bukkit.World world) {
     for (int i = 0; i < 3; i++) {
       PrestigeManager.StoneRoll roll = stoneRolls.get(i);
-      Location labelPos = stonePositions[i].clone().add(0, 0.55, 0);
-      Component text =
-          Component.text(FontUtils.toSmallCaps(roll.rarity().displayName().toUpperCase()))
-              .color(roll.rarity().textColor())
-              .decoration(TextDecoration.BOLD, true)
-              .decoration(TextDecoration.ITALIC, false);
       final int idx = i;
+
+      Location labelPos = stonePositions[i].clone().add(0, 0.55, 0);
+      Component nameText =
+          EvolutionStone.buildDisplayName(roll.rarity(), roll.enchantName())
+              .decoration(TextDecoration.ITALIC, false);
       stoneLabels[idx] =
           world.spawn(
               labelPos,
               TextDisplay.class,
               e -> {
                 e.setVisibleByDefault(false);
-                e.text(text);
+                e.text(nameText);
                 e.setAlignment(TextDisplay.TextAlignment.CENTER);
                 e.setBillboard(Display.Billboard.CENTER);
                 e.setBrightness(new Display.Brightness(15, 15));
+                e.setBackgroundColor(Color.fromARGB(210, 10, 10, 20));
                 e.setPersistent(false);
                 e.setTransformation(textTransform(0.6f));
               });
       player.showEntity(plugin, stoneLabels[idx]);
+
+      String effect =
+          StoneEffectRegistry.getEffect(
+              roll.enchantName().toLowerCase(), roll.rarity().displayName());
+      var descBuilder = Component.text();
+      for (String chunk : Utils.wrapWords(effect, 5)) {
+        descBuilder
+            .append(Component.text(chunk).color(TextColor.color(0xCCCCCC)))
+            .append(Component.newline());
+      }
+      descBuilder.append(
+          Component.text("▼").color(TextColor.color(0xFFD700)).decorate(TextDecoration.BOLD));
+      final Component finalDescText = descBuilder.build().decoration(TextDecoration.ITALIC, false);
+
+      Location descPos = stonePositions[i].clone().add(0, 1.05, 0);
+      descDisplays[idx] =
+          world.spawn(
+              descPos,
+              TextDisplay.class,
+              e -> {
+                e.setVisibleByDefault(false);
+                e.text(finalDescText);
+                e.setAlignment(TextDisplay.TextAlignment.CENTER);
+                e.setBillboard(Display.Billboard.CENTER);
+                e.setBrightness(new Display.Brightness(15, 15));
+                e.setBackgroundColor(Color.fromARGB(180, 10, 10, 20));
+                e.setPersistent(false);
+                e.setTransformation(
+                    new Transformation(
+                        new Vector3f(0, 0, 0),
+                        new AxisAngle4f(0, 0, 1, 0),
+                        new Vector3f(0.001f, 0.001f, 0.001f),
+                        new AxisAngle4f(0, 0, 1, 0)));
+              });
+      player.showEntity(plugin, descDisplays[idx]);
     }
     world.playSound(center, Sound.ENTITY_PLAYER_LEVELUP, 0.6f, 1.4f);
+  }
+
+  /** Smoothly scales each description panel in/out based on hover state. */
+  private void tickDescriptions() {
+    for (int r = 0; r < 3; r++) {
+      TextDisplay dd = descDisplays[r];
+      if (dd == null || dd.isDead()) continue;
+
+      if (descTargetIn[r]) {
+        descProgress[r] = Math.min(descProgress[r] + DESC_IN_STEP, 1.0f);
+      } else {
+        descProgress[r] = Math.max(descProgress[r] - DESC_OUT_STEP, 0.0f);
+      }
+
+      float p = descProgress[r];
+      float s;
+      if (p <= 0f) {
+        s = 0.001f;
+      } else if (descTargetIn[r]) {
+        s = Math.max((float) easeOutBack(p) * DESC_SCALE, 0.001f);
+      } else {
+        s = Math.max(p * DESC_SCALE, 0.001f);
+      }
+
+      dd.setTransformation(
+          new Transformation(
+              new Vector3f(0, 0, 0),
+              new AxisAngle4f(0, 0, 1, 0),
+              new Vector3f(s, s, s),
+              new AxisAngle4f(0, 0, 1, 0)));
+    }
   }
 
   /** Idle rarity-coloured sparkle around each stone while waiting for a selection. */
@@ -452,11 +539,17 @@ public class PrestigeAscensionAnimation {
     if (newHighlight != highlightedIndex) {
       int prev = highlightedIndex;
       highlightedIndex = newHighlight;
-      if (prev >= 0 && stoneDisplays[prev] != null && !stoneDisplays[prev].isDead()) {
-        stoneDisplays[prev].setGlowing(false);
+      if (prev >= 0) {
+        descTargetIn[prev] = false;
+        if (stoneDisplays[prev] != null && !stoneDisplays[prev].isDead()) {
+          stoneDisplays[prev].setGlowing(false);
+        }
       }
-      if (newHighlight >= 0 && stoneDisplays[newHighlight] != null) {
-        stoneDisplays[newHighlight].setGlowing(true);
+      if (newHighlight >= 0) {
+        descTargetIn[newHighlight] = true;
+        if (stoneDisplays[newHighlight] != null) {
+          stoneDisplays[newHighlight].setGlowing(true);
+        }
         player.playSound(stonePositions[newHighlight], Sound.UI_BUTTON_CLICK, 0.4f, 1.0f);
       }
     }
@@ -523,6 +616,10 @@ public class PrestigeAscensionAnimation {
             stoneLabels[i].remove();
             stoneLabels[i] = null;
           }
+          if (descDisplays[i] != null && !descDisplays[i].isDead()) {
+            descDisplays[i].remove();
+            descDisplays[i] = null;
+          }
         }
       }
     }
@@ -536,6 +633,10 @@ public class PrestigeAscensionAnimation {
       if (stoneLabels[selectedIndex] != null && !stoneLabels[selectedIndex].isDead()) {
         stoneLabels[selectedIndex].remove();
         stoneLabels[selectedIndex] = null;
+      }
+      if (descDisplays[selectedIndex] != null && !descDisplays[selectedIndex].isDead()) {
+        descDisplays[selectedIndex].remove();
+        descDisplays[selectedIndex] = null;
       }
       world.playSound(rightRift, "custom.burstatoms", 0.5f, 1.3f);
       world.spawnParticle(
@@ -663,6 +764,7 @@ public class PrestigeAscensionAnimation {
     for (int i = 0; i < 3; i++) {
       if (stoneDisplays[i] != null && !stoneDisplays[i].isDead()) stoneDisplays[i].remove();
       if (stoneLabels[i] != null && !stoneLabels[i].isDead()) stoneLabels[i].remove();
+      if (descDisplays[i] != null && !descDisplays[i].isDead()) descDisplays[i].remove();
     }
     if (titleDisplay != null && !titleDisplay.isDead()) titleDisplay.remove();
   }
@@ -726,5 +828,12 @@ public class PrestigeAscensionAnimation {
   /** Ease in cubic. */
   private static double easeInCubic(double x) {
     return x * x * x;
+  }
+
+  /** Ease out back — slight overshoot, used for the description panel's pop-in. */
+  private static double easeOutBack(double x) {
+    double c1 = 1.70158;
+    double c3 = c1 + 1;
+    return 1 + c3 * Math.pow(x - 1, 3) + c1 * Math.pow(x - 1, 2);
   }
 }
