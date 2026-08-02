@@ -271,16 +271,18 @@ public final class PickaxeLoreRenderer {
         player, " " + stoneIcons + rarityColor + displayName + " " + levelDisplay);
   }
 
-  /** Builds stone icons. */
+  /**
+   * Builds one grey (empty) or rarity-coloured (filled) socket dot per unlocked socket, always
+   * shown regardless of whether any are actually filled — so a bare enchant still shows how many
+   * socket slots it has available.
+   */
   private String buildStoneIcons(EnchantData enchant, int prestige) {
     int unlockedSockets = EnchantData.getUnlockedSlotCount(prestige);
     StringBuilder builder = new StringBuilder();
-    boolean hasSocketed = false;
 
     for (int i = 0; i < unlockedSockets; i++) {
       String stoneRarity = enchant.socketStones[i];
       if (stoneRarity != null) {
-        hasSocketed = true;
         RarityConfig stoneRarConfig = EnchantAnimationConfig.getRarityByName(stoneRarity);
         String hex =
             stoneRarConfig != null
@@ -292,7 +294,7 @@ public final class PickaxeLoreRenderer {
       }
     }
 
-    return hasSocketed ? builder + " " : "";
+    return builder.length() > 0 ? builder + " " : "";
   }
 
   /** Substitute placeholders. */

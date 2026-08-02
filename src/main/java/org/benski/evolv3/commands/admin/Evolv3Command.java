@@ -769,49 +769,84 @@ public class Evolv3Command extends BaseCommand {
 
   /**
    * Temporary calibration command for the exact-pixel essence/evolve vessel icon offsets and
-   * shutter offset in {@link PickaxeMenu} and {@link StoneSocketMenu}. With no args, prints all 6
-   * current values. With {@code <pickaxe|socket> <essence|evolve|shutter> <value>}, updates the
-   * matching menu's static offset in memory and refreshes the sender's open menu, if any, so the
-   * change is visible instantly with no rebuild/restart. Remove this subcommand once alignment is
-   * finalized and the printed values are copied into each menu's source.
+   * shutter offset in {@link PickaxeMenu} and {@link StoneSocketMenu}. With no args, prints all
+   * current values. Remove this subcommand once alignment is finalized and the printed values are
+   * copied into each menu's source.
+   *
+   * <p>{@link PickaxeMenu}'s three offsets are single global values — its title never draws
+   * prestige-varying glyphs before them, so they can't drift with prestige — and are set with
+   * {@code /e vesselcalib pickaxe <essence|evolve|shutter> <value>}.
+   *
+   * <p>{@link StoneSocketMenu}'s three offsets sit immediately after its socket icon segment, whose
+   * landing position drifts by prestige tier for the same reason {@link StoneSocketMenu
+   * #SOCKET_CENTER_X} does (see that field's doc), so they're calibrated per tier with {@code /e
+   * vesselcalib socket <essence|evolve|shutter> <prestige 1-4> <value>}.
    */
   private void handleVesselCalib(CommandSender sender, String[] args) {
-    if (args.length < 4) {
-      Messageable.sendRaw(sender, "");
-      Messageable.sendRaw(sender, "  &#00FFFF&l⚙ Vessel/Shutter Calibration");
-      Messageable.sendRaw(sender, "  &#444444&m                                    ");
-      Messageable.sendRaw(sender, "");
-      Messageable.sendRaw(sender, "  &#FFFFFF&lPickaxe Menu");
-      Messageable.sendRaw(
-          sender, "  &#888888Essence &#444444» &#FFFFFF" + PickaxeMenu.getEssenceIconOffset());
-      Messageable.sendRaw(
-          sender, "  &#888888Evolve &#444444» &#FFFFFF" + PickaxeMenu.getEvolveIconOffset());
-      Messageable.sendRaw(
-          sender, "  &#888888Shutter &#444444» &#FFFFFF" + PickaxeMenu.getShutterOffset());
-      Messageable.sendRaw(sender, "");
-      Messageable.sendRaw(sender, "  &#FFFFFF&lSocket Menu");
-      Messageable.sendRaw(
-          sender, "  &#888888Essence &#444444» &#FFFFFF" + StoneSocketMenu.getEssenceIconOffset());
-      Messageable.sendRaw(
-          sender, "  &#888888Evolve &#444444» &#FFFFFF" + StoneSocketMenu.getEvolveIconOffset());
-      Messageable.sendRaw(
-          sender, "  &#888888Shutter &#444444» &#FFFFFF" + StoneSocketMenu.getShutterOffset());
-      Messageable.sendRaw(sender, "");
-      Messageable.sendRaw(
-          sender,
-          "  &#888888Usage: &#FFFFFF/e vesselcalib <pickaxe|socket> <essence|evolve|shutter>"
-              + " <value>");
-      Messageable.sendRaw(sender, "");
+    if (args.length < 2) {
+      printVesselCalib(sender);
       return;
     }
 
     String menuArg = args[1].toLowerCase();
-    String fieldArg = args[2].toLowerCase();
-
     if (!menuArg.equals("pickaxe") && !menuArg.equals("socket")) {
       sendError(sender, "Menu must be &#FFFFFFpickaxe &cor &#FFFFFFsocket&c.");
       return;
     }
+
+    if (menuArg.equals("pickaxe")) {
+      handlePickaxeVesselCalib(sender, args);
+    } else {
+      handleSocketVesselCalib(sender, args);
+    }
+  }
+
+  /** Prints the current pickaxe- and socket-menu vessel/shutter calibration values. */
+  private void printVesselCalib(CommandSender sender) {
+    Messageable.sendRaw(sender, "");
+    Messageable.sendRaw(sender, "  &#00FFFF&l⚙ Vessel/Shutter Calibration");
+    Messageable.sendRaw(sender, "  &#444444&m                                    ");
+    Messageable.sendRaw(sender, "");
+    Messageable.sendRaw(sender, "  &#FFFFFF&lPickaxe Menu");
+    Messageable.sendRaw(
+        sender, "  &#888888Essence &#444444» &#FFFFFF" + PickaxeMenu.getEssenceIconOffset());
+    Messageable.sendRaw(
+        sender, "  &#888888Evolve &#444444» &#FFFFFF" + PickaxeMenu.getEvolveIconOffset());
+    Messageable.sendRaw(
+        sender, "  &#888888Shutter &#444444» &#FFFFFF" + PickaxeMenu.getShutterOffset());
+    Messageable.sendRaw(sender, "");
+    Messageable.sendRaw(sender, "  &#FFFFFF&lSocket Menu &#666666(per prestige tier)");
+    appendVesselCalibRow(sender, "Essence", StoneSocketMenu.getEssenceIconOffset());
+    appendVesselCalibRow(sender, "Evolve", StoneSocketMenu.getEvolveIconOffset());
+    appendVesselCalibRow(sender, "Shutter", StoneSocketMenu.getShutterOffset());
+    Messageable.sendRaw(sender, "");
+    Messageable.sendRaw(
+        sender, "  &#888888Usage: &#FFFFFF/e vesselcalib pickaxe <essence|evolve|shutter> <value>");
+    Messageable.sendRaw(
+        sender,
+        "  &#888888Usage: &#FFFFFF/e vesselcalib socket <essence|evolve|shutter> <prestige 1-4>"
+            + " <value>");
+    Messageable.sendRaw(sender, "");
+  }
+
+  /** Appends one "Label » v1, v2, v3, v4" row to the {@code /e vesselcalib} listing. */
+  private void appendVesselCalibRow(CommandSender sender, String label, int[] values) {
+    StringBuilder row = new StringBuilder("  &#888888" + label + " &#444444» &#FFFFFF");
+    for (int i = 0; i < values.length; i++) {
+      if (i > 0) row.append("&#444444, &#FFFFFF");
+      row.append(values[i]);
+    }
+    Messageable.sendRaw(sender, row.toString());
+  }
+
+  /** Handles {@code /e vesselcalib pickaxe <essence|evolve|shutter> <value>}. */
+  private void handlePickaxeVesselCalib(CommandSender sender, String[] args) {
+    if (args.length < 4) {
+      sendError(sender, "Usage: &#FFFFFF/e vesselcalib pickaxe <essence|evolve|shutter> <value>");
+      return;
+    }
+
+    String fieldArg = args[2].toLowerCase();
     if (!fieldArg.equals("essence") && !fieldArg.equals("evolve") && !fieldArg.equals("shutter")) {
       sendError(sender, "Field must be &#FFFFFFessence&c, &#FFFFFFevolve&c, or &#FFFFFFshutter&c.");
       return;
@@ -825,25 +860,14 @@ public class Evolv3Command extends BaseCommand {
       return;
     }
 
-    String menuType;
-    if (menuArg.equals("pickaxe")) {
-      switch (fieldArg) {
-        case "essence" -> PickaxeMenu.setEssenceIconOffset(value);
-        case "evolve" -> PickaxeMenu.setEvolveIconOffset(value);
-        default -> PickaxeMenu.setShutterOffset(value);
-      }
-      menuType = "pickaxe";
-    } else {
-      switch (fieldArg) {
-        case "essence" -> StoneSocketMenu.setEssenceIconOffset(value);
-        case "evolve" -> StoneSocketMenu.setEvolveIconOffset(value);
-        default -> StoneSocketMenu.setShutterOffset(value);
-      }
-      menuType = "stone_socket";
+    switch (fieldArg) {
+      case "essence" -> PickaxeMenu.setEssenceIconOffset(value);
+      case "evolve" -> PickaxeMenu.setEvolveIconOffset(value);
+      default -> PickaxeMenu.setShutterOffset(value);
     }
 
     if (sender instanceof Player player) {
-      Menu menu = MenuRegistry.getInstance().get(menuType);
+      Menu menu = MenuRegistry.getInstance().get("pickaxe");
       if (menu != null && menu.isMenuOpen(player)) {
         menu.refresh(player);
       }
@@ -851,10 +875,67 @@ public class Evolv3Command extends BaseCommand {
 
     sendSuccess(
         sender,
-        "&#FFFFFF"
-            + menuArg
-            + " "
+        "&#FFFFFFpickaxe " + fieldArg + " &#00FFFFoffset set to &#FFFFFF" + value + "&#00FFFF.");
+  }
+
+  /** Handles {@code /e vesselcalib socket <essence|evolve|shutter> <prestige 1-4> <value>}. */
+  private void handleSocketVesselCalib(CommandSender sender, String[] args) {
+    if (args.length < 5) {
+      sendError(
+          sender,
+          "Usage: &#FFFFFF/e vesselcalib socket <essence|evolve|shutter> <prestige 1-4> <value>");
+      return;
+    }
+
+    String fieldArg = args[2].toLowerCase();
+    if (!fieldArg.equals("essence") && !fieldArg.equals("evolve") && !fieldArg.equals("shutter")) {
+      sendError(sender, "Field must be &#FFFFFFessence&c, &#FFFFFFevolve&c, or &#FFFFFFshutter&c.");
+      return;
+    }
+
+    int[] currentValues =
+        switch (fieldArg) {
+          case "essence" -> StoneSocketMenu.getEssenceIconOffset();
+          case "evolve" -> StoneSocketMenu.getEvolveIconOffset();
+          default -> StoneSocketMenu.getShutterOffset();
+        };
+
+    int prestige;
+    int value;
+    try {
+      prestige = Integer.parseInt(args[3]) - 1;
+      value = Integer.parseInt(args[4]);
+    } catch (NumberFormatException e) {
+      sendError(sender, "Prestige and value must both be whole numbers.");
+      return;
+    }
+
+    if (prestige < 0 || prestige >= currentValues.length) {
+      sendError(
+          sender,
+          "Prestige must be between &#FFFFFF1 &cand &#FFFFFF" + currentValues.length + "&c.");
+      return;
+    }
+
+    switch (fieldArg) {
+      case "essence" -> StoneSocketMenu.setEssenceIconOffset(prestige, value);
+      case "evolve" -> StoneSocketMenu.setEvolveIconOffset(prestige, value);
+      default -> StoneSocketMenu.setShutterOffset(prestige, value);
+    }
+
+    if (sender instanceof Player player) {
+      Menu menu = MenuRegistry.getInstance().get("stone_socket");
+      if (menu != null && menu.isMenuOpen(player)) {
+        menu.refresh(player);
+      }
+    }
+
+    sendSuccess(
+        sender,
+        "&#FFFFFFsocket "
             + fieldArg
+            + " prestige &#FFFFFF"
+            + (prestige + 1)
             + " &#00FFFFoffset set to &#FFFFFF"
             + value
             + "&#00FFFF.");
@@ -992,6 +1073,9 @@ public class Evolv3Command extends BaseCommand {
     }
     if (args.length == 3 && "vesselcalib".equals(sub)) {
       return filterPrefix(List.of("essence", "evolve", "shutter"), args[2]);
+    }
+    if (args.length == 4 && "vesselcalib".equals(sub) && "socket".equalsIgnoreCase(args[1])) {
+      return filterPrefix(List.of("1", "2", "3", "4"), args[3]);
     }
     if ("scroll".equals(sub)) {
       if (args.length == 2)

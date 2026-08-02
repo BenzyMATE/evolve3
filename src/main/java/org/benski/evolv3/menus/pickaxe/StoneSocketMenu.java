@@ -105,46 +105,66 @@ public class StoneSocketMenu extends BaseMenu {
    * Exact pixel offset (via {@link PixelSpace}) from "⠣" (plus the vessel icons, when present) to
    * the shutter glyph, positioning it over the socket frame art. Tunable in-game via {@code /e
    * vesselcalib} without a rebuild/restart.
+   *
+   * <p>Indexed by prestige tier (0-3), same as {@link #SOCKET_CENTER_X} — this offset is measured
+   * from wherever the cursor lands after {@link #buildSocketIconsSegment}, and that landing spot
+   * drifts by a few pixels depending on which glyphs were drawn there, which changes with prestige.
+   * See {@link #SOCKET_CENTER_X}'s own doc for the full explanation.
    */
-  private static int SHUTTER_OFFSET = -65;
+  private static final int[] SHUTTER_OFFSET = {-65, -65, -65, -65};
 
   /**
    * Exact pixel offset (via {@link PixelSpace}) from the end of the socket icon segment to the
    * essence vessel icon. Tunable in-game via {@code /e vesselcalib} without a rebuild/restart.
+   * Indexed by prestige tier (0-3) for the same reason as {@link #SHUTTER_OFFSET}.
    */
-  private static int ESSENCE_ICON_OFFSET = -113;
+  private static final int[] ESSENCE_ICON_OFFSET = {-113, -113, -113, -113};
 
-  /** Exact pixel offset from the essence icon to the evolve vessel icon. */
-  private static int EVOLVE_ICON_OFFSET = -105;
+  /**
+   * Exact pixel offset from the essence icon to the evolve vessel icon. Indexed by prestige tier
+   * (0-3) for the same reason as {@link #SHUTTER_OFFSET}.
+   */
+  private static final int[] EVOLVE_ICON_OFFSET = {-105, -105, -105, -105};
 
   /**
    * Temporary calibration hooks for {@code /e vesselcalib} so {@link #ESSENCE_ICON_OFFSET}, {@link
    * #EVOLVE_ICON_OFFSET}, and {@link #SHUTTER_OFFSET} can be tuned in-game without a
    * rebuild/restart. Remove alongside the command once alignment is finalized and the defaults
    * above are updated to match.
+   *
+   * @param prestigeTier index into the array (0-3, one per unlocked-socket-count state)
    */
-  public static void setEssenceIconOffset(int value) {
-    ESSENCE_ICON_OFFSET = value;
+  public static void setEssenceIconOffset(int prestigeTier, int value) {
+    ESSENCE_ICON_OFFSET[prestigeTier] = value;
   }
 
-  public static int getEssenceIconOffset() {
-    return ESSENCE_ICON_OFFSET;
+  /** Returns a copy of the current (possibly live-tuned) {@link #ESSENCE_ICON_OFFSET} values. */
+  public static int[] getEssenceIconOffset() {
+    return ESSENCE_ICON_OFFSET.clone();
   }
 
-  public static void setEvolveIconOffset(int value) {
-    EVOLVE_ICON_OFFSET = value;
+  /**
+   * @param prestigeTier index into the array (0-3, one per unlocked-socket-count state)
+   */
+  public static void setEvolveIconOffset(int prestigeTier, int value) {
+    EVOLVE_ICON_OFFSET[prestigeTier] = value;
   }
 
-  public static int getEvolveIconOffset() {
-    return EVOLVE_ICON_OFFSET;
+  /** Returns a copy of the current (possibly live-tuned) {@link #EVOLVE_ICON_OFFSET} values. */
+  public static int[] getEvolveIconOffset() {
+    return EVOLVE_ICON_OFFSET.clone();
   }
 
-  public static void setShutterOffset(int value) {
-    SHUTTER_OFFSET = value;
+  /**
+   * @param prestigeTier index into the array (0-3, one per unlocked-socket-count state)
+   */
+  public static void setShutterOffset(int prestigeTier, int value) {
+    SHUTTER_OFFSET[prestigeTier] = value;
   }
 
-  public static int getShutterOffset() {
-    return SHUTTER_OFFSET;
+  /** Returns a copy of the current (possibly live-tuned) {@link #SHUTTER_OFFSET} values. */
+  public static int[] getShutterOffset() {
+    return SHUTTER_OFFSET.clone();
   }
 
   /**
@@ -348,6 +368,7 @@ public class StoneSocketMenu extends BaseMenu {
 
     PlayerDataCenter pdc = DataCenterRegistry.getInstance().getPlayerDataCenter();
     Pickaxe pickaxeProfile = pdc != null ? pdc.getPickaxeForPlayer(player) : null;
+    int prestigeTier = pickaxeProfile != null ? resolvePrestigeTier(pickaxeProfile.prestige) : 0;
 
     String vessels = "";
     if (pickaxeProfile != null) {
@@ -355,9 +376,9 @@ public class StoneSocketMenu extends BaseMenu {
       String essenceIcon = VesselProgress.getEssenceProgress(pickaxeProfile, frame);
       String evolveIcon = VesselProgress.getEvolveProgress(pickaxeProfile, frame);
       vessels =
-          PixelSpace.of(ESSENCE_ICON_OFFSET)
+          PixelSpace.of(ESSENCE_ICON_OFFSET[prestigeTier])
               + essenceIcon
-              + PixelSpace.of(EVOLVE_ICON_OFFSET)
+              + PixelSpace.of(EVOLVE_ICON_OFFSET[prestigeTier])
               + evolveIcon;
     }
 
@@ -372,8 +393,19 @@ public class StoneSocketMenu extends BaseMenu {
         + "⠣"
         + buildSocketIconsSegment(player)
         + vessels
-        + PixelSpace.of(SHUTTER_OFFSET)
+        + PixelSpace.of(SHUTTER_OFFSET[prestigeTier])
         + ShutterFrames.glyph(shutterGlyphFrame);
+  }
+
+  /**
+   * Maps a pickaxe's prestige to the shared calibration tier index (0-3) used by {@link
+   * #SOCKET_CENTER_X}, {@link #ESSENCE_ICON_OFFSET}, {@link #EVOLVE_ICON_OFFSET}, and {@link
+   * #SHUTTER_OFFSET} — see {@link #SOCKET_CENTER_X}'s own doc for why calibration must vary by how
+   * many sockets are currently unlocked.
+   */
+  private static int resolvePrestigeTier(int prestige) {
+    int unlockedSlots = EnchantData.getUnlockedSlotCount(prestige);
+    return Math.min(Math.max(unlockedSlots - 1, 0), SOCKET_CENTER_X.length - 1);
   }
 
   /**
@@ -399,7 +431,7 @@ public class StoneSocketMenu extends BaseMenu {
 
     EnchantData enchant = profile.enchants.getEnchant(displayName.toLowerCase());
     int unlockedSlots = EnchantData.getUnlockedSlotCount(profile.prestige);
-    int prestigeTier = Math.min(Math.max(unlockedSlots - 1, 0), SOCKET_CENTER_X.length - 1);
+    int prestigeTier = resolvePrestigeTier(profile.prestige);
 
     StringBuilder segment = new StringBuilder();
     for (int socketIndex = 0; socketIndex < SOCKET_SLOTS.length; socketIndex++) {

@@ -662,8 +662,12 @@ public class PickaxeMenu extends BaseMenu {
       lore.add(deserialize(formatMessage(player, processed)));
     }
 
+    // One grey (empty) or rarity-coloured (filled) dot per unlocked socket, matching
+    // PickaxeLoreRenderer#buildStoneIcons so the pickaxe's own lore and this menu agree.
+    int unlockedSockets = EnchantData.getUnlockedSlotCount(prestige);
     StringBuilder stoneIconsBuilder = new StringBuilder();
-    for (String stoneRarity : enchant.socketStones) {
+    for (int i = 0; i < unlockedSockets; i++) {
+      String stoneRarity = enchant.socketStones[i];
       if (stoneRarity != null) {
         RarityConfig stoneRarConfig = EnchantAnimationConfig.getRarityByName(stoneRarity);
         String sHex =
@@ -671,6 +675,8 @@ public class PickaxeMenu extends BaseMenu {
                 ? String.format("%06X", stoneRarConfig.textColor().value())
                 : "FFFFFF";
         stoneIconsBuilder.append("&#").append(sHex).append("◆");
+      } else {
+        stoneIconsBuilder.append("&#444444◆");
       }
     }
     String stoneIcons = stoneIconsBuilder.length() > 0 ? stoneIconsBuilder + " " : "";
@@ -678,8 +684,10 @@ public class PickaxeMenu extends BaseMenu {
     ItemStack item = EnchantAnimationConfig.createEnchantItem(displayName);
     ItemMeta meta = item.getItemMeta();
     if (meta == null) return item;
+    // The leading space belongs at the very start (before the stone dots), not between "&l" and
+    // the name — appending it there instead left a double gap whenever stoneIcons was non-empty.
     meta.displayName(
-        deserialize(formatMessage(player, stoneIcons + rarityColor + "&l " + displayName)));
+        deserialize(formatMessage(player, " " + stoneIcons + rarityColor + "&l" + displayName)));
     meta.lore(lore);
     item.setItemMeta(meta);
     if (rarity != null) {
