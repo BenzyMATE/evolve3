@@ -74,7 +74,6 @@ public final class Main extends JavaPlugin {
     CommandRegistry.getInstance().initialize();
     DataCenterRegistry.getInstance().initialize();
     MenuRegistry.getInstance().initialize();
-    DialogRegistry.getInstance().initialize();
     ListenerRegistry.getInstance().initialize();
     AnimationRegistry.getInstance().initialize();
     PickupAnimationManager.getInstance().initialize();
@@ -153,7 +152,6 @@ public final class Main extends JavaPlugin {
     AnimationRegistry.getInstance().cleanup();
     ListenerRegistry.getInstance().cleanup();
     DataCenterRegistry.getInstance().cleanup();
-    DialogRegistry.getInstance().cleanup();
     MenuRegistry.getInstance().cleanup();
     CommandRegistry.getInstance().cleanup();
     EnchantRegistry.getInstance().cleanup();

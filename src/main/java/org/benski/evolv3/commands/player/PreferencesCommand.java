@@ -2,7 +2,7 @@ package org.benski.evolv3.commands.player;
 
 import java.util.List;
 import org.benski.evolv3.core.abstracts.BaseCommand;
-import org.benski.evolv3.registry.DialogRegistry;
+import org.benski.evolv3.registry.MenuRegistry;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
@@ -51,7 +51,8 @@ public class PreferencesCommand extends BaseCommand {
     if (!requirePlayer(sender)) {
       return true;
     }
-    DialogRegistry.getInstance().open((Player) sender, "preferences");
+    var menu = MenuRegistry.getInstance().get("preferences");
+    if (menu != null) menu.openMenu((Player) sender);
     return true;
   }
 
