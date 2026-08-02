@@ -15,13 +15,12 @@ import org.benski.evolv3.core.constants.ConfigPaths;
 import org.benski.evolv3.dialogs.BasePlayerDialog;
 import org.benski.evolv3.registry.ConfigRegistry;
 import org.benski.evolv3.registry.DialogRegistry;
-import org.benski.evolv3.registry.MenuRegistry;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
 
 /**
  * Top-level preferences navigation dialog. Presents the four preference categories and routes
- * clicks to the appropriate sub-dialog or legacy menu.
+ * clicks to the appropriate sub-dialog.
  */
 @SuppressWarnings("UnstableApiUsage")
 public class PreferencesDialog extends BasePlayerDialog {
@@ -39,7 +38,7 @@ public class PreferencesDialog extends BasePlayerDialog {
         ActionButton.builder(
                 fromLegacy(
                     cfg.getString(
-                        ConfigPaths.Menus.PreferencesMenu.ANIMATIONS_NAME, "&#00FFFF⚡ Animations")))
+                        ConfigPaths.Menus.PreferencesMenu.ANIMATIONS_NAME, "&f&lAnimations")))
             .action(
                 DialogAction.customClick(
                     (response, audience) -> {
@@ -52,15 +51,12 @@ public class PreferencesDialog extends BasePlayerDialog {
     ActionButton enchants =
         ActionButton.builder(
                 fromLegacy(
-                    cfg.getString(
-                        ConfigPaths.Menus.PreferencesMenu.ENCHANTS_NAME, "&#00FFFF✶ Enchants")))
+                    cfg.getString(ConfigPaths.Menus.PreferencesMenu.ENCHANTS_NAME, "&f&lEnchants")))
             .action(
                 DialogAction.customClick(
                     (response, audience) -> {
-                      if (audience instanceof Player p) {
-                        var menu = MenuRegistry.getInstance().get("preferences_enchants");
-                        if (menu != null) menu.openMenu(p);
-                      }
+                      if (audience instanceof Player p)
+                        DialogRegistry.getInstance().open(p, "preferences_enchants");
                     },
                     SINGLE_USE))
             .build();
@@ -68,8 +64,7 @@ public class PreferencesDialog extends BasePlayerDialog {
     ActionButton messages =
         ActionButton.builder(
                 fromLegacy(
-                    cfg.getString(
-                        ConfigPaths.Menus.PreferencesMenu.MESSAGES_NAME, "&#888888✉ Messages")))
+                    cfg.getString(ConfigPaths.Menus.PreferencesMenu.MESSAGES_NAME, "&7Messages")))
             .action(
                 DialogAction.customClick(
                     (response, audience) -> {
@@ -85,8 +80,7 @@ public class PreferencesDialog extends BasePlayerDialog {
         ActionButton.builder(
                 fromLegacy(
                     cfg.getString(
-                        ConfigPaths.Menus.PreferencesMenu.EXPERIMENTAL_NAME,
-                        "&#FF8800⚗ Experimental")))
+                        ConfigPaths.Menus.PreferencesMenu.EXPERIMENTAL_NAME, "&f&lExperimental")))
             .action(
                 DialogAction.customClick(
                     (response, audience) -> {
@@ -98,7 +92,8 @@ public class PreferencesDialog extends BasePlayerDialog {
 
     ActionButton close =
         ActionButton.builder(
-                fromLegacy(cfg.getString(ConfigPaths.Menus.PreferencesMenu.CLOSE_NAME, "&cClose")))
+                fromLegacy(
+                    cfg.getString(ConfigPaths.Menus.PreferencesMenu.CLOSE_NAME, "&c&lClose")))
             .action(DialogAction.customClick((response, audience) -> {}, SINGLE_USE))
             .build();
 
@@ -109,7 +104,7 @@ public class PreferencesDialog extends BasePlayerDialog {
                     DialogBase.builder(
                             fromLegacy(
                                 cfg.getString(
-                                    ConfigPaths.Menus.PreferencesMenu.TITLE, "&8Preferences")))
+                                    ConfigPaths.Menus.PreferencesMenu.TITLE, "&f&lPreferences")))
                         .body(
                             List.of(
                                 DialogBody.plainMessage(

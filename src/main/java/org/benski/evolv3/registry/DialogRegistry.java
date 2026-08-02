@@ -7,6 +7,8 @@ import org.benski.evolv3.core.interfaces.Registry;
 import org.benski.evolv3.core.managers.registry.DialogRegistryManager;
 import org.benski.evolv3.dialogs.BasePlayerDialog;
 import org.benski.evolv3.dialogs.player.AnimationsPreferencesDialog;
+import org.benski.evolv3.dialogs.player.EnchantOptionDialog;
+import org.benski.evolv3.dialogs.player.EnchantsPreferencesDialog;
 import org.benski.evolv3.dialogs.player.ExperimentalPreferencesDialog;
 import org.benski.evolv3.dialogs.player.PreferencesDialog;
 import org.bukkit.entity.Player;
@@ -22,7 +24,9 @@ public class DialogRegistry implements Registry<BasePlayerDialog> {
       List.of(
           new PreferencesDialog(),
           new AnimationsPreferencesDialog(),
-          new ExperimentalPreferencesDialog());
+          new ExperimentalPreferencesDialog(),
+          new EnchantsPreferencesDialog(),
+          new EnchantOptionDialog());
 
   /** {@inheritDoc} */
   @Override

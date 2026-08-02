@@ -195,338 +195,86 @@ Pickaxe Limit Menu:
 
 # Preferences Menu
 Preferences Menu:
-  Title: "&#888888⚙ &f&lPreferences"
+  Title: "&f&lPreferences"
   Animations:
-    Material: COMPARATOR
-    Name: "&#00FFFF⚡ &f&lAnimations"
-    Lore:
-      - ''
-      - ' &#FFFFFF&lVisual Effects & Animations'
-      - ' &#AAAAAA Pickup animation style'
-      - ' &#AAAAAA Atom & Essence FX toggles'
-      - ' &#AAAAAA Enchant roll speed'
-      - ''
-      - ' &#AAAAAA▸ Left-Click to open'
-      - ''
+    Name: "&f&lAnimations"
   Enchants:
-    Material: ENCHANTING_TABLE
-    Name: "&#FFEE00✦ &f&lEnchant Notifications"
-    Lore:
-      - ''
-      - ' &#FFFFFF&lPer-Enchant Feedback'
-      - ' &#AAAAAA Chat messages on proc'
-      - ' &#AAAAAA Title popups on proc'
-      - ' &#AAAAAA Sounds on proc'
-      - ''
-      - ' &#AAAAAA▸ Left-Click to open'
-      - ''
+    Name: "&f&lEnchants"
   Messages:
-    Material: PAPER
-    Name: "&#555555✉ &7Messages"
-    Lore:
-      - ''
-      - ' &#555555&oNot yet available.'
-      - ''
+    Name: "&7Messages"
   Experimental:
-    Material: NETHER_STAR
-    Name: "&#FF8800⚗ &f&lExperimental"
-    Lore:
-      - ''
-      - ' &#FFFFFF&lBeta Features'
-      - ' &#AAAAAA Experimental toggles that'
-      - ' &#AAAAAA may have visual side effects.'
-      - ''
-      - ' &#AAAAAA▸ Left-Click to open'
-      - ''
+    Name: "&f&lExperimental"
   Close:
-    Material: BARRIER
-    Name: "&#FF5555✕ &f&lClose"
-    Lore:
-      - ''
-      - ' &#AAAAAA▸ Left-Click to close'
-      - ''
+    Name: "&c&lClose"
 
 # Experimental Menu
 Experimental Menu:
-  Title: "&#888888⚙ &f&lPreferences &8— &#FF8800Experimental"
+  Title: "&f&lExperimental"
   PickaxeAnimation:
-    EnabledMaterial: LIME_DYE
-    DisabledMaterial: GRAY_DYE
-    Name: "&#FF8800Menu Title Animation"
-    Lore:
-      - ''
-      - ' &#FFFFFF&lPickaxe Menu Title'
-      - ' &#AAAAAA Cycles through progress icons'
-      - ' &#AAAAAA in the Pickaxe Menu title bar.'
-      - ' &#555555&oMay cause visual flicker.'
-      - ''
-      - ' {status}'
-      - ''
-      - ' &#AAAAAA▸ Left-Click to toggle'
-      - ''
+    Name: "Pickaxe Menu Animation"
 
 # Animations Menu
 Animations Menu:
-  Title: "&#888888⚙ &f&lPreferences &8— &#00FFFFAnimations"
+  Title: "&f&lAnimations"
   Back:
-    Material: ARROW
-    Name: "&#AAAAAA← &f&lBack"
-    Lore:
-      - ''
-      - ' &#AAAAAA▸ Left-Click to return'
-      - ''
+    Name: "&7← Back"
   PickupAnimation:
     Label:
-      Material: COMPARATOR
-      Name: "&#00FFFF⬡ &f&lPickup Animation"
-      Lore:
-        - ''
-        - ' &#FFFFFF&lPickup Animation'
-        - ' &#AAAAAA The effect that plays when'
-        - ' &#AAAAAA a block enters your backpack.'
-        - ''
-    Material: ENDER_PEARL
-    SelectedMaterial: ENDER_EYE
+      Name: "Pickup Animation"
     Default:
       Name: "Default"
-      Lore:
-        - ' &#AAAAAA Block floats up and dissolves'
-        - ' &#AAAAAA into your backpack.'
-        - ''
-        - ' {status}'
-        - ''
-        - ' &#AAAAAA▸ Left-Click to select'
-        - ''
     Simple:
       Name: "Simple"
-      Lore:
-        - ' &#AAAAAA Items fade out and jump'
-        - ' &#AAAAAA directly into your backpack.'
-        - ''
-        - ' {status}'
-        - ''
-        - ' &#AAAAAA▸ Left-Click to select'
-        - ''
     Disabled:
       Name: "Disabled"
-      Lore:
-        - ' &#AAAAAA No animation — blocks go'
-        - ' &#AAAAAA straight into your backpack.'
-        - ''
-        - ' {status}'
-        - ''
-        - ' &#AAAAAA▸ Left-Click to select'
-        - ''
   EnchantSpeed:
     Label:
-      Material: CLOCK
-      Name: "&#FFEE00⏱ &f&lEnchant Roll Speed"
-      Lore:
-        - ''
-        - ' &#FFFFFF&lEnchant Roll Speed'
-        - ' &#AAAAAA How fast the selection'
-        - ' &#AAAAAA animation plays.'
-        - ''
-    Material: ENDER_PEARL
-    SelectedMaterial: ENDER_EYE
-    OptionLore:
-      - ' {status}'
-      - ''
-      - ' &#AAAAAA▸ Left-Click to select'
-      - ''
+      Name: "Enchant Roll Speed"
   AtomFX:
-    Label:
-      Material: GOLD_NUGGET
-      Name: "&#FFEE00⚛ &f&lAtom FX"
-      Lore:
-        - ''
-        - ' &#FFFFFF&lAtom Discovery Effects'
-        - ' &#AAAAAA Toggle each part of the'
-        - ' &#AAAAAA atom pickup animation.'
-        - ''
-    EnabledMaterial: LIME_DYE
-    DisabledMaterial: GRAY_DYE
     Sound:
-      Name: "Atom Sound"
-      Lore:
-        - ' &#AAAAAA Discovery and arrival sounds.'
-        - ''
-        - ' {status}'
-        - ''
-        - ' &#AAAAAA▸ Left-Click to toggle'
-        - ''
+      Name: "Atom: Sound"
     Particles:
-      Name: "Atom Particles"
-      Lore:
-        - ' &#AAAAAA Flying orb trail particles.'
-        - ''
-        - ' {status}'
-        - ''
-        - ' &#AAAAAA▸ Left-Click to toggle'
-        - ''
+      Name: "Atom: Particles"
     Hologram:
-      Name: "Atom Hologram"
-      Lore:
-        - ' &#AAAAAA Floating &#FFEE00+Atoms &#AAAAAAAAtext.'
-        - ''
-        - ' {status}'
-        - ''
-        - ' &#AAAAAA▸ Left-Click to toggle'
-        - ''
+      Name: "Atom: Hologram"
     Glow:
-      Name: "Atom Glow"
-      Lore:
-        - ' &#AAAAAA Brief glow on discovery.'
-        - ''
-        - ' {status}'
-        - ''
-        - ' &#AAAAAA▸ Left-Click to toggle'
-        - ''
+      Name: "Atom: Glow"
   EssenceFX:
-    Label:
-      Material: BLAZE_POWDER
-      Name: "&#B366D9🔥 &f&lEssence FX"
-      Lore:
-        - ''
-        - ' &#FFFFFF&lEssence Discovery Effects'
-        - ' &#AAAAAA Toggle each part of the'
-        - ' &#AAAAAA essence pickup animation.'
-        - ''
-    EnabledMaterial: LIME_DYE
-    DisabledMaterial: GRAY_DYE
     Sound:
-      Name: "Essence Sound"
-      Lore:
-        - ' &#AAAAAA Discovery and arrival sounds.'
-        - ''
-        - ' {status}'
-        - ''
-        - ' &#AAAAAA▸ Left-Click to toggle'
-        - ''
+      Name: "Essence: Sound"
     Particles:
-      Name: "Essence Particles"
-      Lore:
-        - ' &#AAAAAA Flying orb trail particles.'
-        - ''
-        - ' {status}'
-        - ''
-        - ' &#AAAAAA▸ Left-Click to toggle'
-        - ''
+      Name: "Essence: Particles"
     Hologram:
-      Name: "Essence Hologram"
-      Lore:
-        - ' &#AAAAAA Floating &#B366D9+Essence &#AAAAAAAAtext.'
-        - ''
-        - ' {status}'
-        - ''
-        - ' &#AAAAAA▸ Left-Click to toggle'
-        - ''
+      Name: "Essence: Hologram"
     Glow:
-      Name: "Essence Glow"
-      Lore:
-        - ' &#AAAAAA Brief glow on discovery.'
-        - ''
-        - ' {status}'
-        - ''
-        - ' &#AAAAAA▸ Left-Click to toggle'
-        - ''
+      Name: "Essence: Glow"
 
-# Enchants Preferences Menu
+# Enchants Preferences Dialog
 Enchants Menu:
-  Title: "&#888888⚙ &f&lPreferences &8— &#FFEE00Enchants"
+  Title: "&f&lEnchants"
   Back:
-    Material: ARROW
-    Name: "&#AAAAAA← &f&lBack"
-    Lore:
-      - ''
-      - ' &#AAAAAA▸ Left-Click to return'
-      - ''
-  Prev:
-    Material: ARROW
-    Name: "&#AAAAAA← &f&lPrevious Page"
-    Lore:
-      - ''
-      - ' &#AAAAAA▸ Left-Click for previous page'
-      - ''
-  Next:
-    Material: ARROW
-    Name: "&#AAAAAA→ &f&lNext Page"
-    Lore:
-      - ''
-      - ' &#AAAAAA▸ Left-Click for next page'
-      - ''
-  PageInfo:
-    Material: PAPER
-    Name: "&#888888Page {page} &7of &#888888{total}"
-  EnchantItem:
-    Lore:
-      - ''
-      - ' &#FFFFFF&lRarity'
-      - ' {rarity}'
-      - ''
-      - ' &#AAAAAA▸ Left-Click to configure'
-      - ''
+    Name: "&7← Back"
 
 # Armor Menu
 Armor Menu:
   Title: "&8Armor"
   TitleWithType: "&8%type% Settings"
 
-# Enchant Option Sub-Menu
+# Enchant Option Dialog
 Enchant Option Menu:
-  MenuTitle: "&8P &7» &8E &7» &8%enchant%"
+  MenuTitle: "&f&l%enchant%"
   Back:
-    Material: RED_STAINED_GLASS_PANE
-    Name: "&#AAAAAA← Back"
-    Lore:
-      - ' &aLeft-Click &7to go back'
-  EnabledMaterial: LIME_DYE
-  DisabledMaterial: RED_DYE
+    Name: "&7← Back"
   Message:
     Name: "Message"
-    Lore:
-      - ' &#777777Chat message when triggered.'
-      - ''
-      - ' {status}'
-      - ''
-      - ' &aLeft-Click &#AAAAAAto toggle'
-      - ''
   Title:
     Name: "Title"
-    Lore:
-      - ' &#777777Title popup when triggered.'
-      - ''
-      - ' {status}'
-      - ''
-      - ' &aLeft-Click &#AAAAAAto toggle'
-      - ''
   Sound:
     Name: "Sound"
-    Lore:
-      - ' &#777777Sound when triggered.'
-      - ''
-      - ' {status}'
-      - ''
-      - ' &aLeft-Click &#AAAAAAto toggle'
-      - ''
   Hologram:
     Name: "Hologram"
-    Lore:
-      - ' &#777777Floating text hologram.'
-      - ''
-      - ' {status}'
-      - ''
-      - ' &aLeft-Click &#AAAAAAto toggle'
-      - ''
   Particles:
     Name: "Particles"
-    Lore:
-      - ' &#777777Particle effects.'
-      - ''
-      - ' {status}'
-      - ''
-      - ' &aLeft-Click &#AAAAAAto toggle'
-      - ''
 
 # Furnace Smelt Menu
 # Opens an actual furnace GUI. Items are placed from the player's inventory.

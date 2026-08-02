@@ -809,150 +809,70 @@ public final class ConfigPaths {
       private PreferencesMenu() {}
 
       public static final String TITLE = "Preferences Menu.Title";
-      public static final String ANIMATIONS_MATERIAL = "Preferences Menu.Animations.Material";
       public static final String ANIMATIONS_NAME = "Preferences Menu.Animations.Name";
-      public static final String ANIMATIONS_LORE = "Preferences Menu.Animations.Lore";
-      public static final String ENCHANTS_MATERIAL = "Preferences Menu.Enchants.Material";
       public static final String ENCHANTS_NAME = "Preferences Menu.Enchants.Name";
-      public static final String ENCHANTS_LORE = "Preferences Menu.Enchants.Lore";
-      public static final String MESSAGES_MATERIAL = "Preferences Menu.Messages.Material";
       public static final String MESSAGES_NAME = "Preferences Menu.Messages.Name";
-      public static final String MESSAGES_LORE = "Preferences Menu.Messages.Lore";
-      public static final String EXPERIMENTAL_MATERIAL = "Preferences Menu.Experimental.Material";
       public static final String EXPERIMENTAL_NAME = "Preferences Menu.Experimental.Name";
-      public static final String EXPERIMENTAL_LORE = "Preferences Menu.Experimental.Lore";
-      public static final String CLOSE_MATERIAL = "Preferences Menu.Close.Material";
       public static final String CLOSE_NAME = "Preferences Menu.Close.Name";
-      public static final String CLOSE_LORE = "Preferences Menu.Close.Lore";
     }
 
-    /** Experimental preferences sub-menu item paths. */
+    /** Experimental preferences dialog paths. */
     public static final class ExperimentalMenu {
       private ExperimentalMenu() {}
 
       public static final String TITLE = "Experimental Menu.Title";
-      public static final String BACK_MATERIAL = "Experimental Menu.Back.Material";
-      public static final String BACK_NAME = "Experimental Menu.Back.Name";
-      public static final String BACK_LORE = "Experimental Menu.Back.Lore";
-      public static final String PICKAXE_ANIM_ENABLED_MAT =
-          "Experimental Menu.PickaxeAnimation.EnabledMaterial";
-      public static final String PICKAXE_ANIM_DISABLED_MAT =
-          "Experimental Menu.PickaxeAnimation.DisabledMaterial";
       public static final String PICKAXE_ANIM_NAME = "Experimental Menu.PickaxeAnimation.Name";
-      public static final String PICKAXE_ANIM_LORE = "Experimental Menu.PickaxeAnimation.Lore";
     }
 
-    /** Enchants preferences menu item paths. */
+    /** Enchants preferences dialog paths. */
     public static final class EnchantsMenu {
       private EnchantsMenu() {}
 
       public static final String TITLE = "Enchants Menu.Title";
-      public static final String BACK_MATERIAL = "Enchants Menu.Back.Material";
       public static final String BACK_NAME = "Enchants Menu.Back.Name";
-      public static final String BACK_LORE = "Enchants Menu.Back.Lore";
-      public static final String PREV_MATERIAL = "Enchants Menu.Prev.Material";
-      public static final String PREV_NAME = "Enchants Menu.Prev.Name";
-      public static final String PREV_LORE = "Enchants Menu.Prev.Lore";
-      public static final String NEXT_MATERIAL = "Enchants Menu.Next.Material";
-      public static final String NEXT_NAME = "Enchants Menu.Next.Name";
-      public static final String NEXT_LORE = "Enchants Menu.Next.Lore";
-      public static final String PAGE_INFO_MATERIAL = "Enchants Menu.PageInfo.Material";
-      public static final String PAGE_INFO_NAME = "Enchants Menu.PageInfo.Name";
-      public static final String ENCHANT_ITEM_LORE = "Enchants Menu.EnchantItem.Lore";
     }
 
-    /** Enchant option sub-menu item paths. */
+    /** Enchant option sub-dialog paths. */
     public static final class EnchantOptionMenu {
       private EnchantOptionMenu() {}
 
-      /** Menu title. Supports %enchant% placeholder. */
+      /** Dialog title. Supports %enchant% placeholder. */
       public static final String MENU_TITLE = "Enchant Option Menu.MenuTitle";
 
-      public static final String BACK_MATERIAL = "Enchant Option Menu.Back.Material";
       public static final String BACK_NAME = "Enchant Option Menu.Back.Name";
-      public static final String BACK_LORE = "Enchant Option Menu.Back.Lore";
-      public static final String ENABLED_MATERIAL = "Enchant Option Menu.EnabledMaterial";
-      public static final String DISABLED_MATERIAL = "Enchant Option Menu.DisabledMaterial";
       public static final String MESSAGE_NAME = "Enchant Option Menu.Message.Name";
-      public static final String MESSAGE_LORE = "Enchant Option Menu.Message.Lore";
       public static final String TITLE_NAME = "Enchant Option Menu.Title.Name";
-      public static final String TITLE_LORE = "Enchant Option Menu.Title.Lore";
       public static final String SOUND_NAME = "Enchant Option Menu.Sound.Name";
-      public static final String SOUND_LORE = "Enchant Option Menu.Sound.Lore";
       public static final String HOLOGRAM_NAME = "Enchant Option Menu.Hologram.Name";
-      public static final String HOLOGRAM_LORE = "Enchant Option Menu.Hologram.Lore";
       public static final String PARTICLES_NAME = "Enchant Option Menu.Particles.Name";
-      public static final String PARTICLES_LORE = "Enchant Option Menu.Particles.Lore";
     }
 
-    /** Animations preferences sub-menu item paths. */
+    /** Animations preferences dialog paths. */
     public static final class AnimationsMenu {
       private AnimationsMenu() {}
 
       public static final String TITLE = "Animations Menu.Title";
-      public static final String BACK_MATERIAL = "Animations Menu.Back.Material";
       public static final String BACK_NAME = "Animations Menu.Back.Name";
-      public static final String BACK_LORE = "Animations Menu.Back.Lore";
 
-      public static final String PICKUP_LABEL_MATERIAL =
-          "Animations Menu.PickupAnimation.Label.Material";
       public static final String PICKUP_LABEL_NAME = "Animations Menu.PickupAnimation.Label.Name";
-      public static final String PICKUP_LABEL_LORE = "Animations Menu.PickupAnimation.Label.Lore";
-      public static final String PICKUP_MATERIAL = "Animations Menu.PickupAnimation.Material";
-      public static final String PICKUP_SELECTED_MATERIAL =
-          "Animations Menu.PickupAnimation.SelectedMaterial";
       public static final String PICKUP_DEFAULT_NAME =
           "Animations Menu.PickupAnimation.Default.Name";
-      public static final String PICKUP_DEFAULT_LORE =
-          "Animations Menu.PickupAnimation.Default.Lore";
       public static final String PICKUP_SIMPLE_NAME = "Animations Menu.PickupAnimation.Simple.Name";
-      public static final String PICKUP_SIMPLE_LORE = "Animations Menu.PickupAnimation.Simple.Lore";
       public static final String PICKUP_DISABLED_NAME =
           "Animations Menu.PickupAnimation.Disabled.Name";
-      public static final String PICKUP_DISABLED_LORE =
-          "Animations Menu.PickupAnimation.Disabled.Lore";
 
-      public static final String SPEED_LABEL_MATERIAL =
-          "Animations Menu.EnchantSpeed.Label.Material";
       public static final String SPEED_LABEL_NAME = "Animations Menu.EnchantSpeed.Label.Name";
-      public static final String SPEED_LABEL_LORE = "Animations Menu.EnchantSpeed.Label.Lore";
-      public static final String SPEED_MATERIAL = "Animations Menu.EnchantSpeed.Material";
-      public static final String SPEED_SELECTED_MATERIAL =
-          "Animations Menu.EnchantSpeed.SelectedMaterial";
-      public static final String SPEED_OPTION_LORE = "Animations Menu.EnchantSpeed.OptionLore";
 
-      public static final String ATOM_LABEL_MATERIAL = "Animations Menu.AtomFX.Label.Material";
-      public static final String ATOM_LABEL_NAME = "Animations Menu.AtomFX.Label.Name";
-      public static final String ATOM_LABEL_LORE = "Animations Menu.AtomFX.Label.Lore";
-      public static final String ATOM_ENABLED_MATERIAL = "Animations Menu.AtomFX.EnabledMaterial";
-      public static final String ATOM_DISABLED_MATERIAL = "Animations Menu.AtomFX.DisabledMaterial";
       public static final String ATOM_SOUND_NAME = "Animations Menu.AtomFX.Sound.Name";
-      public static final String ATOM_SOUND_LORE = "Animations Menu.AtomFX.Sound.Lore";
       public static final String ATOM_PARTICLES_NAME = "Animations Menu.AtomFX.Particles.Name";
-      public static final String ATOM_PARTICLES_LORE = "Animations Menu.AtomFX.Particles.Lore";
       public static final String ATOM_HOLOGRAM_NAME = "Animations Menu.AtomFX.Hologram.Name";
-      public static final String ATOM_HOLOGRAM_LORE = "Animations Menu.AtomFX.Hologram.Lore";
       public static final String ATOM_GLOW_NAME = "Animations Menu.AtomFX.Glow.Name";
-      public static final String ATOM_GLOW_LORE = "Animations Menu.AtomFX.Glow.Lore";
 
-      public static final String ESSENCE_LABEL_MATERIAL =
-          "Animations Menu.EssenceFX.Label.Material";
-      public static final String ESSENCE_LABEL_NAME = "Animations Menu.EssenceFX.Label.Name";
-      public static final String ESSENCE_LABEL_LORE = "Animations Menu.EssenceFX.Label.Lore";
-      public static final String ESSENCE_ENABLED_MATERIAL =
-          "Animations Menu.EssenceFX.EnabledMaterial";
-      public static final String ESSENCE_DISABLED_MATERIAL =
-          "Animations Menu.EssenceFX.DisabledMaterial";
       public static final String ESSENCE_SOUND_NAME = "Animations Menu.EssenceFX.Sound.Name";
-      public static final String ESSENCE_SOUND_LORE = "Animations Menu.EssenceFX.Sound.Lore";
       public static final String ESSENCE_PARTICLES_NAME =
           "Animations Menu.EssenceFX.Particles.Name";
-      public static final String ESSENCE_PARTICLES_LORE =
-          "Animations Menu.EssenceFX.Particles.Lore";
       public static final String ESSENCE_HOLOGRAM_NAME = "Animations Menu.EssenceFX.Hologram.Name";
-      public static final String ESSENCE_HOLOGRAM_LORE = "Animations Menu.EssenceFX.Hologram.Lore";
       public static final String ESSENCE_GLOW_NAME = "Animations Menu.EssenceFX.Glow.Name";
-      public static final String ESSENCE_GLOW_LORE = "Animations Menu.EssenceFX.Glow.Lore";
     }
 
     /** Backpack menu title paths. */

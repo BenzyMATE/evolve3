@@ -42,7 +42,7 @@ public class ExperimentalPreferencesDialog extends BasePlayerDialog {
             fromLegacy(
                 cfg.getString(
                     ConfigPaths.Menus.ExperimentalMenu.PICKAXE_ANIM_NAME,
-                    "&#FF8800Pickaxe Menu Animation")),
+                    "Pickaxe Menu Animation")),
             prefs.pickaxeMenuAnimation,
             "Enabled",
             "Disabled");
@@ -67,8 +67,7 @@ public class ExperimentalPreferencesDialog extends BasePlayerDialog {
 
     ActionButton backButton =
         ActionButton.builder(
-                fromLegacy(
-                    cfg.getString(ConfigPaths.Menus.AnimationsMenu.BACK_NAME, "&#AAAAAA← Back")))
+                fromLegacy(cfg.getString(ConfigPaths.Menus.AnimationsMenu.BACK_NAME, "&7← Back")))
             .action(
                 DialogAction.customClick(
                     (response, audience) -> {
@@ -85,8 +84,7 @@ public class ExperimentalPreferencesDialog extends BasePlayerDialog {
                     DialogBase.builder(
                             fromLegacy(
                                 cfg.getString(
-                                    ConfigPaths.Menus.ExperimentalMenu.TITLE,
-                                    "&8P &7» &8Experimental")))
+                                    ConfigPaths.Menus.ExperimentalMenu.TITLE, "&f&lExperimental")))
                         .body(
                             List.of(
                                 DialogBody.plainMessage(

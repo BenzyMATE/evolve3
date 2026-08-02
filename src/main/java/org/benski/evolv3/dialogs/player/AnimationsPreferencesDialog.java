@@ -74,8 +74,7 @@ public class AnimationsPreferencesDialog extends BasePlayerDialog {
 
     ActionButton backButton =
         ActionButton.builder(
-                fromLegacy(
-                    cfg.getString(ConfigPaths.Menus.AnimationsMenu.BACK_NAME, "&#AAAAAA← Back")))
+                fromLegacy(cfg.getString(ConfigPaths.Menus.AnimationsMenu.BACK_NAME, "&7← Back")))
             .width(HALF_WIDTH)
             .action(
                 DialogAction.customClick(
@@ -93,8 +92,7 @@ public class AnimationsPreferencesDialog extends BasePlayerDialog {
                     DialogBase.builder(
                             fromLegacy(
                                 cfg.getString(
-                                    ConfigPaths.Menus.AnimationsMenu.TITLE,
-                                    "&8P &7» &8Animations")))
+                                    ConfigPaths.Menus.AnimationsMenu.TITLE, "&f&lAnimations")))
                         .body(
                             List.of(
                                 DialogBody.plainMessage(
@@ -113,49 +111,49 @@ public class AnimationsPreferencesDialog extends BasePlayerDialog {
                                 cfg,
                                 prefs.atomSound,
                                 ConfigPaths.Menus.AnimationsMenu.ATOM_SOUND_NAME,
-                                "&#FFEE00⚛ Atom: Sound",
+                                "Atom: Sound",
                                 pref -> pref.atomSound = !pref.atomSound),
                             toggle(
                                 cfg,
                                 prefs.essenceSound,
                                 ConfigPaths.Menus.AnimationsMenu.ESSENCE_SOUND_NAME,
-                                "&#B366D9🔥 Essence: Sound",
+                                "Essence: Sound",
                                 pref -> pref.essenceSound = !pref.essenceSound),
                             toggle(
                                 cfg,
                                 prefs.atomParticles,
                                 ConfigPaths.Menus.AnimationsMenu.ATOM_PARTICLES_NAME,
-                                "&#FFEE00⚛ Atom: Particles",
+                                "Atom: Particles",
                                 pref -> pref.atomParticles = !pref.atomParticles),
                             toggle(
                                 cfg,
                                 prefs.essenceParticles,
                                 ConfigPaths.Menus.AnimationsMenu.ESSENCE_PARTICLES_NAME,
-                                "&#B366D9🔥 Essence: Particles",
+                                "Essence: Particles",
                                 pref -> pref.essenceParticles = !pref.essenceParticles),
                             toggle(
                                 cfg,
                                 prefs.atomHologram,
                                 ConfigPaths.Menus.AnimationsMenu.ATOM_HOLOGRAM_NAME,
-                                "&#FFEE00⚛ Atom: Hologram",
+                                "Atom: Hologram",
                                 pref -> pref.atomHologram = !pref.atomHologram),
                             toggle(
                                 cfg,
                                 prefs.essenceHologram,
                                 ConfigPaths.Menus.AnimationsMenu.ESSENCE_HOLOGRAM_NAME,
-                                "&#B366D9🔥 Essence: Hologram",
+                                "Essence: Hologram",
                                 pref -> pref.essenceHologram = !pref.essenceHologram),
                             toggle(
                                 cfg,
                                 prefs.atomGlow,
                                 ConfigPaths.Menus.AnimationsMenu.ATOM_GLOW_NAME,
-                                "&#FFEE00⚛ Atom: Glow",
+                                "Atom: Glow",
                                 pref -> pref.atomGlow = !pref.atomGlow),
                             toggle(
                                 cfg,
                                 prefs.essenceGlow,
                                 ConfigPaths.Menus.AnimationsMenu.ESSENCE_GLOW_NAME,
-                                "&#B366D9🔥 Essence: Glow",
+                                "Essence: Glow",
                                 pref -> pref.essenceGlow = !pref.essenceGlow),
                             // Row 5: [Save | Back]
                             saveButton,
@@ -207,8 +205,7 @@ public class AnimationsPreferencesDialog extends BasePlayerDialog {
     return DialogInput.singleOption(
             "pickupEffect",
             fromLegacy(
-                cfg.getString(
-                    ConfigPaths.Menus.AnimationsMenu.PICKUP_LABEL_NAME, "&#00FFFF⬡ Pickup Effect")),
+                cfg.getString(ConfigPaths.Menus.AnimationsMenu.PICKUP_LABEL_NAME, "Pickup Effect")),
             List.of(
                 OptionEntry.create(
                     PickupEffect.DEFAULT.name(),
@@ -236,8 +233,7 @@ public class AnimationsPreferencesDialog extends BasePlayerDialog {
     return DialogInput.singleOption(
             "enchantSpeed",
             fromLegacy(
-                cfg.getString(
-                    ConfigPaths.Menus.AnimationsMenu.SPEED_LABEL_NAME, "&#FFEE00⏱ Enchant Speed")),
+                cfg.getString(ConfigPaths.Menus.AnimationsMenu.SPEED_LABEL_NAME, "Enchant Speed")),
             List.of(
                 OptionEntry.create(
                     EnchantSpeed.VERY_SLOW.name(),

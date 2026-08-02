@@ -15,18 +15,13 @@ import org.benski.evolv3.menus.cell.CellMenu;
 import org.benski.evolv3.menus.cell.CellRentInfoMenu;
 import org.benski.evolv3.menus.island.IslandMenu;
 import org.benski.evolv3.menus.island.IslandsMenu;
-import org.benski.evolv3.menus.pickaxe.EnchantOptionMenu;
-import org.benski.evolv3.menus.pickaxe.EnchantsPreferencesMenu;
 import org.benski.evolv3.menus.pickaxe.FurnaceSmeltMenu;
 import org.benski.evolv3.menus.pickaxe.PickaxeLimitMenu;
 import org.benski.evolv3.menus.pickaxe.PickaxeMenu;
 import org.benski.evolv3.menus.pickaxe.PrestigeConfirmMenu;
 import org.benski.evolv3.menus.pickaxe.StoneSocketMenu;
-import org.benski.evolv3.menus.player.AnimationsMenu;
 import org.benski.evolv3.menus.player.ArmorMenu;
 import org.benski.evolv3.menus.player.BackpackMenu;
-import org.benski.evolv3.menus.player.ExperimentalPreferencesMenu;
-import org.benski.evolv3.menus.player.PreferencesMenu;
 
 /** A registry to register menus/guis. */
 public class MenuRegistry implements Registry<Menu> {
@@ -40,13 +35,8 @@ public class MenuRegistry implements Registry<Menu> {
           ArmorMenu.class,
           BackpackMenu.class,
           PickaxeLimitMenu.class,
-          PreferencesMenu.class,
-          AnimationsMenu.class,
-          EnchantsPreferencesMenu.class,
-          EnchantOptionMenu.class,
           FurnaceSmeltMenu.class,
           StoneSocketMenu.class,
-          ExperimentalPreferencesMenu.class,
           PrestigeConfirmMenu.class,
           CellMenu.class,
           CellEvolveConfirmMenu.class,
