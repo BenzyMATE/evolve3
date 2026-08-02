@@ -75,13 +75,13 @@ public class EvolutionSlotMachineAnimation implements EvolutionAnimation {
   private static final int RETURN_END = 208;
   private static final int TOTAL = 211;
 
-  private static final double PORTAL_RADIUS = 1.3;
-  private static final double TOP_OFFSET = 3.0;
-  private static final double BOTTOM_OFFSET = -2.4;
+  private static final double PORTAL_RADIUS = 1.1;
+  private static final double TOP_OFFSET = 1.3;
+  private static final double BOTTOM_OFFSET = -1.1;
   private static final double[] COLUMN_OFFSETS = {-0.9, 0.0, 0.9};
   private static final double[] ROW_OFFSETS = {0.7, 0.0, -0.7};
 
-  private static final Color PORTAL_VOID = Color.fromRGB(20, 14, 4);
+  private static final Color PORTAL_CORE = Color.fromRGB(120, 70, 10);
 
   private final JavaPlugin plugin;
   private final Player player;
@@ -313,31 +313,34 @@ public class EvolutionSlotMachineAnimation implements EvolutionAnimation {
     }
   }
 
-  /** Draws a single ring of portal particles at the given radius and rotation. */
+  /**
+   * Draws a single ring of portal particles at the given radius and rotation, gold like the atoms.
+   */
   private void drawPortalRing(World world, Location center, double radius, double angle) {
     if (radius <= 0.01) return;
     int points = 10;
     for (int i = 0; i < points; i++) {
       double a = angle + (i / (double) points) * 2 * Math.PI;
       Location p = discPoint(center, radius, a);
-      world.spawnParticle(Particle.REVERSE_PORTAL, p, 1, 0.02, 0.02, 0.02, 0.01);
-      if (i % 2 == 0) {
-        world.spawnParticle(
-            Particle.DUST,
-            p,
-            1,
-            0,
-            0,
-            0,
-            0,
-            new Particle.DustOptions(EvolutionCastEffects.ATOM_GOLD, 1.2f));
+      Color rimColor = i % 2 == 0 ? EvolutionCastEffects.ATOM_GOLD : EvolutionCastEffects.DEEP_GOLD;
+      world.spawnParticle(
+          Particle.DUST, p, 1, 0.02, 0.02, 0.02, 0, new Particle.DustOptions(rimColor, 1.2f));
+      if (i % 3 == 0) {
+        world.spawnParticle(Particle.END_ROD, p, 1, 0.01, 0.01, 0.01, 0.005);
       }
     }
     Location core = discPoint(center, radius * 0.4, -angle * 1.3);
     world.spawnParticle(
-        Particle.DUST, core, 2, 0.06, 0.06, 0.06, 0, new Particle.DustOptions(PORTAL_VOID, 1.6f));
+        Particle.DUST, core, 2, 0.06, 0.06, 0.06, 0, new Particle.DustOptions(PORTAL_CORE, 1.6f));
     world.spawnParticle(
-        Particle.GLOW, discPoint(center, radius * 0.7, angle * 0.6), 1, 0.05, 0.05, 0.05, 0);
+        Particle.DUST,
+        discPoint(center, radius * 0.7, angle * 0.6),
+        1,
+        0.05,
+        0.05,
+        0.05,
+        0,
+        new Particle.DustOptions(EvolutionCastEffects.ATOM_GOLD, 1.0f));
   }
 
   /** Returns a point on a horizontal disc centred at {@code center}, facing up/down. */
@@ -367,7 +370,16 @@ public class EvolutionSlotMachineAnimation implements EvolutionAnimation {
   private void triggerPickaxeSuckedIn(World world) {
     if (ascendingPickaxe != null && !ascendingPickaxe.isDead()) ascendingPickaxe.remove();
     world.playSound(topPortal, "custom.vacuumsuckshort", 0.5f, 1.3f);
-    world.spawnParticle(Particle.REVERSE_PORTAL, topPortal, 30, 0.3, 0.2, 0.3, 0.3);
+    world.spawnParticle(
+        Particle.DUST,
+        topPortal,
+        30,
+        0.3,
+        0.2,
+        0.3,
+        0,
+        new Particle.DustOptions(EvolutionCastEffects.ATOM_GOLD, 1.4f));
+    world.spawnParticle(Particle.END_ROD, topPortal, 15, 0.25, 0.2, 0.25, 0.1);
     spawnReels(world);
   }
 
