@@ -179,7 +179,9 @@ public class PreferenceType {
     RUNIC_SIGIL("Runic Sigil", "A rotating rune circle rises into a tower of arcane light"),
     ELEMENTAL_CONVERGENCE(
         "Elemental Convergence", "Four elemental pillars spiral inward and fuse together"),
-    STORM_VORTEX("Storm Vortex", "A lightning-wracked vortex gathers and charges the pickaxe");
+    STORM_VORTEX("Storm Vortex", "A lightning-wracked vortex gathers and charges the pickaxe"),
+    SLOT_MACHINE(
+        "Jackpot Reels", "Twin portals frame three spinning reels that lock onto your fortune");
 
     private final String displayName;
     private final String description;

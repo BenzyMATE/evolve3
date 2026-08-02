@@ -14,6 +14,7 @@ import org.benski.evolv3.animations.progression.EvolutionElementalConvergenceAni
 import org.benski.evolv3.animations.progression.EvolutionGenesisHelixAnimation;
 import org.benski.evolv3.animations.progression.EvolutionPhoenixRebirthAnimation;
 import org.benski.evolv3.animations.progression.EvolutionRunicSigilAnimation;
+import org.benski.evolv3.animations.progression.EvolutionSlotMachineAnimation;
 import org.benski.evolv3.animations.progression.EvolutionStarlightCoronationAnimation;
 import org.benski.evolv3.animations.progression.EvolutionStormVortexAnimation;
 import org.benski.evolv3.animations.progression.EvolutionSupernovaAnimation;
@@ -364,6 +365,9 @@ public class EvolutionSelectionManager {
                   plugin, player, current, next, winningRarity, wrappedCallback);
           case STORM_VORTEX ->
               new EvolutionStormVortexAnimation(
+                  plugin, player, current, next, winningRarity, wrappedCallback);
+          case SLOT_MACHINE ->
+              new EvolutionSlotMachineAnimation(
                   plugin, player, current, next, winningRarity, wrappedCallback);
           default ->
               new EvolutionAnimation3(

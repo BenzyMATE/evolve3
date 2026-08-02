@@ -40,7 +40,8 @@ public class EvolutionStyleCommand extends BaseCommand {
           PreferenceType.EvolutionStyle.PHOENIX_REBIRTH,
           PreferenceType.EvolutionStyle.RUNIC_SIGIL,
           PreferenceType.EvolutionStyle.ELEMENTAL_CONVERGENCE,
-          PreferenceType.EvolutionStyle.STORM_VORTEX);
+          PreferenceType.EvolutionStyle.STORM_VORTEX,
+          PreferenceType.EvolutionStyle.SLOT_MACHINE);
 
   /** Creates and registers the EvolutionStyleCommand. @param plugin the owning plugin */
   public EvolutionStyleCommand(JavaPlugin plugin) {
@@ -106,7 +107,7 @@ public class EvolutionStyleCommand extends BaseCommand {
               messages.getString(
                   ConfigPaths.Messages.EvolutionStyle.USAGE_SET,
                   "&cUsage: /evolutionstyle set"
-                      + " <ascension|supernova|helix|forge|coronation|void|phoenix|runic|elemental|storm>");
+                      + " <ascension|supernova|helix|forge|coronation|void|phoenix|runic|elemental|storm|slots>");
           player.sendMessage(formatMessage(player, usage));
           return true;
         }
@@ -278,6 +279,7 @@ public class EvolutionStyleCommand extends BaseCommand {
       case "runic", "sigil" -> PreferenceType.EvolutionStyle.RUNIC_SIGIL;
       case "elemental", "elements" -> PreferenceType.EvolutionStyle.ELEMENTAL_CONVERGENCE;
       case "storm", "vortex" -> PreferenceType.EvolutionStyle.STORM_VORTEX;
+      case "slots", "slot", "jackpot", "reels" -> PreferenceType.EvolutionStyle.SLOT_MACHINE;
       default -> null;
     };
   }
@@ -307,7 +309,8 @@ public class EvolutionStyleCommand extends BaseCommand {
                   "phoenix",
                   "runic",
                   "elemental",
-                  "storm"));
+                  "storm",
+                  "slots"));
       String prefix = args[0].toLowerCase();
       completions.addAll(
           options.stream().filter(s -> s.startsWith(prefix)).collect(Collectors.toList()));
@@ -324,7 +327,8 @@ public class EvolutionStyleCommand extends BaseCommand {
                   "phoenix",
                   "runic",
                   "elemental",
-                  "storm")
+                  "storm",
+                  "slots")
               .stream()
               .filter(s -> s.startsWith(prefix))
               .collect(Collectors.toList()));
