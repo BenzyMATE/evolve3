@@ -415,13 +415,13 @@ public class EvolutionSelectionManager {
   /**
    * Maps the player's evolution style preference to which {@link EvolutionAnimation} implementation
    * {@link #startEvolutionInternal} constructs. Defaults to {@link
-   * PreferenceType.EvolutionStyle#GENESIS_HELIX} if the preference is unavailable.
+   * PreferenceType.EvolutionStyle#SLOT_MACHINE} if the preference is unavailable.
    */
   private PreferenceType.EvolutionStyle resolveEvolutionStyle(Player player) {
     PlayerDataCenter pdc = DataCenterRegistry.getInstance().getPlayerDataCenter();
-    if (pdc == null) return PreferenceType.EvolutionStyle.GENESIS_HELIX;
+    if (pdc == null) return PreferenceType.EvolutionStyle.SLOT_MACHINE;
     PlayerProfile profile = pdc.getLocal(player);
-    if (profile == null) return PreferenceType.EvolutionStyle.GENESIS_HELIX;
+    if (profile == null) return PreferenceType.EvolutionStyle.SLOT_MACHINE;
     return profile.preferences.evolutionStyle;
   }
 

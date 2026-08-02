@@ -194,7 +194,7 @@ public final class ProfileMapper {
                 safeEnum(
                     val,
                     PreferenceType.EvolutionStyle.class,
-                    PreferenceType.EvolutionStyle.GENESIS_HELIX);
+                    PreferenceType.EvolutionStyle.SLOT_MACHINE);
         case PREF_PICKUP_EFFECT ->
             profile.preferences.pickupEffect =
                 safeEnum(

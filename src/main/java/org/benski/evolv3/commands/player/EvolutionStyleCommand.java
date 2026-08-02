@@ -241,12 +241,12 @@ public class EvolutionStyleCommand extends BaseCommand {
     player.sendMessage(formatMessage(player, cycled));
   }
 
-  /** Returns the player's current evolution style preference, defaulting to genesis helix. */
+  /** Returns the player's current evolution style preference, defaulting to the slot machine. */
   private PreferenceType.EvolutionStyle getPlayerStyle(Player player) {
     PlayerProfile profile = getProfile(player);
     return profile != null
         ? profile.preferences.evolutionStyle
-        : PreferenceType.EvolutionStyle.GENESIS_HELIX;
+        : PreferenceType.EvolutionStyle.SLOT_MACHINE;
   }
 
   /** Persists the given style to the player's profile. Returns {@code false} if no profile. */

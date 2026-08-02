@@ -83,7 +83,10 @@ public class EvolutionSlotMachineAnimation implements EvolutionAnimation {
   private static final double[] COLUMN_OFFSETS = {-0.9, 0.0, 0.9};
   private static final double[] ROW_OFFSETS = {0.7, 0.0, -0.7};
 
-  private static final Color PORTAL_CORE = Color.fromRGB(120, 70, 10);
+  /**
+   * Near-black dust scattered across each portal's opening, giving it depth like the rift's void.
+   */
+  private static final Color VOID_COLOR = Color.fromRGB(4, 4, 12);
 
   private final JavaPlugin plugin;
   private final Player player;
@@ -357,16 +360,29 @@ public class EvolutionSlotMachineAnimation implements EvolutionAnimation {
     }
   }
 
-  /** Keeps both portals shimmering steadily while the machine does its work. */
+  /**
+   * Keeps both portals shimmering steadily while the machine does its work — a swirling rim, a dark
+   * void core, and a starfield of distant twinkles, exactly like the enchant rift's ambience but
+   * gold instead of purple.
+   */
   private void tickPortalAmbience(World world) {
-    if (currentTick % 3 == 0) {
-      drawPortalRing(world, topPortal, PORTAL_RADIUS, currentTick * 0.5);
-      drawPortalRing(world, bottomPortal, PORTAL_RADIUS, -currentTick * 0.5);
+    for (Location portal : new Location[] {topPortal, bottomPortal}) {
+      if (currentTick % 3 == 0) {
+        spawnRimShimmer(world, portal, PORTAL_RADIUS, 3);
+      }
+      if (currentTick % 6 == 0) {
+        spawnVoidCore(world, portal, PORTAL_RADIUS, 2);
+      }
+      if (currentTick % 10 == 0) {
+        spawnStarfield(world, portal, PORTAL_RADIUS, 2);
+      }
     }
   }
 
   /**
-   * Draws a single ring of portal particles at the given radius and rotation, gold like the atoms.
+   * Draws a single portal opening at the given radius and rotation — a swirling gold rim over a
+   * dark void core with a starfield of distant twinkles, gold like the atoms instead of the enchant
+   * rift's purple.
    */
   private void drawPortalRing(World world, Location center, double radius, double angle) {
     if (radius <= 0.01) return;
@@ -381,18 +397,58 @@ public class EvolutionSlotMachineAnimation implements EvolutionAnimation {
         world.spawnParticle(Particle.END_ROD, p, 1, 0.01, 0.01, 0.01, 0.005);
       }
     }
-    Location core = discPoint(center, radius * 0.4, -angle * 1.3);
-    world.spawnParticle(
-        Particle.DUST, core, 2, 0.06, 0.06, 0.06, 0, new Particle.DustOptions(PORTAL_CORE, 1.6f));
-    world.spawnParticle(
-        Particle.DUST,
-        discPoint(center, radius * 0.7, angle * 0.6),
-        1,
-        0.05,
-        0.05,
-        0.05,
-        0,
-        new Particle.DustOptions(EvolutionCastEffects.ATOM_GOLD, 1.0f));
+    spawnVoidCore(world, center, radius, 2);
+    spawnStarfield(world, center, radius, 1);
+  }
+
+  /**
+   * Scatters faint, near-black {@link Particle#DUST} points across the portal's opening, giving it
+   * depth instead of reading as empty air — mirrors {@link RiftAnimation}'s void core.
+   */
+  private void spawnVoidCore(World world, Location center, double radius, int count) {
+    for (int i = 0; i < count; i++) {
+      double r = ThreadLocalRandom.current().nextDouble() * radius * 0.7;
+      double angle = ThreadLocalRandom.current().nextDouble() * 2 * Math.PI;
+      world.spawnParticle(
+          Particle.DUST,
+          discPoint(center, r, angle),
+          1,
+          0,
+          0,
+          0,
+          0,
+          new Particle.DustOptions(VOID_COLOR, 1.6f));
+    }
+  }
+
+  /**
+   * Scatters faint {@link Particle#GLOW} twinkles within the portal disc — distant "stars" seen
+   * through the opening, mirrors {@link RiftAnimation}'s starfield.
+   */
+  private void spawnStarfield(World world, Location center, double radius, int count) {
+    for (int i = 0; i < count; i++) {
+      double r = ThreadLocalRandom.current().nextDouble() * radius * 0.85;
+      double angle = ThreadLocalRandom.current().nextDouble() * 2 * Math.PI;
+      world.spawnParticle(Particle.GLOW, discPoint(center, r, angle), 1, 0, 0, 0, 0);
+    }
+  }
+
+  /**
+   * Swirls gold dust around the portal's rim, not its centre — the gold counterpart to {@link
+   * RiftAnimation}'s purple {@code REVERSE_PORTAL} rim shimmer (that particle type is a fixed
+   * vanilla purple and can't be recoloured, so dust stands in for it here).
+   */
+  private void spawnRimShimmer(World world, Location center, double radius, int count) {
+    for (int i = 0; i < count; i++) {
+      double angle = ThreadLocalRandom.current().nextDouble() * 2 * Math.PI;
+      Location edge = discPoint(center, radius * 0.95, angle);
+      Color rimColor =
+          ThreadLocalRandom.current().nextBoolean()
+              ? EvolutionCastEffects.ATOM_GOLD
+              : EvolutionCastEffects.DEEP_GOLD;
+      world.spawnParticle(
+          Particle.DUST, edge, 1, 0.03, 0.03, 0.03, 0, new Particle.DustOptions(rimColor, 1.2f));
+    }
   }
 
   /** Returns a point on a horizontal disc centred at {@code center}, facing up/down. */
@@ -414,7 +470,7 @@ public class EvolutionSlotMachineAnimation implements EvolutionAnimation {
       ascendingPickaxe.setTransformation(itemTransform(scale));
     }
     if (currentTick % 6 == 0) {
-      world.playSound(player.getLocation(), Sound.BLOCK_CONDUIT_ACTIVATE, 0.3f, 1.3f);
+      world.playSound(player.getLocation(), "custom.objectflybywhoosh", 0.4f, 1.3f);
     }
   }
 
@@ -506,7 +562,7 @@ public class EvolutionSlotMachineAnimation implements EvolutionAnimation {
       d.setTransformation(itemTransform(row == 1 ? 0.72f : 0.5f));
     }
     world.playSound(
-        offset(machineCenter, COLUMN_OFFSETS[col], 0), Sound.BLOCK_ANVIL_LAND, 0.35f, 1.5f);
+        offset(machineCenter, COLUMN_OFFSETS[col], 0), "custom.magiclockimpact", 0.4f, 1.5f);
     world.playSound(
         offset(machineCenter, COLUMN_OFFSETS[col], 0),
         Sound.ENTITY_EXPERIENCE_ORB_PICKUP,
