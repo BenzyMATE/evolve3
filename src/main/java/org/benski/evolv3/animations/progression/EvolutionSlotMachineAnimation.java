@@ -5,6 +5,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.TextColor;
 import net.kyori.adventure.text.format.TextDecoration;
+import org.benski.evolv3.core.helpers.FontUtils;
 import org.benski.evolv3.core.managers.enchant.EnchantAnimationConfig;
 import org.benski.evolv3.core.types.RarityConfig;
 import org.benski.evolv3.datacenters.PlayerDataCenter;
@@ -482,10 +483,10 @@ public class EvolutionSlotMachineAnimation implements EvolutionAnimation {
     }
   }
 
-  /** The pickaxe vanishes into the top portal with a vacuum burst, and the reels power on. */
+  /** The pickaxe vanishes into the top portal with a gold burst, and the reels power on. */
   private void triggerPickaxeSuckedIn(World world) {
     if (ascendingPickaxe != null && !ascendingPickaxe.isDead()) ascendingPickaxe.remove();
-    world.playSound(topPortal, "custom.vacuumsuckshort", 0.5f, 1.3f);
+    world.playSound(topPortal, "custom.burstatoms", 0.5f, 1.3f);
     world.spawnParticle(
         Particle.DUST,
         topPortal,
@@ -653,8 +654,8 @@ public class EvolutionSlotMachineAnimation implements EvolutionAnimation {
       }
       if (leftMid != null && !leftMid.isDead()) leftMid.remove();
       if (rightMid != null && !rightMid.isDead()) rightMid.remove();
-      world.playSound(topPortal, "custom.vacuumsuckshort", 0.5f, 1.1f);
-      world.playSound(bottomPortal, "custom.vacuumsuckshort", 0.5f, 0.8f);
+      world.playSound(topPortal, "custom.flyingtowardsatom", 0.5f, 1.1f);
+      world.playSound(bottomPortal, "custom.flyingtowardsatom", 0.5f, 0.8f);
       world.playSound(machineCenter, Sound.BLOCK_FIRE_EXTINGUISH, 0.4f, 1.5f);
 
       centerStoneDisplay = reels[1][1];
@@ -668,13 +669,13 @@ public class EvolutionSlotMachineAnimation implements EvolutionAnimation {
     Component comp =
         Component.text()
             .append(
-                Component.text(r.displayName().toUpperCase() + " STONE")
+                Component.text(FontUtils.toSmallCaps(r.displayName().toUpperCase() + " Stone"))
                     .color(r.textColor())
                     .decoration(TextDecoration.BOLD, true)
                     .decoration(TextDecoration.ITALIC, false))
             .append(Component.newline())
             .append(
-                Component.text("✧ " + stoneEnchantName)
+                Component.text("✧ " + FontUtils.toSmallCaps(stoneEnchantName))
                     .color(TextColor.color(0xCCCCCC))
                     .decoration(TextDecoration.BOLD, false)
                     .decoration(TextDecoration.ITALIC, false))
@@ -764,13 +765,13 @@ public class EvolutionSlotMachineAnimation implements EvolutionAnimation {
     Component comp =
         Component.text()
             .append(
-                Component.text("🎰  EVOLUTION " + nextTier.level)
+                Component.text(FontUtils.toSmallCaps("Evolution " + nextTier.level))
                     .color(TextColor.color(0xFFD24C))
                     .decoration(TextDecoration.BOLD, true)
                     .decoration(TextDecoration.ITALIC, false))
             .append(Component.newline())
             .append(
-                Component.text(tierName.toUpperCase())
+                Component.text(FontUtils.toSmallCaps(tierName))
                     .color(tc)
                     .decoration(TextDecoration.BOLD, true)
                     .decoration(TextDecoration.ITALIC, false))
@@ -890,7 +891,7 @@ public class EvolutionSlotMachineAnimation implements EvolutionAnimation {
     var overflow = player.getInventory().addItem(stone);
     overflow.values().forEach(s -> player.getWorld().dropItemNaturally(player.getLocation(), s));
     world.playSound(player.getLocation(), Sound.ENTITY_ITEM_PICKUP, 0.8f, 1.1f);
-    world.playSound(player.getLocation(), "custom.vacuumsuckshort", 0.5f, 1.2f);
+    world.playSound(player.getLocation(), Sound.ITEM_TRIDENT_RETURN, 0.6f, 1.1f);
     removeAllDisplays();
     if (onComplete != null) onComplete.run();
   }

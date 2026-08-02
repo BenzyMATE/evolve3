@@ -12,6 +12,32 @@ public final class VesselProgress {
   private VesselProgress() {}
 
   /**
+   * Milliseconds per animation frame, matching the menus' normal 10-tick title refresh interval.
+   * Shared by every caller of {@link #currentFrame()} so their vessel icons stay in step.
+   */
+  private static final long FRAME_INTERVAL_MILLIS = 500;
+
+  /** Number of frames in the bubble/fill loop before it wraps back to frame 1. */
+  private static final int FRAME_COUNT = 5;
+
+  /**
+   * Returns the current animation frame (1–{@value #FRAME_COUNT}), derived from wall-clock time
+   * rather than call count.
+   *
+   * <p>Menus that render a vessel icon re-render their title far more often than the normal 10-tick
+   * cadence during a shutter transition (every 2 ticks, to keep the shutter itself smooth) — see
+   * {@code BaseMenu#runFrameRamp}. A counter that advanced once per call would therefore cycle the
+   * vessel animation up to 5x faster while a shutter is open/closing. Deriving the frame from
+   * actual elapsed time keeps it moving at the same constant real-world rate no matter how often —
+   * or rarely — the caller happens to ask for it.
+   *
+   * @return the current frame, 1–{@value #FRAME_COUNT}
+   */
+  public static int currentFrame() {
+    return (int) ((System.currentTimeMillis() / FRAME_INTERVAL_MILLIS) % FRAME_COUNT) + 1;
+  }
+
+  /**
    * Generates a Unicode character representing the essence progress for a pickaxe profile.
    *
    * @param profile the player's pickaxe profile

@@ -27,7 +27,7 @@ public class PlayerPreferences {
   public boolean atomHologram = true;
   public boolean atomGlow = true;
 
-  public boolean pickaxeMenuAnimation = false;
+  public boolean pickaxeMenuAnimation = true;
 
   public Map<String, EnchantPreference> enchantPrefs = new HashMap<>();
 

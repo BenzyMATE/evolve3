@@ -86,9 +86,6 @@ public class StoneSocketMenu extends BaseMenu {
   /** Per-player state: which enchant display name this player is currently viewing. */
   private final Map<UUID, String> pendingEnchants = new ConcurrentHashMap<>();
 
-  /** Per-player animation frame counter for the vessel progress icons, mirroring PickaxeMenu. */
-  private final Map<UUID, Integer> animationFrames = new ConcurrentHashMap<>();
-
   /**
    * Per-player shutter animation frame (1-{@value ShutterFrames#FRAME_COUNT}), present only while a
    * transition to/from {@link PickaxeMenu} is covering/uncovering this menu.
@@ -329,8 +326,7 @@ public class StoneSocketMenu extends BaseMenu {
 
     String vessels = "";
     if (pickaxeProfile != null) {
-      int frame =
-          animationFrames.merge(player.getUniqueId(), 1, (cur, inc) -> cur >= 5 ? 1 : cur + 1);
+      int frame = VesselProgress.currentFrame();
       String essenceIcon = VesselProgress.getEssenceProgress(pickaxeProfile, frame);
       String evolveIcon = VesselProgress.getEvolveProgress(pickaxeProfile, frame);
       vessels =
@@ -433,7 +429,6 @@ public class StoneSocketMenu extends BaseMenu {
   protected void onClose(Player player) {
     pendingEnchants.remove(player.getUniqueId());
     shutterFrame.remove(player.getUniqueId());
-    animationFrames.remove(player.getUniqueId());
     player.playSound(player.getLocation(), Sound.BLOCK_AMETHYST_BLOCK_HIT, 0.5f, 1.1f);
   }
 

@@ -157,9 +157,6 @@ public class PickaxeMenu extends BaseMenu {
     19, 20, 21, 22, 23, 24, 25
   };
 
-  /** Per-player animation frame counter so concurrent viewers don't share state. */
-  private final Map<UUID, Integer> animationFrames = new ConcurrentHashMap<>();
-
   /**
    * Per-player shutter animation frame (1-{@value ShutterFrames#FRAME_COUNT}), present only while a
    * socket-menu transition is covering/uncovering this menu. Absent means no shutter is active and
@@ -231,7 +228,6 @@ public class PickaxeMenu extends BaseMenu {
   @Override
   protected void onClose(Player player) {
     player.playSound(player.getLocation(), Sound.ENTITY_ENDERMAN_TELEPORT, 0.5f, 1.2f);
-    animationFrames.remove(player.getUniqueId());
     shutterFrame.remove(player.getUniqueId());
   }
 
@@ -281,8 +277,7 @@ public class PickaxeMenu extends BaseMenu {
           + ShutterFrames.glyph(shutterGlyphFrame);
     }
 
-    int frame =
-        animationFrames.merge(player.getUniqueId(), 1, (cur, inc) -> cur >= 5 ? 1 : cur + 1);
+    int frame = VesselProgress.currentFrame();
 
     String essenceIcon = VesselProgress.getEssenceProgress(pickaxeProfile, frame);
     String evolveIcon = VesselProgress.getEvolveProgress(pickaxeProfile, frame);
