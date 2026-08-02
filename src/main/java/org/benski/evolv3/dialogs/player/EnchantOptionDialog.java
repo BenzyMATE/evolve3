@@ -6,12 +6,12 @@ import io.papermc.paper.registry.data.dialog.DialogBase;
 import io.papermc.paper.registry.data.dialog.DialogBase.DialogAfterAction;
 import io.papermc.paper.registry.data.dialog.action.DialogAction;
 import io.papermc.paper.registry.data.dialog.body.DialogBody;
+import io.papermc.paper.registry.data.dialog.input.DialogInput;
 import io.papermc.paper.registry.data.dialog.type.DialogType;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.function.Consumer;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.benski.evolv3.core.constants.ConfigNames;
@@ -25,9 +25,13 @@ import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
 
 /**
- * Per-enchant preference sub-dialog. Shows 5 immediate-apply toggles (Message, Title, Sound,
- * Hologram, Particles) for one enchant, mirroring {@link AnimationsPreferencesDialog}'s toggle
- * pattern.
+ * Per-enchant preference sub-dialog. Shows 5 checkbox inputs (Message, Title, Sound, Hologram,
+ * Particles) for one enchant, committed together by a single Save button — same
+ * checkboxes-then-Save/Back pattern as {@link AnimationsPreferencesDialog} and {@link
+ * ExperimentalPreferencesDialog}, rather than immediate-apply buttons. Immediate-apply toggles have
+ * to close and re-show the whole dialog on every click (Paper's dialog API has no in-place update),
+ * which was recentering the player's cursor each time — checkbox inputs update locally and only
+ * trigger one dialog refresh, on Save.
  */
 @SuppressWarnings("UnstableApiUsage")
 public class EnchantOptionDialog extends BasePlayerDialog {
@@ -70,6 +74,61 @@ public class EnchantOptionDialog extends BasePlayerDialog {
             ? profile.preferences.getOrCreateEnchantPref(enchantName)
             : new EnchantPreference();
 
+    DialogInput messageInput =
+        checkbox(
+            "message",
+            cfg.getString(ConfigPaths.Menus.EnchantOptionMenu.MESSAGE_NAME, "Message"),
+            pref.message);
+    DialogInput titleInput =
+        checkbox(
+            "title",
+            cfg.getString(ConfigPaths.Menus.EnchantOptionMenu.TITLE_NAME, "Title"),
+            pref.title);
+    DialogInput soundInput =
+        checkbox(
+            "sound",
+            cfg.getString(ConfigPaths.Menus.EnchantOptionMenu.SOUND_NAME, "Sound"),
+            pref.sound);
+    DialogInput hologramInput =
+        checkbox(
+            "hologram",
+            cfg.getString(ConfigPaths.Menus.EnchantOptionMenu.HOLOGRAM_NAME, "Hologram"),
+            pref.hologram);
+    DialogInput particlesInput =
+        checkbox(
+            "particles",
+            cfg.getString(ConfigPaths.Menus.EnchantOptionMenu.PARTICLES_NAME, "Particles"),
+            pref.particles);
+
+    ActionButton saveButton =
+        ActionButton.builder(Component.text("Save").color(NamedTextColor.GREEN))
+            .width(HALF_WIDTH)
+            .action(
+                DialogAction.customClick(
+                    (response, audience) -> {
+                      if (!(audience instanceof Player p)) return;
+                      PlayerProfile prof = getProfile(p);
+                      if (prof == null) return;
+
+                      EnchantPreference toSave =
+                          prof.preferences.getOrCreateEnchantPref(enchantName);
+                      Boolean message = response.getBoolean("message");
+                      if (message != null) toSave.message = message;
+                      Boolean title = response.getBoolean("title");
+                      if (title != null) toSave.title = title;
+                      Boolean sound = response.getBoolean("sound");
+                      if (sound != null) toSave.sound = sound;
+                      Boolean hologram = response.getBoolean("hologram");
+                      if (hologram != null) toSave.hologram = hologram;
+                      Boolean particles = response.getBoolean("particles");
+                      if (particles != null) toSave.particles = particles;
+
+                      save(p, prof);
+                      DialogRegistry.getInstance().open(p, "preferences_enchants");
+                    },
+                    SINGLE_USE))
+            .build();
+
     ActionButton backButton =
         ActionButton.builder(
                 fromLegacy(
@@ -98,81 +157,21 @@ public class EnchantOptionDialog extends BasePlayerDialog {
                                 DialogBody.plainMessage(
                                     Component.text("Choose which notifications to receive.")
                                         .color(NamedTextColor.GRAY))))
-                        .inputs(List.of())
+                        .inputs(
+                            List.of(
+                                messageInput,
+                                titleInput,
+                                soundInput,
+                                hologramInput,
+                                particlesInput))
                         .canCloseWithEscape(true)
                         .afterAction(DialogAfterAction.CLOSE)
                         .build())
-                .type(
-                    DialogType.multiAction(
-                        List.of(
-                            toggle(
-                                cfg,
-                                enchantName,
-                                pref.message,
-                                ConfigPaths.Menus.EnchantOptionMenu.MESSAGE_NAME,
-                                "Message",
-                                p -> p.message = !p.message),
-                            toggle(
-                                cfg,
-                                enchantName,
-                                pref.title,
-                                ConfigPaths.Menus.EnchantOptionMenu.TITLE_NAME,
-                                "Title",
-                                p -> p.title = !p.title),
-                            toggle(
-                                cfg,
-                                enchantName,
-                                pref.sound,
-                                ConfigPaths.Menus.EnchantOptionMenu.SOUND_NAME,
-                                "Sound",
-                                p -> p.sound = !p.sound),
-                            toggle(
-                                cfg,
-                                enchantName,
-                                pref.hologram,
-                                ConfigPaths.Menus.EnchantOptionMenu.HOLOGRAM_NAME,
-                                "Hologram",
-                                p -> p.hologram = !p.hologram),
-                            toggle(
-                                cfg,
-                                enchantName,
-                                pref.particles,
-                                ConfigPaths.Menus.EnchantOptionMenu.PARTICLES_NAME,
-                                "Particles",
-                                p -> p.particles = !p.particles),
-                            backButton),
-                        null,
-                        2)));
+                .type(DialogType.multiAction(List.of(saveButton, backButton), null, 2)));
   }
 
-  /** Builds an immediate-apply toggle button for a single boolean enchant-notification field. */
-  private ActionButton toggle(
-      FileConfiguration cfg,
-      String enchantName,
-      boolean state,
-      String configPath,
-      String defaultLabel,
-      Consumer<EnchantPreference> toggler) {
-    Component stateIcon =
-        state
-            ? Component.text("✔ ").color(NamedTextColor.GREEN)
-            : Component.text("✖ ").color(NamedTextColor.RED);
-    Component label = stateIcon.append(fromLegacy(cfg.getString(configPath, defaultLabel)));
-
-    return ActionButton.builder(label)
-        .width(HALF_WIDTH)
-        .action(
-            DialogAction.customClick(
-                (response, audience) -> {
-                  if (!(audience instanceof Player p)) return;
-                  PlayerProfile prof = getProfile(p);
-                  if (prof == null) return;
-
-                  toggler.accept(prof.preferences.getOrCreateEnchantPref(enchantName));
-                  save(p, prof);
-                  openForEnchant(p, enchantName);
-                },
-                SINGLE_USE))
-        .build();
+  /** Builds a checkbox input for one boolean enchant-notification field. */
+  private DialogInput checkbox(String key, String label, boolean value) {
+    return DialogInput.bool(key, fromLegacy(label), value, "Enabled", "Disabled");
   }
 }
