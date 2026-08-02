@@ -719,6 +719,24 @@ public final class ConfigPaths {
       public static final String OTHERS_DISABLED = "pickup-animation.others-disabled";
     }
 
+    /** Messages for the /evolutionstyle command. */
+    public static final class EvolutionStyle {
+      private EvolutionStyle() {}
+
+      public static final String USAGE_SET = "evolution-style.usage-set";
+      public static final String UNKNOWN_SUBCOMMAND = "evolution-style.unknown-subcommand";
+      public static final String CURRENT_HEADER = "evolution-style.current-header";
+      public static final String CURRENT = "evolution-style.current";
+      public static final String HINT = "evolution-style.hint";
+      public static final String LIST_HEADER = "evolution-style.list-header";
+      public static final String LIST_ITEM_SELECTED = "evolution-style.list-item-selected";
+      public static final String LIST_ITEM = "evolution-style.list-item";
+      public static final String LIST_FOOTER = "evolution-style.list-footer";
+      public static final String SET_SUCCESS = "evolution-style.set-success";
+      public static final String INVALID_STYLE = "evolution-style.invalid-style";
+      public static final String CYCLED = "evolution-style.cycled";
+    }
+
     /** Furnace smelt menu messages. */
     public static final class FurnaceSmelt {
       private FurnaceSmelt() {}

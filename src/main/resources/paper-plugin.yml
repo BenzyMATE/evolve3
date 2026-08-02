@@ -41,6 +41,10 @@ commands:
     description: Manage pickup animations
     usage: /<command> <list|set|next|others>
     aliases: [pa]
+  evolutionstyle:
+    description: Switch the pickaxe evolution animation style
+    usage: /<command> <list|set|next>
+    aliases: [evostyle]
   bal:
     description: View your coin balance
     usage: /<command> [player]

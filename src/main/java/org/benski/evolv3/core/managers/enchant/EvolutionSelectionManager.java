@@ -10,16 +10,19 @@ import lombok.Getter;
 import org.benski.evolv3.Main;
 import org.benski.evolv3.animations.progression.EvolutionAnimation;
 import org.benski.evolv3.animations.progression.EvolutionAnimation3;
+import org.benski.evolv3.animations.progression.EvolutionSupernovaAnimation;
 import org.benski.evolv3.api.EvolveApiClient;
 import org.benski.evolv3.api.dto.PendingDataDto;
 import org.benski.evolv3.api.dto.PendingType;
 import org.benski.evolv3.core.types.PendingEvolutionData;
+import org.benski.evolv3.core.types.PreferenceType;
 import org.benski.evolv3.core.types.RarityConfig;
 import org.benski.evolv3.datacenters.PlayerDataCenter;
 import org.benski.evolv3.enums.EvolutionTier;
 import org.benski.evolv3.items.EvolutionStone;
 import org.benski.evolv3.models.pickaxe.PendingEvolutionDocument;
 import org.benski.evolv3.models.pickaxe.Pickaxe;
+import org.benski.evolv3.models.player.PlayerProfile;
 import org.benski.evolv3.registry.DataCenterRegistry;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
@@ -326,7 +329,11 @@ public class EvolutionSelectionManager {
         };
 
     EvolutionAnimation animation =
-        new EvolutionAnimation3(plugin, player, current, next, winningRarity, wrappedCallback);
+        resolveEvolutionStyle(player) == PreferenceType.EvolutionStyle.SUPERNOVA
+            ? new EvolutionSupernovaAnimation(
+                plugin, player, current, next, winningRarity, wrappedCallback)
+            : new EvolutionAnimation3(
+                plugin, player, current, next, winningRarity, wrappedCallback);
 
     animation.setOnComplete(
         () -> {
@@ -364,6 +371,19 @@ public class EvolutionSelectionManager {
     player
         .getInventory()
         .addItem(EvolutionStone.create(pending.getWinningRarity(), pickRandomEnchant(player)));
+  }
+
+  /**
+   * Maps the player's evolution style preference to which {@link EvolutionAnimation} implementation
+   * {@link #startEvolutionInternal} constructs. Defaults to {@link
+   * PreferenceType.EvolutionStyle#SUPERNOVA} if the preference is unavailable.
+   */
+  private PreferenceType.EvolutionStyle resolveEvolutionStyle(Player player) {
+    PlayerDataCenter pdc = DataCenterRegistry.getInstance().getPlayerDataCenter();
+    if (pdc == null) return PreferenceType.EvolutionStyle.SUPERNOVA;
+    PlayerProfile profile = pdc.getLocal(player);
+    if (profile == null) return PreferenceType.EvolutionStyle.SUPERNOVA;
+    return profile.preferences.evolutionStyle;
   }
 
   /**

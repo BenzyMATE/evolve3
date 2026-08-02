@@ -164,4 +164,28 @@ public class PreferenceType {
       return description;
     }
   }
+
+  /** Evolution style preference - controls the visual style of the pickaxe evolution animation. */
+  public enum EvolutionStyle {
+    CRYSTAL_ASCENSION("Crystal Ascension", "Amethyst shards converge and shatter into a nova"),
+    SUPERNOVA("Supernova Descent", "A gathered star falls from the sky in a cataclysmic impact");
+
+    private final String displayName;
+    private final String description;
+
+    EvolutionStyle(String displayName, String description) {
+      this.displayName = displayName;
+      this.description = description;
+    }
+
+    /** Returns the display name. */
+    public String getDisplayName() {
+      return displayName;
+    }
+
+    /** Returns the description. */
+    public String getDescription() {
+      return description;
+    }
+  }
 }

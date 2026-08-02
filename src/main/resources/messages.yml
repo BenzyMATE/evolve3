@@ -353,6 +353,23 @@ pickup-animation:
   others-disabled: "  &#CCCCCCYou will no longer see other players' pickup animations."
 
 # =====================================================
+# Evolution Style Command Messages (/evolutionstyle)
+# =====================================================
+evolution-style:
+  usage-set: "  &cUsage: /evolutionstyle set <ascension|supernova>"
+  unknown-subcommand: "  &cUnknown option. Use: list, set <style>, or next"
+  current-header: "  &#FFD700&l[Evolution Style]"
+  current: "  &#CCCCCCCurrent: &#FFD700%name% &#888888- &#CCCCCC%description%"
+  hint: "  &#CCCCCCUse &#FFD700/evolutionstyle list &#CCCCCCto see all options, or &#FFD700/evolutionstyle next &#CCCCCCto cycle."
+  list-header: "  &#FFD700&l[Available Evolution Styles]"
+  list-item-selected: " &#FFD700> &#FFFFFF%name% &#888888- &#CCCCCC%description% &#FFD700(selected)"
+  list-item: " &#888888> &#CCCCCC%name% &#888888- &#CCCCCC%description%"
+  list-footer: "  &#CCCCCCUse &#FFD700/evolutionstyle set <name> &#CCCCCCto select a style."
+  set-success: "  &#FFD700Evolution style set to: &#FFFFFF%name%"
+  invalid-style: "  &cInvalid style: %name%. Use /evolutionstyle list to see available options."
+  cycled: "  &#FFD700Switched to: &#FFFFFF%name% &#888888- &#CCCCCC%description%"
+
+# =====================================================
 # Admin Command Messages (/evolve)
 # =====================================================
 statistic:

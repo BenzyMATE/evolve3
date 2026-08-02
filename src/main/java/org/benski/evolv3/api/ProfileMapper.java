@@ -28,6 +28,7 @@ public final class ProfileMapper {
   private static final String PREF_ANIMATION = "animation";
   private static final String PREF_MESSAGE = "message";
   private static final String PREF_ENCHANT_STYLE = "enchantStyle";
+  private static final String PREF_EVOLUTION_STYLE = "evolutionStyle";
   private static final String PREF_PICKUP_EFFECT = "pickupEffect";
   private static final String PREF_ENCHANT_SPEED = "enchantAnimationSpeed";
   private static final String PREF_ESSENCE_SOUND = "essenceSound";
@@ -188,6 +189,12 @@ public final class ProfileMapper {
                     val,
                     PreferenceType.EnchantStyle.class,
                     PreferenceType.EnchantStyle.PORTAL_RIFT);
+        case PREF_EVOLUTION_STYLE ->
+            profile.preferences.evolutionStyle =
+                safeEnum(
+                    val,
+                    PreferenceType.EvolutionStyle.class,
+                    PreferenceType.EvolutionStyle.SUPERNOVA);
         case PREF_PICKUP_EFFECT ->
             profile.preferences.pickupEffect =
                 safeEnum(
@@ -374,6 +381,7 @@ public final class ProfileMapper {
     prefs.add(pref(PREF_ANIMATION, p.animation.name()));
     prefs.add(pref(PREF_MESSAGE, p.message.name()));
     prefs.add(pref(PREF_ENCHANT_STYLE, p.enchantStyle.name()));
+    prefs.add(pref(PREF_EVOLUTION_STYLE, p.evolutionStyle.name()));
     prefs.add(pref(PREF_PICKUP_EFFECT, p.pickupEffect.name()));
     prefs.add(pref(PREF_ENCHANT_SPEED, p.enchantAnimationSpeed.name()));
     prefs.add(pref(PREF_ESSENCE_SOUND, String.valueOf(p.essenceSound)));

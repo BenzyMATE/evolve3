@@ -13,6 +13,7 @@ public class PlayerPreferences {
   public PreferenceType.Animation animation = PreferenceType.Animation.ENABLED;
   public PreferenceType.Message message = PreferenceType.Message.CHAT;
   public PreferenceType.EnchantStyle enchantStyle = PreferenceType.EnchantStyle.PORTAL_RIFT;
+  public PreferenceType.EvolutionStyle evolutionStyle = PreferenceType.EvolutionStyle.SUPERNOVA;
   public PreferenceType.PickupEffect pickupEffect = PreferenceType.PickupEffect.DEFAULT;
   public PreferenceType.EnchantSpeed enchantAnimationSpeed = PreferenceType.EnchantSpeed.NORMAL;
 
