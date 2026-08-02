@@ -60,20 +60,22 @@ import org.joml.Vector3f;
  */
 public class EvolutionSlotMachineAnimation implements EvolutionAnimation {
   private static final int CAST_END = 16;
-  private static final int PORTAL_OPEN_END = 36;
-  private static final int ASCEND_END = 58;
-  private static final int COL1_STOP = 82;
-  private static final int COL2_STOP = 94;
-  private static final int COL3_STOP = 106;
-  private static final int REVEAL_TICK = 106;
-  private static final int CALLBACK_TICK = 106;
-  private static final int SUCK_END = 128;
-  private static final int STONE_REVEAL_TICK = 130;
-  private static final int DESCEND_END = 158;
-  private static final int EMERGE_END = 158;
-  private static final int FLOAT_END = 188;
-  private static final int RETURN_END = 208;
-  private static final int TOTAL = 211;
+  private static final int CONVERGE_END = CAST_END + 12;
+  private static final int SPLIT_END = CONVERGE_END + 8;
+  private static final int PORTAL_OPEN_END = SPLIT_END + 18;
+  private static final int ASCEND_END = PORTAL_OPEN_END + 22;
+  private static final int COL1_STOP = ASCEND_END + 24;
+  private static final int COL2_STOP = COL1_STOP + 12;
+  private static final int COL3_STOP = COL2_STOP + 12;
+  private static final int REVEAL_TICK = COL3_STOP;
+  private static final int CALLBACK_TICK = REVEAL_TICK;
+  private static final int SUCK_END = REVEAL_TICK + 22;
+  private static final int STONE_REVEAL_TICK = SUCK_END + 2;
+  private static final int DESCEND_END = STONE_REVEAL_TICK + 28;
+  private static final int EMERGE_END = DESCEND_END;
+  private static final int FLOAT_END = EMERGE_END + 30;
+  private static final int RETURN_END = FLOAT_END + 20;
+  private static final int TOTAL = RETURN_END + 3;
 
   private static final double PORTAL_RADIUS = 1.1;
   private static final double TOP_OFFSET = 1.3;
@@ -184,7 +186,7 @@ public class EvolutionSlotMachineAnimation implements EvolutionAnimation {
     rightDir = new Vector(forwardDir.getZ(), 0, -forwardDir.getX()).normalize();
 
     machineCenter =
-        player.getLocation().clone().add(forwardDir.clone().multiply(3.2)).add(0, 1.2, 0);
+        player.getLocation().clone().add(forwardDir.clone().multiply(3.2)).add(0, 2.2, 0);
     topPortal = machineCenter.clone().add(0, TOP_OFFSET, 0);
     bottomPortal = machineCenter.clone().add(0, BOTTOM_OFFSET, 0);
     exitPickaxeFinalPos = offset(machineCenter, -0.6, 0);
@@ -244,9 +246,13 @@ public class EvolutionSlotMachineAnimation implements EvolutionAnimation {
     World world = player.getWorld();
     if (world == null) return;
 
-    if (currentTick <= PORTAL_OPEN_END) {
-      tickPortalOpen(world);
-    } else if (currentTick <= DESCEND_END) {
+    if (currentTick > CAST_END && currentTick <= CONVERGE_END) {
+      tickCastConverge(world);
+    } else if (currentTick > CONVERGE_END && currentTick <= SPLIT_END) {
+      tickSpellSplit(world);
+    } else if (currentTick > SPLIT_END && currentTick <= PORTAL_OPEN_END) {
+      tickSwirlOpen(world);
+    } else if (currentTick > PORTAL_OPEN_END && currentTick <= DESCEND_END) {
       tickPortalAmbience(world);
     }
 
@@ -292,14 +298,60 @@ public class EvolutionSlotMachineAnimation implements EvolutionAnimation {
     }
   }
 
-  /** Twin portals swirl open, one above and one below the machine's centre. */
-  private void tickPortalOpen(World world) {
-    double t = (double) currentTick / PORTAL_OPEN_END;
+  /** Gold essence spirals inward from the player's eyes toward the machine's centre. */
+  private void tickCastConverge(World world) {
+    int tick = currentTick - CAST_END;
+    double t = Math.min(1.0, (double) tick / (CONVERGE_END - CAST_END));
+    Location swirlCenter = lerp(player.getEyeLocation(), machineCenter, t);
+    double angle = tick * 0.6;
+    double radius = 0.3 + 0.5 * t;
+    world.spawnParticle(
+        Particle.DUST,
+        swirlCenter
+            .clone()
+            .add(Math.cos(angle) * radius, Math.sin(angle * 1.3) * 0.2, Math.sin(angle) * radius),
+        2,
+        0,
+        0,
+        0,
+        0,
+        new Particle.DustOptions(EvolutionCastEffects.ATOM_GOLD, 1.1f));
+  }
+
+  /**
+   * The converged spell splits in two and shoots upward and downward — one bolt to the top portal
+   * site, one to the bottom — instead of sideways like the enchant rift.
+   */
+  private void tickSpellSplit(World world) {
+    int sinceSplit = currentTick - CONVERGE_END;
+    double t = Math.min(1.0, (double) sinceSplit / (SPLIT_END - CONVERGE_END));
+    Location topPos = lerp(machineCenter, topPortal, t);
+    Location bottomPos = lerp(machineCenter, bottomPortal, t);
+    for (Location pos : new Location[] {topPos, bottomPos}) {
+      world.spawnParticle(
+          Particle.DUST,
+          pos,
+          3,
+          0.05,
+          0.05,
+          0.05,
+          0,
+          new Particle.DustOptions(EvolutionCastEffects.ATOM_GOLD, 1.3f));
+      world.spawnParticle(Particle.END_ROD, pos, 1, 0.02, 0.02, 0.02, 0.005);
+    }
+    if (sinceSplit == 1) {
+      world.playSound(machineCenter, "custom.magiccastwhoosh", 0.45f, 1.4f);
+    }
+  }
+
+  /** Both portals spin open from nothing out to full size as each bolt arrives. */
+  private void tickSwirlOpen(World world) {
+    double t = Math.min(1.0, (double) (currentTick - SPLIT_END) / (PORTAL_OPEN_END - SPLIT_END));
     double radius = PORTAL_RADIUS * t;
     double angle = currentTick * 0.9;
     drawPortalRing(world, topPortal, radius, angle);
     drawPortalRing(world, bottomPortal, radius, -angle);
-    if (currentTick == 4) {
+    if (currentTick == SPLIT_END + 1) {
       world.playSound(machineCenter, "custom.portalopenrift", 0.55f, 0.9f);
       world.playSound(machineCenter, "custom.portalopenrift", 0.55f, 1.3f);
     }
