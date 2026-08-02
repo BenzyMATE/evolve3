@@ -683,48 +683,71 @@ public class Evolv3Command extends BaseCommand {
 
   /**
    * Temporary calibration command for {@link StoneSocketMenu}'s pixel-exact socket icon positions.
-   * With no args, prints the current values. With {@code <index> <value>}, updates {@link
-   * StoneSocketMenu#setSocketCenterX} in memory and refreshes the sender's open socket menu, if
-   * any, so the change is visible instantly with no rebuild/restart. Remove this subcommand once
-   * alignment is finalized and the printed values are copied into {@link StoneSocketMenu}'s {@code
-   * SOCKET_CENTER_X} source.
+   * With no args, prints the current values for all 4 prestige tiers. With {@code <prestige 1-4>
+   * <socket 1-4> <value>}, updates {@link StoneSocketMenu#setSocketCenterX} in memory and refreshes
+   * the sender's open socket menu, if any, so the change is visible instantly with no
+   * rebuild/restart. Remove this subcommand once alignment is finalized and the printed values are
+   * copied into {@link StoneSocketMenu}'s {@code SOCKET_CENTER_X} source.
+   *
+   * <p>Calibration is per prestige tier (not just per socket) because {@code unlocked.png}'s
+   * declared glyph width doesn't perfectly match its true rendered width, so drawing it shifts
+   * every {@code locked.png} socket that follows it in the same title string — see {@link
+   * StoneSocketMenu#SOCKET_CENTER_X}'s own doc for the full explanation.
    */
   private void handleSocketCalib(CommandSender sender, String[] args) {
-    int[] centerX = StoneSocketMenu.getSocketCenterX();
+    int[][] centerX = StoneSocketMenu.getSocketCenterX();
 
-    if (args.length < 3) {
+    if (args.length < 4) {
       Messageable.sendRaw(sender, "");
       Messageable.sendRaw(sender, "  &#00FFFF&l⚙ Socket CenterX Calibration");
       Messageable.sendRaw(sender, "  &#444444&m                                    ");
       Messageable.sendRaw(sender, "");
-      for (int i = 0; i < centerX.length; i++) {
-        Messageable.sendRaw(
-            sender, "  &#888888Socket " + (i + 1) + " &#444444» &#FFFFFF" + centerX[i]);
+      for (int p = 0; p < centerX.length; p++) {
+        StringBuilder row =
+            new StringBuilder("  &#888888Prestige " + (p + 1) + " &#444444» &#FFFFFF");
+        for (int i = 0; i < centerX[p].length; i++) {
+          if (i > 0) row.append("&#444444, &#FFFFFF");
+          row.append(centerX[p][i]);
+        }
+        Messageable.sendRaw(sender, row.toString());
       }
       Messageable.sendRaw(sender, "");
       Messageable.sendRaw(
-          sender, "  &#888888Usage: &#FFFFFF/e socketcalib <1-" + centerX.length + "> <value>");
+          sender,
+          "  &#888888Usage: &#FFFFFF/e socketcalib <prestige 1-"
+              + centerX.length
+              + "> <socket 1-"
+              + centerX[0].length
+              + "> <value>");
       Messageable.sendRaw(sender, "");
       return;
     }
 
+    int prestige;
     int index;
     int value;
     try {
-      index = Integer.parseInt(args[1]) - 1;
-      value = Integer.parseInt(args[2]);
+      prestige = Integer.parseInt(args[1]) - 1;
+      index = Integer.parseInt(args[2]) - 1;
+      value = Integer.parseInt(args[3]);
     } catch (NumberFormatException e) {
-      sendError(sender, "Socket index and value must both be whole numbers.");
+      sendError(sender, "Prestige, socket index, and value must all be whole numbers.");
       return;
     }
 
-    if (index < 0 || index >= centerX.length) {
+    if (prestige < 0 || prestige >= centerX.length) {
       sendError(
-          sender, "Socket index must be between &#FFFFFF1 &cand &#FFFFFF" + centerX.length + "&c.");
+          sender, "Prestige must be between &#FFFFFF1 &cand &#FFFFFF" + centerX.length + "&c.");
+      return;
+    }
+    if (index < 0 || index >= centerX[0].length) {
+      sendError(
+          sender,
+          "Socket index must be between &#FFFFFF1 &cand &#FFFFFF" + centerX[0].length + "&c.");
       return;
     }
 
-    StoneSocketMenu.setSocketCenterX(index, value);
+    StoneSocketMenu.setSocketCenterX(prestige, index, value);
 
     if (sender instanceof Player player) {
       Menu socketMenu = MenuRegistry.getInstance().get("stone_socket");
@@ -735,7 +758,13 @@ public class Evolv3Command extends BaseCommand {
 
     sendSuccess(
         sender,
-        "Socket &#FFFFFF" + (index + 1) + " &#00FFFFcenterX set to &#FFFFFF" + value + "&#00FFFF.");
+        "Prestige &#FFFFFF"
+            + (prestige + 1)
+            + " &#00FFFFsocket &#FFFFFF"
+            + (index + 1)
+            + " &#00FFFFcenterX set to &#FFFFFF"
+            + value
+            + "&#00FFFF.");
   }
 
   /**
@@ -954,6 +983,9 @@ public class Evolv3Command extends BaseCommand {
     }
     if (args.length == 2 && "socketcalib".equals(sub)) {
       return filterPrefix(List.of("1", "2", "3", "4"), args[1]);
+    }
+    if (args.length == 3 && "socketcalib".equals(sub)) {
+      return filterPrefix(List.of("1", "2", "3", "4"), args[2]);
     }
     if (args.length == 2 && "vesselcalib".equals(sub)) {
       return filterPrefix(List.of("pickaxe", "socket"), args[1]);

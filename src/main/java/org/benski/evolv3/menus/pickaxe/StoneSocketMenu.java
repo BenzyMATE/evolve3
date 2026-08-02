@@ -161,27 +161,53 @@ public class StoneSocketMenu extends BaseMenu {
   /**
    * X pixel of the <em>center</em> (within {@code socket_menu.png}'s own 256px-wide canvas) of each
    * of the 4 socket octagons, left to right, measured by scanning for the octagons' dark fill
-   * colour (each spans 25px, e.g. the first is columns 65-89). Index N corresponds to {@link
-   * #SOCKET_SLOTS}[N] / {@code enchant.socketStones}[N]. Icons are centered within this, not
+   * colour (each spans 25px, e.g. the first is columns 65-89). Icons are centered within this, not
    * left-aligned, using each glyph's own measured width from {@link #GLYPH_WIDTH}.
+   *
+   * <p>Indexed by <em>prestige tier</em> first (0 = only socket 1 unlocked, 1 = sockets 1-2, 2 =
+   * sockets 1-3, 3 = all 4 — see {@link EnchantData#getUnlockedSlotCount}), then by socket index
+   * (matching {@link #SOCKET_SLOTS}[N] / {@code enchant.socketStones}[N]) second.
+   *
+   * <p>A single flat per-socket array isn't accurate enough: {@link #GLYPH_WIDTH}'s declared widths
+   * for the locked/unlocked/rarity glyphs don't perfectly match those glyphs' true rendered widths,
+   * so the pixel-cursor "return jump" {@link #buildSocketIconsSegment} does after drawing an
+   * unlocked or rarity glyph carries a small leftover error into every socket drawn after it in the
+   * same title string — e.g. drawing {@code unlocked.png} at socket 1 nudges {@code locked.png} at
+   * sockets 2-4 off-centre. Which glyphs precede a given socket changes as prestige unlocks more of
+   * them, so the correct on-screen X for socket N is different at each prestige tier. Calibrating
+   * per tier compensates for that directly instead of chasing exact glyph pixel widths.
    */
-  private static final int[] SOCKET_CENTER_X = {75, 105, 135, 163};
+  private static final int[][] SOCKET_CENTER_X = {
+    {75, 105, 135, 163}, // tier 1 (prestige 0) — only socket 1 unlocked
+    {75, 105, 135, 163}, // tier 2 (prestige 1) — sockets 1-2 unlocked
+    {75, 105, 135, 163}, // tier 3 (prestige 2) — sockets 1-3 unlocked
+    {75, 105, 135, 163}, // tier 4 (prestige 3+) — all 4 sockets unlocked
+  };
 
   /**
    * Temporary calibration hook for {@code /e socketcalib} so {@link #SOCKET_CENTER_X} can be tuned
    * in-game without a rebuild/restart. Remove alongside the command once alignment is finalized and
    * the values above are updated to match.
    *
-   * @param socketIndex index into {@link #SOCKET_CENTER_X} (0-3)
+   * @param prestigeTier index into the outer {@link #SOCKET_CENTER_X} array (0-3, one per unlocked-
+   *     socket-count state — see the field's own doc)
+   * @param socketIndex index into the inner {@link #SOCKET_CENTER_X} array (0-3)
    * @param value the new centre X pixel value
    */
-  public static void setSocketCenterX(int socketIndex, int value) {
-    SOCKET_CENTER_X[socketIndex] = value;
+  public static void setSocketCenterX(int prestigeTier, int socketIndex, int value) {
+    SOCKET_CENTER_X[prestigeTier][socketIndex] = value;
   }
 
-  /** Returns a copy of the current (possibly live-tuned) {@link #SOCKET_CENTER_X} values. */
-  public static int[] getSocketCenterX() {
-    return SOCKET_CENTER_X.clone();
+  /**
+   * Returns a deep copy of the current (possibly live-tuned) {@link #SOCKET_CENTER_X} values, outer
+   * index by prestige tier (0-3), inner index by socket (0-3).
+   */
+  public static int[][] getSocketCenterX() {
+    int[][] copy = new int[SOCKET_CENTER_X.length][];
+    for (int i = 0; i < SOCKET_CENTER_X.length; i++) {
+      copy[i] = SOCKET_CENTER_X[i].clone();
+    }
+    return copy;
   }
 
   /**
@@ -275,9 +301,8 @@ public class StoneSocketMenu extends BaseMenu {
     if (inventory == null) return;
 
     EnchantData enchant = profile.enchants.getEnchant(displayName.toLowerCase());
-    int unlockedSlots = EnchantData.getUnlockedSlotCount(profile.prestige);
     inventory.setItem(
-        SLOT_ENCHANT_HEADER, buildEnchantHeader(player, displayName, enchant, unlockedSlots));
+        SLOT_ENCHANT_HEADER, buildEnchantHeader(player, displayName, enchant, profile.prestige));
   }
 
   /**
@@ -374,12 +399,13 @@ public class StoneSocketMenu extends BaseMenu {
 
     EnchantData enchant = profile.enchants.getEnchant(displayName.toLowerCase());
     int unlockedSlots = EnchantData.getUnlockedSlotCount(profile.prestige);
+    int prestigeTier = Math.min(Math.max(unlockedSlots - 1, 0), SOCKET_CENTER_X.length - 1);
 
     StringBuilder segment = new StringBuilder();
     for (int socketIndex = 0; socketIndex < SOCKET_SLOTS.length; socketIndex++) {
       String glyph = resolveSocketGlyph(enchant, socketIndex, unlockedSlots);
       int width = GLYPH_WIDTH.getOrDefault(glyph, 20);
-      int targetLeftX = SOCKET_CENTER_X[socketIndex] - (width / 2);
+      int targetLeftX = SOCKET_CENTER_X[prestigeTier][socketIndex] - (width / 2);
       int jump = targetLeftX - BACKGROUND_RENDERED_WIDTH;
       segment.append(PixelSpace.of(jump));
       segment.append(glyph);
@@ -456,7 +482,7 @@ public class StoneSocketMenu extends BaseMenu {
     // doesn't appear before the transition is fully complete.
     if (!shutterFrame.containsKey(player.getUniqueId())) {
       inventory.setItem(
-          SLOT_ENCHANT_HEADER, buildEnchantHeader(player, displayName, enchant, unlockedSlots));
+          SLOT_ENCHANT_HEADER, buildEnchantHeader(player, displayName, enchant, profile.prestige));
     }
 
     for (int i = 0; i < SOCKET_SLOTS.length; i++) {
@@ -606,6 +632,11 @@ public class StoneSocketMenu extends BaseMenu {
       }
     }
 
+    if (slot == SLOT_ENCHANT_HEADER) {
+      handleEnchantHeaderClick(player, event);
+      return true;
+    }
+
     for (int i = 0; i < SOCKET_SLOTS.length; i++) {
       if (slot == SOCKET_SLOTS[i]) {
         handleSocketClick(player, i, event);
@@ -641,6 +672,27 @@ public class StoneSocketMenu extends BaseMenu {
     }
 
     return true;
+  }
+
+  /**
+   * Handles a click on the enchant header item (slot {@value #SLOT_ENCHANT_HEADER}) — left-click
+   * upgrades the enchant with essence, right-click toggles it enabled/disabled, exactly like
+   * clicking the same enchant's slot in {@link PickaxeMenu} does. Both actions are driven by {@link
+   * PickaxeMenu}'s static handlers so the behaviour can't drift between the two menus; this menu is
+   * only responsible for refreshing its own inventory afterward.
+   */
+  private void handleEnchantHeaderClick(Player player, InventoryClickEvent event) {
+    String displayName = pendingEnchants.get(player.getUniqueId());
+    if (displayName == null) return;
+
+    boolean changed =
+        event.isRightClick()
+            ? PickaxeMenu.handleEnchantToggle(player, displayName)
+            : PickaxeMenu.handleEnchantSlotClick(player, displayName);
+
+    if (changed) {
+      refresh(player);
+    }
   }
 
   /**
@@ -818,48 +870,32 @@ public class StoneSocketMenu extends BaseMenu {
     refresh(player);
   }
 
-  /** Builds enchant header. */
+  /**
+   * Builds the enchant header item (slot {@value #SLOT_ENCHANT_HEADER}), reusing {@link
+   * PickaxeMenu#buildUnlockedEnchantItem} so it's pixel-for-pixel identical to how the same enchant
+   * looks in the pickaxe menu — name, rarity, statistics, and the same left-click/right-click
+   * upgrade and toggle hints, which now do the same thing here (see {@link #handleClick}). The
+   * {@code {stones_action}} "Shift+Right-Click to manage stones" hint is suppressed since the
+   * player is already looking at that exact menu.
+   *
+   * @param player the player viewing the menu
+   * @param displayName the enchant's display name
+   * @param enchant the player's current enchant data — always non-null in practice, since this menu
+   *     only ever opens for an already-unlocked enchant (see {@link
+   *     PickaxeMenu#handleEnchantSocketOpen})
+   * @param prestige the player's current pickaxe prestige level
+   */
   private ItemStack buildEnchantHeader(
-      Player player, String displayName, EnchantData enchant, int unlockedSlots) {
-    ItemStack item = EnchantAnimationConfig.createEnchantItem(displayName);
-    ItemMeta meta = item.getItemMeta();
-    if (meta == null) return item;
-
-    var option = EnchantAnimationConfig.getOption(displayName);
-    var rarity = option != null ? option.rarity() : null;
-    String rarityHex =
-        rarity != null ? String.format("%06X", rarity.textColor().value()) : "CCCCCC";
-    String cc = "&#" + rarityHex;
-    String rarityName = rarity != null ? rarity.displayName() : "Unknown";
-
-    meta.displayName(format(player, cc + "&l" + displayName));
-
-    List<Component> lore = new ArrayList<>();
-    lore.add(format(player, " " + cc + rarityName));
-    lore.add(Component.empty());
-    lore.add(format(player, " &#FFFFFF&lStatistics"));
-    if (enchant != null) {
-      lore.add(
-          format(
-              player, " &#888888Level: &#FFFFFF" + enchant.level + " &8/ &7" + enchant.maxLevel));
-      lore.add(
-          format(
-              player,
-              " &#888888Sockets: &#FFFFFF"
-                  + enchant.getSocketedCount()
-                  + " &8/ &7"
-                  + unlockedSlots));
-    } else {
-      lore.add(format(player, " &#FF5555This enchant has not been unlocked."));
+      Player player, String displayName, EnchantData enchant, int prestige) {
+    if (enchant == null) {
+      return buildInvisibleMapItem(
+          format(player, "&#FF5555&l" + displayName),
+          List.of(format(player, " &#FF5555This enchant has not been unlocked.")));
     }
-    lore.add(Component.empty());
-    lore.add(format(player, " &#FFFFFF&lSocket Guide"));
-    lore.add(format(player, " &aLeft-Click &#AAAAAAa socket with a stone to apply."));
-    lore.add(format(player, " &cLeft-Click &#AAAAAAan occupied socket to remove."));
-    lore.add(Component.empty());
-    meta.lore(lore);
-    item.setItemMeta(meta);
-    return item;
+
+    FileConfiguration menus = ConfigRegistry.getInstance().get(ConfigNames.MENUS);
+    return PickaxeMenu.buildUnlockedEnchantItem(
+        player, displayName, enchant, prestige, menus, false);
   }
 
   /** Builds socket item. */

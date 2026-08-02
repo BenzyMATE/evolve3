@@ -377,9 +377,13 @@ public class PickaxeMenu extends BaseMenu {
             if (event.isShiftClick() && event.isRightClick()) {
               handleEnchantSocketOpen(player, displayName);
             } else if (event.isRightClick()) {
-              handleEnchantToggle(player, displayName);
+              if (handleEnchantToggle(player, displayName)) {
+                refresh(player);
+              }
             } else {
-              handleEnchantSlotClick(player, displayName);
+              if (handleEnchantSlotClick(player, displayName)) {
+                refresh(player);
+              }
             }
           }
           return true;
@@ -448,7 +452,8 @@ public class PickaxeMenu extends BaseMenu {
         EnchantData enchant = unlocked.get(i);
         String displayName = EnchantAnimationConfig.getDisplayName(enchant.name);
         inventory.setItem(
-            slot, buildUnlockedEnchantItem(player, displayName, enchant, profile.prestige, menus));
+            slot,
+            buildUnlockedEnchantItem(player, displayName, enchant, profile.prestige, menus, true));
       } else {
         inventory.setItem(slot, buildEmptyEnchantSlot(player, menus));
       }
@@ -460,17 +465,25 @@ public class PickaxeMenu extends BaseMenu {
    * template are read from {@code enchants.yml} via {@link EnchantAnimationConfig}. Tokens in the
    * lore ({@code {level}}, etc.) are replaced with live values before rendering.
    *
+   * <p>Static and package-visible so {@link StoneSocketMenu} can render an identical enchant item
+   * for its own header instead of maintaining a separate, drifting copy of this lore logic.
+   *
    * @param player the player (for formatting / PlaceholderAPI)
    * @param displayName the enchant's display name (e.g. "Auto-Smelt")
    * @param enchant the player's current enchant data
+   * @param showStonesAction whether to include the {@code {stones_action}} "Shift+Right-Click to
+   *     manage stones" hint line — {@code true} in this menu, {@code false} when rendered inside
+   *     {@link StoneSocketMenu} itself, where that hint would point at the menu the player is
+   *     already looking at
    * @return the configured ItemStack
    */
-  private ItemStack buildUnlockedEnchantItem(
+  static ItemStack buildUnlockedEnchantItem(
       Player player,
       String displayName,
       EnchantData enchant,
       int prestige,
-      FileConfiguration menusConfig) {
+      FileConfiguration menusConfig,
+      boolean showStonesAction) {
     var option = EnchantAnimationConfig.getOption(displayName);
     RarityConfig rarity = option != null ? option.rarity() : null;
 
@@ -623,7 +636,9 @@ public class PickaxeMenu extends BaseMenu {
         continue;
       }
       if (line.equals("{stones_action}")) {
-        lore.add(deserialize(formatMessage(player, stonesActionLine)));
+        if (showStonesAction) {
+          lore.add(deserialize(formatMessage(player, stonesActionLine)));
+        }
         continue;
       }
       if (line.isEmpty()) {
@@ -694,14 +709,20 @@ public class PickaxeMenu extends BaseMenu {
    * Handles a left-click on an enchant grid slot. If the enchant is unlocked, attempts to spend
    * essence to level it up. If locked, informs the player they need an enchant roll.
    *
+   * <p>Static and package-visible so {@link StoneSocketMenu} can drive the same upgrade behaviour
+   * from its own enchant header item, instead of duplicating the essence-spend logic. The caller is
+   * responsible for refreshing its own menu afterward — this method only reports whether anything
+   * changed.
+   *
    * @param player the player who clicked
    * @param displayName the enchant's display name for the clicked slot
+   * @return {@code true} if the enchant was upgraded and the caller's menu should refresh
    */
-  private void handleEnchantSlotClick(Player player, String displayName) {
+  static boolean handleEnchantSlotClick(Player player, String displayName) {
     PlayerDataCenter playerDataCenter = DataCenterRegistry.getInstance().getPlayerDataCenter();
-    if (playerDataCenter == null) return;
+    if (playerDataCenter == null) return false;
     Pickaxe profile = playerDataCenter.getPickaxeForPlayer(player);
-    if (profile == null) return;
+    if (profile == null) return false;
 
     String internalName = displayName.toLowerCase();
     EnchantData enchant = profile.enchants.getEnchant(internalName);
@@ -713,19 +734,14 @@ public class PickaxeMenu extends BaseMenu {
               ConfigPaths.Messages.Pickaxe.ENCHANT_NOT_UNLOCKED,
               "%evolv3_prefix% &cThis enchant has not been unlocked yet.");
       player.sendMessage(formatMessage(player, msg));
-      return;
+      return false;
     }
 
     var playerProfile = playerDataCenter.getLocal(player);
-    if (playerProfile == null) return;
+    if (playerProfile == null) return false;
 
-    boolean upgraded =
-        PickaxeManager.getInstance()
-            .upgradeEnchantWithEssence(player, profile, playerProfile, displayName);
-
-    if (upgraded) {
-      refresh(player);
-    }
+    return PickaxeManager.getInstance()
+        .upgradeEnchantWithEssence(player, profile, playerProfile, displayName);
   }
 
   /**
@@ -836,14 +852,20 @@ public class PickaxeMenu extends BaseMenu {
   /**
    * Handles a right-click on an enchant grid slot, toggling the enchant on or off.
    *
+   * <p>Static and package-visible so {@link StoneSocketMenu} can drive the same enable/disable
+   * behaviour from its own enchant header item, instead of duplicating the toggle logic. The caller
+   * is responsible for refreshing its own menu afterward — this method only reports whether
+   * anything changed.
+   *
    * @param player the player who clicked
    * @param displayName the enchant's display name for the clicked slot
+   * @return {@code true} if the enchant was toggled and the caller's menu should refresh
    */
-  private void handleEnchantToggle(Player player, String displayName) {
+  static boolean handleEnchantToggle(Player player, String displayName) {
     PlayerDataCenter pdc = DataCenterRegistry.getInstance().getPlayerDataCenter();
-    if (pdc == null) return;
+    if (pdc == null) return false;
     Pickaxe profile = pdc.getPickaxeForPlayer(player);
-    if (profile == null) return;
+    if (profile == null) return false;
 
     String internalName = displayName.toLowerCase();
     EnchantData enchant = profile.enchants.getEnchant(internalName);
@@ -855,7 +877,7 @@ public class PickaxeMenu extends BaseMenu {
               ConfigPaths.Messages.Pickaxe.ENCHANT_NOT_UNLOCKED,
               "%evolv3_prefix% &cThis enchant has not been unlocked yet.");
       player.sendMessage(formatMessage(player, msg));
-      return;
+      return false;
     }
 
     enchant.enabled = !enchant.enabled;
@@ -872,7 +894,7 @@ public class PickaxeMenu extends BaseMenu {
     String msg = messages.getString(msgPath, fallback).replace("%enchant_name%", displayName);
     player.sendMessage(formatMessage(player, msg));
 
-    refresh(player);
+    return true;
   }
 
   /**
@@ -1026,7 +1048,7 @@ public class PickaxeMenu extends BaseMenu {
    * @param message the legacy-formatted string
    * @return the Adventure component
    */
-  private Component deserialize(String message) {
+  private static Component deserialize(String message) {
     return LEGACY.deserialize(message).decoration(TextDecoration.ITALIC, false);
   }
 }
