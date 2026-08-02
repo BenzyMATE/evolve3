@@ -3,29 +3,24 @@ package org.benski.evolv3.core.managers.pickaxe;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Logger;
 import lombok.Getter;
 import org.benski.evolv3.Main;
-import org.benski.evolv3.animations.progression.PrestigeAnimation;
-import org.benski.evolv3.animations.progression.PrestigeStoneFlightAnimation;
+import org.benski.evolv3.animations.progression.PrestigeAscensionAnimation;
 import org.benski.evolv3.api.EvolveApiClient;
 import org.benski.evolv3.api.dto.PendingDataDto;
 import org.benski.evolv3.api.dto.PendingType;
 import org.benski.evolv3.core.types.PendingPrestigeData;
-import org.benski.evolv3.items.EvolutionStone;
-import org.benski.evolv3.menus.pickaxe.PrestigeStoneSelectMenu;
 import org.benski.evolv3.models.pickaxe.PendingPrestigeDocument;
-import org.benski.evolv3.registry.MenuRegistry;
+import org.benski.evolv3.models.pickaxe.Pickaxe;
 import org.bukkit.entity.Player;
-import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitRunnable;
 
 /**
- * Manages active and pending prestige stone-selection animations.
+ * Manages active and pending prestige ascension animations.
  *
  * <h3>Exploit prevention</h3>
  *
@@ -33,12 +28,12 @@ import org.bukkit.scheduler.BukkitRunnable;
  *   <li><b>Same stones on rejoin</b> — the three stone rolls are generated once and stored in
  *       {@link PendingPrestigeData} before any animation starts. Disconnecting and reconnecting
  *       shows the exact same three options; the player cannot reroll by leaving.
- *   <li><b>Stone recovery</b> — if the player disconnects after selecting a stone but before the
- *       flight animation completes, the selected index is persisted and the flight is replayed on
- *       rejoin so the prestige executes correctly.
- *   <li><b>Server-restart recovery</b> — pending state is written to the API before the prestige
- *       animation begins. If the server restarts mid-flow the player resumes at the stone-selection
- *       screen with the original rolls on their next login.
+ *   <li><b>Server-restart recovery</b> — pending state is written to the API before the animation
+ *       begins. If the server restarts mid-flow the player resumes at the same stone options on
+ *       their next login.
+ *   <li><b>Selection on disconnect</b> — if the player already chose a stone but the outcome hadn't
+ *       been applied yet when they disconnected, it is applied immediately on rejoin — no animation
+ *       replay needed, since the pickaxe is never held/hidden by the animation.
  *   <li><b>Roll consumption</b> — the calling code is responsible for verifying prestige
  *       eligibility before calling {@link #startPrestige}. This class makes no attempt to reverse a
  *       prestige on cancel.
@@ -56,11 +51,8 @@ public class PrestigeSelectionManager {
    */
   private final Map<UUID, PendingPrestigeData> pendingPrestiges = new ConcurrentHashMap<>();
 
-  /**
-   * Players whose prestige animation is currently playing. Used to suppress the stone-menu callback
-   * when the animation finishes after the player already disconnected and rejoined.
-   */
-  private final Set<UUID> activeAnimations = ConcurrentHashMap.newKeySet();
+  /** Animations currently playing. Entries are removed on completion or disconnect. */
+  private final Map<UUID, PrestigeAscensionAnimation> activeAnimations = new ConcurrentHashMap<>();
 
   /**
    * Optional provider for reconstructing the execute-prestige callback after a server restart.
@@ -99,17 +91,11 @@ public class PrestigeSelectionManager {
   }
 
   /**
-   * Starts the full prestige selection flow for a player:
+   * Starts the prestige ascension animation for a player.
    *
-   * <ol>
-   *   <li>Stores pending state in memory and persists it to the API so it survives a restart.
-   *   <li>Plays the {@link PrestigeAnimation}.
-   *   <li>On animation completion, opens the stone-selection menu with the pre-rolled stones.
-   * </ol>
-   *
-   * <p>Call this after verifying prestige eligibility and rolling the stones. The callback passed
-   * here is the one that will be invoked when a stone is selected on the current session; on a
-   * restart it is rebuilt via the registered {@link PrestigeCallbackProvider}.
+   * <p>Call this after verifying prestige eligibility and rolling the stones. The player picks one
+   * of the three stones interactively inside the animation (look + left-click); the outcome is
+   * applied the instant a choice is locked in.
    *
    * @param player the player
    * @param pickaxeKey the pickaxe item-data key
@@ -127,29 +113,32 @@ public class PrestigeSelectionManager {
     pendingPrestiges.put(uuid, pending);
     savePendingToDatabase(uuid, pending);
 
-    activeAnimations.add(uuid);
-    PrestigeAnimation.play(
-        player,
-        nextPrestige,
-        () -> {
-          if (!player.isOnline() || !activeAnimations.remove(uuid)) return;
-          openStoneMenu(player);
-        });
+    startAnimation(player, stoneRolls, nextPrestige);
   }
 
   /**
-   * Records that the player has clicked a stone at {@code stoneIndex} (0–2) and persists the
-   * updated state to the API. Must be called before the flight animation begins.
+   * Attempts to confirm the currently-highlighted stone for a player's active animation.
    *
    * @param player the player
-   * @param stoneIndex 0, 1, or 2
+   * @return {@code true} if a selection was made
    */
-  public void onStoneSelected(Player player, int stoneIndex) {
-    UUID uuid = player.getUniqueId();
-    PendingPrestigeData pending = pendingPrestiges.get(uuid);
-    if (pending == null) return;
-    pending.setSelectedStoneIndex(stoneIndex);
-    savePendingToDatabase(uuid, pending);
+  public boolean confirmSelection(Player player) {
+    if (player == null) return false;
+    PrestigeAscensionAnimation animation = activeAnimations.get(player.getUniqueId());
+    if (animation == null) return false;
+    return animation.confirmSelection();
+  }
+
+  /**
+   * Checks whether a player currently has an active, not-yet-decided prestige animation.
+   *
+   * @param player the player
+   * @return {@code true} if the animation is playing and awaiting a selection
+   */
+  public boolean hasActiveSelection(Player player) {
+    if (player == null) return false;
+    PrestigeAscensionAnimation animation = activeAnimations.get(player.getUniqueId());
+    return animation != null && !animation.isFinished() && !animation.isSelectionMade();
   }
 
   /**
@@ -165,14 +154,17 @@ public class PrestigeSelectionManager {
   }
 
   /**
-   * Called when a player disconnects. Persists whatever state is currently in memory so it can be
-   * restored on rejoin or after a server restart.
+   * Called when a player disconnects. Stops their active animation (if any) and persists whatever
+   * pending state remains so it can be restored on rejoin or after a server restart.
    *
    * @param player the disconnecting player
    */
   public void handlePlayerQuit(Player player) {
     UUID uuid = player.getUniqueId();
-    activeAnimations.remove(uuid);
+    PrestigeAscensionAnimation animation = activeAnimations.remove(uuid);
+    if (animation != null && !animation.isFinished()) {
+      animation.stop();
+    }
     PendingPrestigeData pending = pendingPrestiges.get(uuid);
     if (pending == null) return;
     savePendingToDatabase(uuid, pending);
@@ -184,9 +176,9 @@ public class PrestigeSelectionManager {
    * <ul>
    *   <li>If {@code callbackAlreadyApplied}: the prestige already ran — delete the record and do
    *       nothing.
-   *   <li>If a stone was selected ({@code selectedStoneIndex ≥ 0}): replay the flight animation and
-   *       execute the prestige.
-   *   <li>Otherwise: open the stone-selection menu with the original rolls.
+   *   <li>If a stone was selected ({@code selectedStoneIndex ≥ 0}) but not yet applied: apply it
+   *       immediately.
+   *   <li>Otherwise: replay the animation with the original stone rolls.
    * </ul>
    *
    * @param player the joining player
@@ -214,21 +206,11 @@ public class PrestigeSelectionManager {
           if (executeCallback == null && callbackProvider != null) {
             executeCallback = callbackProvider.buildCallback(player, pending.getPickaxeKey(), roll);
           }
-
-          final Runnable finalCallback = executeCallback;
-          ItemStack stoneItem = EvolutionStone.create(roll.rarity(), roll.enchantName());
-
-          PrestigeStoneFlightAnimation.play(
-              player,
-              stoneItem,
-              roll.rarity(),
-              () -> {
-                if (finalCallback != null) finalCallback.run();
-                onPrestigeComplete(player);
-              });
+          if (executeCallback != null) executeCallback.run();
+          onPrestigeComplete(player);
         } else {
           pendingPrestiges.put(uuid, pending);
-          openStoneMenu(player);
+          startAnimation(player, pending.getStoneRolls(), resolveNextPrestige(player));
         }
       }
     }.runTaskLater(plugin, 1L);
@@ -281,19 +263,74 @@ public class PrestigeSelectionManager {
    * records are left intact so they can be restored on next start.
    */
   public void cleanup() {
+    for (PrestigeAscensionAnimation animation : activeAnimations.values()) {
+      if (animation != null && !animation.isFinished()) {
+        animation.stop();
+      }
+    }
     activeAnimations.clear();
     pendingPrestiges.clear();
   }
 
-  /** Opens the stone-selection menu for the player using their pending stone rolls. */
-  private void openStoneMenu(Player player) {
-    PendingPrestigeData pending = pendingPrestiges.get(player.getUniqueId());
-    if (pending == null) return;
-    PrestigeStoneSelectMenu stoneMenu =
-        (PrestigeStoneSelectMenu) MenuRegistry.getInstance().get("prestige_stone_select");
-    if (stoneMenu != null) {
-      stoneMenu.openForStones(player, pending.getStoneRolls());
+  /**
+   * Launches a prestige ascension animation using a pre-determined stone list. Used both for fresh
+   * starts and for restoring a session after reconnect.
+   */
+  private void startAnimation(
+      Player player, List<PrestigeManager.StoneRoll> stoneRolls, int nextPrestige) {
+    UUID uuid = player.getUniqueId();
+
+    PrestigeAscensionAnimation existing = activeAnimations.remove(uuid);
+    if (existing != null && !existing.isFinished()) {
+      existing.stop();
     }
+
+    PrestigeAscensionAnimation animation =
+        new PrestigeAscensionAnimation(
+            plugin,
+            player,
+            nextPrestige,
+            stoneRolls,
+            (p, roll) -> applyOutcome(p, stoneRolls, roll),
+            () -> activeAnimations.remove(uuid));
+
+    activeAnimations.put(uuid, animation);
+    animation.start();
+  }
+
+  /**
+   * Fires the instant a stone is chosen inside the animation: persists the selection, invokes the
+   * real execute-prestige callback, and marks the pending record applied.
+   */
+  private void applyOutcome(
+      Player player, List<PrestigeManager.StoneRoll> stoneRolls, PrestigeManager.StoneRoll roll) {
+    UUID uuid = player.getUniqueId();
+    PendingPrestigeData pending = pendingPrestiges.get(uuid);
+
+    int index = stoneRolls.indexOf(roll);
+    String pickaxeKey = pending != null ? pending.getPickaxeKey() : null;
+
+    if (pending != null) {
+      pending.setSelectedStoneIndex(index);
+      savePendingToDatabase(uuid, pending);
+    }
+
+    Runnable executeCallback = pending != null ? pending.getCallback() : null;
+    if (executeCallback == null && callbackProvider != null) {
+      executeCallback = callbackProvider.buildCallback(player, pickaxeKey, roll);
+    }
+    if (executeCallback != null) executeCallback.run();
+
+    if (pending != null) {
+      pending.setCallbackAlreadyApplied(true);
+      savePendingToDatabase(uuid, pending);
+    }
+  }
+
+  /** Resolves the prestige tier the player is about to unlock, from their live profile. */
+  private int resolveNextPrestige(Player player) {
+    Pickaxe profile = PrestigeManager.getInstance().getLocalProfile(player);
+    return (profile != null ? profile.prestige : 0) + 1;
   }
 
   /** Upserts a pending prestige record for the given player to the API. */

@@ -21,7 +21,6 @@ import org.benski.evolv3.menus.pickaxe.FurnaceSmeltMenu;
 import org.benski.evolv3.menus.pickaxe.PickaxeLimitMenu;
 import org.benski.evolv3.menus.pickaxe.PickaxeMenu;
 import org.benski.evolv3.menus.pickaxe.PrestigeConfirmMenu;
-import org.benski.evolv3.menus.pickaxe.PrestigeStoneSelectMenu;
 import org.benski.evolv3.menus.pickaxe.StoneSocketMenu;
 import org.benski.evolv3.menus.player.AnimationsMenu;
 import org.benski.evolv3.menus.player.ArmorMenu;
@@ -49,7 +48,6 @@ public class MenuRegistry implements Registry<Menu> {
           StoneSocketMenu.class,
           ExperimentalPreferencesMenu.class,
           PrestigeConfirmMenu.class,
-          PrestigeStoneSelectMenu.class,
           CellMenu.class,
           CellEvolveConfirmMenu.class,
           CellAbandonConfirmMenu.class,

@@ -15,6 +15,7 @@ import org.benski.evolv3.listeners.mine.MineListener;
 import org.benski.evolv3.listeners.pickaxe.EnchantListener;
 import org.benski.evolv3.listeners.pickaxe.OmnitoolListener;
 import org.benski.evolv3.listeners.pickaxe.PickaxeOwnershipListener;
+import org.benski.evolv3.listeners.pickaxe.PrestigeListener;
 import org.benski.evolv3.listeners.player.FoodDropListener;
 import org.benski.evolv3.listeners.player.HungerListener;
 import org.benski.evolv3.listeners.player.JoinListener;
@@ -39,6 +40,7 @@ public class ListenerRegistry implements Registry<BaseListener> {
           JoinListener.class,
           BreakListener.class,
           EnchantListener.class,
+          PrestigeListener.class,
           InteractListener.class,
           BackpackListener.class,
           FurnaceListener.class,

@@ -150,8 +150,6 @@ pickaxe:
     stone-gained: "  %evolv3_prefix% &#CCCCCCYou received a &#%rarity_color%%rarity% &#CCCCCCEvolution Stone!"
     # Confirmation GUI title
     confirm-title: "&8Confirm Prestige"
-    # Stone selection GUI title
-    stone-select-title: "&f&l★ Choose Your Stone"
     # Shown when player is already at max prestige
     already-max: "  %evolv3_prefix% &#CCCCCCYour pickaxe is already at maximum prestige."
     # Shown when player tries to prestige without meeting the level requirement

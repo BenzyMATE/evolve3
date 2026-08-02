@@ -336,8 +336,6 @@ public final class ConfigPaths {
       public static final String PRESTIGE_SUCCESS = "pickaxe.prestige.success";
       public static final String PRESTIGE_STONE_GAINED = "pickaxe.prestige.stone-gained";
       public static final String PRESTIGE_CONFIRM_TITLE = "pickaxe.prestige.confirm-title";
-      public static final String PRESTIGE_STONE_SELECT_TITLE =
-          "pickaxe.prestige.stone-select-title";
       public static final String PRESTIGE_ALREADY_MAX = "pickaxe.prestige.already-max";
       public static final String PRESTIGE_NOT_ELIGIBLE = "pickaxe.prestige.not-eligible";
       public static final String PRESTIGE_ERROR = "pickaxe.prestige.error";
