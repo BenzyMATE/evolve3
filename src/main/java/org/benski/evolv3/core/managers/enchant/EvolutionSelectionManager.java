@@ -10,10 +10,15 @@ import lombok.Getter;
 import org.benski.evolv3.Main;
 import org.benski.evolv3.animations.progression.EvolutionAnimation;
 import org.benski.evolv3.animations.progression.EvolutionAnimation3;
+import org.benski.evolv3.animations.progression.EvolutionElementalConvergenceAnimation;
 import org.benski.evolv3.animations.progression.EvolutionGenesisHelixAnimation;
+import org.benski.evolv3.animations.progression.EvolutionPhoenixRebirthAnimation;
+import org.benski.evolv3.animations.progression.EvolutionRunicSigilAnimation;
 import org.benski.evolv3.animations.progression.EvolutionStarlightCoronationAnimation;
+import org.benski.evolv3.animations.progression.EvolutionStormVortexAnimation;
 import org.benski.evolv3.animations.progression.EvolutionSupernovaAnimation;
 import org.benski.evolv3.animations.progression.EvolutionTitansForgeAnimation;
+import org.benski.evolv3.animations.progression.EvolutionVoidCollapseAnimation;
 import org.benski.evolv3.api.EvolveApiClient;
 import org.benski.evolv3.api.dto.PendingDataDto;
 import org.benski.evolv3.api.dto.PendingType;
@@ -344,6 +349,21 @@ public class EvolutionSelectionManager {
                   plugin, player, current, next, winningRarity, wrappedCallback);
           case STARLIGHT_CORONATION ->
               new EvolutionStarlightCoronationAnimation(
+                  plugin, player, current, next, winningRarity, wrappedCallback);
+          case VOID_COLLAPSE ->
+              new EvolutionVoidCollapseAnimation(
+                  plugin, player, current, next, winningRarity, wrappedCallback);
+          case PHOENIX_REBIRTH ->
+              new EvolutionPhoenixRebirthAnimation(
+                  plugin, player, current, next, winningRarity, wrappedCallback);
+          case RUNIC_SIGIL ->
+              new EvolutionRunicSigilAnimation(
+                  plugin, player, current, next, winningRarity, wrappedCallback);
+          case ELEMENTAL_CONVERGENCE ->
+              new EvolutionElementalConvergenceAnimation(
+                  plugin, player, current, next, winningRarity, wrappedCallback);
+          case STORM_VORTEX ->
+              new EvolutionStormVortexAnimation(
                   plugin, player, current, next, winningRarity, wrappedCallback);
           default ->
               new EvolutionAnimation3(

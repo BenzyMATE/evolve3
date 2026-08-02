@@ -173,7 +173,13 @@ public class PreferenceType {
     TITANS_FORGE(
         "Titan's Forge", "A spectral anvil takes three escalating hammer blows to shatter"),
     STARLIGHT_CORONATION(
-        "Starlight Coronation", "A halo descends in a beam of light to crown the pickaxe");
+        "Starlight Coronation", "A halo descends in a beam of light to crown the pickaxe"),
+    VOID_COLLAPSE("Void Collapse", "A singularity swallows the pickaxe before erupting in light"),
+    PHOENIX_REBIRTH("Phoenix Rebirth", "The pickaxe burns to ash and rises reborn from the fire"),
+    RUNIC_SIGIL("Runic Sigil", "A rotating rune circle rises into a tower of arcane light"),
+    ELEMENTAL_CONVERGENCE(
+        "Elemental Convergence", "Four elemental pillars spiral inward and fuse together"),
+    STORM_VORTEX("Storm Vortex", "A lightning-wracked vortex gathers and charges the pickaxe");
 
     private final String displayName;
     private final String description;

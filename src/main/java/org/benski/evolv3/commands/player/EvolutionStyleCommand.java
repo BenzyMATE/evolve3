@@ -35,7 +35,12 @@ public class EvolutionStyleCommand extends BaseCommand {
           PreferenceType.EvolutionStyle.SUPERNOVA,
           PreferenceType.EvolutionStyle.GENESIS_HELIX,
           PreferenceType.EvolutionStyle.TITANS_FORGE,
-          PreferenceType.EvolutionStyle.STARLIGHT_CORONATION);
+          PreferenceType.EvolutionStyle.STARLIGHT_CORONATION,
+          PreferenceType.EvolutionStyle.VOID_COLLAPSE,
+          PreferenceType.EvolutionStyle.PHOENIX_REBIRTH,
+          PreferenceType.EvolutionStyle.RUNIC_SIGIL,
+          PreferenceType.EvolutionStyle.ELEMENTAL_CONVERGENCE,
+          PreferenceType.EvolutionStyle.STORM_VORTEX);
 
   /** Creates and registers the EvolutionStyleCommand. @param plugin the owning plugin */
   public EvolutionStyleCommand(JavaPlugin plugin) {
@@ -100,7 +105,8 @@ public class EvolutionStyleCommand extends BaseCommand {
           String usage =
               messages.getString(
                   ConfigPaths.Messages.EvolutionStyle.USAGE_SET,
-                  "&cUsage: /evolutionstyle set" + " <ascension|supernova|helix|forge|coronation>");
+                  "&cUsage: /evolutionstyle set"
+                      + " <ascension|supernova|helix|forge|coronation|void|phoenix|runic|elemental|storm>");
           player.sendMessage(formatMessage(player, usage));
           return true;
         }
@@ -267,6 +273,11 @@ public class EvolutionStyleCommand extends BaseCommand {
       case "helix", "genesis" -> PreferenceType.EvolutionStyle.GENESIS_HELIX;
       case "forge", "titans" -> PreferenceType.EvolutionStyle.TITANS_FORGE;
       case "coronation", "starlight" -> PreferenceType.EvolutionStyle.STARLIGHT_CORONATION;
+      case "void", "singularity" -> PreferenceType.EvolutionStyle.VOID_COLLAPSE;
+      case "phoenix", "fire" -> PreferenceType.EvolutionStyle.PHOENIX_REBIRTH;
+      case "runic", "sigil" -> PreferenceType.EvolutionStyle.RUNIC_SIGIL;
+      case "elemental", "elements" -> PreferenceType.EvolutionStyle.ELEMENTAL_CONVERGENCE;
+      case "storm", "vortex" -> PreferenceType.EvolutionStyle.STORM_VORTEX;
       default -> null;
     };
   }
@@ -284,14 +295,37 @@ public class EvolutionStyleCommand extends BaseCommand {
       List<String> options =
           new ArrayList<>(
               List.of(
-                  "list", "set", "next", "ascension", "supernova", "helix", "forge", "coronation"));
+                  "list",
+                  "set",
+                  "next",
+                  "ascension",
+                  "supernova",
+                  "helix",
+                  "forge",
+                  "coronation",
+                  "void",
+                  "phoenix",
+                  "runic",
+                  "elemental",
+                  "storm"));
       String prefix = args[0].toLowerCase();
       completions.addAll(
           options.stream().filter(s -> s.startsWith(prefix)).collect(Collectors.toList()));
     } else if (args.length == 2 && args[0].equalsIgnoreCase("set")) {
       String prefix = args[1].toLowerCase();
       completions.addAll(
-          List.of("ascension", "supernova", "helix", "forge", "coronation").stream()
+          List.of(
+                  "ascension",
+                  "supernova",
+                  "helix",
+                  "forge",
+                  "coronation",
+                  "void",
+                  "phoenix",
+                  "runic",
+                  "elemental",
+                  "storm")
+              .stream()
               .filter(s -> s.startsWith(prefix))
               .collect(Collectors.toList()));
     }
