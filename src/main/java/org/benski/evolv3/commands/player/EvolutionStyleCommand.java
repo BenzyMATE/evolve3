@@ -31,7 +31,11 @@ import org.jetbrains.annotations.Nullable;
 public class EvolutionStyleCommand extends BaseCommand {
   private static final List<PreferenceType.EvolutionStyle> SELECTABLE_STYLES =
       List.of(
-          PreferenceType.EvolutionStyle.CRYSTAL_ASCENSION, PreferenceType.EvolutionStyle.SUPERNOVA);
+          PreferenceType.EvolutionStyle.CRYSTAL_ASCENSION,
+          PreferenceType.EvolutionStyle.SUPERNOVA,
+          PreferenceType.EvolutionStyle.GENESIS_HELIX,
+          PreferenceType.EvolutionStyle.TITANS_FORGE,
+          PreferenceType.EvolutionStyle.STARLIGHT_CORONATION);
 
   /** Creates and registers the EvolutionStyleCommand. @param plugin the owning plugin */
   public EvolutionStyleCommand(JavaPlugin plugin) {
@@ -96,7 +100,7 @@ public class EvolutionStyleCommand extends BaseCommand {
           String usage =
               messages.getString(
                   ConfigPaths.Messages.EvolutionStyle.USAGE_SET,
-                  "&cUsage: /evolutionstyle set <ascension|supernova>");
+                  "&cUsage: /evolutionstyle set" + " <ascension|supernova|helix|forge|coronation>");
           player.sendMessage(formatMessage(player, usage));
           return true;
         }
@@ -230,12 +234,12 @@ public class EvolutionStyleCommand extends BaseCommand {
     player.sendMessage(formatMessage(player, cycled));
   }
 
-  /** Returns the player's current evolution style preference, defaulting to supernova. */
+  /** Returns the player's current evolution style preference, defaulting to genesis helix. */
   private PreferenceType.EvolutionStyle getPlayerStyle(Player player) {
     PlayerProfile profile = getProfile(player);
     return profile != null
         ? profile.preferences.evolutionStyle
-        : PreferenceType.EvolutionStyle.SUPERNOVA;
+        : PreferenceType.EvolutionStyle.GENESIS_HELIX;
   }
 
   /** Persists the given style to the player's profile. Returns {@code false} if no profile. */
@@ -260,6 +264,9 @@ public class EvolutionStyleCommand extends BaseCommand {
     return switch (name.toLowerCase()) {
       case "ascension", "crystal", "classic" -> PreferenceType.EvolutionStyle.CRYSTAL_ASCENSION;
       case "supernova", "epic" -> PreferenceType.EvolutionStyle.SUPERNOVA;
+      case "helix", "genesis" -> PreferenceType.EvolutionStyle.GENESIS_HELIX;
+      case "forge", "titans" -> PreferenceType.EvolutionStyle.TITANS_FORGE;
+      case "coronation", "starlight" -> PreferenceType.EvolutionStyle.STARLIGHT_CORONATION;
       default -> null;
     };
   }
@@ -275,14 +282,16 @@ public class EvolutionStyleCommand extends BaseCommand {
 
     if (args.length == 1) {
       List<String> options =
-          new ArrayList<>(List.of("list", "set", "next", "ascension", "supernova"));
+          new ArrayList<>(
+              List.of(
+                  "list", "set", "next", "ascension", "supernova", "helix", "forge", "coronation"));
       String prefix = args[0].toLowerCase();
       completions.addAll(
           options.stream().filter(s -> s.startsWith(prefix)).collect(Collectors.toList()));
     } else if (args.length == 2 && args[0].equalsIgnoreCase("set")) {
       String prefix = args[1].toLowerCase();
       completions.addAll(
-          List.of("ascension", "supernova").stream()
+          List.of("ascension", "supernova", "helix", "forge", "coronation").stream()
               .filter(s -> s.startsWith(prefix))
               .collect(Collectors.toList()));
     }

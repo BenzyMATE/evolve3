@@ -168,7 +168,12 @@ public class PreferenceType {
   /** Evolution style preference - controls the visual style of the pickaxe evolution animation. */
   public enum EvolutionStyle {
     CRYSTAL_ASCENSION("Crystal Ascension", "Amethyst shards converge and shatter into a nova"),
-    SUPERNOVA("Supernova Descent", "A gathered star falls from the sky in a cataclysmic impact");
+    SUPERNOVA("Supernova Descent", "A gathered star falls from the sky in a cataclysmic impact"),
+    GENESIS_HELIX("Genesis Helix", "A double helix of atoms spirals up and splices into light"),
+    TITANS_FORGE(
+        "Titan's Forge", "A spectral anvil takes three escalating hammer blows to shatter"),
+    STARLIGHT_CORONATION(
+        "Starlight Coronation", "A halo descends in a beam of light to crown the pickaxe");
 
     private final String displayName;
     private final String description;

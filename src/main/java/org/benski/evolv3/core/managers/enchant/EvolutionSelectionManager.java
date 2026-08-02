@@ -10,7 +10,10 @@ import lombok.Getter;
 import org.benski.evolv3.Main;
 import org.benski.evolv3.animations.progression.EvolutionAnimation;
 import org.benski.evolv3.animations.progression.EvolutionAnimation3;
+import org.benski.evolv3.animations.progression.EvolutionGenesisHelixAnimation;
+import org.benski.evolv3.animations.progression.EvolutionStarlightCoronationAnimation;
 import org.benski.evolv3.animations.progression.EvolutionSupernovaAnimation;
+import org.benski.evolv3.animations.progression.EvolutionTitansForgeAnimation;
 import org.benski.evolv3.api.EvolveApiClient;
 import org.benski.evolv3.api.dto.PendingDataDto;
 import org.benski.evolv3.api.dto.PendingType;
@@ -329,11 +332,23 @@ public class EvolutionSelectionManager {
         };
 
     EvolutionAnimation animation =
-        resolveEvolutionStyle(player) == PreferenceType.EvolutionStyle.SUPERNOVA
-            ? new EvolutionSupernovaAnimation(
-                plugin, player, current, next, winningRarity, wrappedCallback)
-            : new EvolutionAnimation3(
-                plugin, player, current, next, winningRarity, wrappedCallback);
+        switch (resolveEvolutionStyle(player)) {
+          case SUPERNOVA ->
+              new EvolutionSupernovaAnimation(
+                  plugin, player, current, next, winningRarity, wrappedCallback);
+          case GENESIS_HELIX ->
+              new EvolutionGenesisHelixAnimation(
+                  plugin, player, current, next, winningRarity, wrappedCallback);
+          case TITANS_FORGE ->
+              new EvolutionTitansForgeAnimation(
+                  plugin, player, current, next, winningRarity, wrappedCallback);
+          case STARLIGHT_CORONATION ->
+              new EvolutionStarlightCoronationAnimation(
+                  plugin, player, current, next, winningRarity, wrappedCallback);
+          default ->
+              new EvolutionAnimation3(
+                  plugin, player, current, next, winningRarity, wrappedCallback);
+        };
 
     animation.setOnComplete(
         () -> {
@@ -376,13 +391,13 @@ public class EvolutionSelectionManager {
   /**
    * Maps the player's evolution style preference to which {@link EvolutionAnimation} implementation
    * {@link #startEvolutionInternal} constructs. Defaults to {@link
-   * PreferenceType.EvolutionStyle#SUPERNOVA} if the preference is unavailable.
+   * PreferenceType.EvolutionStyle#GENESIS_HELIX} if the preference is unavailable.
    */
   private PreferenceType.EvolutionStyle resolveEvolutionStyle(Player player) {
     PlayerDataCenter pdc = DataCenterRegistry.getInstance().getPlayerDataCenter();
-    if (pdc == null) return PreferenceType.EvolutionStyle.SUPERNOVA;
+    if (pdc == null) return PreferenceType.EvolutionStyle.GENESIS_HELIX;
     PlayerProfile profile = pdc.getLocal(player);
-    if (profile == null) return PreferenceType.EvolutionStyle.SUPERNOVA;
+    if (profile == null) return PreferenceType.EvolutionStyle.GENESIS_HELIX;
     return profile.preferences.evolutionStyle;
   }
 
