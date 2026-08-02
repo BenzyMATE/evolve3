@@ -118,7 +118,7 @@ public class StoneSocketMenu extends BaseMenu {
    * essence vessel icon. Tunable in-game via {@code /e vesselcalib} without a rebuild/restart.
    * Indexed by prestige tier (0-3) for the same reason as {@link #SHUTTER_OFFSET}.
    */
-  private static final int[] ESSENCE_ICON_OFFSET = {-113, -113, -113, -113};
+  private static final int[] ESSENCE_ICON_OFFSET = {-113, -110, -107, -104};
 
   /**
    * Exact pixel offset from the essence icon to the evolve vessel icon. Indexed by prestige tier
@@ -199,9 +199,9 @@ public class StoneSocketMenu extends BaseMenu {
    */
   private static final int[][] SOCKET_CENTER_X = {
     {75, 105, 135, 163}, // tier 1 (prestige 0) — only socket 1 unlocked
-    {75, 105, 135, 163}, // tier 2 (prestige 1) — sockets 1-2 unlocked
-    {75, 105, 135, 163}, // tier 3 (prestige 2) — sockets 1-3 unlocked
-    {75, 105, 135, 163}, // tier 4 (prestige 3+) — all 4 sockets unlocked
+    {75, 107, 138, 166}, // tier 2 (prestige 1) — sockets 1-2 unlocked
+    {75, 107, 140, 169}, // tier 3 (prestige 2) — sockets 1-3 unlocked
+    {75, 107, 140, 171}, // tier 4 (prestige 3+) — all 4 sockets unlocked
   };
 
   /**
