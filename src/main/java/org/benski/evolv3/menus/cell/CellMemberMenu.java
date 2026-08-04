@@ -22,6 +22,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -29,8 +30,18 @@ import org.bukkit.plugin.java.JavaPlugin;
 /** Cell member management menu — shows the current member list and provides add/remove controls. */
 public class CellMemberMenu extends BaseMenu {
   private static final MenuType MENU_TYPE = MenuType.register("cell_member_menu");
+  private static final long PENDING_ADD_TIMEOUT_MILLIS = 60_000L;
   @Getter private static CellMemberMenu instance;
-  private final Map<UUID, String> pendingAdd = new ConcurrentHashMap<>();
+  private final Map<UUID, PendingAdd> pendingAdd = new ConcurrentHashMap<>();
+
+  /**
+   * A cell awaiting an ally name typed in chat, expiring after {@link #PENDING_ADD_TIMEOUT_MILLIS}.
+   */
+  private record PendingAdd(String cellName, long expiresAtMillis) {
+    boolean isExpired() {
+      return System.currentTimeMillis() > expiresAtMillis;
+    }
+  }
 
   /** Creates and registers the CellMemberMenu singleton. @param plugin the owning plugin */
   public CellMemberMenu(JavaPlugin plugin) {
@@ -190,7 +201,9 @@ public class CellMemberMenu extends BaseMenu {
   /** Handles add member. */
   private void handleAddMember(Player player, CellRent rent) {
     player.closeInventory();
-    pendingAdd.put(player.getUniqueId(), rent.cellName());
+    pendingAdd.put(
+        player.getUniqueId(),
+        new PendingAdd(rent.cellName(), System.currentTimeMillis() + PENDING_ADD_TIMEOUT_MILLIS));
     Messageable.sendRaw(player, "");
     Messageable.sendRaw(
         player, "  &#AAAAAA" + "Type a player name in chat to add them as an ally.");
@@ -224,11 +237,16 @@ public class CellMemberMenu extends BaseMenu {
   @EventHandler(priority = EventPriority.LOWEST)
   public void onPlayerChat(AsyncChatEvent event) {
     UUID uuid = event.getPlayer().getUniqueId();
-    String cellName = pendingAdd.get(uuid);
-    if (cellName == null) return;
+    PendingAdd pending = pendingAdd.get(uuid);
+    if (pending == null) return;
+    if (pending.isExpired()) {
+      pendingAdd.remove(uuid);
+      return;
+    }
 
     event.setCancelled(true);
     pendingAdd.remove(uuid);
+    String cellName = pending.cellName();
     String input = PlainTextComponentSerializer.plainText().serialize(event.message()).trim();
 
     if (input.equalsIgnoreCase("cancel")) {
@@ -312,5 +330,20 @@ public class CellMemberMenu extends BaseMenu {
   @Override
   protected void onOpen(Player player) {
     player.playSound(player.getLocation(), Sound.BLOCK_ENCHANTMENT_TABLE_USE, 0.5f, 1.2f);
+  }
+
+  /**
+   * Called when this menu closes. Abandoning the menu (e.g. pressing escape instead of typing a
+   * name or "cancel") must not leave a pending ally-add armed against the player's next message.
+   */
+  @Override
+  protected void onClose(Player player) {
+    pendingAdd.remove(player.getUniqueId());
+  }
+
+  /** Clears any pending ally-add so a disconnected player's next login isn't affected. */
+  @EventHandler
+  public void onPlayerQuit(PlayerQuitEvent event) {
+    pendingAdd.remove(event.getPlayer().getUniqueId());
   }
 }
