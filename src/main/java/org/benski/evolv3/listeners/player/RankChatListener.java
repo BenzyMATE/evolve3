@@ -1,6 +1,7 @@
 package org.benski.evolv3.listeners.player;
 
 import io.papermc.paper.event.player.AsyncChatEvent;
+import java.util.List;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
@@ -76,5 +77,29 @@ public class RankChatListener extends BaseListener {
                 .append(finalName)
                 .append(Component.text(": ", NamedTextColor.DARK_GRAY))
                 .append(message));
+  }
+
+  // TEMPORARY DIAGNOSTIC — remove once the chat-visibility bug is found.
+  /** Called when chat occurs, after all other handlers, to log the final viewer set. */
+  @EventHandler(priority = EventPriority.MONITOR)
+  public void logViewersDebug(AsyncChatEvent event) {
+    List<String> viewerNames =
+        event.viewers().stream()
+            .filter(v -> v instanceof Player)
+            .map(v -> ((Player) v).getName())
+            .toList();
+    event
+        .getPlayer()
+        .getServer()
+        .getLogger()
+        .info(
+            "[ChatDebug] sender="
+                + event.getPlayer().getName()
+                + " cancelled="
+                + event.isCancelled()
+                + " viewerCount="
+                + event.viewers().size()
+                + " viewers="
+                + viewerNames);
   }
 }
