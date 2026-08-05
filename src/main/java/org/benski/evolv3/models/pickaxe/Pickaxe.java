@@ -33,6 +33,13 @@ public final class Pickaxe {
   public int prestige = 0;
   public int durability = 0;
 
+  /**
+   * True once the pickaxe has taken enough damage that it would vanilla-break. Instead of being
+   * destroyed, it becomes unusable for mining until repaired via {@link
+   * org.benski.evolv3.core.managers.pickaxe.PickaxeManager#repairPickaxe}.
+   */
+  public boolean disabled = false;
+
   /** Creates a new pickaxe with default values from configuration. */
   public static Pickaxe createDefault(Player player, String id) {
     FileConfiguration config = ConfigRegistry.getInstance().get(ConfigNames.DEFAULT);

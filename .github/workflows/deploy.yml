@@ -107,10 +107,12 @@ jobs:
             -e "set sftp:auto-confirm yes; put server.properties -o /server.properties; bye"
 
       # --- RELOAD: tell the DeployWebhook plugin to swap in the new jar ---
-      # Commit message is passed as the request body so the plugin can bump its
-      # MOTD's ALPHA version and display it. github.event.head_commit.message is
-      # attacker-influenceable, so it's passed via `env:` rather than interpolated
-      # straight into the script, per GitHub's script-injection guidance.
+      # Commit message is passed as the request body and the commit hash as a
+      # header, so the plugin can bump its MOTD's version (major.minor-hash) and
+      # display both. github.event.head_commit.message is attacker-influenceable,
+      # so it's passed via `env:` rather than interpolated straight into the
+      # script, per GitHub's script-injection guidance. github.sha is a plain hex
+      # string and safe to interpolate directly.
       - name: Trigger plugin hot-reload
         env:
           COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
@@ -119,4 +121,5 @@ jobs:
             "http://play.evolvemc.net:${{ secrets.WEBHOOK_PORT }}/deploy" \
             -H "Authorization: Bearer ${{ secrets.WEBHOOK_TOKEN }}" \
             -H "Content-Type: text/plain; charset=utf-8" \
+            -H "X-Commit-Hash: ${{ github.sha }}" \
             --data-binary "$COMMIT_MESSAGE"

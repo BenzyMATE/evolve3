@@ -13,6 +13,7 @@ public class PickaxeDto {
   public int prestige;
   public int evolution = 1;
   public int durability;
+  public boolean disabled;
   public VesselDto essenceVessel;
   public VesselDto atomVessel;
   public List<EnchantDto> enchants = new ArrayList<>();

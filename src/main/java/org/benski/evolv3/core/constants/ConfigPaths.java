@@ -62,6 +62,9 @@ public final class ConfigPaths {
       public static final String DURABILITY_LABEL = "Pickaxe.DurabilityLabel";
       public static final String DURABILITY_BAR_PREFIX = "Pickaxe.DurabilityBarPrefix";
 
+      /** Lore line inserted near the top when a pickaxe is disabled (needs repair). */
+      public static final String DISABLED_LORE_LINE = "Pickaxe.DisabledLoreLine";
+
       public static final String HOLOGRAM_ENABLED = "Pickaxe.Hologram.Enabled";
       public static final String HOLOGRAM_TEXT = "Pickaxe.Hologram.Text";
     }
@@ -180,8 +183,25 @@ public final class ConfigPaths {
       /** Percent chance (0–100) that breaking any log drops one Ancient Resin. */
       public static final String DROP_CHANCE = "AncientResin.DropChance";
 
-      /** Number of Ancient Resin required to fully repair a pickaxe. */
+      /** Fallback number of Ancient Resin required to fully repair a pickaxe (any tier). */
       public static final String REPAIR_COST = "AncientResin.RepairCost";
+
+      /**
+       * Prefix for per-tier repair costs when the pickaxe is merely damaged (not disabled). Full
+       * path: {@code AncientResin.RepairCostByTier.TIER} (e.g. {@code
+       * AncientResin.RepairCostByTier.WOOD}), where TIER is an {@link
+       * org.benski.evolv3.enums.EvolutionTier} name. Falls back to {@link #REPAIR_COST} when a tier
+       * has no override.
+       */
+      public static final String REPAIR_COST_BY_TIER = "AncientResin.RepairCostByTier";
+
+      /**
+       * Prefix for per-tier repair costs when the pickaxe has broken and become disabled. Same path
+       * shape as {@link #REPAIR_COST_BY_TIER}, under {@code
+       * AncientResin.DisabledRepairCostByTier.TIER}.
+       */
+      public static final String DISABLED_REPAIR_COST_BY_TIER =
+          "AncientResin.DisabledRepairCostByTier";
     }
 
     /** Custom hunger system configuration paths. */
@@ -278,6 +298,7 @@ public final class ConfigPaths {
       public static final String LOADING_PROFILE = "pickaxe.loading-profile";
       public static final String PROFILE_CREATED = "pickaxe.profile-created";
       public static final String NO_PICKAXE = "pickaxe.no-pickaxe";
+      public static final String MINING_DISABLED_PICKAXE = "pickaxe.mining-disabled-pickaxe";
       public static final String ENCHANT_ROLL_GAINED = "pickaxe.enchant-roll-gained";
       public static final String ENCHANT_ROLL_TITLE = "pickaxe.enchant-roll-title";
       public static final String ENCHANT_ROLL_SUBTITLE = "pickaxe.enchant-roll-subtitle";
@@ -288,6 +309,7 @@ public final class ConfigPaths {
       public static final String LEVEL_UP_SUBTITLE = "pickaxe.level-up-title.subtitle";
 
       public static final String PICKAXE_BROKEN = "pickaxe.pickaxe-broken";
+      public static final String PICKAXE_DISABLED = "pickaxe.pickaxe-disabled";
       public static final String DROP_CONFIRMATION = "pickaxe.drop-confirmation";
       public static final String OMNITOOL_DROP_CONFIRMATION = "pickaxe.omnitool-drop-confirmation";
       public static final String PICKUP_NEW_OWNER = "pickaxe.pickup-new-owner";

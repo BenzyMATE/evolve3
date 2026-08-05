@@ -315,10 +315,16 @@ public class PickaxeOwnershipListener extends BaseListener {
   }
 
   /**
-   * When a pickaxe takes durability damage, warn the player if the remaining durability will fall
-   * below the configured threshold.
+   * When a pickaxe takes durability damage: if this hit would vanilla-break it, cancel the break
+   * and disable it instead (see {@link #disablePickaxe}); otherwise warn the player if remaining
+   * durability falls below the configured threshold.
+   *
+   * <p>Runs at HIGH with {@code ignoreCancelled = true} so it always sees the damage amount after
+   * {@link org.benski.evolv3.listeners.mine.BreakListener#onItemDamage} (NORMAL) has had a chance
+   * to negate it via the Unbreaking stone roll — otherwise a negated hit could still be misread
+   * here as breaking the pickaxe.
    */
-  @EventHandler
+  @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
   public void onItemDamage(PlayerItemDamageEvent event) {
     String pickaxeId = event.getItem().getData("id");
     if (pickaxeId == null || pickaxeId.isEmpty()) return;
@@ -330,6 +336,12 @@ public class PickaxeOwnershipListener extends BaseListener {
     if (!(meta instanceof Damageable damageable)) return;
 
     int newDamage = damageable.getDamage() + event.getDamage();
+
+    if (newDamage >= maxDurability) {
+      disablePickaxe(event, damageable, pickaxeId, maxDurability);
+      return;
+    }
+
     double remainingPercent = (double) (maxDurability - newDamage) / maxDurability * 100.0;
 
     FileConfiguration config = ConfigRegistry.getInstance().get(ConfigNames.DEFAULT);
@@ -350,6 +362,37 @@ public class PickaxeOwnershipListener extends BaseListener {
     for (String line : lines) {
       player.sendMessage(Utils.formatMessage(player, line));
     }
+  }
+
+  /**
+   * Instead of letting vanilla destroy the pickaxe at 0 durability, cancels the damage, pins the
+   * item just short of breaking, and flags the backing profile as disabled so it can't be used to
+   * mine until repaired.
+   */
+  private void disablePickaxe(
+      PlayerItemDamageEvent event, Damageable damageable, String pickaxeId, int maxDurability) {
+    event.setCancelled(true);
+    damageable.setDamage(maxDurability - 1);
+    event.getItem().setItemMeta(damageable);
+
+    Player player = event.getPlayer();
+
+    PlayerDataCenter playerDataCenter = DataCenterRegistry.getInstance().getPlayerDataCenter();
+    Pickaxe profile =
+        playerDataCenter != null ? playerDataCenter.getPickaxeByItemId(pickaxeId) : null;
+    if (profile != null && !profile.disabled) {
+      profile.disabled = true;
+      profile.durability = maxDurability - 1;
+      profile.save(null);
+      PickaxeManager.getInstance().applyLoreAndName(player, profile, event.getItem());
+    }
+
+    FileConfiguration messages = ConfigRegistry.getInstance().get(ConfigNames.MESSAGES);
+    List<String> lines = messages.getStringList(ConfigPaths.Messages.Pickaxe.PICKAXE_DISABLED);
+    for (String line : lines) {
+      player.sendMessage(Utils.formatMessage(player, line));
+    }
+    player.playSound(player.getLocation(), org.bukkit.Sound.ENTITY_ITEM_BREAK, 1.0f, 0.7f);
   }
 
   /** Sends the shared drop confirmation prompt, replacing {tool} with the tool label. */

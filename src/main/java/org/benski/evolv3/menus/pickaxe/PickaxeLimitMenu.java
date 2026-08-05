@@ -22,6 +22,7 @@ import org.benski.evolv3.core.helpers.ItemStackExtensions;
 import org.benski.evolv3.core.managers.pickaxe.PickaxeManager;
 import org.benski.evolv3.core.types.MenuType;
 import org.benski.evolv3.datacenters.PlayerDataCenter;
+import org.benski.evolv3.enums.EvolutionTier;
 import org.benski.evolv3.items.AncientResin;
 import org.benski.evolv3.models.pickaxe.Pickaxe;
 import org.benski.evolv3.models.player.PlayerProfile;
@@ -713,8 +714,12 @@ public class PickaxeLimitMenu extends BaseMenu {
 
   /** Handles repair. */
   private void handleRepair(Player player, String pickaxeId, Material material, boolean isActive) {
-    FileConfiguration config = ConfigRegistry.getInstance().get(ConfigNames.DEFAULT);
-    int repairCost = config.getInt(ConfigPaths.Default.AncientResin.REPAIR_COST, 5);
+    Pickaxe pickProfile = playerDataCenter.getPickaxeByItemId(pickaxeId);
+    if (pickProfile == null) return;
+
+    int repairCost =
+        PickaxeManager.getInstance()
+            .getRepairCost(EvolutionTier.fromLevel(pickProfile.evolution), pickProfile.disabled);
 
     int currentDamage;
     if (isActive) {
@@ -723,8 +728,6 @@ public class PickaxeLimitMenu extends BaseMenu {
       ItemMeta m = heldPickaxe.getItemMeta();
       currentDamage = (m instanceof Damageable dmg) ? dmg.getDamage() : 0;
     } else {
-      Pickaxe pickProfile = playerDataCenter.getPickaxeByItemId(pickaxeId);
-      if (pickProfile == null) return;
       currentDamage = pickProfile.durability;
     }
 
@@ -754,12 +757,13 @@ public class PickaxeLimitMenu extends BaseMenu {
         dmg.setDamage(0);
         heldPickaxe.setItemMeta(m);
       }
+      pickProfile.disabled = false;
+      PickaxeManager.getInstance().applyLoreAndName(player, pickProfile, heldPickaxe);
     } else {
-      Pickaxe pickProfile = playerDataCenter.getPickaxeByItemId(pickaxeId);
-      if (pickProfile == null) return;
       pickProfile.durability = 0;
-      pickProfile.save(null);
+      pickProfile.disabled = false;
     }
+    pickProfile.save(null);
 
     player.playSound(player.getLocation(), Sound.BLOCK_ANVIL_USE, 1.0f, 1.2f);
     sendBar(player, ConfigPaths.Messages.PickaxeLimit.REPAIR_SUCCESS);

@@ -116,6 +116,9 @@ Pickaxe:
   DurabilityLabel: " &#00FFFFDurability:"
   DurabilityBarPrefix: " "
 
+  # Lore line shown near the top of a disabled (needs repair) pickaxe
+  DisabledLoreLine: " &#FF4444&l⚠ DISABLED &#CCCCCC— Repair to use again"
+
   # Progress bar visual elements
   Progressbar Symbol 1: "&#00FF88▄"
   Progressbar Symbol 2: "&#444444▄"
@@ -307,8 +310,28 @@ Armor:
 AncientResin:
   # Percentage chance (0-100) that breaking any log drops one Ancient Resin
   DropChance: 25.0
-  # Number of Ancient Resin required to fully repair a pickaxe
+  # Fallback Ancient Resin cost to fully repair a pickaxe, used for any tier not
+  # listed in RepairCostByTier/DisabledRepairCostByTier below.
   RepairCost: 5
+  # Per-tier Ancient Resin repair cost for a pickaxe that's merely damaged (not
+  # yet disabled), keyed by evolution tier name (WOOD, STONE, COPPER, IRON,
+  # DIAMOND, NETHERITE).
+  RepairCostByTier:
+    WOOD: 3
+    STONE: 6
+    COPPER: 9
+    IRON: 12
+    DIAMOND: 15
+    NETHERITE: 18
+  # Per-tier Ancient Resin repair cost for a pickaxe that has broken and become
+  # disabled (see Pickaxe.disabled) — steeper than the normal cost above.
+  DisabledRepairCostByTier:
+    WOOD: 10
+    STONE: 15
+    COPPER: 20
+    IRON: 25
+    DIAMOND: 30
+    NETHERITE: 35
 
 # =====================================================
 # Hunger System Configuration

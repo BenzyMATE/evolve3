@@ -98,7 +98,7 @@ Pickaxe Menu:
       - ' &aLeft-Click &#AAAAAAto roll for enchantments '
       - ''
   StorageAction: " &aLeft-Click &#AAAAAAto open pickaxe storage"
-  RepairAction: " &#FFEE00Right-Click &#AAAAAAto repair &#777777(&#E8890A5 &#777777Ancient Resin)"
+  RepairAction: " &#FFEE00Right-Click &#AAAAAAto repair &#777777(&#E8890A%evolv3_repair_cost% &#777777Ancient Resin)"
   Stones:
     Header: " &#FFFFFF&lStones"
     FilledLine: " &#{hex}{effect}"

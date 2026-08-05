@@ -64,6 +64,13 @@ pickaxe:
   enchant-roll-title: "&#B366D9&lEnchant Shard"
   enchant-roll-subtitle: "&#CCCCCCYou earned an Enchant Shard"
   pickaxe-broken: "  &#FF4444Your pickaxe has broken and been removed from storage."
+  pickaxe-disabled:
+    - ""
+    - "  &#FF4444⚠ &lPickaxe Disabled"
+    - "  &#CCCCCCYour pickaxe has taken too much damage to keep mining."
+    - "  &#CCCCCCRepair it with &#FFFFFF/pick &#CCCCCCbefore you can use it again."
+    - ""
+  mining-disabled-pickaxe: "  %evolv3_prefix% &#FF4444Your pickaxe is disabled — repair it first!"
   drop-confirmation:
     - ""
     - "  &#FF4444⚠ &lConfirm Drop"

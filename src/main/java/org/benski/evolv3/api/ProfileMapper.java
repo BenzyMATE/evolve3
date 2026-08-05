@@ -125,6 +125,7 @@ public final class ProfileMapper {
     pickaxe.prestige = dto.prestige;
     pickaxe.evolution = dto.evolution;
     pickaxe.durability = dto.durability;
+    pickaxe.disabled = dto.disabled;
     pickaxe.essenceVessel = vesselFromDto(dto.essenceVessel, VesselType.ESSENCE);
     pickaxe.atomVessel = vesselFromDto(dto.atomVessel, VesselType.ATOMS);
     pickaxe.enchants = enchantsFromDto(dto.enchants);
@@ -337,6 +338,7 @@ public final class ProfileMapper {
     dto.prestige = pickaxe.prestige;
     dto.evolution = pickaxe.evolution;
     dto.durability = pickaxe.durability;
+    dto.disabled = pickaxe.disabled;
     dto.essenceVessel = vesselToDto(pickaxe.essenceVessel);
     dto.atomVessel = vesselToDto(pickaxe.atomVessel);
     dto.enchants = enchantsToDto(pickaxe.enchants);

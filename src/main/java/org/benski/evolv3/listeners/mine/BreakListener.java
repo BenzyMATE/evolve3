@@ -113,6 +113,18 @@ public class BreakListener extends BaseListener {
       return;
     }
 
+    Pickaxe heldProfile = playerDataCenter.getPickaxeForPlayer(player);
+    if (heldProfile != null && heldProfile.disabled) {
+      FileConfiguration messages = ConfigRegistry.getInstance().get(ConfigNames.MESSAGES);
+      String msg =
+          messages.getString(
+              ConfigPaths.Messages.Pickaxe.MINING_DISABLED_PICKAXE,
+              "%evolv3_prefix% &cYour pickaxe is disabled — repair it first!");
+      player.sendMessage(Utils.formatMessage(player, msg));
+      event.setCancelled(true);
+      return;
+    }
+
     if (!WorldGuardManager.getInstance().isWithinMineRegion(event.getBlock().getLocation())) {
       FileConfiguration config = ConfigRegistry.getInstance().get(ConfigNames.DEFAULT);
       String message =

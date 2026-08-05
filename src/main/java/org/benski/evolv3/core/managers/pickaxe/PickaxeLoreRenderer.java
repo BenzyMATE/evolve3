@@ -155,6 +155,15 @@ public final class PickaxeLoreRenderer {
             + (omnitoolGlyph != null ? omnitoolGlyph : "");
     formattedLore.add(0, Utils.formatMessage(player, tagLine));
 
+    if (profile.disabled) {
+      String disabledLine =
+          defaultConfig()
+              .getString(
+                  ConfigPaths.Default.Pickaxe.DISABLED_LORE_LINE,
+                  " &#FF4444&l⚠ DISABLED &#CCCCCC— Repair to use again");
+      formattedLore.add(1, Utils.formatMessage(player, disabledLine));
+    }
+
     formattedLore.add("");
     String durabilityLabel =
         defaultConfig()

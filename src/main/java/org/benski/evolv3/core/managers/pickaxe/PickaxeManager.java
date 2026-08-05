@@ -750,9 +750,31 @@ public class PickaxeManager {
   }
 
   /**
-   * Repairs the pickaxe held in the player's main hand, spending Ancient Resin from their
-   * inventory. Shared by every menu that exposes a repair action (currently the pickaxe menu and
-   * the stone socket menu) so the validation/cost logic isn't duplicated per-menu.
+   * Returns the Ancient Resin cost to fully repair a pickaxe at the given tier. A broken (disabled)
+   * pickaxe costs more to repair than one that's merely damaged: reads {@code
+   * AncientResin.DisabledRepairCostByTier.&lt;TIER&gt;} when {@code disabled} is true, otherwise
+   * {@code AncientResin.RepairCostByTier.&lt;TIER&gt;}, falling back to the flat {@code
+   * AncientResin.RepairCost} when that tier has no override in either table.
+   *
+   * @param tier the pickaxe's evolution tier
+   * @param disabled whether the pickaxe has broken and become disabled
+   * @return the resin cost for a full repair
+   */
+  public int getRepairCost(EvolutionTier tier, boolean disabled) {
+    int fallback = defaultConfig().getInt(ConfigPaths.Default.AncientResin.REPAIR_COST, 5);
+    String prefix =
+        disabled
+            ? ConfigPaths.Default.AncientResin.DISABLED_REPAIR_COST_BY_TIER
+            : ConfigPaths.Default.AncientResin.REPAIR_COST_BY_TIER;
+    return defaultConfig().getInt(prefix + "." + tier.name(), fallback);
+  }
+
+  /**
+   * Repairs the pickaxe held in the player's main hand, spending Ancient Resin from their inventory
+   * (cost scaled by evolution tier and disabled state, see {@link #getRepairCost}), and clears its
+   * disabled state if it had taken enough damage to be auto-disabled. Shared by every menu that
+   * exposes a repair action (currently the pickaxe menu and the stone socket menu) so the
+   * validation/cost logic isn't duplicated per-menu.
    *
    * @param player the player repairing their held pickaxe
    * @param onMenuClose invoked on a successful repair, so the calling menu can close its own
@@ -781,7 +803,15 @@ public class PickaxeManager {
       return;
     }
 
-    int repairCost = defaultConfig().getInt(ConfigPaths.Default.AncientResin.REPAIR_COST, 5);
+    String pickaxeId = ItemStackExtensions.getData(held, "id");
+    PlayerDataCenter repairPdc = DataCenterRegistry.getInstance().getPlayerDataCenter();
+    Pickaxe repairProfile =
+        (pickaxeId != null && !pickaxeId.isEmpty() && repairPdc != null)
+            ? repairPdc.getPickaxeByItemId(pickaxeId)
+            : null;
+    boolean wasDisabled = repairProfile != null && repairProfile.disabled;
+
+    int repairCost = getRepairCost(EvolutionTier.fromMaterial(held.getType()), wasDisabled);
 
     if (countAncientResinInInventory(player) < repairCost) {
       sendRepairMessageList(
@@ -799,14 +829,11 @@ public class PickaxeManager {
     held.setItemMeta(dmg);
     player.getInventory().setItemInMainHand(held);
 
-    String pickaxeId = ItemStackExtensions.getData(held, "id");
-    if (pickaxeId != null && !pickaxeId.isEmpty()) {
-      PlayerDataCenter repairPdc = DataCenterRegistry.getInstance().getPlayerDataCenter();
-      Pickaxe repairProfile = repairPdc != null ? repairPdc.getPickaxeByItemId(pickaxeId) : null;
-      if (repairProfile != null) {
-        repairProfile.durability = 0;
-        repairProfile.save(null);
-      }
+    if (repairProfile != null) {
+      repairProfile.durability = 0;
+      repairProfile.disabled = false;
+      repairProfile.save(null);
+      applyLoreAndName(player, repairProfile, held);
     }
 
     player.playSound(player.getLocation(), Sound.BLOCK_ANVIL_USE, 1.0f, 1.2f);
