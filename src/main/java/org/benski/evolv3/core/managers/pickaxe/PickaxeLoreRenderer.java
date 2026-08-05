@@ -155,23 +155,23 @@ public final class PickaxeLoreRenderer {
             + (omnitoolGlyph != null ? omnitoolGlyph : "");
     formattedLore.add(0, Utils.formatMessage(player, tagLine));
 
+    formattedLore.add("");
+    String durabilityLabel =
+        defaultConfig()
+            .getString(ConfigPaths.Default.Pickaxe.DURABILITY_LABEL, " &#00FFFFDurability:");
+    formattedLore.add(Utils.formatMessage(player, durabilityLabel));
     if (profile.disabled) {
       String disabledLine =
           defaultConfig()
               .getString(
                   ConfigPaths.Default.Pickaxe.DISABLED_LORE_LINE,
                   " &#FF4444&l⚠ DISABLED &#CCCCCC— Repair to use again");
-      formattedLore.add(1, Utils.formatMessage(player, disabledLine));
+      formattedLore.add(Utils.formatMessage(player, disabledLine));
+    } else {
+      String barPrefix =
+          defaultConfig().getString(ConfigPaths.Default.Pickaxe.DURABILITY_BAR_PREFIX, " ");
+      formattedLore.add(Utils.formatMessage(player, barPrefix + durabilityBar));
     }
-
-    formattedLore.add("");
-    String durabilityLabel =
-        defaultConfig()
-            .getString(ConfigPaths.Default.Pickaxe.DURABILITY_LABEL, " &#00FFFFDurability:");
-    formattedLore.add(Utils.formatMessage(player, durabilityLabel));
-    String barPrefix =
-        defaultConfig().getString(ConfigPaths.Default.Pickaxe.DURABILITY_BAR_PREFIX, " ");
-    formattedLore.add(Utils.formatMessage(player, barPrefix + durabilityBar));
 
     for (String line : loreFooter) {
       formattedLore.add(

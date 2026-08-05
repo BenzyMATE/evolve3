@@ -783,6 +783,32 @@ public class PickaxeManager {
   public void repairPickaxe(
       @org.jetbrains.annotations.NotNull Player player,
       @org.jetbrains.annotations.NotNull Runnable onMenuClose) {
+    repair(player, null, onMenuClose);
+  }
+
+  /**
+   * Repairs the pickaxe held in the player's main hand by dragging Ancient Resin onto its menu
+   * slot. The dragged (cursor) stack is spent first; if it isn't enough to cover the cost, the
+   * shortfall is topped up from resin elsewhere in the player's inventory, same as {@link
+   * #repairPickaxe}. Used by the drag-and-drop repair interaction as an alternative to the
+   * right-click repair action.
+   *
+   * @param player the player repairing their held pickaxe
+   * @param cursorResin the Ancient Resin stack on the player's cursor when they dropped it onto the
+   *     pickaxe slot; may be {@code null} or a different item, in which case only inventory resin
+   *     is used
+   * @param onMenuClose invoked on a successful repair, so the calling menu can close its own
+   *     inventory the same way the right-click repair action always has
+   */
+  public void repairPickaxeWithResinDrag(
+      @org.jetbrains.annotations.NotNull Player player,
+      ItemStack cursorResin,
+      @org.jetbrains.annotations.NotNull Runnable onMenuClose) {
+    repair(player, cursorResin, onMenuClose);
+  }
+
+  /** Shared implementation for {@link #repairPickaxe} and {@link #repairPickaxeWithResinDrag}. */
+  private void repair(Player player, ItemStack cursorResin, Runnable onMenuClose) {
     ItemStack held = player.getInventory().getItemInMainHand();
     if (held.getType() == Material.AIR || !Utils.isPickaxe(held.getType())) {
       String msg =
@@ -813,7 +839,11 @@ public class PickaxeManager {
 
     int repairCost = getRepairCost(EvolutionTier.fromMaterial(held.getType()), wasDisabled);
 
-    if (countAncientResinInInventory(player) < repairCost) {
+    boolean hasCursorResin = AncientResin.isAncientResin(cursorResin);
+    int cursorAmount = hasCursorResin ? cursorResin.getAmount() : 0;
+    int inventoryAmount = countAncientResinInInventory(player);
+
+    if (cursorAmount + inventoryAmount < repairCost) {
       sendRepairMessageList(
           player,
           ConfigPaths.Messages.PickaxeLimit.REPAIR_INSUFFICIENT_WOOD,
@@ -823,7 +853,20 @@ public class PickaxeManager {
       return;
     }
 
-    removeAncientResinFromInventory(player, repairCost);
+    int fromCursor = Math.min(cursorAmount, repairCost);
+    if (fromCursor > 0) {
+      if (fromCursor >= cursorResin.getAmount()) {
+        player.getOpenInventory().setCursor(new ItemStack(Material.AIR));
+      } else {
+        ItemStack remaining = cursorResin.clone();
+        remaining.setAmount(cursorResin.getAmount() - fromCursor);
+        player.getOpenInventory().setCursor(remaining);
+      }
+    }
+    int fromInventory = repairCost - fromCursor;
+    if (fromInventory > 0) {
+      removeAncientResinFromInventory(player, fromInventory);
+    }
 
     dmg.setDamage(0);
     held.setItemMeta(dmg);

@@ -6,6 +6,7 @@ import static org.benski.evolv3.core.helpers.Utils.formatMessage;
 import java.text.NumberFormat;
 import java.util.*;
 import java.util.List;
+import java.util.function.Predicate;
 import org.benski.evolv3.core.abstracts.BaseMenu;
 import org.benski.evolv3.core.builders.ItemBuilder;
 import org.benski.evolv3.core.constants.ConfigNames;
@@ -33,11 +34,15 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 /**
  * Menu for displaying and managing the player's backpack. Supports pagination, item selection, and
- * selling.
+ * selling. Non-food items fill rows 1-3 (slots 0-26); edible items get their own dedicated rows 4-5
+ * (slots 27-44) so they're never mixed into the general sell list. Both sections page together
+ * using the same prev/next buttons in row 6.
  */
 public class BackpackMenu extends BaseMenu {
   private static final MenuType MENU_TYPE = MenuType.register("backpack");
   private static final int ITEMS_PER_PAGE = 27;
+  private static final int FOOD_SLOT_START = 27;
+  private static final int FOOD_ITEMS_PER_PAGE = 18;
   private static final int PREV_SLOT = 45;
   private static final int SELL_SLOT = 49;
   private static final int NEXT_SLOT = 53;
@@ -77,7 +82,11 @@ public class BackpackMenu extends BaseMenu {
   }
 
   /**
-   * Opens the backpack menu at a specific page.
+   * Opens the backpack menu at a specific page. If the menu is already open for this player, this
+   * repopulates the existing inventory in place rather than opening a new one — re-opening a fresh
+   * inventory from inside an {@link InventoryClickEvent} handler (e.g. clicking Next/Prev) causes a
+   * client/server container-id desync that leaves the next click unhandled, letting items be
+   * dragged out with no cancellation and no server-side error.
    *
    * @param player The player to open the menu for
    * @param page The page number (0-indexed)
@@ -85,7 +94,11 @@ public class BackpackMenu extends BaseMenu {
   public void openMenu(Player player, int page) {
     currentPage.put(player.getUniqueId(), page);
     selectedItems.putIfAbsent(player.getUniqueId(), new HashSet<>());
-    super.openMenu(player);
+    if (isMenuOpen(player)) {
+      refresh(player);
+    } else {
+      super.openMenu(player);
+    }
   }
 
   /** {@inheritDoc} */
@@ -137,72 +150,21 @@ public class BackpackMenu extends BaseMenu {
     }
 
     List<BackpackItem> items = backpack.getItems();
-    List<VisualSlot> visualSlots = buildVisualSlots(items);
-    int startIndex = page * ITEMS_PER_PAGE;
-    int endIndex = Math.min(startIndex + ITEMS_PER_PAGE, visualSlots.size());
+    SlotLayout layout = buildSlotLayout(items);
+    List<VisualSlot> combined = layout.combined();
+    int nonFoodCount = layout.nonFoodCount();
 
-    for (int i = startIndex; i < endIndex; i++) {
-      VisualSlot visual = visualSlots.get(i);
-      BackpackItem item = items.get(visual.itemIndex());
-      int slot = i - startIndex;
-      boolean isSelected = selected.contains(i);
-      boolean allSelected = allChunksSelected(visualSlots, visual.itemIndex(), selected);
+    int nonFoodStart = page * ITEMS_PER_PAGE;
+    int nonFoodEnd = Math.min(nonFoodStart + ITEMS_PER_PAGE, nonFoodCount);
+    for (int i = nonFoodStart; i < nonFoodEnd; i++) {
+      renderStack(player, inventory, items, combined, i, i - nonFoodStart, selected);
+    }
 
-      Material displayMaterial = isSelected ? Material.LIME_STAINED_GLASS_PANE : item.getMaterial();
-      String itemName =
-          isSelected
-              ? fmt(player, "&#00FF88&l✓ &#FFFFFF" + formatMaterialName(item.getMaterial()))
-              : fmt(player, "&#FFFFFF" + formatMaterialName(item.getMaterial()));
-
-      List<String> lore = new ArrayList<>();
-      if (SmeltingHelper.isSmeltable(item.getMaterial())) {
-        lore.add(fmt(player, " &#FF8C00🔥 Smeltable"));
-      }
-      if (item.getMaterial().isEdible()) {
-        lore.add(fmt(player, " &#FF8C00🍖 Edible"));
-      }
-      if (item.isEvolveItem()) {
-        lore.add(fmt(player, " &#9932CC✦ Enchant Drop"));
-      }
-      lore.add("");
-      lore.add(fmt(player, " &#FFFFFF&lItem"));
-      lore.add(fmt(player, " &#00FFFFAmount: &#FFFFFF" + formatAmount(item.getAmount())));
-      lore.add(fmt(player, " &#00FFFFValue: &#FFD700⛁ &#FFD700" + formatCoins(getItemValue(item))));
-      if (item.getMaterial().isEdible()) {
-        FileConfiguration defCfg = ConfigRegistry.getInstance().get(ConfigNames.DEFAULT);
-        int specific =
-            defCfg.getInt(
-                ConfigPaths.Default.Hunger.FOOD_RESTORE_PREFIX + "." + item.getMaterial().name(),
-                -1);
-        int fills =
-            specific >= 0
-                ? specific
-                : defCfg.getInt(ConfigPaths.Default.Hunger.FOOD_RESTORE_PREFIX + ".DEFAULT", 2);
-        lore.add(fmt(player, " &#FF8C00Fills: &#FFFFFF+" + fills));
-      }
-      lore.add("");
-      lore.add(
-          allSelected
-              ? fmt(player, " &#FF5555Left-Click &#AAAAAAto deselect all")
-              : fmt(player, " &aLeft-Click &#AAAAAAto select all"));
-      if (item.getMaterial().isEdible()) {
-        lore.add(fmt(player, " &aRight-Click &#AAAAAAto consume"));
-      } else {
-        lore.add(
-            isSelected
-                ? fmt(player, " &#FF5555Right-Click &#AAAAAAto deselect this stack")
-                : fmt(player, " &aRight-Click &#AAAAAAto select this stack"));
-      }
-      lore.add("");
-
-      ItemStack displayItem =
-          new ItemBuilder(displayMaterial)
-              .name(itemName)
-              .lore(lore.toArray(new String[0]))
-              .amount(visual.stackAmount())
-              .build();
-
-      inventory.setItem(slot, displayItem);
+    int foodStart = nonFoodCount + page * FOOD_ITEMS_PER_PAGE;
+    int foodEnd = Math.min(foodStart + FOOD_ITEMS_PER_PAGE, combined.size());
+    for (int i = foodStart; i < foodEnd; i++) {
+      renderStack(
+          player, inventory, items, combined, i, FOOD_SLOT_START + (i - foodStart), selected);
     }
 
     int totalPages = getTotalPages(backpack);
@@ -223,8 +185,8 @@ public class BackpackMenu extends BaseMenu {
     double finalValue = totalValue * multiplier;
     int selectedCount =
         selected.stream()
-            .filter(idx -> idx < visualSlots.size())
-            .mapToInt(idx -> visualSlots.get(idx).stackAmount())
+            .filter(idx -> idx < combined.size())
+            .mapToInt(idx -> combined.get(idx).stackAmount())
             .sum();
     boolean hasSelection = selectedCount > 0;
 
@@ -272,6 +234,80 @@ public class BackpackMenu extends BaseMenu {
     }
   }
 
+  /**
+   * Renders one visual stack (a {@code combined} entry) into a GUI slot — shared by both the
+   * non-food and food sections of {@link #populateMenu} so their lore/selection rendering can't
+   * drift apart.
+   */
+  private void renderStack(
+      Player player,
+      Inventory inventory,
+      List<BackpackItem> items,
+      List<VisualSlot> combined,
+      int flatIndex,
+      int guiSlot,
+      Set<Integer> selected) {
+    VisualSlot visual = combined.get(flatIndex);
+    BackpackItem item = items.get(visual.itemIndex());
+    boolean isSelected = selected.contains(flatIndex);
+    boolean allSelected = allChunksSelected(combined, visual.itemIndex(), selected);
+
+    Material displayMaterial = isSelected ? Material.LIME_STAINED_GLASS_PANE : item.getMaterial();
+    String itemName =
+        isSelected
+            ? fmt(player, "&#00FF88&l✓ &#FFFFFF" + formatMaterialName(item.getMaterial()))
+            : fmt(player, "&#FFFFFF" + formatMaterialName(item.getMaterial()));
+
+    List<String> lore = new ArrayList<>();
+    if (SmeltingHelper.isSmeltable(item.getMaterial())) {
+      lore.add(fmt(player, " &#FF8C00🔥 Smeltable"));
+    }
+    if (item.getMaterial().isEdible()) {
+      lore.add(fmt(player, " &#FF8C00🍖 Edible"));
+    }
+    if (item.isEvolveItem()) {
+      lore.add(fmt(player, " &#9932CC✦ Enchant Drop"));
+    }
+    lore.add("");
+    lore.add(fmt(player, " &#FFFFFF&lItem"));
+    lore.add(fmt(player, " &#00FFFFAmount: &#FFFFFF" + formatAmount(item.getAmount())));
+    lore.add(fmt(player, " &#00FFFFValue: &#FFD700⛁ &#FFD700" + formatCoins(getItemValue(item))));
+    if (item.getMaterial().isEdible()) {
+      FileConfiguration defCfg = ConfigRegistry.getInstance().get(ConfigNames.DEFAULT);
+      int specific =
+          defCfg.getInt(
+              ConfigPaths.Default.Hunger.FOOD_RESTORE_PREFIX + "." + item.getMaterial().name(), -1);
+      int fills =
+          specific >= 0
+              ? specific
+              : defCfg.getInt(ConfigPaths.Default.Hunger.FOOD_RESTORE_PREFIX + ".DEFAULT", 2);
+      lore.add(fmt(player, " &#FF8C00Fills: &#FFFFFF+" + fills));
+    }
+    lore.add("");
+    lore.add(
+        allSelected
+            ? fmt(player, " &#FF5555Left-Click &#AAAAAAto deselect all")
+            : fmt(player, " &aLeft-Click &#AAAAAAto select all"));
+    if (item.getMaterial().isEdible()) {
+      lore.add(fmt(player, " &aRight-Click &#AAAAAAto consume"));
+    } else {
+      lore.add(
+          isSelected
+              ? fmt(player, " &#FF5555Right-Click &#AAAAAAto deselect this stack")
+              : fmt(player, " &aRight-Click &#AAAAAAto select this stack"));
+    }
+    lore.add("");
+
+    ItemStack displayItem =
+        new ItemBuilder(displayMaterial)
+            .name(itemName)
+            .lore(lore.toArray(new String[0]))
+            .amount(visual.stackAmount())
+            .build();
+
+    inventory.setItem(guiSlot, displayItem);
+  }
+
   /** {@inheritDoc} */
   @Override
   protected boolean handleClick(Player player, int slot, InventoryClickEvent event) {
@@ -311,69 +347,73 @@ public class BackpackMenu extends BaseMenu {
       return true;
     }
 
+    List<BackpackItem> items = profile.backpack.getItems();
+    SlotLayout layout = buildSlotLayout(items);
+    List<VisualSlot> combined = layout.combined();
+    int nonFoodCount = layout.nonFoodCount();
+
+    int flatIndex;
     if (slot >= 0 && slot < ITEMS_PER_PAGE) {
-      List<BackpackItem> items = profile.backpack.getItems();
-      List<VisualSlot> visualSlots = buildVisualSlots(items);
-      int flatIndex = page * ITEMS_PER_PAGE + slot;
+      flatIndex = page * ITEMS_PER_PAGE + slot;
+      if (flatIndex >= nonFoodCount) return true;
+    } else if (slot >= FOOD_SLOT_START && slot < FOOD_SLOT_START + FOOD_ITEMS_PER_PAGE) {
+      flatIndex = nonFoodCount + page * FOOD_ITEMS_PER_PAGE + (slot - FOOD_SLOT_START);
+      if (flatIndex >= combined.size()) return true;
+    } else {
+      return true;
+    }
 
-      if (flatIndex >= visualSlots.size()) {
+    int itemIndex = combined.get(flatIndex).itemIndex();
+    BackpackItem item = items.get(itemIndex);
+
+    if (event.getClick() == ClickType.RIGHT && item.getMaterial().isEdible()) {
+      if (player.getFoodLevel() >= 20) {
+        player.sendMessage(
+            org.benski.evolv3.core.helpers.Utils.formatMessage(
+                player, "%evolv3_prefix% &#FF5555You are not hungry!"));
+        player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
         return true;
       }
-
-      int itemIndex = visualSlots.get(flatIndex).itemIndex();
-      BackpackItem item = items.get(itemIndex);
-
-      if (event.getClick() == ClickType.RIGHT && item.getMaterial().isEdible()) {
-        if (player.getFoodLevel() >= 20) {
-          player.sendMessage(
-              org.benski.evolv3.core.helpers.Utils.formatMessage(
-                  player, "%evolv3_prefix% &#FF5555You are not hungry!"));
-          player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
-          return true;
-        }
-        profile.backpack.consumeMaterial(item.getMaterial(), 1);
-        profile.save(null);
-        HungerListener.applyFoodRestore(player, item.getMaterial());
-        removeItemChunksFromSelection(visualSlots, itemIndex, selected);
-        if (profile.backpack.getItems().isEmpty()) {
-          closeMenu(player);
-        } else {
-          int maxPage = Math.max(0, getTotalPages(profile.backpack) - 1);
-          if (page > maxPage) currentPage.put(player.getUniqueId(), maxPage);
-          refresh(player);
-        }
-        return true;
-      }
-
-      if (event.getClick() == ClickType.RIGHT) {
-        // Right-click toggles only this one 64-stack, letting a player sell part of a large
-        // quantity without selecting every stack of that item.
-        if (selected.contains(flatIndex)) {
-          selected.remove(flatIndex);
-          player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_BASS, 1.0f, 0.5f);
-        } else {
-          selected.add(flatIndex);
-          player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_BIT, 1.0f, 2.0f);
-        }
+      profile.backpack.consumeMaterial(item.getMaterial(), 1);
+      profile.save(null);
+      HungerListener.applyFoodRestore(player, item.getMaterial());
+      removeItemChunksFromSelection(combined, itemIndex, selected);
+      if (profile.backpack.getItems().isEmpty()) {
+        closeMenu(player);
+      } else {
+        int maxPage = Math.max(0, getTotalPages(profile.backpack) - 1);
+        if (page > maxPage) currentPage.put(player.getUniqueId(), maxPage);
         refresh(player);
-        return true;
       }
+      return true;
+    }
 
-      // Left-click toggles every stack belonging to this item (select/deselect the full amount).
-      if (allChunksSelected(visualSlots, itemIndex, selected)) {
-        removeItemChunksFromSelection(visualSlots, itemIndex, selected);
+    if (event.getClick() == ClickType.RIGHT) {
+      // Right-click toggles only this one 64-stack, letting a player sell part of a large
+      // quantity without selecting every stack of that item.
+      if (selected.contains(flatIndex)) {
+        selected.remove(flatIndex);
         player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_BASS, 1.0f, 0.5f);
       } else {
-        for (int i = 0; i < visualSlots.size(); i++) {
-          if (visualSlots.get(i).itemIndex() == itemIndex) selected.add(i);
-        }
+        selected.add(flatIndex);
         player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_BIT, 1.0f, 2.0f);
       }
-
       refresh(player);
       return true;
     }
 
+    // Left-click toggles every stack belonging to this item (select/deselect the full amount).
+    if (allChunksSelected(combined, itemIndex, selected)) {
+      removeItemChunksFromSelection(combined, itemIndex, selected);
+      player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_BASS, 1.0f, 0.5f);
+    } else {
+      for (int i = 0; i < combined.size(); i++) {
+        if (combined.get(i).itemIndex() == itemIndex) selected.add(i);
+      }
+      player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_BIT, 1.0f, 2.0f);
+    }
+
+    refresh(player);
     return true;
   }
 
@@ -386,8 +426,8 @@ public class BackpackMenu extends BaseMenu {
 
     Backpack backpack = profile.backpack;
     List<BackpackItem> items = backpack.getItems();
-    List<VisualSlot> visualSlots = buildVisualSlots(items);
-    Map<Integer, Integer> sellAmountsByItem = selectedAmountsByItem(visualSlots, selected);
+    List<VisualSlot> combined = buildSlotLayout(items).combined();
+    Map<Integer, Integer> sellAmountsByItem = selectedAmountsByItem(combined, selected);
 
     double totalValue = 0;
     int itemCount = 0;
@@ -460,11 +500,10 @@ public class BackpackMenu extends BaseMenu {
   private double calculateTotalSelectedValue(Player player, Backpack backpack) {
     Set<Integer> selected = selectedItems.getOrDefault(player.getUniqueId(), new HashSet<>());
     List<BackpackItem> items = backpack.getItems();
-    List<VisualSlot> visualSlots = buildVisualSlots(items);
+    List<VisualSlot> combined = buildSlotLayout(items).combined();
     double total = 0;
 
-    for (Map.Entry<Integer, Integer> entry :
-        selectedAmountsByItem(visualSlots, selected).entrySet()) {
+    for (Map.Entry<Integer, Integer> entry : selectedAmountsByItem(combined, selected).entrySet()) {
       if (entry.getKey() < items.size()) {
         total += getUnitValue(items.get(entry.getKey()).getMaterial()) * entry.getValue();
       }
@@ -478,28 +517,28 @@ public class BackpackMenu extends BaseMenu {
    * the left-click "select all / deselect all" toggle and lore label.
    */
   private boolean allChunksSelected(
-      List<VisualSlot> visualSlots, int itemIndex, Set<Integer> selected) {
-    for (int i = 0; i < visualSlots.size(); i++) {
-      if (visualSlots.get(i).itemIndex() == itemIndex && !selected.contains(i)) return false;
+      List<VisualSlot> combined, int itemIndex, Set<Integer> selected) {
+    for (int i = 0; i < combined.size(); i++) {
+      if (combined.get(i).itemIndex() == itemIndex && !selected.contains(i)) return false;
     }
     return true;
   }
 
   /** Removes every selected flat slot index belonging to the given item. */
   private void removeItemChunksFromSelection(
-      List<VisualSlot> visualSlots, int itemIndex, Set<Integer> selected) {
-    for (int i = 0; i < visualSlots.size(); i++) {
-      if (visualSlots.get(i).itemIndex() == itemIndex) selected.remove(i);
+      List<VisualSlot> combined, int itemIndex, Set<Integer> selected) {
+    for (int i = 0; i < combined.size(); i++) {
+      if (combined.get(i).itemIndex() == itemIndex) selected.remove(i);
     }
   }
 
   /** Sums the selected stack amounts per item index (a partial selection sells only that much). */
   private Map<Integer, Integer> selectedAmountsByItem(
-      List<VisualSlot> visualSlots, Set<Integer> selected) {
+      List<VisualSlot> combined, Set<Integer> selected) {
     Map<Integer, Integer> amounts = new LinkedHashMap<>();
     for (int flatIndex : selected) {
-      if (flatIndex < 0 || flatIndex >= visualSlots.size()) continue;
-      VisualSlot visual = visualSlots.get(flatIndex);
+      if (flatIndex < 0 || flatIndex >= combined.size()) continue;
+      VisualSlot visual = combined.get(flatIndex);
       amounts.merge(visual.itemIndex(), visual.stackAmount(), Integer::sum);
     }
     return amounts;
@@ -514,10 +553,16 @@ public class BackpackMenu extends BaseMenu {
     return 1.0;
   }
 
-  /** Returns the total pages, counting each 64-item visual stack as its own slot. */
+  /**
+   * Returns the total pages needed to show every stack, taking whichever section (non-food or food)
+   * needs more pages at its own per-page slot count.
+   */
   private int getTotalPages(Backpack backpack) {
-    int slotCount = buildVisualSlots(backpack.getItems()).size();
-    return (int) Math.ceil((double) slotCount / ITEMS_PER_PAGE);
+    SlotLayout layout = buildSlotLayout(backpack.getItems());
+    int foodCount = layout.combined().size() - layout.nonFoodCount();
+    int nonFoodPages = (int) Math.ceil((double) layout.nonFoodCount() / ITEMS_PER_PAGE);
+    int foodPages = (int) Math.ceil((double) foodCount / FOOD_ITEMS_PER_PAGE);
+    return Math.max(nonFoodPages, foodPages);
   }
 
   /**
@@ -527,15 +572,36 @@ public class BackpackMenu extends BaseMenu {
   private record VisualSlot(int itemIndex, int stackAmount) {}
 
   /**
-   * Splits every {@link BackpackItem}'s amount into consecutive 64-item (max) chunks, mirroring how
-   * a real inventory spreads a large quantity across multiple stacks instead of cramming it all
-   * into one slot with a misleading "Amount: N" label. Preserves item order; each item's chunks
-   * stay consecutive.
+   * The non-food and food visual-stack lists concatenated into one combined list (non-food first),
+   * plus the boundary between them. Flat indices into {@code combined} are globally unique — food
+   * entries always sit at {@code >= nonFoodCount} — so a single {@code selected} index set works
+   * across both GUI sections without collisions.
    */
-  private List<VisualSlot> buildVisualSlots(List<BackpackItem> items) {
+  private record SlotLayout(List<VisualSlot> combined, int nonFoodCount) {}
+
+  /** Builds the combined non-food + food visual slot layout for the given backpack contents. */
+  private SlotLayout buildSlotLayout(List<BackpackItem> items) {
+    List<VisualSlot> nonFood = buildVisualSlots(items, item -> !item.getMaterial().isEdible());
+    List<VisualSlot> food = buildVisualSlots(items, item -> item.getMaterial().isEdible());
+    List<VisualSlot> combined = new ArrayList<>(nonFood.size() + food.size());
+    combined.addAll(nonFood);
+    combined.addAll(food);
+    return new SlotLayout(combined, nonFood.size());
+  }
+
+  /**
+   * Splits every matching {@link BackpackItem}'s amount into consecutive 64-item (max) chunks,
+   * mirroring how a real inventory spreads a large quantity across multiple stacks instead of
+   * cramming it all into one slot with a misleading "Amount: N" label. Preserves item order; each
+   * item's chunks stay consecutive.
+   */
+  private List<VisualSlot> buildVisualSlots(
+      List<BackpackItem> items, Predicate<BackpackItem> filter) {
     List<VisualSlot> slots = new ArrayList<>();
     for (int i = 0; i < items.size(); i++) {
-      int remaining = items.get(i).getAmount();
+      BackpackItem item = items.get(i);
+      if (!filter.test(item)) continue;
+      int remaining = item.getAmount();
       while (remaining > 0) {
         int chunk = Math.min(remaining, 64);
         slots.add(new VisualSlot(i, chunk));
