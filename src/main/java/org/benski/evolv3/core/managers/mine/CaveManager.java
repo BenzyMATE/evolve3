@@ -312,6 +312,13 @@ public final class CaveManager {
       caveMineMap.put(caveKey, mine.name());
       caveInstanceTiers.put(caveKey, pickRandomTier());
 
+      // Persist this cave's backup/region immediately rather than waiting for the whole
+      // generateCaves batch to finish (previously only saved once at the end) — otherwise a
+      // server crash or ungraceful restart between two caves in that batch leaves the already-
+      // pasted ones with no on-disk record at all, so no future mine reset can find and restore
+      // them: an orphaned cave stuck in the wall forever.
+      saveCaveData();
+
       try (EditSession editSession = WorldEdit.getInstance().newEditSession(weWorld)) {
         Operation operation =
             holder.createPaste(editSession).to(pastePos).ignoreAirBlocks(false).build();
@@ -361,6 +368,7 @@ public final class CaveManager {
       despawnCave(caveKey);
     } else {
       caveChestLocations.put(caveKey, chests);
+      saveCaveData();
     }
   }
 

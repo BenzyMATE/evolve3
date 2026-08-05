@@ -176,18 +176,38 @@ public class MineListener extends BaseListener {
     if (!empty) return;
 
     String mineName = CaveManager.getInstance().getMineName(caveKey);
+    Mine mine = mineName != null ? MineManager.getInstance().getMine(mineName) : null;
+    Location spawn = null;
+    if (mine != null) {
+      spawn = mine.spawnLocation();
+      if (spawn == null) spawn = mine.centreTop();
+    }
+
+    // The chest is shared — every viewer's InventoryCloseEvent fires once despawnCave() restores
+    // the block, but by then getCaveKeyForChest/getAllCaveRegions no longer resolve for them, so
+    // they'd be left stranded (and likely suffocated) as the original terrain is restored around
+    // wherever they're standing. Teleport everyone still inside the cave's bounds to safety first.
+    CaveBounds bounds = CaveManager.getInstance().getAllCaveRegions().get(caveKey);
+    boolean rescuedCloser = false;
+    if (spawn != null && bounds != null) {
+      org.bukkit.World caveWorld = Bukkit.getWorld(bounds.world());
+      if (caveWorld != null) {
+        Location finalSpawn = spawn;
+        for (Player inCave : caveWorld.getPlayers()) {
+          if (!bounds.contains(inCave.getLocation())) continue;
+          inCave.teleport(finalSpawn);
+          playersInCave.remove(inCave.getUniqueId());
+          if (inCave.getUniqueId().equals(player.getUniqueId())) rescuedCloser = true;
+        }
+      }
+    }
+    if (spawn != null && !rescuedCloser) {
+      player.teleport(spawn);
+    }
+
     CaveManager.getInstance().despawnCave(caveKey);
 
     playersInCave.remove(player.getUniqueId());
-
-    if (mineName != null) {
-      MineManager.Mine mine = MineManager.getInstance().getMine(mineName);
-      if (mine != null) {
-        Location spawn = mine.spawnLocation();
-        if (spawn == null) spawn = mine.centreTop();
-        if (spawn != null) player.teleport(spawn);
-      }
-    }
 
     player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.2f);
     String title = MineManager.getInstance().getMessage("cave-looted");
