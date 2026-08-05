@@ -145,7 +145,8 @@ public class BackpackMenu extends BaseMenu {
       VisualSlot visual = visualSlots.get(i);
       BackpackItem item = items.get(visual.itemIndex());
       int slot = i - startIndex;
-      boolean isSelected = selected.contains(visual.itemIndex());
+      boolean isSelected = selected.contains(i);
+      boolean allSelected = allChunksSelected(visualSlots, visual.itemIndex(), selected);
 
       Material displayMaterial = isSelected ? Material.LIME_STAINED_GLASS_PANE : item.getMaterial();
       String itemName =
@@ -181,11 +182,16 @@ public class BackpackMenu extends BaseMenu {
       }
       lore.add("");
       lore.add(
-          isSelected
-              ? fmt(player, " &#FF5555Left-Click &#AAAAAAto deselect")
-              : fmt(player, " &aLeft-Click &#AAAAAAto select"));
+          allSelected
+              ? fmt(player, " &#FF5555Left-Click &#AAAAAAto deselect all")
+              : fmt(player, " &aLeft-Click &#AAAAAAto select all"));
       if (item.getMaterial().isEdible()) {
         lore.add(fmt(player, " &aRight-Click &#AAAAAAto consume"));
+      } else {
+        lore.add(
+            isSelected
+                ? fmt(player, " &#FF5555Right-Click &#AAAAAAto deselect this stack")
+                : fmt(player, " &aRight-Click &#AAAAAAto select this stack"));
       }
       lore.add("");
 
@@ -215,11 +221,10 @@ public class BackpackMenu extends BaseMenu {
     double totalValue = calculateTotalSelectedValue(player, backpack);
     double multiplier = getHelmetMultiplier(player);
     double finalValue = totalValue * multiplier;
-    List<BackpackItem> allItems = backpack.getItems();
     int selectedCount =
         selected.stream()
-            .filter(idx -> idx < allItems.size())
-            .mapToInt(idx -> allItems.get(idx).getAmount())
+            .filter(idx -> idx < visualSlots.size())
+            .mapToInt(idx -> visualSlots.get(idx).stackAmount())
             .sum();
     boolean hasSelection = selectedCount > 0;
 
@@ -329,7 +334,7 @@ public class BackpackMenu extends BaseMenu {
         profile.backpack.consumeMaterial(item.getMaterial(), 1);
         profile.save(null);
         HungerListener.applyFoodRestore(player, item.getMaterial());
-        selected.remove(itemIndex);
+        removeItemChunksFromSelection(visualSlots, itemIndex, selected);
         if (profile.backpack.getItems().isEmpty()) {
           closeMenu(player);
         } else {
@@ -340,11 +345,28 @@ public class BackpackMenu extends BaseMenu {
         return true;
       }
 
-      if (selected.contains(itemIndex)) {
-        selected.remove(itemIndex);
+      if (event.getClick() == ClickType.RIGHT) {
+        // Right-click toggles only this one 64-stack, letting a player sell part of a large
+        // quantity without selecting every stack of that item.
+        if (selected.contains(flatIndex)) {
+          selected.remove(flatIndex);
+          player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_BASS, 1.0f, 0.5f);
+        } else {
+          selected.add(flatIndex);
+          player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_BIT, 1.0f, 2.0f);
+        }
+        refresh(player);
+        return true;
+      }
+
+      // Left-click toggles every stack belonging to this item (select/deselect the full amount).
+      if (allChunksSelected(visualSlots, itemIndex, selected)) {
+        removeItemChunksFromSelection(visualSlots, itemIndex, selected);
         player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_BASS, 1.0f, 0.5f);
       } else {
-        selected.add(itemIndex);
+        for (int i = 0; i < visualSlots.size(); i++) {
+          if (visualSlots.get(i).itemIndex() == itemIndex) selected.add(i);
+        }
         player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_BIT, 1.0f, 2.0f);
       }
 
@@ -364,18 +386,25 @@ public class BackpackMenu extends BaseMenu {
 
     Backpack backpack = profile.backpack;
     List<BackpackItem> items = backpack.getItems();
+    List<VisualSlot> visualSlots = buildVisualSlots(items);
+    Map<Integer, Integer> sellAmountsByItem = selectedAmountsByItem(visualSlots, selected);
+
     double totalValue = 0;
     int itemCount = 0;
 
-    List<Integer> sortedIndices = new ArrayList<>(selected);
-    sortedIndices.sort(Collections.reverseOrder());
+    for (Map.Entry<Integer, Integer> entry : sellAmountsByItem.entrySet()) {
+      int itemIndex = entry.getKey();
+      if (itemIndex >= items.size()) continue;
 
-    for (int index : sortedIndices) {
-      if (index < items.size()) {
-        BackpackItem item = items.get(index);
-        totalValue += getItemValue(item);
-        itemCount += item.getAmount();
+      BackpackItem item = items.get(itemIndex);
+      int sellAmount = Math.min(entry.getValue(), item.getAmount());
+      totalValue += getUnitValue(item.getMaterial()) * sellAmount;
+      itemCount += sellAmount;
+
+      if (sellAmount >= item.getAmount()) {
         item.markForDeletion();
+      } else {
+        item.removeAmount(sellAmount);
       }
     }
 
@@ -413,26 +442,67 @@ public class BackpackMenu extends BaseMenu {
     }
   }
 
-  /** Returns the item value. */
-  private double getItemValue(BackpackItem item) {
+  /** Returns the per-unit sell value for a material. */
+  private double getUnitValue(Material material) {
     FileConfiguration config = ConfigRegistry.getInstance().get(ConfigNames.DEFAULT);
-    String path = ConfigPaths.Default.BLOCK_DEFAULTS + "." + item.getMaterial().name() + ".Sell";
-    return config.getDouble(path, 1.0) * item.getAmount();
+    String path = ConfigPaths.Default.BLOCK_DEFAULTS + "." + material.name() + ".Sell";
+    return config.getDouble(path, 1.0);
   }
 
-  /** Calculates total selected value. */
+  /** Returns the value of an item's entire amount (used for the per-slot "Value:" lore line). */
+  private double getItemValue(BackpackItem item) {
+    return getUnitValue(item.getMaterial()) * item.getAmount();
+  }
+
+  /**
+   * Calculates the sell value of only the currently selected stacks (not necessarily whole items).
+   */
   private double calculateTotalSelectedValue(Player player, Backpack backpack) {
     Set<Integer> selected = selectedItems.getOrDefault(player.getUniqueId(), new HashSet<>());
     List<BackpackItem> items = backpack.getItems();
+    List<VisualSlot> visualSlots = buildVisualSlots(items);
     double total = 0;
 
-    for (int index : selected) {
-      if (index < items.size()) {
-        total += getItemValue(items.get(index));
+    for (Map.Entry<Integer, Integer> entry :
+        selectedAmountsByItem(visualSlots, selected).entrySet()) {
+      if (entry.getKey() < items.size()) {
+        total += getUnitValue(items.get(entry.getKey()).getMaterial()) * entry.getValue();
       }
     }
 
     return total;
+  }
+
+  /**
+   * Returns true if every visual stack belonging to the given item is currently selected — drives
+   * the left-click "select all / deselect all" toggle and lore label.
+   */
+  private boolean allChunksSelected(
+      List<VisualSlot> visualSlots, int itemIndex, Set<Integer> selected) {
+    for (int i = 0; i < visualSlots.size(); i++) {
+      if (visualSlots.get(i).itemIndex() == itemIndex && !selected.contains(i)) return false;
+    }
+    return true;
+  }
+
+  /** Removes every selected flat slot index belonging to the given item. */
+  private void removeItemChunksFromSelection(
+      List<VisualSlot> visualSlots, int itemIndex, Set<Integer> selected) {
+    for (int i = 0; i < visualSlots.size(); i++) {
+      if (visualSlots.get(i).itemIndex() == itemIndex) selected.remove(i);
+    }
+  }
+
+  /** Sums the selected stack amounts per item index (a partial selection sells only that much). */
+  private Map<Integer, Integer> selectedAmountsByItem(
+      List<VisualSlot> visualSlots, Set<Integer> selected) {
+    Map<Integer, Integer> amounts = new LinkedHashMap<>();
+    for (int flatIndex : selected) {
+      if (flatIndex < 0 || flatIndex >= visualSlots.size()) continue;
+      VisualSlot visual = visualSlots.get(flatIndex);
+      amounts.merge(visual.itemIndex(), visual.stackAmount(), Integer::sum);
+    }
+    return amounts;
   }
 
   /** Returns the helmet multiplier. */
