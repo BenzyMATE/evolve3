@@ -137,13 +137,15 @@ public class BackpackMenu extends BaseMenu {
     }
 
     List<BackpackItem> items = backpack.getItems();
+    List<VisualSlot> visualSlots = buildVisualSlots(items);
     int startIndex = page * ITEMS_PER_PAGE;
-    int endIndex = Math.min(startIndex + ITEMS_PER_PAGE, items.size());
+    int endIndex = Math.min(startIndex + ITEMS_PER_PAGE, visualSlots.size());
 
     for (int i = startIndex; i < endIndex; i++) {
-      BackpackItem item = items.get(i);
+      VisualSlot visual = visualSlots.get(i);
+      BackpackItem item = items.get(visual.itemIndex());
       int slot = i - startIndex;
-      boolean isSelected = selected.contains(i);
+      boolean isSelected = selected.contains(visual.itemIndex());
 
       Material displayMaterial = isSelected ? Material.LIME_STAINED_GLASS_PANE : item.getMaterial();
       String itemName =
@@ -191,7 +193,7 @@ public class BackpackMenu extends BaseMenu {
           new ItemBuilder(displayMaterial)
               .name(itemName)
               .lore(lore.toArray(new String[0]))
-              .amount(Math.min(item.getAmount(), 64))
+              .amount(visual.stackAmount())
               .build();
 
       inventory.setItem(slot, displayItem);
@@ -305,13 +307,15 @@ public class BackpackMenu extends BaseMenu {
     }
 
     if (slot >= 0 && slot < ITEMS_PER_PAGE) {
-      int itemIndex = page * ITEMS_PER_PAGE + slot;
       List<BackpackItem> items = profile.backpack.getItems();
+      List<VisualSlot> visualSlots = buildVisualSlots(items);
+      int flatIndex = page * ITEMS_PER_PAGE + slot;
 
-      if (itemIndex >= items.size()) {
+      if (flatIndex >= visualSlots.size()) {
         return true;
       }
 
+      int itemIndex = visualSlots.get(flatIndex).itemIndex();
       BackpackItem item = items.get(itemIndex);
 
       if (event.getClick() == ClickType.RIGHT && item.getMaterial().isEdible()) {
@@ -440,10 +444,35 @@ public class BackpackMenu extends BaseMenu {
     return 1.0;
   }
 
-  /** Returns the total pages. */
+  /** Returns the total pages, counting each 64-item visual stack as its own slot. */
   private int getTotalPages(Backpack backpack) {
-    int itemCount = backpack.getItems().size();
-    return (int) Math.ceil((double) itemCount / ITEMS_PER_PAGE);
+    int slotCount = buildVisualSlots(backpack.getItems()).size();
+    return (int) Math.ceil((double) slotCount / ITEMS_PER_PAGE);
+  }
+
+  /**
+   * One 64-item (max) visual stack shown in a GUI slot, referencing back to the {@link
+   * BackpackItem} it's part of by list index.
+   */
+  private record VisualSlot(int itemIndex, int stackAmount) {}
+
+  /**
+   * Splits every {@link BackpackItem}'s amount into consecutive 64-item (max) chunks, mirroring how
+   * a real inventory spreads a large quantity across multiple stacks instead of cramming it all
+   * into one slot with a misleading "Amount: N" label. Preserves item order; each item's chunks
+   * stay consecutive.
+   */
+  private List<VisualSlot> buildVisualSlots(List<BackpackItem> items) {
+    List<VisualSlot> slots = new ArrayList<>();
+    for (int i = 0; i < items.size(); i++) {
+      int remaining = items.get(i).getAmount();
+      while (remaining > 0) {
+        int chunk = Math.min(remaining, 64);
+        slots.add(new VisualSlot(i, chunk));
+        remaining -= chunk;
+      }
+    }
+    return slots;
   }
 
   /** Shorthand: run a string through formatMessage for hex colors + small-caps. */
