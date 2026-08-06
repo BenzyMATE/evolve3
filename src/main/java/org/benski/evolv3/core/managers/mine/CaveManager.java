@@ -465,12 +465,33 @@ public final class CaveManager {
   }
 
   /**
-   * Despawns a single cave: restores backed-up blocks, removes from all tracking, and persists the
-   * change. Called when a player empties all chest items.
+   * Empties any chest inventories belonging to a cave. Must run before its blocks are restored —
+   * replacing a chest block that still holds items causes vanilla chest-removal logic to spill the
+   * contents onto the ground as item entities, which lags the server when many caves reset at once.
+   */
+  private void clearCaveChestItems(@NotNull String caveKey) {
+    List<Location> chests = caveChestLocations.get(caveKey);
+    if (chests == null) return;
+
+    for (Location loc : chests) {
+      World world = loc.getWorld();
+      if (world == null) continue;
+      Block block = world.getBlockAt(loc);
+      if (block.getState() instanceof Chest chest) {
+        chest.getBlockInventory().clear();
+      }
+    }
+  }
+
+  /**
+   * Despawns a single cave: empties its chests, restores backed-up blocks, removes from all
+   * tracking, and persists the change. Called when a player empties all chest items.
    *
    * @param caveKey the unique key for the cave (e.g. "minename_x_y_z")
    */
   public void despawnCave(@NotNull String caveKey) {
+    clearCaveChestItems(caveKey);
+
     List<BlockBackup> backups = caveBackups.get(caveKey);
     if (backups != null) {
       for (BlockBackup b : backups) {
@@ -555,6 +576,8 @@ public final class CaveManager {
     for (Map.Entry<String, List<BlockBackup>> entry : caveBackups.entrySet()) {
       if (!entry.getKey().startsWith(prefix)) continue;
       toRemove.add(entry.getKey());
+
+      clearCaveChestItems(entry.getKey());
 
       for (BlockBackup backup : entry.getValue()) {
         World world = Bukkit.getWorld(backup.world());

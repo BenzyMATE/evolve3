@@ -80,6 +80,15 @@ public final class MineManager {
   /** Live countdown ticks remaining per mine (written by the reset timer each tick). */
   private final Map<String, AtomicLong> resetCountdowns = new ConcurrentHashMap<>();
 
+  /**
+   * Mine names (lowercase) with a reset currently in flight. Guards against overlapping resets — a
+   * mine's percentage threshold can be crossed by several blocks broken in the same tick (e.g. an
+   * AOE-mining enchant), each independently scheduling a {@link #resetMine(String)} call. Without
+   * this guard, the earlier reset's cave-generation loop is never cancelled and keeps pasting caves
+   * alongside the new reset's loop, producing more caves than {@code cave-count} configures.
+   */
+  private final Set<String> resettingMines = ConcurrentHashMap.newKeySet();
+
   private static final Random RANDOM = new Random();
 
   /** Creates a new MineManager instance. */
@@ -535,8 +544,14 @@ public final class MineManager {
     Mine mine = getMine(name);
     if (mine == null) return;
 
+    String resetKey = mine.name().toLowerCase();
+    if (!resettingMines.add(resetKey)) return;
+
     World world = Bukkit.getWorld(mine.world());
-    if (world == null) return;
+    if (world == null) {
+      resettingMines.remove(resetKey);
+      return;
+    }
 
     NavigableMap<Integer, Material> weightedMap = buildWeightedMap(mine.contents());
     boolean hasContents = !weightedMap.isEmpty();
@@ -598,7 +613,6 @@ public final class MineManager {
                   }
                 }
 
-                String resetKey = mine.name().toLowerCase();
                 AtomicInteger counter = minedCounters.get(resetKey);
                 if (counter != null) counter.set(0);
                 cachedRemainingPct.put(resetKey, 100.0);
@@ -613,6 +627,8 @@ public final class MineManager {
                     .severe(
                         "[Evolv3] Failed to reset mine '" + mine.name() + "': " + e.getMessage());
                 e.printStackTrace();
+              } finally {
+                resettingMines.remove(resetKey);
               }
             });
   }
