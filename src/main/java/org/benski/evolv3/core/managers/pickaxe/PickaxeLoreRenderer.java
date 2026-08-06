@@ -29,6 +29,7 @@ import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.Damageable;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.persistence.PersistentDataType;
 
 /**
  * Builds and applies lore, display names, and enchant decorators to pickaxe item stacks. Extracted
@@ -124,6 +125,23 @@ public final class PickaxeLoreRenderer {
   }
 
   /**
+   * Returns {@code true} only for items that are allowed to carry pickaxe lore: a real pickaxe, or
+   * an Omnitool-transformed axe/sword (which is deliberately a reskinned pickaxe while active).
+   * Guards {@link #applyLoreAndName} against callers that resolve the player's pickaxe profile
+   * (e.g. via the Omnitool fallback in {@code PlayerDataCenter.getPickaxeForPlayer}) and then
+   * blindly pass "whatever's currently in the main hand" — without this, any unrelated item a
+   * player happens to be holding could get overwritten with pickaxe level/durability lore.
+   */
+  private boolean isEligibleForPickaxeLore(ItemStack item) {
+    if (item == null || item.getType() == Material.AIR) return false;
+    if (Utils.isPickaxe(item.getType())) return true;
+    ItemMeta meta = item.getItemMeta();
+    return meta != null
+        && meta.getPersistentDataContainer()
+            .has(OmnitoolManager.OMNITOOL_ITEM_KEY, PersistentDataType.STRING);
+  }
+
+  /**
    * Directly applies lore, display name, and enchant modifiers to an item using a known profile.
    * Unlike {@link #updateLore}, this does not require the item to be in the player's main hand.
    *
@@ -133,7 +151,7 @@ public final class PickaxeLoreRenderer {
    */
   @SuppressWarnings("deprecation")
   public void applyLoreAndName(Player player, Pickaxe profile, ItemStack item) {
-    if (item == null || item.getType() == Material.AIR) return;
+    if (!isEligibleForPickaxeLore(item)) return;
     ItemMeta meta = item.getItemMeta();
     if (meta == null) return;
 

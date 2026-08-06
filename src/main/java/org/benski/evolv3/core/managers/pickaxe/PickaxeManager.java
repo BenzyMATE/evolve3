@@ -38,6 +38,7 @@ import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.Damageable;
 import org.bukkit.inventory.meta.ItemMeta;
@@ -783,34 +784,41 @@ public class PickaxeManager {
   public void repairPickaxe(
       @org.jetbrains.annotations.NotNull Player player,
       @org.jetbrains.annotations.NotNull Runnable onMenuClose) {
-    repair(player, null, onMenuClose);
+    ItemStack held = player.getInventory().getItemInMainHand();
+    repair(player, held, null, () -> player.getInventory().setItemInMainHand(held), onMenuClose);
   }
 
   /**
-   * Repairs the pickaxe held in the player's main hand by dragging Ancient Resin onto its menu
-   * slot. The dragged (cursor) stack is spent first; if it isn't enough to cover the cost, the
-   * shortfall is topped up from resin elsewhere in the player's inventory, same as {@link
-   * #repairPickaxe}. Used by the drag-and-drop repair interaction as an alternative to the
-   * right-click repair action.
+   * Repairs a pickaxe sitting in a specific inventory slot by dragging Ancient Resin onto it — the
+   * "drag resin onto your pickaxe" interaction available in the player's own inventory, as an
+   * alternative to opening the pickaxe menu. The dragged (cursor) stack is spent first; if it isn't
+   * enough to cover the cost, the shortfall is topped up from resin elsewhere in the inventory,
+   * same as {@link #repairPickaxe}.
    *
-   * @param player the player repairing their held pickaxe
+   * @param player the player repairing the pickaxe
+   * @param inventory the inventory the pickaxe is sitting in (the player's own inventory)
+   * @param slot the slot index of the pickaxe within {@code inventory}
    * @param cursorResin the Ancient Resin stack on the player's cursor when they dropped it onto the
-   *     pickaxe slot; may be {@code null} or a different item, in which case only inventory resin
-   *     is used
-   * @param onMenuClose invoked on a successful repair, so the calling menu can close its own
-   *     inventory the same way the right-click repair action always has
+   *     pickaxe; may be {@code null} or a different item, in which case only inventory resin is
+   *     used
    */
-  public void repairPickaxeWithResinDrag(
+  public void repairPickaxeInSlot(
       @org.jetbrains.annotations.NotNull Player player,
-      ItemStack cursorResin,
-      @org.jetbrains.annotations.NotNull Runnable onMenuClose) {
-    repair(player, cursorResin, onMenuClose);
+      @org.jetbrains.annotations.NotNull Inventory inventory,
+      int slot,
+      ItemStack cursorResin) {
+    ItemStack target = inventory.getItem(slot);
+    repair(player, target, cursorResin, () -> inventory.setItem(slot, target), () -> {});
   }
 
-  /** Shared implementation for {@link #repairPickaxe} and {@link #repairPickaxeWithResinDrag}. */
-  private void repair(Player player, ItemStack cursorResin, Runnable onMenuClose) {
-    ItemStack held = player.getInventory().getItemInMainHand();
-    if (held.getType() == Material.AIR || !Utils.isPickaxe(held.getType())) {
+  /** Shared implementation for {@link #repairPickaxe} and {@link #repairPickaxeInSlot}. */
+  private void repair(
+      Player player,
+      ItemStack target,
+      ItemStack cursorResin,
+      Runnable writeBack,
+      Runnable onSuccess) {
+    if (target == null || target.getType() == Material.AIR || !Utils.isPickaxe(target.getType())) {
       String msg =
           messagesConfig()
               .getString(
@@ -820,8 +828,8 @@ public class PickaxeManager {
       return;
     }
 
-    ItemMeta heldMeta = held.getItemMeta();
-    if (!(heldMeta instanceof Damageable dmg)) return;
+    ItemMeta targetMeta = target.getItemMeta();
+    if (!(targetMeta instanceof Damageable dmg)) return;
 
     if (dmg.getDamage() == 0) {
       sendRepairMessageList(player, ConfigPaths.Messages.PickaxeLimit.REPAIR_ALREADY_FULL);
@@ -829,7 +837,7 @@ public class PickaxeManager {
       return;
     }
 
-    String pickaxeId = ItemStackExtensions.getData(held, "id");
+    String pickaxeId = ItemStackExtensions.getData(target, "id");
     PlayerDataCenter repairPdc = DataCenterRegistry.getInstance().getPlayerDataCenter();
     Pickaxe repairProfile =
         (pickaxeId != null && !pickaxeId.isEmpty() && repairPdc != null)
@@ -837,7 +845,7 @@ public class PickaxeManager {
             : null;
     boolean wasDisabled = repairProfile != null && repairProfile.disabled;
 
-    int repairCost = getRepairCost(EvolutionTier.fromMaterial(held.getType()), wasDisabled);
+    int repairCost = getRepairCost(EvolutionTier.fromMaterial(target.getType()), wasDisabled);
 
     boolean hasCursorResin = AncientResin.isAncientResin(cursorResin);
     int cursorAmount = hasCursorResin ? cursorResin.getAmount() : 0;
@@ -869,19 +877,19 @@ public class PickaxeManager {
     }
 
     dmg.setDamage(0);
-    held.setItemMeta(dmg);
-    player.getInventory().setItemInMainHand(held);
+    target.setItemMeta(dmg);
+    writeBack.run();
 
     if (repairProfile != null) {
       repairProfile.durability = 0;
       repairProfile.disabled = false;
       repairProfile.save(null);
-      applyLoreAndName(player, repairProfile, held);
+      applyLoreAndName(player, repairProfile, target);
     }
 
     player.playSound(player.getLocation(), Sound.BLOCK_ANVIL_USE, 1.0f, 1.2f);
     sendRepairMessageList(player, ConfigPaths.Messages.PickaxeLimit.REPAIR_SUCCESS);
-    onMenuClose.run();
+    onSuccess.run();
   }
 
   /** Sends a config-driven message list to the player, applying token replacements. */

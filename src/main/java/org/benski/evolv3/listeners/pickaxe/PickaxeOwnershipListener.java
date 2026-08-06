@@ -17,6 +17,7 @@ import org.benski.evolv3.core.helpers.Utils;
 import org.benski.evolv3.core.managers.pickaxe.OmnitoolManager;
 import org.benski.evolv3.core.managers.pickaxe.PickaxeManager;
 import org.benski.evolv3.datacenters.PlayerDataCenter;
+import org.benski.evolv3.items.AncientResin;
 import org.benski.evolv3.models.pickaxe.Pickaxe;
 import org.benski.evolv3.models.player.PlayerProfile;
 import org.benski.evolv3.registry.ConfigRegistry;
@@ -33,10 +34,12 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.entity.EntityPickupItemEvent;
 import org.bukkit.event.entity.ItemDespawnEvent;
 import org.bukkit.event.entity.ItemSpawnEvent;
+import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.player.PlayerDropItemEvent;
 import org.bukkit.event.player.PlayerItemBreakEvent;
 import org.bukkit.event.player.PlayerItemDamageEvent;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.PlayerInventory;
 import org.bukkit.inventory.meta.Damageable;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -50,7 +53,9 @@ import org.joml.Vector3f;
  * storage slot. - Drop (two-step): first Q-press cancels and sends a chat message; second Q-press
  * releases ownership. - Pickup: transfers ownership to the new player. - ItemSpawn/Despawn:
  * attaches and cleans up a floating TextDisplay that tracks the item as it moves. - ItemDamage:
- * warns the player when pickaxe durability falls below the configured threshold.
+ * warns the player when pickaxe durability falls below the configured threshold, or disables it
+ * outright if the hit would have broken it. - InventoryClick: repairs a pickaxe when Ancient Resin
+ * is dragged onto it in the player's own inventory.
  */
 @ExtensionMethod(ItemStackExtensions.class)
 public class PickaxeOwnershipListener extends BaseListener {
@@ -239,6 +244,30 @@ public class PickaxeOwnershipListener extends BaseListener {
     } else {
       playerDataCenter.ensurePickaxe(player, pickaxeId);
     }
+  }
+
+  /**
+   * Drag-and-drop repair: dropping Ancient Resin from the cursor onto a pickaxe sitting anywhere in
+   * the player's own inventory repairs it, without needing to open the pickaxe menu.
+   *
+   * <p>{@code ignoreCancelled = true} so this only acts on a genuine, unclaimed click — e.g. it
+   * won't fire on top of a custom menu that already cancelled bottom-inventory clicks for its own
+   * reasons.
+   */
+  @EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
+  public void onResinDroppedOnPickaxe(InventoryClickEvent event) {
+    if (!(event.getWhoClicked() instanceof Player player)) return;
+    if (!(event.getClickedInventory() instanceof PlayerInventory)) return;
+
+    ItemStack cursor = event.getCursor();
+    if (!AncientResin.isAncientResin(cursor)) return;
+
+    ItemStack clicked = event.getCurrentItem();
+    if (clicked == null || !Utils.isPickaxe(clicked.getType())) return;
+
+    event.setCancelled(true);
+    PickaxeManager.getInstance()
+        .repairPickaxeInSlot(player, event.getClickedInventory(), event.getSlot(), cursor);
   }
 
   /**

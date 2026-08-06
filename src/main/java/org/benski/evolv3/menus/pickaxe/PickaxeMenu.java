@@ -32,7 +32,6 @@ import org.benski.evolv3.core.types.RarityConfig;
 import org.benski.evolv3.datacenters.PlayerDataCenter;
 import org.benski.evolv3.enchants.passive.FortuneEnchant;
 import org.benski.evolv3.enums.EvolutionTier;
-import org.benski.evolv3.items.AncientResin;
 import org.benski.evolv3.models.pickaxe.EnchantData;
 import org.benski.evolv3.models.pickaxe.Pickaxe;
 import org.benski.evolv3.models.player.PlayerProfile;
@@ -338,7 +337,7 @@ public class PickaxeMenu extends BaseMenu {
           menus
               .getString(
                   ConfigPaths.Menus.PickaxeMenu.REPAIR_ACTION_LINE,
-                  " &#FFEE00Right-Click &#AAAAAAor &#FFEE00Drag Resin &#AAAAAAto repair &#777777(&#E8890A%evolv3_repair_cost% &#777777Ancient Resin)")
+                  " &#FFEE00Right-Click &#AAAAAAto repair &#777777(&#E8890A%evolv3_repair_cost% &#777777Ancient Resin)")
               .replace("%evolv3_repair_cost%", String.valueOf(repairCost));
       ItemMeta displayMeta = display.getItemMeta();
       if (displayMeta != null) {
@@ -413,11 +412,7 @@ public class PickaxeMenu extends BaseMenu {
     }
 
     if (slot == PICKAXE_SLOT) {
-      ItemStack cursor = event.getCursor();
-      if (AncientResin.isAncientResin(cursor)) {
-        PickaxeManager.getInstance()
-            .repairPickaxeWithResinDrag(player, cursor, () -> closeMenu(player));
-      } else if (event.isRightClick()) {
+      if (event.isRightClick()) {
         handleRepair(player);
       } else {
         PickaxeLimitMenu storageMenu =

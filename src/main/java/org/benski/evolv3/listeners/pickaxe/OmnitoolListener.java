@@ -188,6 +188,12 @@ public class OmnitoolListener extends BaseListener {
   /**
    * Runs at MONITOR priority so other handlers can cancel the event first. When a player in axe
    * form breaks a log, XP is credited to their pickaxe.
+   *
+   * <p>Requires the main-hand item to actually be the omnitool-tagged axe — {@code
+   * isInOmnitoolMode} only means the player's pickaxe is transformed <em>somewhere</em> in their
+   * inventory, not that they're holding it right now. Without this check, breaking a log while in
+   * axe-form region but holding an unrelated item would credit pickaxe XP and (via {@link
+   * PickaxeManager#updateLore}) overwrite that unrelated item's name/lore with the pickaxe's.
    */
   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
   public void onLogBreak(BlockBreakEvent event) {
@@ -198,12 +204,15 @@ public class OmnitoolListener extends BaseListener {
     if (omni.getForm(player) != Form.AXE) return;
     if (!isLog(event.getBlock().getType())) return;
 
+    ItemStack held = player.getInventory().getItemInMainHand();
+    if (!isOmnitoolItem(held)) return;
+
     FileConfiguration config = ConfigRegistry.getInstance().get(ConfigNames.DEFAULT);
     int xpAmount = config.getInt("Omnitool.LogBreakXp", 5);
     if (xpAmount <= 0) return;
 
     PickaxeManager.getInstance().addXp(player, xpAmount);
-    PickaxeManager.getInstance().updateLore(player, null);
+    PickaxeManager.getInstance().updateLore(player, held);
     sendXpActionBar(player);
   }
 
@@ -217,6 +226,9 @@ public class OmnitoolListener extends BaseListener {
     OmnitoolManager omni = OmnitoolManager.getInstance();
     if (!omni.isInOmnitoolMode(killer)) return;
     if (omni.getForm(killer) != Form.SWORD) return;
+
+    ItemStack killerHeld = killer.getInventory().getItemInMainHand();
+    boolean holdingOmnitoolSword = isOmnitoolItem(killerHeld);
 
     List<ItemStack> drops = new ArrayList<>(event.getDrops());
     List<ItemStack> nonEmpty =
@@ -247,9 +259,9 @@ public class OmnitoolListener extends BaseListener {
             PreferenceType.DropCategory.NORMAL,
             Math.max(0, xpAmount));
 
-    if (xpAmount > 0) {
+    if (xpAmount > 0 && holdingOmnitoolSword) {
       PickaxeManager.getInstance().addXp(killer, xpAmount);
-      PickaxeManager.getInstance().updateLore(killer, null);
+      PickaxeManager.getInstance().updateLore(killer, killerHeld);
       sendXpActionBar(killer);
     }
   }
@@ -285,6 +297,15 @@ public class OmnitoolListener extends BaseListener {
   private static boolean isLog(Material material) {
     String name = material.name();
     return name.endsWith("_LOG") || name.endsWith("_STEM") || material == Material.BAMBOO_BLOCK;
+  }
+
+  /** Returns {@code true} if the item is the player's transformed omnitool axe/sword. */
+  private static boolean isOmnitoolItem(ItemStack item) {
+    if (item == null || item.getType().isAir()) return false;
+    ItemMeta meta = item.getItemMeta();
+    return meta != null
+        && meta.getPersistentDataContainer()
+            .has(OmnitoolManager.OMNITOOL_ITEM_KEY, PersistentDataType.STRING);
   }
 
   /** Sends xp action bar. */
