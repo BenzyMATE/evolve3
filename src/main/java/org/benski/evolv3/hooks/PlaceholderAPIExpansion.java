@@ -81,7 +81,7 @@ import org.jetbrains.annotations.Nullable;
  *   <li>%evolv3_mine_[name]_blocks_remaining%
  *   <li>%evolv3_mine_[name]_reset_interval%
  *   <li>%evolv3_mine_[name]_caves%
- *   idk
+ *
  * </ul>
  */
 public class PlaceholderAPIExpansion extends PlaceholderExpansion {
