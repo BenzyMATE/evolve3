@@ -1,8 +1,10 @@
 # .github/workflows/deploy.yml
 # Builds the plugin on every push to master, uploads the jar via SFTP to the
 # Pterodactyl (WitherPanel) file daemon, pings the DeployWebhook plugin to
-# hot-reload it, then packages the resource pack, publishes it to a rolling
-# GitHub Release, and updates server.properties over the same SFTP creds.
+# hot-reload it, then (when resource-pack/ changed) uploads the raw assets to
+# MythicMobs' merge folder via SFTP, packages the resource pack, publishes it
+# to a rolling GitHub Release, and updates server.properties over the same
+# SFTP creds.
 
 name: Build & Deploy Plugin
 
@@ -67,6 +69,24 @@ jobs:
           zip -r ../pack.zip . -x '.*'
           cd ..
           echo "PACK_SHA1=$(sha1sum pack.zip | cut -d' ' -f1)" >> "$GITHUB_ENV"
+
+      # 1b. Push the raw asset files into MythicMobs' resource pack merge
+      #     folder so its generator picks them up on the next model reload.
+      #     This action's sftp `put -r` nests the local dir's own basename
+      #     under remote_path, so pointing remote_path at .../merge (the
+      #     parent) is what lands the contents at .../merge/assets, not
+      #     .../merge/assets/assets.
+      - name: Upload resource pack assets via SFTP
+        if: steps.pack-changes.outputs.changed == 'true'
+        uses: wlixcc/SFTP-Deploy-Action@v1.2.5
+        with:
+          server: 'nl-3.panelapi.net'
+          port: '2022'
+          username: ${{ secrets.SFTP_USERNAME }}
+          password: ${{ secrets.SFTP_PASSWORD }}
+          sftp_only: true
+          local_path: './resource-pack/assets'
+          remote_path: '/plugins/MythicMobs/generation/merge'
 
       # 2. Host it on a rolling GitHub Release with a fixed tag
       - name: Publish pack to release
