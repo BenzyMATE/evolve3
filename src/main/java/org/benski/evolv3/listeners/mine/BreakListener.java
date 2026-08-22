@@ -25,7 +25,6 @@ import org.benski.evolv3.core.managers.player.PickupAnimationManager;
 import org.benski.evolv3.core.managers.world.WorldGuardManager;
 import org.benski.evolv3.core.types.PlayerActivity;
 import org.benski.evolv3.core.types.PreferenceType;
-import org.benski.evolv3.datacenters.PlayerDataCenter;
 import org.benski.evolv3.enchants.mining.FrostbiteEnchant;
 import org.benski.evolv3.enchants.passive.EfficiencyStoneHandler;
 import org.benski.evolv3.enchants.passive.ExtractionEnchant;
@@ -42,7 +41,6 @@ import org.benski.evolv3.models.player.PlayerPreferences;
 import org.benski.evolv3.models.player.PlayerProfile;
 import org.benski.evolv3.registry.AnimationRegistry;
 import org.benski.evolv3.registry.ConfigRegistry;
-import org.benski.evolv3.registry.DataCenterRegistry;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Sound;
@@ -151,9 +149,6 @@ public class BreakListener extends BaseListener {
     }
 
     event.setDropItems(false);
-
-    PlayerDataCenter playerDataCenter = DataCenterRegistry.getInstance().getPlayerDataCenter();
-    if (playerDataCenter == null) return;
 
     PlayerProfile playerProfile = playerDataCenter.getLocal(player);
     if (playerProfile == null) return;
@@ -276,8 +271,7 @@ public class BreakListener extends BaseListener {
                 plugin,
                 () -> {
                   if (!player.isOnline()) return;
-                  PlayerDataCenter pdc = DataCenterRegistry.getInstance().getPlayerDataCenter();
-                  PlayerProfile freshProfile = pdc != null ? pdc.getLocal(player) : null;
+                  PlayerProfile freshProfile = playerDataCenter.getLocal(player);
                   if (freshProfile != null)
                     checkEssenceDiscovery(
                         player, freshProfile, floatTop, hologramLoc, finalEssenceMultiplier);
@@ -337,9 +331,6 @@ public class BreakListener extends BaseListener {
     if (!wg.isWithinMineRegion(block.getLocation())
         && !wg.isWithinOmnitoolAxeRegion(block.getLocation())) return;
 
-    PlayerDataCenter playerDataCenter = DataCenterRegistry.getInstance().getPlayerDataCenter();
-    if (playerDataCenter == null) return;
-
     PlayerProfile playerProfile = playerDataCenter.getLocal(player);
     if (playerProfile == null) return;
 
@@ -365,7 +356,7 @@ public class BreakListener extends BaseListener {
         omni.isInOmnitoolMode(player) && omni.getForm(player) == OmnitoolManager.Form.AXE;
     if (isOmnitoolAxe) {
       FileConfiguration cfg = ConfigRegistry.getInstance().get(ConfigNames.DEFAULT);
-      int omniXp = cfg.getInt("Omnitool.LogBreakXp", 5);
+      int omniXp = cfg.getInt(ConfigPaths.Default.Pickaxe.OMNITOOL_LOG_BREAK_XP, 5);
       pickupAnimationManager.playPickupAnimation(
           player,
           center,
@@ -440,10 +431,7 @@ public class BreakListener extends BaseListener {
     String pickaxeId = ItemStackExtensions.getData(item, "id");
     if (pickaxeId == null || pickaxeId.isEmpty()) return;
 
-    PlayerDataCenter dc = DataCenterRegistry.getInstance().getPlayerDataCenter();
-    if (dc == null) return;
-
-    Pickaxe profile = dc.getPickaxeByItemId(pickaxeId);
+    Pickaxe profile = playerDataCenter.getPickaxeByItemId(pickaxeId);
     if (profile == null) return;
 
     EnchantData unbreaking = profile.enchants.getEnchant(Enchants.UNBREAKING);
@@ -512,6 +500,7 @@ public class BreakListener extends BaseListener {
       parsed = Material.valueOf(stored);
     } catch (IllegalArgumentException ignored) {
     }
+    block.removeMetadata(FrostbiteEnchant.FROSTBITE_METADATA_KEY, plugin);
     FrostbiteBlockManager.getInstance().removeFrozenBlock(block.getLocation());
 
     if (parsed == null || parsed.isAir() || parsed == Material.PACKED_ICE) {
@@ -602,10 +591,7 @@ public class BreakListener extends BaseListener {
     int rawMultiplier = RadioactiveEnchant.popAmountMultiplier(player.getUniqueId());
     int baseAmount = Utils.amount(minAmount, maxAmount) * Math.max(1, rawMultiplier);
 
-    PlayerDataCenter atomDC = DataCenterRegistry.getInstance().getPlayerDataCenter();
-    if (atomDC == null) return;
-
-    Pickaxe localProfile = atomDC.getPickaxeForPlayer(player);
+    Pickaxe localProfile = playerDataCenter.getPickaxeForPlayer(player);
     double prestigeMultiplier =
         localProfile != null ? pickaxeManager.getPrestigeMultiplier(localProfile.prestige) : 1.0;
     int amount = (int) Math.round(baseAmount * prestigeMultiplier);
@@ -619,8 +605,7 @@ public class BreakListener extends BaseListener {
 
     animationRegistry.play("atom", animLoc, List.of(player), amount);
 
-    PlayerDataCenter pdcAtom = DataCenterRegistry.getInstance().getPlayerDataCenter();
-    PlayerProfile atomProfile = pdcAtom != null ? pdcAtom.getLocal(player) : null;
+    PlayerProfile atomProfile = playerDataCenter.getLocal(player);
     boolean atomHologramOn = atomProfile == null || atomProfile.preferences.atomHologram;
 
     if (atomHologramOn && config.getBoolean(ConfigPaths.Default.Atoms.HOLOGRAM_ENABLED, true)) {
@@ -670,10 +655,7 @@ public class BreakListener extends BaseListener {
     int maxAmount = config.getInt(ConfigPaths.Default.Essence.DISCOVERY_MAX_AMOUNT, 5);
     int baseAmount = Utils.amount(minAmount, maxAmount) * Math.max(1, multiplier);
 
-    PlayerDataCenter essenceDC = DataCenterRegistry.getInstance().getPlayerDataCenter();
-    if (essenceDC == null) return;
-
-    Pickaxe localProfile = essenceDC.getPickaxeForPlayer(player);
+    Pickaxe localProfile = playerDataCenter.getPickaxeForPlayer(player);
     double prestigeMultiplier =
         localProfile != null ? pickaxeManager.getPrestigeMultiplier(localProfile.prestige) : 1.0;
     int amount = (int) Math.round(baseAmount * prestigeMultiplier);

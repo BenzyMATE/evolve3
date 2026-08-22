@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
-import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
 import org.benski.evolv3.core.constants.ConfigNames;
@@ -21,10 +20,6 @@ public final class Backpack {
 
   private int maxSize;
   private int totalItems;
-
-  @Getter(AccessLevel.NONE)
-  private boolean full;
-
   private List<BackpackItem> items = new ArrayList<>();
 
   /** Creates a new backpack with default capacity from {@code default.yml}. */
@@ -33,7 +28,6 @@ public final class Backpack {
     Backpack backpack = new Backpack();
     backpack.maxSize = config.getInt(ConfigPaths.Default.Backpack.SIZE, 100);
     backpack.totalItems = 0;
-    backpack.full = false;
     backpack.items = new ArrayList<>();
     return backpack;
   }
@@ -127,14 +121,13 @@ public final class Backpack {
     return items.size();
   }
 
-  /** Returns how many more item stacks can be added before the backpack is full. */
+  /** Returns how many more items can be added before the backpack reaches {@link #maxSize}. */
   public int getRemainingCapacity() {
-    return maxSize - items.size();
+    return maxSize - totalItems;
   }
 
   /** Updates stats. */
   private void updateStats() {
     this.totalItems = items.stream().mapToInt(BackpackItem::getAmount).sum();
-    this.full = items.size() >= maxSize;
   }
 }

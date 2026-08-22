@@ -45,6 +45,7 @@ public final class EvolveApiClient {
   @Getter private static EvolveApiClient instance;
 
   private final String baseUrl;
+  private final String apiKey;
   private final HttpClient http;
   private final Gson gson;
   @Getter private final ExecutorService executor;
@@ -55,9 +56,12 @@ public final class EvolveApiClient {
    *
    * @param baseUrl the base URL of the Evolve C# API (trailing slash is stripped automatically)
    * @param sslVerify when {@code false}, SSL certificate verification is disabled (dev only)
+   * @param apiKey shared secret sent as the {@code X-Api-Key} header on every request, or {@code
+   *     null}/empty to send no header
    */
-  public EvolveApiClient(String baseUrl, boolean sslVerify) {
+  public EvolveApiClient(String baseUrl, boolean sslVerify, String apiKey) {
     this.baseUrl = baseUrl.endsWith("/") ? baseUrl.substring(0, baseUrl.length() - 1) : baseUrl;
+    this.apiKey = apiKey;
     this.executor =
         Executors.newFixedThreadPool(Math.max(4, Runtime.getRuntime().availableProcessors()));
     HttpClient.Builder builder =
@@ -68,6 +72,18 @@ public final class EvolveApiClient {
     this.http = builder.build();
     this.gson = new GsonBuilder().serializeNulls().create();
     instance = this;
+  }
+
+  /**
+   * Applies the shared {@code Content-Type} header and, when configured, the {@code X-Api-Key}
+   * header to a request builder.
+   */
+  private HttpRequest.Builder withAuth(HttpRequest.Builder builder) {
+    builder.header("Content-Type", "application/json");
+    if (apiKey != null && !apiKey.isEmpty()) {
+      builder.header("X-Api-Key", apiKey);
+    }
+    return builder;
   }
 
   /** Builds trust all ssl context. */
@@ -107,11 +123,10 @@ public final class EvolveApiClient {
         () -> {
           try {
             HttpRequest request =
-                HttpRequest.newBuilder()
+                withAuth(HttpRequest.newBuilder())
                     .uri(URI.create(baseUrl + "/api/player/" + uuid))
                     .GET()
                     .timeout(Duration.ofSeconds(60))
-                    .header("Content-Type", "application/json")
                     .build();
 
             HttpResponse<String> response =
@@ -148,11 +163,10 @@ public final class EvolveApiClient {
           try {
             String body = gson.toJson(dto);
             HttpRequest request =
-                HttpRequest.newBuilder()
+                withAuth(HttpRequest.newBuilder())
                     .uri(URI.create(baseUrl + "/api/player"))
                     .POST(HttpRequest.BodyPublishers.ofString(body))
                     .timeout(Duration.ofSeconds(60))
-                    .header("Content-Type", "application/json")
                     .build();
 
             HttpResponse<String> response =
@@ -188,11 +202,10 @@ public final class EvolveApiClient {
           try {
             String body = gson.toJson(dto);
             HttpRequest request =
-                HttpRequest.newBuilder()
+                withAuth(HttpRequest.newBuilder())
                     .uri(URI.create(baseUrl + "/api/player"))
                     .PUT(HttpRequest.BodyPublishers.ofString(body))
                     .timeout(Duration.ofSeconds(60))
-                    .header("Content-Type", "application/json")
                     .build();
 
             HttpResponse<String> response =
@@ -224,11 +237,10 @@ public final class EvolveApiClient {
         () -> {
           try {
             HttpRequest request =
-                HttpRequest.newBuilder()
+                withAuth(HttpRequest.newBuilder())
                     .uri(URI.create(baseUrl + "/api/pending"))
                     .GET()
                     .timeout(Duration.ofSeconds(60))
-                    .header("Content-Type", "application/json")
                     .build();
 
             HttpResponse<String> response =
@@ -267,11 +279,10 @@ public final class EvolveApiClient {
           try {
             String body = gson.toJson(dto);
             HttpRequest request =
-                HttpRequest.newBuilder()
+                withAuth(HttpRequest.newBuilder())
                     .uri(URI.create(baseUrl + "/api/pending"))
                     .PUT(HttpRequest.BodyPublishers.ofString(body))
                     .timeout(Duration.ofSeconds(60))
-                    .header("Content-Type", "application/json")
                     .build();
 
             HttpResponse<String> response =
@@ -304,11 +315,10 @@ public final class EvolveApiClient {
         () -> {
           try {
             HttpRequest request =
-                HttpRequest.newBuilder()
+                withAuth(HttpRequest.newBuilder())
                     .uri(URI.create(baseUrl + "/api/pending/" + playerUuid + "/" + type.name()))
                     .DELETE()
                     .timeout(Duration.ofSeconds(60))
-                    .header("Content-Type", "application/json")
                     .build();
 
             HttpResponse<String> response =

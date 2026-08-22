@@ -30,7 +30,7 @@ public class PendingEnchantData {
   /**
    * The pickaxe's item-data key. Non-null when the selection was started with {@link
    * org.benski.evolv3.core.managers.EnchantSelectionManager#startSelection(Player, String,
-   * BiConsumer)}, which enables full MongoDB persistence across server restarts.
+   * BiConsumer)}, which enables persistence across server restarts via the pending-data API.
    */
   private String pickaxeKey;
 

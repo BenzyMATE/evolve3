@@ -876,6 +876,18 @@ public class StoneSocketMenu extends BaseMenu {
       return;
     }
 
+    for (int i = 0; i < EnchantData.MAX_SOCKET_COUNT; i++) {
+      if (i != socketIndex && rarityName.equals(enchant.socketStones[i])) {
+        player.sendMessage(
+            formatMessage(
+                player,
+                "%evolv3_prefix% &#CCCCCCYou already have a &#00FFFF"
+                    + rarityName
+                    + " &#CCCCCCstone socketed in this enchant."));
+        return;
+      }
+    }
+
     String existingRarity = enchant.socketStones[socketIndex];
     if (existingRarity != null) {
       RarityConfig existing = EnchantAnimationConfig.getRarityByName(existingRarity);
@@ -886,18 +898,6 @@ public class StoneSocketMenu extends BaseMenu {
         } else {
           player.getWorld().dropItemNaturally(player.getLocation(), returnStone);
         }
-      }
-    }
-
-    for (int i = 0; i < EnchantData.MAX_SOCKET_COUNT; i++) {
-      if (i != socketIndex && rarityName.equals(enchant.socketStones[i])) {
-        player.sendMessage(
-            formatMessage(
-                player,
-                "%evolv3_prefix% &#CCCCCCYou already have a &#00FFFF"
-                    + rarityName
-                    + " &#CCCCCCstone socketed in this enchant."));
-        return;
       }
     }
 

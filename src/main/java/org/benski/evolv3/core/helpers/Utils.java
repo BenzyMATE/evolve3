@@ -21,10 +21,10 @@ public class Utils {
   private static final boolean PLACEHOLDER_API_ENABLED =
       Bukkit.getPluginManager().getPlugin("PlaceholderAPI") != null;
 
-  /** Cached progress-bar symbols â€” set once after config loads, never change at runtime. */
-  private static String PROGRESSBAR_FILLED = "â–ˆ";
+  /** Cached progress-bar symbols — set once after config loads, never change at runtime. */
+  private static String PROGRESSBAR_FILLED = "█";
 
-  private static String PROGRESSBAR_EMPTY = "â–‘";
+  private static String PROGRESSBAR_EMPTY = "░";
 
   /**
    * Caches the progress-bar symbols from config so they are not re-read on every block break. Call
@@ -33,9 +33,8 @@ public class Utils {
   public static void loadProgressBarSymbols() {
     FileConfiguration config = ConfigRegistry.getInstance().get(ConfigNames.DEFAULT);
     PROGRESSBAR_FILLED =
-        config.getString(ConfigPaths.Default.Pickaxe.PROGRESSBAR_SYMBOL_FILLED, "â–ˆ");
-    PROGRESSBAR_EMPTY =
-        config.getString(ConfigPaths.Default.Pickaxe.PROGRESSBAR_SYMBOL_EMPTY, "â–‘");
+        config.getString(ConfigPaths.Default.Pickaxe.PROGRESSBAR_SYMBOL_FILLED, "█");
+    PROGRESSBAR_EMPTY = config.getString(ConfigPaths.Default.Pickaxe.PROGRESSBAR_SYMBOL_EMPTY, "░");
   }
 
   /**
@@ -114,8 +113,8 @@ public class Utils {
   }
 
   /**
-   * Formats a number with K/M/B suffixes and 2 decimal places. e.g. 5 â†’ "5.00", 1500 â†’ "1.50K",
-   * 2500000 â†’ "2.50M"
+   * Formats a number with K/M/B suffixes and 2 decimal places. e.g. 5 → "5.00", 1500 → "1.50K",
+   * 2500000 → "2.50M"
    */
   public static String formatNumber(double amount) {
     if (amount >= 1_000_000_000) return String.format("%.2fB", amount / 1_000_000_000);
@@ -125,8 +124,8 @@ public class Utils {
   }
 
   /**
-   * Formats an integer with K/M/B suffixes and no decimal places. e.g. 500 â†’ "500", 1500 â†’
-   * "1K", 2500000 â†’ "2M"
+   * Formats an integer with K/M/B suffixes and no decimal places. e.g. 500 → "500", 1500 → "1K",
+   * 2500000 → "2M"
    */
   public static String formatInt(long amount) {
     if (amount >= 1_000_000_000) return String.format("%dB", amount / 1_000_000_000);
@@ -168,8 +167,7 @@ public class Utils {
   }
 
   /**
-   * Builds a colour-coded 8-segment durability bar. Green above 60%, orange 30â€“60%, red below
-   * 30%.
+   * Builds a colour-coded 8-segment durability bar. Green above 60%, orange 30-60%, red below 30%.
    *
    * @param damage the current item damage value
    * @param maxDurability the maximum durability of the item
@@ -199,7 +197,7 @@ public class Utils {
    *
    * @param current The current value
    * @param max The maximum value
-   * @return A progress bar string (e.g., "â–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–‘â–‘")
+   * @return A progress bar string (e.g., "████████░░")
    */
   public static String generateProgressBar(int current, int max) {
     if (max <= 0) return PROGRESSBAR_EMPTY.repeat(10);
@@ -216,8 +214,8 @@ public class Utils {
   }
 
   /**
-   * Interpolates a hex color string for a progress bar. Green (#55FF55) at full â†’ Yellow
-   * (#FFFF55) at half â†’ Red (#FF5555) at empty.
+   * Interpolates a hex color string for a progress bar. Green (#55FF55) at full → Yellow (#FFFF55)
+   * at half → Red (#FF5555) at empty.
    */
   private static String progressBarColor(double progress) {
     int r, g;

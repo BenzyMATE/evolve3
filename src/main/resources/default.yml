@@ -61,6 +61,9 @@ Database:
   ApiUrl: "https://api.evolvemc.net/"
   # Set to false to disable SSL certificate verification (for local development only)
   SslVerify: true
+  # Shared secret sent as the X-Api-Key header on every API request. Leave blank if the API
+  # deployment does not enforce one; set this to match the API's configured key otherwise.
+  ApiKey: ""
 
 # =====================================================
 # WorldGuard Region Settings

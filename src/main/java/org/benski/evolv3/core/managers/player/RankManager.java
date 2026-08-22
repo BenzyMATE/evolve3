@@ -42,7 +42,7 @@ import org.jetbrains.annotations.Nullable;
 public final class RankManager {
   @Getter private static final RankManager instance = new RankManager();
 
-  /** Bukkit PermissionAttachments keyed by player UUID â€” one per online player. */
+  /** Bukkit PermissionAttachments keyed by player UUID - one per online player. */
   private final Map<UUID, PermissionAttachment> attachments = new HashMap<>();
 
   /** Creates a new RankManager instance. */
@@ -480,7 +480,7 @@ public final class RankManager {
     }
   }
 
-  /** Formats a coin cost for display (e.g. 1500000 â†’ "1,500,000"). */
+  /** Formats a coin cost for display (e.g. 1500000 -&gt; "1,500,000"). */
   private String formatCost(double cost) {
     if (cost == Math.floor(cost) && cost <= Long.MAX_VALUE) {
       return String.format("%,.0f", cost);

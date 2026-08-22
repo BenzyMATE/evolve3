@@ -19,9 +19,11 @@ public final class ConfigPaths {
     public static final String API_SSL_VERIFY = "Database.SslVerify";
 
     /**
-     * @deprecated Replaced by {@link #API_URL}. Will be removed once MongoDB is fully stripped.
+     * Shared secret sent as the {@code X-Api-Key} header on every request to the Evolve HTTP API.
+     * Empty by default (no header sent) for backward compatibility with API deployments that don't
+     * yet enforce it.
      */
-    @Deprecated public static final String DATABASE_MONGODB = "Database.MongoDB";
+    public static final String API_KEY = "Database.ApiKey";
 
     /** Schedule interval configuration paths. Intervals are in ticks (20 ticks = 1 second). */
     public static final class Schedules {
@@ -52,6 +54,8 @@ public final class ConfigPaths {
       public static final String LORE = "Pickaxe.Lore";
       public static final String LORE_FOOTER = "Pickaxe.LoreFooter";
       public static final String OMNITOOL_LORE_TAG = "Omnitool.LoreTag";
+      public static final String OMNITOOL_LOG_BREAK_XP = "Omnitool.LogBreakXp";
+      public static final String OMNITOOL_MOB_KILL_XP = "Omnitool.MobKillXp";
 
       public static final String PROGRESSBAR_SYMBOL_FILLED = "Pickaxe.Progressbar Symbol 1";
       public static final String PROGRESSBAR_SYMBOL_EMPTY = "Pickaxe.Progressbar Symbol 2";

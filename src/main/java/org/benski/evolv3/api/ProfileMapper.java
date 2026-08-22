@@ -6,7 +6,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.benski.evolv3.api.dto.*;
-import org.benski.evolv3.core.managers.enchant.EnchantAnimationConfig;
 import org.benski.evolv3.core.types.PlayerActivity;
 import org.benski.evolv3.core.types.PreferenceType;
 import org.benski.evolv3.core.types.RankType;
@@ -154,18 +153,10 @@ public final class ProfileMapper {
           data.socketStones[i] = (stone == null || stone.isEmpty()) ? null : stone;
         }
       }
-      hydrateEnchantConfig(data);
+      PickaxeEnchants.hydrateConfigValues(data);
       enchants.setEnchant(data);
     }
     return enchants;
-  }
-
-  /** Hydrate enchant config. */
-  private static void hydrateEnchantConfig(EnchantData enchant) {
-    String displayName =
-        EnchantAnimationConfig.getDisplayName(enchant.name != null ? enchant.name : "");
-    enchant.maxLevel = EnchantAnimationConfig.getEnchantMaxLevel(displayName);
-    enchant.maxChance = EnchantAnimationConfig.getEnchantMaxChance(displayName);
   }
 
   /** Applies preferences. */

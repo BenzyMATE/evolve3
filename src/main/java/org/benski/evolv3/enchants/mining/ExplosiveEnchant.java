@@ -17,12 +17,11 @@ import org.benski.evolv3.core.managers.mine.MineManager;
 import org.benski.evolv3.core.managers.pickaxe.PickaxeManager;
 import org.benski.evolv3.core.managers.world.WorldGuardManager;
 import org.benski.evolv3.datacenters.PlayerDataCenter;
-import org.benski.evolv3.enchants.passive.FortuneEnchant;
+import org.benski.evolv3.enchants.mining.AoEEnchantSupport.EnchantPreferenceResult;
 import org.benski.evolv3.listeners.inventory.BackpackListener;
 import org.benski.evolv3.models.backpack.Backpack;
 import org.benski.evolv3.models.pickaxe.EnchantData;
 import org.benski.evolv3.models.pickaxe.Pickaxe;
-import org.benski.evolv3.models.player.EnchantPreference;
 import org.benski.evolv3.models.player.PlayerProfile;
 import org.benski.evolv3.registry.AnimationRegistry;
 import org.benski.evolv3.registry.ConfigRegistry;
@@ -252,7 +251,7 @@ public class ExplosiveEnchant implements Listener {
     EnchantPreferenceResult pref = getEnchantPref(player, config);
 
     Location center = origin.getLocation().clone().add(0.5, 0.5, 0.5);
-    if (pref.particles) {
+    if (pref.particles()) {
       ExplosionAnimation anim = new ExplosionAnimation(plugin, materials, radius);
       AnimationRegistry.getInstance().play(anim, center, List.of(player));
     }
@@ -272,7 +271,8 @@ public class ExplosiveEnchant implements Listener {
       int broken) {
     String brokenStr = String.valueOf(broken);
 
-    if (pref.hologram && config.getBoolean(ConfigPaths.Enchants.Explosive.HOLOGRAM_ENABLED, true)) {
+    if (pref.hologram()
+        && config.getBoolean(ConfigPaths.Enchants.Explosive.HOLOGRAM_ENABLED, true)) {
       String hologramText =
           config
               .getString(
@@ -284,7 +284,7 @@ public class ExplosiveEnchant implements Listener {
           .play(new HologramAnimation(plugin, hologramText), hologramLoc, List.of(player));
     }
 
-    if (pref.message) {
+    if (pref.message()) {
       String message =
           ConfigRegistry.getInstance()
               .get(ConfigNames.MESSAGES)
@@ -295,7 +295,7 @@ public class ExplosiveEnchant implements Listener {
       player.sendMessage(Utils.formatMessage(player, message));
     }
 
-    if (pref.title) {
+    if (pref.title()) {
       var msgCfg = ConfigRegistry.getInstance().get(ConfigNames.MESSAGES);
       String title =
           msgCfg.getString(
@@ -319,29 +319,16 @@ public class ExplosiveEnchant implements Listener {
 
   /** Resolves fortune. */
   private int resolveFortune(Pickaxe pickaxe) {
-    if (pickaxe.enchants == null) return 0;
-    EnchantData fortune = pickaxe.enchants.getEnchant(Enchants.FORTUNE);
-    if (fortune == null || !fortune.enabled || fortune.level <= 0) return 0;
-    return FortuneEnchant.getDropAmount(fortune.level);
+    return AoEEnchantSupport.resolveFortune(pickaxe);
   }
 
   /** Returns the enchant pref. */
   private EnchantPreferenceResult getEnchantPref(Player player, FileConfiguration config) {
-    PlayerDataCenter pdc = DataCenterRegistry.getInstance().getPlayerDataCenter();
-    if (pdc == null) return new EnchantPreferenceResult(false, false, true, true, false);
-    PlayerProfile profile = pdc.getLocal(player);
-    if (profile == null) return new EnchantPreferenceResult(false, false, true, true, false);
-
-    String enchantName = config.getString(ConfigPaths.Enchants.Explosive.NAME, "Explosive");
-    boolean defaultHolo =
-        config.getBoolean(ConfigPaths.Enchants.Explosive.HOLOGRAM_DEFAULT_ENABLED, false);
-    EnchantPreference pref = profile.preferences.getOrCreateEnchantPref(enchantName, defaultHolo);
-
-    return new EnchantPreferenceResult(
-        pref.hologram, pref.message, pref.sound, pref.particles, pref.title);
+    return AoEEnchantSupport.getEnchantPref(
+        player,
+        config,
+        ConfigPaths.Enchants.Explosive.NAME,
+        "Explosive",
+        ConfigPaths.Enchants.Explosive.HOLOGRAM_DEFAULT_ENABLED);
   }
-
-  /** Enchant preference result. */
-  private record EnchantPreferenceResult(
-      boolean hologram, boolean message, boolean sound, boolean particles, boolean title) {}
 }

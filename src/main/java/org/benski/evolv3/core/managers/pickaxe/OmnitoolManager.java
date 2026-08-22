@@ -1,9 +1,9 @@
 package org.benski.evolv3.core.managers.pickaxe;
 
 import java.util.EnumMap;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import lombok.Getter;
 import net.kyori.adventure.text.format.TextDecoration;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
@@ -57,8 +57,8 @@ public class OmnitoolManager {
     PICKAXE_TO_SWORD.put(Material.NETHERITE_PICKAXE, Material.NETHERITE_SWORD);
   }
 
-  private final Map<UUID, Form> activeForms = new HashMap<>();
-  private final Map<UUID, ItemStack> storedPickaxes = new HashMap<>();
+  private final Map<UUID, Form> activeForms = new ConcurrentHashMap<>();
+  private final Map<UUID, ItemStack> storedPickaxes = new ConcurrentHashMap<>();
 
   /** Creates a new OmnitoolManager instance. */
   private OmnitoolManager() {}

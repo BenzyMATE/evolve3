@@ -1,62 +1,17 @@
 package org.benski.evolv3.models.pickaxe;
 
 import java.util.Base64;
-import java.util.function.Consumer;
 import org.benski.evolv3.Main;
 import org.bukkit.inventory.ItemStack;
 
 /**
- * Holds in-progress evolution animation state for a player. Pending evolutions survive player
- * disconnects within a session but are not persisted across server restarts.
+ * Base64 (de)serialization helpers for the pickaxe {@link ItemStack} held by a pending evolution
+ * animation, used when reading/writing {@link org.benski.evolv3.api.dto.PendingDataDto} via the
+ * pending-data API.
  */
 public final class PendingEvolutionDocument {
 
-  /** The player's UUID string — primary key. */
-  public String playerUuid;
-
-  /** Base64-encoded {@link ItemStack#serializeAsBytes()} of the pickaxe. */
-  public String originalItemBase64;
-
-  /** {@link org.benski.evolv3.enums.EvolutionTier#level} before evolution. */
-  public int currentTierLevel;
-
-  /** {@link org.benski.evolv3.enums.EvolutionTier#level} after evolution. */
-  public int nextTierLevel;
-
-  /** Display name of the rolled rarity stone. */
-  public String rarityName;
-
-  /** The pickaxe's item-data key. */
-  public String pickaxeKey;
-
-  /**
-   * {@code true} if the evolution callback fired before the player disconnected (tier change
-   * applied) but items were not yet delivered.
-   */
-  public boolean callbackAlreadyApplied;
-
-  /** Returns the database collection name for this document type. */
-  public String getCollectionName() {
-    return "PendingEvolutions";
-  }
-
-  /** Returns the name of the field used as the primary key. */
-  public String getIdField() {
-    return "playerUuid";
-  }
-
-  /** Returns the primary key value (the player UUID string). */
-  public Object getIdValue() {
-    return playerUuid;
-  }
-
-  /** No-op: pending evolution state is not persisted to the API. */
-  public void save(Consumer<Boolean> callback) {
-    if (callback != null) callback.accept(true);
-  }
-
-  /** No-op: pending evolution state is not persisted to the API. */
-  public void save() {}
+  private PendingEvolutionDocument() {}
 
   /** Serializes an ItemStack to a Base64 string, or returns null on failure. */
   public static String serializeItem(ItemStack item) {

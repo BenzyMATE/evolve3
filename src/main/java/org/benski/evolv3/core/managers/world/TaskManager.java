@@ -1,7 +1,7 @@
 package org.benski.evolv3.core.managers.world;
 
-import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import lombok.Getter;
 import org.benski.evolv3.Main;
@@ -39,7 +39,15 @@ import org.bukkit.scheduler.BukkitTask;
 public class TaskManager {
   @Getter private static final TaskManager instance = new TaskManager();
   private final JavaPlugin plugin = Main.getInstance();
-  private final Set<BukkitTask> activeTasks = new HashSet<>();
+
+  /**
+   * Tracks scheduled tasks for bulk cancellation on shutdown. Backed by a concurrent set because
+   * {@link #runSync(Runnable)} and friends are sometimes invoked directly as a {@code
+   * CompletableFuture} executor from background threads (e.g. {@code
+   * TaskManager.getInstance()::runSync} passed to {@code thenAcceptAsync}), so tasks can be added
+   * from off the main thread while {@link #cancelAllTasks()} iterates from the main thread.
+   */
+  private final Set<BukkitTask> activeTasks = ConcurrentHashMap.newKeySet();
 
   /** Creates a new TaskManager instance. */
   private TaskManager() {}
@@ -229,7 +237,7 @@ public class TaskManager {
   public void cancelAllTasks() {
     plugin.getLogger().info("Cancelling " + activeTasks.size() + " active tasks...");
 
-    for (BukkitTask task : new HashSet<>(activeTasks)) {
+    for (BukkitTask task : activeTasks) {
       try {
         if (!task.isCancelled()) {
           task.cancel();

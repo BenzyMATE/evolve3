@@ -231,20 +231,8 @@ public class PickupAnimationManager {
 
     animation.initialize(player, items, blockMaterial);
 
-    List<Player> viewers = new ArrayList<>();
-    viewers.add(player);
-
-    if (location.getWorld() != null) {
-      for (Player nearby : location.getWorld().getPlayers()) {
-        if (nearby.equals(player)) continue;
-        if (!canSeeOthersAnimations(nearby)) continue;
-        if (nearby.getLocation().distance(location) <= VIEW_OTHERS_RADIUS) {
-          viewers.add(nearby);
-        }
-      }
-    }
-
-    return AnimationRegistry.getInstance().play(animation, location, viewers);
+    return AnimationRegistry.getInstance()
+        .play(animation, location, collectViewers(player, location));
   }
 
   /**
@@ -301,17 +289,8 @@ public class PickupAnimationManager {
 
     animation.initialize(player, items, blockMaterial);
 
-    List<Player> viewers = new ArrayList<>();
-    viewers.add(player);
-    if (location.getWorld() != null) {
-      for (Player nearby : location.getWorld().getPlayers()) {
-        if (nearby.equals(player)) continue;
-        if (!canSeeOthersAnimations(nearby)) continue;
-        if (nearby.getLocation().distance(location) <= VIEW_OTHERS_RADIUS) viewers.add(nearby);
-      }
-    }
-
-    return AnimationRegistry.getInstance().play(animation, location, viewers);
+    return AnimationRegistry.getInstance()
+        .play(animation, location, collectViewers(player, location));
   }
 
   /**
@@ -319,6 +298,25 @@ public class PickupAnimationManager {
    * is a no-op.
    */
   private void giveItemsDirectly(Player player, List<ItemStack> items, Location location) {}
+
+  /**
+   * Returns the player plus every nearby online player who has opted in to seeing others' pickup
+   * animations, within {@link #VIEW_OTHERS_RADIUS} blocks of {@code location}.
+   */
+  private List<Player> collectViewers(Player player, Location location) {
+    List<Player> viewers = new ArrayList<>();
+    viewers.add(player);
+    if (location.getWorld() != null) {
+      for (Player nearby : location.getWorld().getPlayers()) {
+        if (nearby.equals(player)) continue;
+        if (!canSeeOthersAnimations(nearby)) continue;
+        if (nearby.getLocation().distance(location) <= VIEW_OTHERS_RADIUS) {
+          viewers.add(nearby);
+        }
+      }
+    }
+    return viewers;
+  }
 
   /**
    * Gets all registered animation IDs.

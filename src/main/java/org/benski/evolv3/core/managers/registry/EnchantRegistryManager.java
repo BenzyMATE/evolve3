@@ -3,6 +3,7 @@ package org.benski.evolv3.core.managers.registry;
 import java.lang.reflect.Constructor;
 import java.util.ArrayList;
 import java.util.List;
+import org.bukkit.event.HandlerList;
 import org.bukkit.event.Listener;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -71,8 +72,11 @@ public class EnchantRegistryManager {
     }
   }
 
-  /** Cleanup all registered listeners. */
+  /** Cleanup all registered listeners. Unregisters each from Bukkit's event system first. */
   public void cleanup() {
+    for (Listener listener : registeredListeners) {
+      HandlerList.unregisterAll(listener);
+    }
     registeredListeners.clear();
     listenerClasses.clear();
   }

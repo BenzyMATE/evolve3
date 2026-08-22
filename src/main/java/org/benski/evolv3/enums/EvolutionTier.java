@@ -11,7 +11,7 @@ import org.jetbrains.annotations.Nullable;
  * progression is linear: Wood → Stone → Copper → Iron → Diamond → Netherite.
  *
  * <p>The {@code level} field matches the {@code evolution} integer stored on {@link
- * org.benski.evolv3.models.pickaxe.PickaxeProfile}, so tier lookup is always a simple {@link
+ * org.benski.evolv3.models.pickaxe.Pickaxe}, so tier lookup is always a simple {@link
  * #fromLevel(int)} call.
  */
 public enum EvolutionTier {

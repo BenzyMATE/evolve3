@@ -61,6 +61,12 @@ public class TestCommand extends BaseCommand {
 
   /** {@inheritDoc} */
   @Override
+  public @Nullable String getPermission() {
+    return "evolv3.admin";
+  }
+
+  /** {@inheritDoc} */
+  @Override
   public boolean execute(
       @NotNull CommandSender sender,
       @NotNull Command command,

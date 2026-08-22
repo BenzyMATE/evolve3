@@ -16,12 +16,10 @@ import org.benski.evolv3.core.helpers.ItemStackExtensions;
 import org.benski.evolv3.core.helpers.Utils;
 import org.benski.evolv3.core.managers.pickaxe.OmnitoolManager;
 import org.benski.evolv3.core.managers.pickaxe.PickaxeManager;
-import org.benski.evolv3.datacenters.PlayerDataCenter;
 import org.benski.evolv3.items.AncientResin;
 import org.benski.evolv3.models.pickaxe.Pickaxe;
 import org.benski.evolv3.models.player.PlayerProfile;
 import org.benski.evolv3.registry.ConfigRegistry;
-import org.benski.evolv3.registry.DataCenterRegistry;
 import org.bukkit.Bukkit;
 import org.bukkit.Color;
 import org.bukkit.configuration.file.FileConfiguration;
@@ -106,9 +104,6 @@ public class PickaxeOwnershipListener extends BaseListener {
     String pickaxeId = event.getBrokenItem().getData("id");
     if (pickaxeId == null || pickaxeId.isEmpty()) return;
 
-    PlayerDataCenter playerDataCenter = DataCenterRegistry.getInstance().getPlayerDataCenter();
-    if (playerDataCenter == null) return;
-
     PlayerProfile playerProfile = playerDataCenter.getLocal(player);
     if (playerProfile == null) return;
 
@@ -186,13 +181,10 @@ public class PickaxeOwnershipListener extends BaseListener {
     String pickaxeId = item.getItemStack().getData("id");
     if (pickaxeId == null || pickaxeId.isEmpty()) return;
 
-    PlayerDataCenter playerDataCenter = DataCenterRegistry.getInstance().getPlayerDataCenter();
-    if (playerDataCenter == null) return;
-
     PlayerProfile playerProfile = playerDataCenter.getLocal(player);
     if (playerProfile == null) return;
 
-    if (!isAlreadyStored(playerProfile, pickaxeId) && !hasAvailableSlot(playerProfile, player)) {
+    if (!isAlreadyStored(playerProfile, pickaxeId) && !hasAvailableSlot(playerProfile)) {
       event.setCancelled(true);
       long now = System.currentTimeMillis();
       Long lastDenied = pickupDeniedCooldown.get(player.getUniqueId());
@@ -275,13 +267,8 @@ public class PickaxeOwnershipListener extends BaseListener {
    * slots are derived from the highest evolution among the player's pickaxes, defaulting to 1 —
    * matching the same logic used by PickaxeLimitMenu.
    */
-  private boolean hasAvailableSlot(PlayerProfile profile, Player player) {
-    int maxEvolution =
-        playerDataCenter.getAllPickaxes().stream()
-            .filter(p -> player.getUniqueId().equals(p.ownerUuid))
-            .mapToInt(p -> p.evolution)
-            .max()
-            .orElse(1);
+  private boolean hasAvailableSlot(PlayerProfile profile) {
+    int maxEvolution = profile.pickaxes.stream().mapToInt(p -> p.evolution).max().orElse(1);
     int unlockedSlots = Math.max(1, maxEvolution);
 
     for (int i = 0; i < unlockedSlots && i < profile.storedPickaxes.size(); i++) {
@@ -406,9 +393,7 @@ public class PickaxeOwnershipListener extends BaseListener {
 
     Player player = event.getPlayer();
 
-    PlayerDataCenter playerDataCenter = DataCenterRegistry.getInstance().getPlayerDataCenter();
-    Pickaxe profile =
-        playerDataCenter != null ? playerDataCenter.getPickaxeByItemId(pickaxeId) : null;
+    Pickaxe profile = playerDataCenter.getPickaxeByItemId(pickaxeId);
     if (profile != null && !profile.disabled) {
       profile.disabled = true;
       profile.durability = maxDurability - 1;
@@ -451,9 +436,6 @@ public class PickaxeOwnershipListener extends BaseListener {
    * player picks up the item.
    */
   private void releaseOwnership(Player player, String pickaxeId) {
-    PlayerDataCenter playerDataCenter = DataCenterRegistry.getInstance().getPlayerDataCenter();
-    if (playerDataCenter == null) return;
-
     PlayerProfile playerProfile = playerDataCenter.getLocal(player);
     if (playerProfile == null) return;
 

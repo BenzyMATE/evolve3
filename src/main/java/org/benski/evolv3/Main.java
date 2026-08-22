@@ -133,7 +133,8 @@ public final class Main extends JavaPlugin {
             ConfigPaths.Default.API_URL,
             "https://evolvemc-d2bjaqeceugth0bw.ukwest-01.azurewebsites.net");
     boolean sslVerify = defaultConfig.getBoolean(ConfigPaths.Default.API_SSL_VERIFY, true);
-    new EvolveApiClient(apiUrl, sslVerify);
+    String apiKey = defaultConfig.getString(ConfigPaths.Default.API_KEY, "");
+    new EvolveApiClient(apiUrl, sslVerify, apiKey);
   }
 
   /** Use hooks. */

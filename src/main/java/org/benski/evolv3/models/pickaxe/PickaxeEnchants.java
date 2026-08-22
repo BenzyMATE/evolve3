@@ -18,7 +18,14 @@ public final class PickaxeEnchants {
   /** Creates a new PickaxeEnchants instance. */
   public PickaxeEnchants() {}
 
-  static void hydrateConfigValues(EnchantData enchant) {
+  /**
+   * Populates {@link EnchantData#maxLevel} and {@link EnchantData#maxChance} from {@code
+   * enchants.yml} via {@link EnchantAnimationConfig}. Shared by every path that constructs an
+   * {@link EnchantData} from persisted or transmitted data (currently {@link
+   * org.benski.evolv3.api.ProfileMapper}), since those values are config-derived rather than
+   * stored.
+   */
+  public static void hydrateConfigValues(EnchantData enchant) {
     String displayName =
         EnchantAnimationConfig.getDisplayName(enchant.name != null ? enchant.name : "");
     enchant.maxLevel = EnchantAnimationConfig.getEnchantMaxLevel(displayName);

@@ -17,7 +17,6 @@ import org.benski.evolv3.core.managers.pickaxe.PickaxeManager;
 import org.benski.evolv3.core.managers.pickaxe.PrestigeSelectionManager;
 import org.benski.evolv3.core.managers.player.RankManager;
 import org.benski.evolv3.datacenters.ArmorDataCenter;
-import org.benski.evolv3.datacenters.PlayerDataCenter;
 import org.benski.evolv3.enchants.mining.ExplosiveStoneHandler;
 import org.benski.evolv3.enchants.mining.FrostbiteStoneHandler;
 import org.benski.evolv3.enchants.mining.LazerStoneHandler;
@@ -85,12 +84,9 @@ public class JoinListener extends BaseListener {
       }
     }
 
-    PlayerDataCenter playerDataCenter = DataCenterRegistry.getInstance().getPlayerDataCenter();
     ArmorDataCenter armorDataCenter = DataCenterRegistry.getInstance().getArmorDataCenter();
 
-    if (playerDataCenter != null) {
-      playerDataCenter.loadOrCreate(player, playerId);
-    }
+    playerDataCenter.loadOrCreate(player, playerId);
 
     if (armorDataCenter != null) {
       armorDataCenter.loadOrCreate(player, playerId);
@@ -107,8 +103,7 @@ public class JoinListener extends BaseListener {
             plugin,
             () -> {
               if (!player.isOnline()) return;
-              PlayerProfile profile =
-                  playerDataCenter != null ? playerDataCenter.getLocal(player) : null;
+              PlayerProfile profile = playerDataCenter.getLocal(player);
               if (profile != null) {
                 RankManager.getInstance().applyPermissions(player, profile);
               }
@@ -188,15 +183,12 @@ public class JoinListener extends BaseListener {
     PrestigeSelectionManager.getInstance().handlePlayerQuit(player);
 
     ArmorDataCenter armorDataCenter = DataCenterRegistry.getInstance().getArmorDataCenter();
-    PlayerDataCenter playerDataCenter = DataCenterRegistry.getInstance().getPlayerDataCenter();
 
     if (armorDataCenter != null) {
       armorDataCenter.unloadProfile(player);
     }
 
-    if (playerDataCenter != null) {
-      playerDataCenter.unloadProfile(player);
-    }
+    playerDataCenter.unloadProfile(player);
 
     java.util.UUID uuid = player.getUniqueId();
 

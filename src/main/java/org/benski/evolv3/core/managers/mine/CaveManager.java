@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -608,9 +609,9 @@ public final class CaveManager {
     saveCaveData();
   }
 
-  /** Returns the cave key if the location is inside any cave region, or null. */
+  /** Returns an unmodifiable view of every active cave's bounds, keyed by cave key. */
   public @NotNull Map<String, CaveBounds> getAllCaveRegions() {
-    return caveRegions;
+    return Collections.unmodifiableMap(caveRegions);
   }
 
   /**

@@ -17,11 +17,10 @@ import org.benski.evolv3.core.managers.mine.MineManager;
 import org.benski.evolv3.core.managers.pickaxe.PickaxeManager;
 import org.benski.evolv3.core.managers.world.WorldGuardManager;
 import org.benski.evolv3.datacenters.PlayerDataCenter;
-import org.benski.evolv3.enchants.passive.FortuneEnchant;
+import org.benski.evolv3.enchants.mining.AoEEnchantSupport.EnchantPreferenceResult;
 import org.benski.evolv3.listeners.inventory.BackpackListener;
 import org.benski.evolv3.models.pickaxe.EnchantData;
 import org.benski.evolv3.models.pickaxe.Pickaxe;
-import org.benski.evolv3.models.player.EnchantPreference;
 import org.benski.evolv3.models.player.PlayerProfile;
 import org.benski.evolv3.registry.AnimationRegistry;
 import org.benski.evolv3.registry.ConfigRegistry;
@@ -360,30 +359,16 @@ public class NuclearShowerEnchant implements Listener {
 
   /** Resolves fortune. */
   private int resolveFortune(Pickaxe pickaxe) {
-    if (pickaxe.enchants == null) return 0;
-    EnchantData fortune = pickaxe.enchants.getEnchant(Enchants.FORTUNE);
-    if (fortune == null || !fortune.enabled || fortune.level <= 0) return 0;
-    return FortuneEnchant.getDropAmount(fortune.level);
+    return AoEEnchantSupport.resolveFortune(pickaxe);
   }
 
   /** Returns the enchant pref. */
   private EnchantPreferenceResult getEnchantPref(Player player, FileConfiguration config) {
-    PlayerDataCenter pdc = DataCenterRegistry.getInstance().getPlayerDataCenter();
-    if (pdc == null) return new EnchantPreferenceResult(false, false, true, true, false);
-    PlayerProfile profile = pdc.getLocal(player);
-    if (profile == null) return new EnchantPreferenceResult(false, false, true, true, false);
-
-    String enchantName =
-        config.getString(ConfigPaths.Enchants.NuclearShower.NAME, "Nuclear Shower");
-    boolean defaultHolo =
-        config.getBoolean(ConfigPaths.Enchants.NuclearShower.HOLOGRAM_DEFAULT_ENABLED, false);
-    EnchantPreference pref = profile.preferences.getOrCreateEnchantPref(enchantName, defaultHolo);
-
-    return new EnchantPreferenceResult(
-        pref.hologram, pref.message, pref.sound, pref.particles, pref.title);
+    return AoEEnchantSupport.getEnchantPref(
+        player,
+        config,
+        ConfigPaths.Enchants.NuclearShower.NAME,
+        "Nuclear Shower",
+        ConfigPaths.Enchants.NuclearShower.HOLOGRAM_DEFAULT_ENABLED);
   }
-
-  /** Enchant preference result. */
-  private record EnchantPreferenceResult(
-      boolean hologram, boolean message, boolean sound, boolean particles, boolean title) {}
 }

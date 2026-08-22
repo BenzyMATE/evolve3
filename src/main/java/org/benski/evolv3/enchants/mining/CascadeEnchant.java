@@ -18,12 +18,11 @@ import org.benski.evolv3.core.managers.mine.MineManager;
 import org.benski.evolv3.core.managers.pickaxe.PickaxeManager;
 import org.benski.evolv3.core.managers.world.WorldGuardManager;
 import org.benski.evolv3.datacenters.PlayerDataCenter;
-import org.benski.evolv3.enchants.passive.FortuneEnchant;
+import org.benski.evolv3.enchants.mining.AoEEnchantSupport.EnchantPreferenceResult;
 import org.benski.evolv3.listeners.inventory.BackpackListener;
 import org.benski.evolv3.models.backpack.Backpack;
 import org.benski.evolv3.models.pickaxe.EnchantData;
 import org.benski.evolv3.models.pickaxe.Pickaxe;
-import org.benski.evolv3.models.player.EnchantPreference;
 import org.benski.evolv3.models.player.PlayerProfile;
 import org.benski.evolv3.registry.AnimationRegistry;
 import org.benski.evolv3.registry.ConfigRegistry;
@@ -203,7 +202,8 @@ public class CascadeEnchant implements Listener {
                     player, world, center, finalRadius, pickaxe, playerProfile, fortuneAmount);
             totalBroken.addAndGet(broken);
 
-            new CascadeAnimation(plugin, pref.sound, pref.particles).play(center, List.of(player));
+            new CascadeAnimation(plugin, pref.sound(), pref.particles())
+                .play(center, List.of(player));
 
             if (isLast) {
               if (totalBroken.get() > 0) {
@@ -274,7 +274,8 @@ public class CascadeEnchant implements Listener {
             return;
           }
           detonateLink(player, world, center, baseRadius, pickaxe, playerProfile, fortuneAmount);
-          new CascadeAnimation(plugin, pref.sound, pref.particles).play(center, List.of(player));
+          new CascadeAnimation(plugin, pref.sound(), pref.particles())
+              .play(center, List.of(player));
         }
       }.runTaskLater(plugin, (long) i * STEP_DELAY_TICKS);
     }
@@ -348,7 +349,7 @@ public class CascadeEnchant implements Listener {
       int broken) {
     String brokenStr = String.valueOf(broken);
 
-    if (pref.hologram && config.getBoolean(ConfigPaths.Enchants.Cascade.HOLOGRAM_ENABLED, true)) {
+    if (pref.hologram() && config.getBoolean(ConfigPaths.Enchants.Cascade.HOLOGRAM_ENABLED, true)) {
       String hologramText =
           config
               .getString(
@@ -360,7 +361,7 @@ public class CascadeEnchant implements Listener {
           .play(new HologramAnimation(plugin, hologramText), hologramLoc, List.of(player));
     }
 
-    if (pref.message) {
+    if (pref.message()) {
       String message =
           ConfigRegistry.getInstance()
               .get(ConfigNames.MESSAGES)
@@ -371,7 +372,7 @@ public class CascadeEnchant implements Listener {
       player.sendMessage(Utils.formatMessage(player, message));
     }
 
-    if (pref.title) {
+    if (pref.title()) {
       var msgCfg = ConfigRegistry.getInstance().get(ConfigNames.MESSAGES);
       String title =
           msgCfg.getString(
@@ -395,29 +396,16 @@ public class CascadeEnchant implements Listener {
 
   /** Resolves fortune. */
   private int resolveFortune(Pickaxe pickaxe) {
-    if (pickaxe.enchants == null) return 0;
-    EnchantData fortune = pickaxe.enchants.getEnchant(Enchants.FORTUNE);
-    if (fortune == null || !fortune.enabled || fortune.level <= 0) return 0;
-    return FortuneEnchant.getDropAmount(fortune.level);
+    return AoEEnchantSupport.resolveFortune(pickaxe);
   }
 
   /** Returns the enchant pref. */
   private EnchantPreferenceResult getEnchantPref(Player player, FileConfiguration config) {
-    PlayerDataCenter pdc = DataCenterRegistry.getInstance().getPlayerDataCenter();
-    if (pdc == null) return new EnchantPreferenceResult(false, false, true, true, false);
-    PlayerProfile profile = pdc.getLocal(player);
-    if (profile == null) return new EnchantPreferenceResult(false, false, true, true, false);
-
-    String enchantName = config.getString(ConfigPaths.Enchants.Cascade.NAME, "Cascade");
-    boolean defaultHolo =
-        config.getBoolean(ConfigPaths.Enchants.Cascade.HOLOGRAM_DEFAULT_ENABLED, false);
-    EnchantPreference pref = profile.preferences.getOrCreateEnchantPref(enchantName, defaultHolo);
-
-    return new EnchantPreferenceResult(
-        pref.hologram, pref.message, pref.sound, pref.particles, pref.title);
+    return AoEEnchantSupport.getEnchantPref(
+        player,
+        config,
+        ConfigPaths.Enchants.Cascade.NAME,
+        "Cascade",
+        ConfigPaths.Enchants.Cascade.HOLOGRAM_DEFAULT_ENABLED);
   }
-
-  /** Enchant preference result. */
-  private record EnchantPreferenceResult(
-      boolean hologram, boolean message, boolean sound, boolean particles, boolean title) {}
 }

@@ -1,52 +1,17 @@
 package org.benski.evolv3.models.pickaxe;
 
-import java.util.ArrayList;
 import java.util.Base64;
-import java.util.List;
-import java.util.function.Consumer;
 import org.benski.evolv3.Main;
 import org.bukkit.inventory.ItemStack;
 
 /**
- * Holds in-progress enchant selection state for a player. Pending selections survive player
- * disconnects within a session but are not persisted across server restarts.
+ * Base64 (de)serialization helpers for the pickaxe {@link ItemStack} held by a pending enchant
+ * selection, used when reading/writing {@link org.benski.evolv3.api.dto.PendingDataDto} via the
+ * pending-data API.
  */
 public final class PendingEnchantDocument {
 
-  /** The player's UUID string — primary key. */
-  public String playerUuid;
-
-  /** Display names of the enchant options presented to the player. */
-  public List<String> optionNames = new ArrayList<>();
-
-  /** Base64-encoded {@link ItemStack#serializeAsBytes()} of the pickaxe. */
-  public String originalItemBase64;
-
-  /** The pickaxe's item-data key. */
-  public String pickaxeKey;
-
-  /** Returns the database collection name for this document type. */
-  public String getCollectionName() {
-    return "PendingEnchants";
-  }
-
-  /** Returns the name of the field used as the primary key. */
-  public String getIdField() {
-    return "playerUuid";
-  }
-
-  /** Returns the primary key value (the player UUID string). */
-  public Object getIdValue() {
-    return playerUuid;
-  }
-
-  /** No-op: pending enchant state is not persisted to the API. */
-  public void save(Consumer<Boolean> callback) {
-    if (callback != null) callback.accept(true);
-  }
-
-  /** No-op: pending enchant state is not persisted to the API. */
-  public void save() {}
+  private PendingEnchantDocument() {}
 
   /** Serializes an ItemStack to a Base64 string, or returns null on failure. */
   public static String serializeItem(ItemStack item) {

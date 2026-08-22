@@ -17,28 +17,19 @@ public abstract class BaseDataCenter<T> implements DataCenter<T> {
    */
   private final Set<String> inFlight = ConcurrentHashMap.newKeySet();
 
-  /** Returns the all. */
   @Override
   public Map<String, T> getAll() {
     return data;
   }
 
-  /** Exists. */
   @Override
   public boolean exists(String id) {
     return data.containsKey(id);
   }
 
-  /** Returns the local. */
   @Override
   public T getLocal(Player player) {
     return data.get(player.getUniqueId().toString());
-  }
-
-  /** Updates local. */
-  @Override
-  public void updateLocal(T profile, boolean save) {
-    data.put(getProfileId(profile), profile);
   }
 
   /** Attempts to mark this ID as in-flight. Returns true if the caller should proceed. */

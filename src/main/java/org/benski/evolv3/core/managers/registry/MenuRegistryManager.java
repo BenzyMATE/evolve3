@@ -102,7 +102,15 @@ public class MenuRegistryManager implements Listener {
   public void openMenu(Player player, MenuType menuType, int page, Player showPlayer) {
     Menu menu = menuMap.get(menuType);
     if (menu == null) {
-      showPlayer.sendMessage("§cMenu not found: " + menuType.toString());
+      String msg =
+          ConfigRegistry.getInstance()
+              .get(ConfigNames.MESSAGES)
+              .getString(
+                  ConfigPaths.Messages.Errors.MENU_NOT_FOUND, "&cMenu not found: &#CCCCCC%menu%")
+              .replace("%menu%", menuType.toString());
+      showPlayer.sendMessage(
+          LegacyComponentSerializer.legacySection()
+              .deserialize(Utils.formatMessage(showPlayer, msg)));
       plugin.getLogger().warning("Attempted to open unregistered menu: " + menuType.toString());
       return;
     }

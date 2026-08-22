@@ -20,7 +20,6 @@ public class StorageRegistryManager {
       new StorageRegistryManager(Main.getInstance());
   private final Map<String, FileConfiguration> configCache = new HashMap<>();
   private final Map<String, File> registeredConfigs = new HashMap<>();
-  private final Map<String, File> registeredBins = new HashMap<>();
 
   /** Creates a StorageRegistryManager for the given plugin. @param plugin the owning plugin */
   public StorageRegistryManager(JavaPlugin plugin) {
@@ -51,17 +50,6 @@ public class StorageRegistryManager {
     File parentDir = configFile.getParentFile();
     if (parentDir != null && !parentDir.exists()) parentDir.mkdirs();
     registeredConfigs.put(name, configFile);
-  }
-
-  /**
-   * Register a binary file to be managed by StorageManager.
-   *
-   * @param name The name of the binary file (without .bin extension)
-   */
-  public void registerBin(String name) {
-    File binFile = new File(dataFolder, name + ".bin");
-    registeredBins.put(name, binFile);
-    plugin.getLogger().info("Bin named " + name + " has been registered");
   }
 
   /**
@@ -194,49 +182,6 @@ public class StorageRegistryManager {
   }
 
   /**
-   * Write an object to a binary file using Java serialization.
-   *
-   * @param name The name of the binary file (without .bin extension)
-   * @param object The object to serialize
-   * @param <T> The type of object
-   */
-  public <T extends Serializable> void writeBin(String name, T object) {
-    File binFile = new File(dataFolder, name + ".bin");
-
-    try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(binFile))) {
-      oos.writeObject(object);
-    } catch (IOException e) {
-      plugin.getLogger().severe("Failed to write binary file: " + name + ".bin");
-      e.printStackTrace();
-    }
-  }
-
-  /**
-   * Read an object from a binary file.
-   *
-   * @param name The name of the binary file (without .bin extension)
-   * @param <T> The type of object to return
-   * @return The deserialized object, or null if failed
-   */
-  @SuppressWarnings("unchecked")
-  public <T extends Serializable> T readBin(String name) {
-    File binFile = new File(dataFolder, name + ".bin");
-
-    if (!binFile.exists()) {
-      plugin.getLogger().warning("Binary file not found: " + name + ".bin");
-      return null;
-    }
-
-    try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream(binFile))) {
-      return (T) ois.readObject();
-    } catch (IOException | ClassNotFoundException e) {
-      plugin.getLogger().severe("Failed to read binary file: " + name + ".bin");
-      e.printStackTrace();
-      return null;
-    }
-  }
-
-  /**
    * Check if a config file exists.
    *
    * @param name The name of the config (without .yml extension)
@@ -245,17 +190,6 @@ public class StorageRegistryManager {
   public boolean configExists(String name) {
     File configFile = registeredConfigs.getOrDefault(name, new File(dataFolder, name + ".yml"));
     return configFile.exists();
-  }
-
-  /**
-   * Check if a binary file exists.
-   *
-   * @param name The name of the binary file (without .bin extension)
-   * @return true if the file exists
-   */
-  public boolean binExists(String name) {
-    File binFile = new File(dataFolder, name + ".bin");
-    return binFile.exists();
   }
 
   /**
@@ -279,17 +213,6 @@ public class StorageRegistryManager {
     configCache.remove(name);
     File configFile = registeredConfigs.getOrDefault(name, new File(dataFolder, name + ".yml"));
     return configFile.delete();
-  }
-
-  /**
-   * Delete a binary file.
-   *
-   * @param name The name of the binary file (without .bin extension)
-   * @return true if deletion was successful
-   */
-  public boolean deleteBin(String name) {
-    File binFile = new File(dataFolder, name + ".bin");
-    return binFile.delete();
   }
 
   /**

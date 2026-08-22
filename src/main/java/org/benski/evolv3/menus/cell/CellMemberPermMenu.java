@@ -135,7 +135,7 @@ public class CellMemberPermMenu extends BaseMenu {
     if (perm == null) return true;
 
     CellRent rent = CellRentManager.getInstance().getRent(ctx.cellName());
-    if (rent == null) return true;
+    if (rent == null || !rent.ownerUuid().equals(player.getUniqueId())) return true;
 
     boolean current = rent.getPermissions(ctx.memberUuid()).contains(perm);
     CellRentManager.getInstance()

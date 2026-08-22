@@ -34,14 +34,14 @@ public class PendingEvolutionData {
   private final RarityConfig winningRarity;
 
   /**
-   * The pickaxe's item-data key. Non-null when started with a key, enabling full MongoDB
-   * persistence across server restarts.
+   * The pickaxe's item-data key. Non-null when started with a key, enabling persistence across
+   * server restarts via the pending-data API.
    */
   private final String pickaxeKey;
 
   /**
    * The callback that applies the evolution result (tier change, essence, etc.). {@code null} when
-   * this entry was loaded from MongoDB after a restart — the manager rebuilds it via {@link
+   * this entry was loaded from the API after a restart — the manager rebuilds it via {@link
    * org.benski.evolv3.core.managers.EvolutionSelectionManager.EvolutionCallbackProvider}.
    */
   private Runnable callback;

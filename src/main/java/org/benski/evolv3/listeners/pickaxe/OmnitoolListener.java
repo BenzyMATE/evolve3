@@ -208,7 +208,7 @@ public class OmnitoolListener extends BaseListener {
     if (!isOmnitoolItem(held)) return;
 
     FileConfiguration config = ConfigRegistry.getInstance().get(ConfigNames.DEFAULT);
-    int xpAmount = config.getInt("Omnitool.LogBreakXp", 5);
+    int xpAmount = config.getInt(ConfigPaths.Default.Pickaxe.OMNITOOL_LOG_BREAK_XP, 5);
     if (xpAmount <= 0) return;
 
     PickaxeManager.getInstance().addXp(player, xpAmount);
@@ -248,7 +248,7 @@ public class OmnitoolListener extends BaseListener {
     }
 
     FileConfiguration config = ConfigRegistry.getInstance().get(ConfigNames.DEFAULT);
-    int xpAmount = config.getInt("Omnitool.MobKillXp", 5);
+    int xpAmount = config.getInt(ConfigPaths.Default.Pickaxe.OMNITOOL_MOB_KILL_XP, 5);
 
     PickupAnimationManager.getInstance()
         .playPickupAnimation(

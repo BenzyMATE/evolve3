@@ -28,21 +28,8 @@ public interface DataCenter<T> {
   }
 
   /**
-   * Returns the cached entry looked up by a specific ID rather than the player's UUID, or null.
-   *
-   * @throws UnsupportedOperationException if this data center doesn't support this lookup
-   */
-  default T getLocal(Player player, String forcedId) {
-    throw new UnsupportedOperationException(
-        "getLocal(Player, String) not supported by this DataCenter");
-  }
-
-  /**
    * Loads an existing entry from the backing store, or creates a new default entry if none exists.
    * Implementations must be idempotent when called concurrently for the same ID.
    */
   void loadOrCreate(Player player, String id);
-
-  /** Updates the local cache with the given profile, optionally persisting. */
-  void updateLocal(T profile, boolean save);
 }

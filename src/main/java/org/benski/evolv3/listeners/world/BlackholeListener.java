@@ -565,6 +565,7 @@ public class BlackholeListener extends BaseListener {
               Main.getInstance(),
               () -> {
                 pendingTeleport.remove(uid);
+                if (!player.isOnline()) return;
                 origin
                     .getWorld()
                     .spawnParticle(Particle.REVERSE_PORTAL, origin, 80, 1.2, 1.8, 1.2, 0.12);
