@@ -111,3 +111,22 @@ buildNumber.properties
 
 # Common working directory
 run/
+
+# Secrets and local environment files (never commit these)
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
+*.keystore
+id_rsa*
+id_ed25519*
+secrets.yml
+credentials.json
+
+# Local Claude Code settings and memory (machine-specific)
+.claude/settings.local.json
+.claude/projects/
