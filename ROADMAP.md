@@ -30,11 +30,24 @@ items is in [docs/paper-26-upgrade-notes.md](docs/paper-26-upgrade-notes.md).
 
 ## Gameplay
 
+- [ ] **Crates**: keys and crates with configurable reward tables and an
+      opening animation.
+- [ ] **Events**: timed server events such as boosted XP, essence or coin
+      multipliers and mining challenges.
+- [ ] **RPG elements**: player stats, skills and class-style progression
+      alongside the pickaxe.
 - [ ] More evolution animation styles and pickup animations.
 - [ ] Island upgrades and visit statistics.
 - [ ] Leaderboards for level, prestige and coins through PlaceholderAPI.
 
+## Staff tools
+
+- [ ] **Staff menu and commands**: a staff GUI and commands for moderation,
+      player lookup and inspecting or editing player data.
+
 ## Tooling
 
+- [ ] **Refactor**: break up large classes, reduce duplication between
+      managers and tidy package structure.
 - [ ] Run SpotBugs and PMD in CI and fail the build on new findings.
 - [ ] Add a pull-request workflow that builds without deploying.
