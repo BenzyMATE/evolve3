@@ -164,5 +164,6 @@ Planned work is tracked in [ROADMAP.md](ROADMAP.md).
 
 ## License
 
-Copyright © 2026 BenzyMATE. All rights reserved. The source is shared for
-viewing and review only. See [LICENSE](LICENSE).
+Copyright © 2026 BenzyMATE. Licensed under the
+[Apache License, Version 2.0](LICENSE). See [NOTICE](NOTICE) for
+attribution.
