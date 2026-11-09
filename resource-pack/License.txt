@@ -1,0 +1,41 @@
+Evolv3 Resource Pack - License and Asset Attribution
+=====================================================
+
+Copyright 2026 BenzyMATE
+
+Source: https://github.com/BenzyMATE/evolve3/tree/master/resource-pack
+
+
+1. ORIGIN OF THE ASSETS
+-----------------------
+All textures, models, fonts, GUI sprites, sounds and other files in this
+resource pack were created specifically for the Evolv3 project by its author.
+They are original works and are not copied from Minecraft or from any
+third-party source.
+
+Some files are stored under the "minecraft" namespace (assets/minecraft/...)
+or use the same file names as vanilla Minecraft files. This is only so that
+the Minecraft client loads them in place of, or alongside, the default
+resources. Using these paths does not mean the files contain Mojang content.
+
+
+2. PERMISSION TO USE
+--------------------
+This resource pack is part of Evolv3 and is licensed under the Apache License,
+Version 2.0, the same license as the rest of the project. You may use, modify
+and redistribute these assets under the terms of that license, provided you
+keep this notice and give credit to the copyright holder.
+
+Full license text: https://github.com/BenzyMATE/evolve3/blob/master/LICENSE
+                   http://www.apache.org/licenses/LICENSE-2.0
+
+
+3. MINECRAFT / MOJANG NOTICE
+----------------------------
+NOT AN OFFICIAL MINECRAFT PRODUCT. NOT APPROVED BY OR ASSOCIATED WITH MOJANG
+OR MICROSOFT.
+
+"Minecraft" is a trademark of Mojang Synergies AB. This resource pack does not
+include or redistribute any Minecraft game files, textures or sounds. It is
+designed to be used with a legally purchased copy of Minecraft, in line with
+the Minecraft Usage Guidelines: https://www.minecraft.net/usage-guidelines
